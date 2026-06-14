@@ -5,7 +5,7 @@
   //
   // Token đọc tươi trong queryFn (bất biến token tươi §3); queryKey gắn token để cache
   // tách theo user. Chỉ hiển thị item có chartRecord (id thật) — mục chỉ-luận-giải không
-  // điều hướng được tới trang lá số.
+  // điều hướng được tới trang lá số. Nhiều view cùng một lá số được gộp về một mục.
   import { createQuery } from '@tanstack/svelte-query';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -36,19 +36,39 @@
   }));
 
   // Chỉ giữ mục có chartRecord (id thật để điều hướng). Ngày hiển thị theo locale vi-VN.
-  const chartItems = $derived(
-    (history.data?.items ?? [])
-      .filter((item) => item.chartRecord !== null)
-      .map((item) => {
-        const record = item.chartRecord!;
-        return {
-          id: record.id,
-          systemLabel: viCopy.chartSystem[record.chartSystem],
-          createdAtLabel: new Date(record.createdAt).toLocaleDateString('vi-VN'),
-          hasExplanation: item.explanationResult !== null,
-        };
-      }),
-  );
+  // /history trả MỘT view cho mỗi lần xem (tạo lá số, mỗi lần luận giải...) → nhiều view có
+  // thể trỏ cùng một chartRecord.id. Gộp về một mục/lá số (key duy nhất, tránh each_key_duplicate
+  // và tránh lặp một lá số trong danh sách); giữ view đầu (history sort viewedAt desc = mới nhất),
+  // bật hasExplanation nếu BẤT KỲ view nào của lá số đó có luận giải.
+  const chartItems = $derived.by(() => {
+    const indexByChartId: Record<string, number> = {};
+    const items: {
+      id: string;
+      systemLabel: string;
+      createdAtLabel: string;
+      hasExplanation: boolean;
+    }[] = [];
+    for (const item of history.data?.items ?? []) {
+      if (item.chartRecord === null) {
+        continue;
+      }
+      const record = item.chartRecord;
+      const existingIndex = indexByChartId[record.id];
+      if (existingIndex !== undefined) {
+        items[existingIndex].hasExplanation =
+          items[existingIndex].hasExplanation || item.explanationResult !== null;
+        continue;
+      }
+      indexByChartId[record.id] = items.length;
+      items.push({
+        id: record.id,
+        systemLabel: viCopy.chartSystem[record.chartSystem],
+        createdAtLabel: new Date(record.createdAt).toLocaleDateString('vi-VN'),
+        hasExplanation: item.explanationResult !== null,
+      });
+    }
+    return items;
+  });
 
   function openChart(id: string): void {
     void goto(resolve(`/charts/${id}`));

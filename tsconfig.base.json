@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@ziweiai/contracts": ["packages/contracts/src/index.ts"],
+      "@ziweiai/core": ["packages/core/src/index.ts"],
+      "@ziweiai/astro-engine": ["packages/astro-engine/src/index.ts"]
+    }
+  }
+}

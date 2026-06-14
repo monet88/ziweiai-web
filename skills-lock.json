@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "skills": {
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase/SKILL.md",
+      "computedHash": "61638e85394d2e39d1109cbf607593afb9733e0de19cdf0b52ec9bc32d95ea74"
+    },
+    "svelte-code-writer": {
+      "source": "spences10/skills",
+      "sourceType": "github",
+      "skillPath": "svelte-code-writer/SKILL.md",
+      "computedHash": "8adde842a28ad90e80d14c7db5e9fd2d5464c4ff8d976f55aea1c7bf0efa7c68"
+    },
+    "svelte-components": {
+      "source": "spences10/skills",
+      "sourceType": "github",
+      "skillPath": "svelte-components/SKILL.md",
+      "computedHash": "442a46421ab0e129c441fc4cf6ee3cab01752a44000bad446c83d5b9b3bdc6a2"
+    },
+    "svelte-core-bestpractices": {
+      "source": "spences10/skills",
+      "sourceType": "github",
+      "skillPath": "svelte-core-bestpractices/SKILL.md",
+      "computedHash": "31f83e6e9719c65826bda3963baa4c49d64dd67186b1a97f11e718312e122552"
+    },
+    "svelte-deployment": {
+      "source": "spences10/skills",
+      "sourceType": "github",
+      "skillPath": "svelte-deployment/SKILL.md",
+      "computedHash": "3043d159e3bf3bbdad19710a051c73ad9afcd2132afe4c5a0237ddacb2cc13d5"
+    },
+    "svelte-layerchart": {
+      "source": "spences10/skills",
+      "sourceType": "github",
+      "skillPath": "svelte-layerchart/SKILL.md",
+      "computedHash": "bdba9d20b59c4e72fdcf71d695bcfaeda8c16bcdd373d2be1eb1acea47c6a6c6"
+    },
+    "svelte-runes": {
+      "source": "spences10/skills",
+      "sourceType": "github",
+      "skillPath": "svelte-runes/SKILL.md",
+      "computedHash": "0f5020e374818f286f17d6d0360c2262852d802b26e3912c835bb79081ca75d9"
+    },
+    "svelte-styling": {
+      "source": "spences10/skills",
+      "sourceType": "github",
+      "skillPath": "svelte-styling/SKILL.md",
+      "computedHash": "3a053f2d15cfa8b26572e8879efd3671ef232cbb4161a62b33abcd341051bf74"
+    },
+    "svelte-template-directives": {
+      "source": "spences10/skills",
+      "sourceType": "github",
+      "skillPath": "svelte-template-directives/SKILL.md",
+      "computedHash": "5a5b6eb428f7d656820ede70067052a21cfdd204de6a59d45e0424333368b151"
+    },
+    "sveltekit-data-flow": {
+      "source": "spences10/skills",
+      "sourceType": "github",
+      "skillPath": "sveltekit-data-flow/SKILL.md",
+      "computedHash": "23f72e7b625ed362591e2cf99907e7891f7b151f85c3fc03554628bcef80f14c"
+    },
+    "sveltekit-remote-functions": {
+      "source": "spences10/skills",
+      "sourceType": "github",
+      "skillPath": "sveltekit-remote-functions/SKILL.md",
+      "computedHash": "069cee1b4241a15ee3bf7530f33882b85b4a9d3a66f84780ed104d13e3d2da90"
+    },
+    "sveltekit-structure": {
+      "source": "spences10/skills",
+      "sourceType": "github",
+      "skillPath": "sveltekit-structure/SKILL.md",
+      "computedHash": "ff34aa698d6e3e9caac29c921cdc1a8d6258dd0c5da5d951d1f7536be7f075c9"
+    },
+    "techdebt-finder": {
+      "source": "spences10/skills",
+      "sourceType": "github",
+      "skillPath": "techdebt-finder/SKILL.md",
+      "computedHash": "a81f2031c32a6efb795e3915418687e5324a627e953712ab11a9ad71baf2d77d"
+    },
+    "typescript-unit-testing": {
+      "source": "bmad-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/typescript-unit-testing/SKILL.md",
+      "computedHash": "db3c9b86d54778dff4dd5bcf356644923928a9f03dacefe6e2c93163d3ee77b2"
+    }
+  }
+}

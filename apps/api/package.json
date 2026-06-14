@@ -1,0 +1,32 @@
+{
+  "name": "@ziweiai/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "nest build",
+    "dev": "node scripts/dev-server.cjs",
+    "env:local-supabase": "node scripts/write-local-supabase-env.cjs",
+    "lint": "eslint . --max-warnings=0",
+    "start": "node dist/apps/api/src/main.js",
+    "start:dev": "node scripts/dev-server.cjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.8",
+    "@nestjs/core": "^11.1.8",
+    "@nestjs/platform-express": "^11.1.8",
+    "@supabase/supabase-js": "^2.84.0",
+    "@ziweiai/astro-engine": "workspace:*",
+    "@ziweiai/contracts": "workspace:*",
+    "@ziweiai/core": "workspace:*",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.21",
+    "@types/express": "^5.0.6",
+    "vitest": "^4.0.14"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@ziweiai/astro-engine",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "node": "./dist/index.js",
+      "default": "./dist/server-only.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint . --max-warnings=0",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
+    "@ziweiai/contracts": "workspace:*",
+    "iztro": "2.5.8",
+    "lunar-javascript": "1.7.7",
+    "tsx": "^4.20.6"
+  }
+}

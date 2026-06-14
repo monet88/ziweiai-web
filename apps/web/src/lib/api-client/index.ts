@@ -3,12 +3,15 @@
  *
  * US-001: fetchHealth() — endpoint public, không Bearer.
  * US-002: fetchHistory() — Bearer, dùng để xác minh token gắn đúng sau đăng nhập.
- * Các hàm Bearer còn lại (createChart/fetchChartDetail/createExplanation)
- * thêm ở phase sau.
+ * US-005: createChart() — Bearer, POST /charts để lập lá số rồi điều hướng chi tiết.
+ * Các hàm Bearer còn lại (fetchChartDetail/createExplanation) thêm ở phase sau.
  */
 import {
+  createChartResponseSchema,
   healthResponseSchema,
   historyListResponseSchema,
+  type CreateChartRequest,
+  type CreateChartResponse,
   type HealthResponse,
   type HistoryListResponse,
 } from '@ziweiai/contracts';
@@ -33,4 +36,16 @@ export function fetchHistory(
   limit = HISTORY_SCREEN_LIMIT,
 ): Promise<HistoryListResponse> {
   return fetchJson(`/history?limit=${limit}`, historyListResponseSchema, { token });
+}
+
+/** POST /charts — Bearer. Lập lá số mới; response chứa snapshot + chartRecord (id thật). */
+export function createChart(
+  token: string,
+  request: CreateChartRequest,
+): Promise<CreateChartResponse> {
+  return fetchJson('/charts', createChartResponseSchema, {
+    method: 'POST',
+    token,
+    body: request,
+  });
 }

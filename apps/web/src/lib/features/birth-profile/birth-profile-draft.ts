@@ -57,6 +57,11 @@ export function createBirthFormDraft(initialChartSystem: ChartSystem = 'zi-wei-d
 }
 
 function isIntInRange(value: string, min: number, max: number): boolean {
+  // Guard phòng thủ: dù BirthFormDraft khai báo string, chặn null/undefined lọt vào
+  // (vd input số ép kiểu) trước khi gọi .trim() để không crash runtime.
+  if (typeof value !== 'string') {
+    return false;
+  }
   const trimmed = value.trim();
   // Chỉ chấp nhận chuỗi chữ số thập phân thuần. Number()/Number.isInteger sẽ nuốt cả
   // hex (0x12), ký hiệu khoa học (1e1) và thập phân (12.0) — không phải thứ người dùng
@@ -69,6 +74,9 @@ function isIntInRange(value: string, min: number, max: number): boolean {
 }
 
 function isNumberInRange(value: string, min: number, max: number): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
   const trimmed = value.trim();
   if (trimmed === '') {
     return false;
@@ -116,7 +124,7 @@ export function validateBirthFormDraft(draft: BirthFormDraft): BirthFormFieldErr
   if (!isNumberInRange(draft.longitude, -180, 180)) {
     errors.longitude = copy.longitudeInvalid;
   }
-  if (draft.timezone.trim() === '') {
+  if (!draft.timezone || draft.timezone.trim() === '') {
     errors.timezone = copy.timezoneRequired;
   }
 

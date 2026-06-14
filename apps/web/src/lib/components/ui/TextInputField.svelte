@@ -5,6 +5,10 @@
   // TextInputField: input có nhãn + helper/error, value qua $bindable. Svelte cấm `type`
   // động khi dùng bind:value, nên branch markup theo type tĩnh (text/email/password/number);
   // các thuộc tính chung gom qua spread đối tượng shared.
+  //
+  // type="number": KHÔNG dùng bind:value — Svelte ép kiểu sang number/null trên input số,
+  // phá hợp đồng `value: string` (rỗng → null/NaN) và gây nhảy con trỏ khi reformat. Thay
+  // bằng value một chiều + gán thủ công chuỗi DOM trong oninput, giữ value luôn là string.
   interface Props {
     label: string;
     fieldId: string;
@@ -17,6 +21,9 @@
     errorText?: string | null;
     disabled?: boolean;
     required?: boolean;
+    /** Callback một chiều: nhận value mới khi người dùng gõ. Dùng cho form giữ state
+     * bất biến ở model (setField) thay vì bind hai chiều vào getter. */
+    onValueChange?: (value: string) => void;
   }
 
   let {
@@ -31,6 +38,7 @@
     errorText = null,
     disabled = false,
     required = false,
+    onValueChange,
   }: Props = $props();
 </script>
 
@@ -49,6 +57,7 @@
         {required}
         aria-invalid={invalid}
         aria-describedby={describedById}
+        oninput={(event) => onValueChange?.(event.currentTarget.value)}
       />
     {:else if type === 'password'}
       <input
@@ -62,19 +71,24 @@
         {required}
         aria-invalid={invalid}
         aria-describedby={describedById}
+        oninput={(event) => onValueChange?.(event.currentTarget.value)}
       />
     {:else if type === 'number'}
       <input
         class="input"
         id={fieldId}
         type="number"
-        bind:value
+        {value}
         {placeholder}
         inputmode={inputmode ?? 'numeric'}
         {disabled}
         {required}
         aria-invalid={invalid}
         aria-describedby={describedById}
+        oninput={(event) => {
+          value = event.currentTarget.value;
+          onValueChange?.(event.currentTarget.value);
+        }}
       />
     {:else}
       <input
@@ -89,6 +103,7 @@
         {required}
         aria-invalid={invalid}
         aria-describedby={describedById}
+        oninput={(event) => onValueChange?.(event.currentTarget.value)}
       />
     {/if}
   {/snippet}

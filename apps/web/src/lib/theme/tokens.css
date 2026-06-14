@@ -1,0 +1,37 @@
+/* Design tokens dưới dạng CSS custom properties (nguồn giá trị: theme/tokens.ts).
+   Mọi component web tham chiếu var(--*) thay vì hardcode palette/spacing/radius. */
+:root {
+  /* Nền */
+  --color-bg-primary: #0b0b0d;
+  --color-bg-elevated: #111214;
+  --color-bg-surface: #1a1b1e;
+
+  /* Chữ */
+  --color-text-primary: #f3f0e7;
+  --color-text-secondary: #d9d9df;
+  --color-text-muted: #8f8b80;
+
+  /* Nhấn */
+  --color-accent-gold: #c8b780;
+  --color-accent-gold-soft: #e3d2a2;
+  --color-accent-ai: #6e5fa6;
+  --color-accent-danger: #d36a5b;
+
+  /* Viền */
+  --color-border-hairline: #2c2924;
+  --color-border-gold: #6f6140;
+
+  /* Khoảng cách */
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 20px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+
+  /* Bo góc */
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+}

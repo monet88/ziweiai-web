@@ -12,6 +12,7 @@ scripts/bin/harness-cli.exe
 
 # Agent / tooling local dirs.
 .claude/*
+.codex/*
 .agents/*
 .agent
 .kiro

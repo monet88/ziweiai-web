@@ -16,6 +16,9 @@
     helperText?: string | null;
     errorText?: string | null;
     disabled?: boolean;
+    /** Callback một chiều: nhận value mới khi người dùng đổi lựa chọn. Dùng cho form
+     * giữ state bất biến ở model (setField) thay vì bind hai chiều vào getter. */
+    onValueChange?: (value: string) => void;
   }
 
   let {
@@ -26,6 +29,7 @@
     helperText = null,
     errorText = null,
     disabled = false,
+    onValueChange,
   }: Props = $props();
 </script>
 
@@ -38,6 +42,7 @@
       {disabled}
       aria-invalid={invalid}
       aria-describedby={describedById}
+      onchange={(event) => onValueChange?.(event.currentTarget.value)}
     >
       {#each options as option (option.value)}
         <option value={option.value}>{option.label}</option>

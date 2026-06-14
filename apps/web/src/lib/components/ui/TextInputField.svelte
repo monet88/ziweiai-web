@@ -17,6 +17,9 @@
     errorText?: string | null;
     disabled?: boolean;
     required?: boolean;
+    /** Callback một chiều: nhận value mới khi người dùng gõ. Dùng cho form giữ state
+     * bất biến ở model (setField) thay vì bind hai chiều vào getter. */
+    onValueChange?: (value: string) => void;
   }
 
   let {
@@ -31,6 +34,7 @@
     errorText = null,
     disabled = false,
     required = false,
+    onValueChange,
   }: Props = $props();
 </script>
 
@@ -49,6 +53,7 @@
         {required}
         aria-invalid={invalid}
         aria-describedby={describedById}
+        oninput={(event) => onValueChange?.(event.currentTarget.value)}
       />
     {:else if type === 'password'}
       <input
@@ -62,6 +67,7 @@
         {required}
         aria-invalid={invalid}
         aria-describedby={describedById}
+        oninput={(event) => onValueChange?.(event.currentTarget.value)}
       />
     {:else if type === 'number'}
       <input
@@ -75,6 +81,7 @@
         {required}
         aria-invalid={invalid}
         aria-describedby={describedById}
+        oninput={(event) => onValueChange?.(event.currentTarget.value)}
       />
     {:else}
       <input
@@ -89,6 +96,7 @@
         {required}
         aria-invalid={invalid}
         aria-describedby={describedById}
+        oninput={(event) => onValueChange?.(event.currentTarget.value)}
       />
     {/if}
   {/snippet}

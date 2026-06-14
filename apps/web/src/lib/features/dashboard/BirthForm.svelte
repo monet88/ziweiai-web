@@ -232,4 +232,12 @@
   .grid-3 {
     grid-template-columns: 1fr 1fr 1fr;
   }
+
+  /* Màn hẹp (<480px): gom lưới về 1 cột để ô nhập không bị bóp hẹp/vỡ giao diện. */
+  @media (max-width: 480px) {
+    .grid-2,
+    .grid-3 {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>

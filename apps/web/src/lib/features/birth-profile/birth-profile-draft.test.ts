@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildCreateChartRequest, type BirthFormDraft } from './birth-profile-draft';
+import {
+  buildCreateChartRequest,
+  createBirthFormDraft,
+  isBirthFormDraftValid,
+  validateBirthFormDraft,
+  type BirthFormDraft,
+} from './birth-profile-draft';
 
 function buildDraft(overrides?: Partial<BirthFormDraft>): BirthFormDraft {
   return {
@@ -58,5 +64,69 @@ describe('buildCreateChartRequest', () => {
 
     expect(request.birthInput.time.hour).toBeNaN();
     expect(request.birthInput.time.minute).toBeNaN();
+  });
+});
+
+describe('createBirthFormDraft', () => {
+  it('defaults to Tử Vi when no system passed and leaves coordinates blank', () => {
+    const draft = createBirthFormDraft();
+
+    expect(draft.chartSystem).toBe('zi-wei-dou-shu');
+    expect(draft.latitude).toBe('');
+    expect(draft.longitude).toBe('');
+    expect(draft.timezone).toBe('');
+  });
+
+  it('honours the initial chart system from a system wrapper', () => {
+    const draft = createBirthFormDraft('ba-zi');
+
+    expect(draft.chartSystem).toBe('ba-zi');
+  });
+});
+
+describe('validateBirthFormDraft', () => {
+  it('returns no errors for a fully valid draft', () => {
+    expect(validateBirthFormDraft(buildDraft())).toEqual({});
+    expect(isBirthFormDraftValid(buildDraft())).toBe(true);
+  });
+
+  it('flags blank required date fields with Vietnamese messages', () => {
+    const errors = validateBirthFormDraft(buildDraft({ birthYear: '', birthMonth: '', birthDay: '' }));
+
+    expect(errors.birthYear).toBeTruthy();
+    expect(errors.birthMonth).toBeTruthy();
+    expect(errors.birthDay).toBeTruthy();
+    expect(isBirthFormDraftValid(buildDraft({ birthYear: '' }))).toBe(false);
+  });
+
+  it('rejects out-of-range date components', () => {
+    const errors = validateBirthFormDraft(buildDraft({ birthMonth: '13', birthDay: '40' }));
+
+    expect(errors.birthMonth).toBeTruthy();
+    expect(errors.birthDay).toBeTruthy();
+  });
+
+  it('skips hour/minute validation when birth time is unknown', () => {
+    const errors = validateBirthFormDraft(buildDraft({ hour: '', minute: '', isUnknownTime: true }));
+
+    expect(errors.hour).toBeUndefined();
+    expect(errors.minute).toBeUndefined();
+  });
+
+  it('requires hour and minute when birth time is known', () => {
+    const errors = validateBirthFormDraft(buildDraft({ hour: '', minute: '', isUnknownTime: false }));
+
+    expect(errors.hour).toBeTruthy();
+    expect(errors.minute).toBeTruthy();
+  });
+
+  it('rejects out-of-range coordinates and missing timezone', () => {
+    const errors = validateBirthFormDraft(
+      buildDraft({ latitude: '120', longitude: '-200', timezone: '   ' }),
+    );
+
+    expect(errors.latitude).toBeTruthy();
+    expect(errors.longitude).toBeTruthy();
+    expect(errors.timezone).toBeTruthy();
   });
 });

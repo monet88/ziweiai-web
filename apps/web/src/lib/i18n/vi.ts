@@ -154,6 +154,17 @@ export const viCopy = {
     year: 'Năm',
     ziWeiOption: 'Tử Vi Đẩu Số',
   },
+  dashboardValidation: {
+    birthYearInvalid: 'Năm sinh phải là số từ 1 đến 9999.',
+    birthMonthInvalid: 'Tháng sinh phải là số từ 1 đến 12.',
+    birthDayInvalid: 'Ngày sinh phải là số từ 1 đến 31.',
+    hourInvalid: 'Giờ sinh phải là số từ 0 đến 23.',
+    minuteInvalid: 'Phút sinh phải là số từ 0 đến 59.',
+    latitudeInvalid: 'Vĩ độ phải là số từ -90 đến 90.',
+    longitudeInvalid: 'Kinh độ phải là số từ -180 đến 180.',
+    timezoneRequired: 'Vui lòng nhập múi giờ (ví dụ Asia/Ho_Chi_Minh).',
+    formInvalid: 'Vui lòng kiểm tra lại các trường được đánh dấu trước khi lập lá số.',
+  },
   explanation: {
     sectionsTitle: 'Luận giải theo từng cung',
     sectionsHint: 'Chọn một mục để AI luận giải riêng cho cung hoặc vận hạn đó. Mỗi mục chỉ sinh khi bạn mở.',

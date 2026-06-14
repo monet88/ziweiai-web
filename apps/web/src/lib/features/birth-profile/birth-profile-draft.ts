@@ -58,11 +58,14 @@ export function createBirthFormDraft(initialChartSystem: ChartSystem = 'zi-wei-d
 
 function isIntInRange(value: string, min: number, max: number): boolean {
   const trimmed = value.trim();
-  if (trimmed === '') {
+  // Chỉ chấp nhận chuỗi chữ số thập phân thuần. Number()/Number.isInteger sẽ nuốt cả
+  // hex (0x12), ký hiệu khoa học (1e1) và thập phân (12.0) — không phải thứ người dùng
+  // gõ cho ngày/tháng/năm/giờ/phút. Các trường này đều không âm nên không cần dấu '-'.
+  if (!/^\d+$/.test(trimmed)) {
     return false;
   }
-  const parsed = Number(trimmed);
-  return Number.isInteger(parsed) && parsed >= min && parsed <= max;
+  const parsed = Number.parseInt(trimmed, 10);
+  return parsed >= min && parsed <= max;
 }
 
 function isNumberInRange(value: string, min: number, max: number): boolean {

@@ -14,7 +14,7 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 import type { ChartSystem, CreateChartResponse } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { createChart } from '$lib/api-client';
+import { ApiError, createChart } from '$lib/api-client';
 import {
   buildCreateChartRequest,
   createBirthFormDraft,
@@ -47,7 +47,7 @@ export function createDashboardModel(options: DashboardModelOptions) {
     mutationFn: async (): Promise<CreateChartResponse> => {
       const token = auth.getAccessToken();
       if (!token) {
-        throw new Error(viCopy.errors.createChartRequiresSignIn);
+        throw new ApiError('unauthorized', viCopy.errors.createChartRequiresSignIn);
       }
       return createChart(token, buildCreateChartRequest(draft));
     },
@@ -89,11 +89,17 @@ export function createDashboardModel(options: DashboardModelOptions) {
       return mutation.isError;
     },
     get errorMessage(): string | null {
-      return mutation.isError
-        ? mutation.error instanceof Error
-          ? mutation.error.message
-          : viCopy.errors.createChartRequiresSignIn
-        : null;
+      if (!mutation.isError) {
+        return null;
+      }
+      // Chỉ ApiError mới đảm bảo message tiếng Việt (fetch-json đã map mọi lỗi HTTP/mạng/
+      // parse sang chuỗi tiếng Việt). Lỗi khác (thư viện, goto, JS thô) có thể là tiếng Anh
+      // → dùng fallback chung để giữ bất biến ngôn ngữ (invariants.md), không rò message gốc.
+      const error = mutation.error;
+      if (error instanceof ApiError) {
+        return error.message;
+      }
+      return viCopy.errors.createChartFailed;
     },
     setField,
     submit,

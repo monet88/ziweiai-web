@@ -129,4 +129,13 @@ describe('validateBirthFormDraft', () => {
     expect(errors.longitude).toBeTruthy();
     expect(errors.timezone).toBeTruthy();
   });
+
+  it('rejects hex, scientific, and decimal notations for integer date fields', () => {
+    // Number('0x12')=18, Number('1e1')=10, Number('12.0')=12 đều lọt Number.isInteger;
+    // chỉ chữ số thập phân thường mới hợp lệ cho ngày/tháng/năm/giờ/phút.
+    expect(validateBirthFormDraft(buildDraft({ birthDay: '0x12' })).birthDay).toBeTruthy();
+    expect(validateBirthFormDraft(buildDraft({ birthMonth: '1e1' })).birthMonth).toBeTruthy();
+    expect(validateBirthFormDraft(buildDraft({ birthDay: '12.0' })).birthDay).toBeTruthy();
+    expect(validateBirthFormDraft(buildDraft({ hour: '0x1' })).hour).toBeTruthy();
+  });
 });

@@ -179,6 +179,7 @@ export const viCopy = {
   },
   errors: {
     authenticationFailed: 'Xác thực không thành công.',
+    createChartFailed: 'Đã xảy ra lỗi khi lập lá số. Vui lòng thử lại sau.',
     createChartRequiresSignIn: 'Bạn cần đăng nhập trước khi lập lá số.',
     missingChartContext: 'Thiếu ngữ cảnh lá số đã đăng nhập.',
     signInFailed: 'Đăng nhập không thành công.',

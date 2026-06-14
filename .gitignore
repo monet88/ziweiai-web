@@ -36,6 +36,11 @@ dist/
 build/
 coverage/
 
+# Playwright E2E output.
+test-results/
+playwright-report/
+.playwright/
+
 # Temp tooling output.
 whyzod.txt
 

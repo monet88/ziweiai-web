@@ -1,5 +1,6 @@
 <script lang="ts">
   import { QueryClientProvider } from '@tanstack/svelte-query';
+  import '$lib/theme/tokens.css';
   import type { LayoutData } from './$types';
   import type { Snippet } from 'svelte';
   import { AuthStore } from '$lib/auth/auth-store.svelte';

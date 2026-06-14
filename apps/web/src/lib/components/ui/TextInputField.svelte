@@ -5,6 +5,10 @@
   // TextInputField: input có nhãn + helper/error, value qua $bindable. Svelte cấm `type`
   // động khi dùng bind:value, nên branch markup theo type tĩnh (text/email/password/number);
   // các thuộc tính chung gom qua spread đối tượng shared.
+  //
+  // type="number": KHÔNG dùng bind:value — Svelte ép kiểu sang number/null trên input số,
+  // phá hợp đồng `value: string` (rỗng → null/NaN) và gây nhảy con trỏ khi reformat. Thay
+  // bằng value một chiều + gán thủ công chuỗi DOM trong oninput, giữ value luôn là string.
   interface Props {
     label: string;
     fieldId: string;
@@ -74,14 +78,17 @@
         class="input"
         id={fieldId}
         type="number"
-        bind:value
+        {value}
         {placeholder}
         inputmode={inputmode ?? 'numeric'}
         {disabled}
         {required}
         aria-invalid={invalid}
         aria-describedby={describedById}
-        oninput={(event) => onValueChange?.(event.currentTarget.value)}
+        oninput={(event) => {
+          value = event.currentTarget.value;
+          onValueChange?.(event.currentTarget.value);
+        }}
       />
     {:else}
       <input

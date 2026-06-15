@@ -15,11 +15,13 @@ import {
   translateMeihuaTrigramKey,
   translateQimenDunKey,
   translateQimenGateKey,
+  translateQimenSpiritKey,
   translateQimenStarKey,
   translateQimenYuanKey,
   type ChartDetailResponse,
 } from '@ziweiai/contracts';
 import { normalizeLegacyLunarDate } from './legacy-lunar-date';
+import { normalizeLegacyDisplayName } from '../../text/cjk';
 import { translateZiweiKey, tryTranslateZiweiKey } from '../../i18n/ziwei-terms-vi';
 import { viCopy } from '../../i18n/vi';
 import { buildPalaceViews, type PalaceView, type StarTokenView } from './palace-view-builder';
@@ -73,6 +75,17 @@ function humanizeKey(value: string | null | undefined): string {
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/_/g, ' ')
     .trim();
+}
+
+// Guard chữ Hán cho chuỗi tự do từ engine (naYin, tên/ký hiệu quẻ, phục thần Lục Hào…).
+// Các trường này KHÔNG key-hóa nên có thể mang chữ Hán; theo bất biến ngôn ngữ
+// (invariants.md §2) phải qua CJK guard + fallback "Thuật ngữ cũ" trước khi ra UI.
+function guardFreeText(value: string | null | undefined): string {
+  if (!value) {
+    return '';
+  }
+
+  return normalizeLegacyDisplayName(value);
 }
 
 function formatStructuredLunarDate(value: unknown): string {
@@ -289,7 +302,7 @@ export function formatBaziPillarDescription(pillar: NonNullable<ChartDetailRespo
     `${translateBaziKey(pillar.heavenlyStemElementKey)} - ${stemTenGod}`,
     `${translateBaziKey(pillar.earthlyBranchElementKey)} - ${branchTenGods || 'chưa định danh'}`,
     `Tàng can: ${hiddenStems || 'không có'}`,
-    `Nạp âm: ${pillar.naYin}`,
+    `Nạp âm: ${guardFreeText(pillar.naYin)}`,
   ].join(' | ');
 }
 
@@ -311,10 +324,10 @@ export function formatBaziMetaItems(snapshot: ChartDetailResponse['snapshot']): 
 
   return [
     { label: 'Ngày chủ', value: translateBaziKey(snapshot.bazi.dayMasterHeavenlyStemKey) },
-    { label: 'Thai nguyên', value: `${formatBaziStemBranchLabel(snapshot.bazi.taiYuan)} | ${snapshot.bazi.taiYuan.naYin}` },
-    { label: 'Thai tức', value: `${formatBaziStemBranchLabel(snapshot.bazi.taiXi)} | ${snapshot.bazi.taiXi.naYin}` },
-    { label: 'Mệnh cung', value: `${formatBaziStemBranchLabel(snapshot.bazi.mingGong)} | ${snapshot.bazi.mingGong.naYin}` },
-    { label: 'Thân cung', value: `${formatBaziStemBranchLabel(snapshot.bazi.shenGong)} | ${snapshot.bazi.shenGong.naYin}` },
+    { label: 'Thai nguyên', value: `${formatBaziStemBranchLabel(snapshot.bazi.taiYuan)} | ${guardFreeText(snapshot.bazi.taiYuan.naYin)}` },
+    { label: 'Thai tức', value: `${formatBaziStemBranchLabel(snapshot.bazi.taiXi)} | ${guardFreeText(snapshot.bazi.taiXi.naYin)}` },
+    { label: 'Mệnh cung', value: `${formatBaziStemBranchLabel(snapshot.bazi.mingGong)} | ${guardFreeText(snapshot.bazi.mingGong.naYin)}` },
+    { label: 'Thân cung', value: `${formatBaziStemBranchLabel(snapshot.bazi.shenGong)} | ${guardFreeText(snapshot.bazi.shenGong.naYin)}` },
   ];
 }
 
@@ -361,7 +374,7 @@ export function formatLiuyaoLineDescription(
   ];
 
   if (line.hiddenSpirit) {
-    segments.push(`Phục thần: ${line.hiddenSpirit}`);
+    segments.push(`Phục thần: ${guardFreeText(line.hiddenSpirit)}`);
   }
 
   return segments.join(' | ');
@@ -450,18 +463,52 @@ export function getQimenPalaceByIndex(
   return snapshot.qimen?.palaces.find((palace) => palace.palaceIndex === palaceIndex) ?? null;
 }
 
+export type QimenPalaceCellView = {
+  palaceIndex: number;
+  star: string | null;
+  companionStar: string | null;
+  gate: string | null;
+  spirit: string | null;
+  heavenStem: string | null;
+  earthStem: string | null;
+};
+
+// Dựng dữ liệu hiển thị cho ô cửu cung Kỳ Môn theo bố cục Lạc Thư (QIMEN_LUOSHU_ORDER).
+// Trung cung (palaceIndex 5) không có cửa/thần → các trường tương ứng là null. Mọi key
+// đã dịch tiếng Việt qua bảng thuật ngữ; can địa/thiên bàn qua translateBaziKey.
+export function buildQimenPalaceCells(
+  snapshot: ChartDetailResponse['snapshot'],
+): QimenPalaceCellView[] {
+  if (!snapshot.qimen) {
+    return [];
+  }
+
+  return QIMEN_LUOSHU_ORDER.map((palaceIndex) => {
+    const palace = getQimenPalaceByIndex(snapshot, palaceIndex);
+    return {
+      palaceIndex,
+      star: palace?.starKey ? translateQimenStarKey(palace.starKey) : null,
+      companionStar: palace?.companionStarKey ? translateQimenStarKey(palace.companionStarKey) : null,
+      gate: palace?.gateKey ? translateQimenGateKey(palace.gateKey) : null,
+      spirit: palace?.spiritKey ? translateQimenSpiritKey(palace.spiritKey) : null,
+      heavenStem: palace?.tianPanStemKey ? translateBaziKey(palace.tianPanStemKey) : null,
+      earthStem: palace?.diPanStemKey ? translateBaziKey(palace.diPanStemKey) : null,
+    };
+  });
+}
+
 export function formatLiuyaoHexagramItems(snapshot: ChartDetailResponse['snapshot']): SummaryItem[] {
   if (!snapshot.liuyao) {
     return [];
   }
 
   const items: SummaryItem[] = [
-    { label: 'Quẻ gốc', value: snapshot.liuyao.baseHexagram.name },
-    { label: 'Quẻ biến', value: snapshot.liuyao.changedHexagram.name },
+    { label: 'Quẻ gốc', value: guardFreeText(snapshot.liuyao.baseHexagram.name) },
+    { label: 'Quẻ biến', value: guardFreeText(snapshot.liuyao.changedHexagram.name) },
   ];
 
   if (snapshot.liuyao.nuclearHexagram) {
-    items.push({ label: 'Quẻ hỗ', value: snapshot.liuyao.nuclearHexagram.name });
+    items.push({ label: 'Quẻ hỗ', value: guardFreeText(snapshot.liuyao.nuclearHexagram.name) });
   }
 
   return items;

@@ -10,10 +10,15 @@
   import { viCopy } from '$lib/i18n/vi';
   import { createChartDetailModel } from '$lib/features/chart/chart-detail-model.svelte';
   import { createExplanationModel } from '$lib/features/explanation/explanation-model.svelte';
-  import { shouldRenderZiweiBoard } from '$lib/features/chart/chart-detail-view-state';
-  import { formatCenterSummaryItems, formatChartSummaryItems, formatPillarItems } from '$lib/features/chart/chart-display';
+  import { shouldRenderZiweiBoard, getChartDetailState } from '$lib/features/chart/chart-detail-view-state';
+  import { formatCenterSummaryItems, formatChartSummaryItems } from '$lib/features/chart/chart-display';
   import { getChartDetailSelectionHint } from '$lib/features/chart/chart-explanation-intent';
   import PalaceGrid from '$lib/features/chart/PalaceGrid.svelte';
+  import BaziDetailCard from '$lib/features/chart/BaziDetailCard.svelte';
+  import MeihuaDetailCard from '$lib/features/chart/MeihuaDetailCard.svelte';
+  import LiuyaoDetailCard from '$lib/features/chart/LiuyaoDetailCard.svelte';
+  import DaliurenDetailCard from '$lib/features/chart/DaliurenDetailCard.svelte';
+  import QimenDetailCard from '$lib/features/chart/QimenDetailCard.svelte';
   import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -42,9 +47,9 @@
   const copy = viCopy.chart;
 
   const showBoard = $derived(shouldRenderZiweiBoard(detail.chartSystem, detail.palaces.length));
+  const detailState = $derived(getChartDetailState(detail.chartSystem, detail.palaces.length));
   const summaryItems = $derived(detail.snapshot ? formatChartSummaryItems(detail.snapshot.summary) : []);
   const centerItems = $derived(detail.snapshot ? formatCenterSummaryItems(detail.snapshot.summary) : []);
-  const pillarItems = $derived(detail.snapshot ? formatPillarItems(detail.snapshot) : []);
   const selectionHint = $derived(getChartDetailSelectionHint(copy, detail.selectedPalace?.name ?? null));
 
   const explanationButtonLabel = $derived(
@@ -96,11 +101,18 @@
         title={copy.twelvePalaceUnavailableTitle}
         description={copy.twelvePalaceUnavailableDescription}
       />
+    {:else if detailState === 'pillars'}
+      <BaziDetailCard snapshot={detail.snapshot} />
+    {:else if detailState === 'hexagram'}
+      <MeihuaDetailCard snapshot={detail.snapshot} />
+    {:else if detailState === 'liuyao'}
+      <LiuyaoDetailCard snapshot={detail.snapshot} />
+    {:else if detailState === 'daliuren'}
+      <DaliurenDetailCard snapshot={detail.snapshot} />
+    {:else if detailState === 'qimen'}
+      <QimenDetailCard snapshot={detail.snapshot} />
     {:else}
       <SummaryCard title={copy.chartSummary} items={summaryItems} />
-      {#if pillarItems.length > 0}
-        <SummaryCard title={copy.pillarsTitle} items={pillarItems} />
-      {/if}
     {/if}
 
     <section class="explanation-section" aria-labelledby="explanation-title">

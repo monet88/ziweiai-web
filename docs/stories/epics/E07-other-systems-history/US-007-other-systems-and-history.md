@@ -57,4 +57,31 @@ state, ghi gap vào backlog (không crash).
 
 ## Evidence
 
-_(điền sau khi implement)_
+Implement xong toàn bộ phạm vi story:
+
+- **5 detail card** (`BaziDetailCard`, `MeihuaDetailCard`, `LiuyaoDetailCard`,
+  `DaliurenDetailCard`, `QimenDetailCard`) — presentational thuần, dispatch theo
+  `getChartDetailState(chartSystem)` trong `ChartDetailScreen`. Kỳ Môn dựng lưới cửu cung 3x3
+  (Lạc Thư) qua `buildQimenPalaceCells`.
+- **5 route wrapper** (`/bazi`, `/meihua`, `/liuyao`, `/daliuren`, `/qimen`) tái dùng
+  `SystemChartScreen` (mỏng) + `dashboard-model` + `BirthForm` với `initialChartSystem` riêng —
+  KHÔNG fork logic tạo lá số.
+- **Trang `/history`** đầy đủ (limit 20) + `HistoryList`; nav lối tắt 5 hệ + link lịch sử ở
+  dashboard sidebar (thẻ `<a href={resolve(...)}>`).
+- **Guard Hán toàn cục**: `guardFreeText` (qua `normalizeLegacyDisplayName`) cho chuỗi tự do từ
+  engine (naYin, tên/ký hiệu quẻ Lục Hào, phục thần). Test `no-han-characters.test.ts` dựng
+  fixtures 5 hệ con (key hợp lệ) chạy mọi formatter + quét `\p{Script=Han}` = 0.
+
+Validation đã chạy xanh:
+
+- Unit: `pnpm -F @ziweiai/web test` → 103 pass (16 file), gồm `no-han-characters.test.ts`.
+- Platform: `pnpm -F @ziweiai/web check` (0/0), `lint` (0), `build` xanh.
+- Bảo mật: grep `SERVICE_ROLE|DEEPSEEK|GEMINI|OPENAI_COMPAT` trong `src/` chỉ thấy comment cảnh
+  báo ở `env.ts` (tên biến, không phải giá trị); grep trong `build/` → 0.
+- E2E: `us-007-other-systems-history.spec.ts` (backend NestJS + Supabase local thật) → 1 pass,
+  5 hệ: tạo → chi tiết VN không Hán → history thấy item mới.
+
+Bug phát hiện qua E2E (đã fix): tạo lá số không invalidate query `['history']` (staleTime 30s)
+→ tạo liên tiếp nhiều hệ thì `/history` trả cache cũ thiếu lá số mới. Fix: `dashboard-model`
+nhận `queryClient` + `invalidateQueries({ queryKey: ['history'] })` trong `onSuccess`. Chi tiết:
+`docs/postmortems/2026-06-15-history-cache-staleness.md`.

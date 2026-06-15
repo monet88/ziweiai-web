@@ -5,7 +5,7 @@
   //
   // Token đọc tươi trong queryFn (bất biến token tươi §3); queryKey gắn token để cache
   // tách theo user. Chỉ hiển thị item có chartRecord (id thật) — mục chỉ-luận-giải không
-  // điều hướng được tới trang lá số.
+  // điều hướng được tới trang lá số. Nhiều view cùng một lá số được gộp về một mục.
   import { createQuery } from '@tanstack/svelte-query';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -13,6 +13,7 @@
   import { getAuthStore } from '$lib/auth/auth-context';
   import { NoticeBanner, EmptyStateCard, Spinner } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
+  import { dedupeHistoryChartEntries } from './dashboard-history';
 
   interface Props {
     /** Mở form tạo lá số đầu tiên khi lịch sử rỗng (cuộn tới BirthForm). */
@@ -35,19 +36,16 @@
     enabled: auth.isAuthenticated,
   }));
 
-  // Chỉ giữ mục có chartRecord (id thật để điều hướng). Ngày hiển thị theo locale vi-VN.
+  // Gộp nhiều view cùng một lá số về một mục (dedupeHistoryChartEntries — hàm thuần, có unit
+  // test) rồi map sang nhãn hiển thị: hệ thuật số tiếng Việt + ngày theo locale vi-VN. Key
+  // theo chartRecord.id sau khi dedupe nên không còn each_key_duplicate.
   const chartItems = $derived(
-    (history.data?.items ?? [])
-      .filter((item) => item.chartRecord !== null)
-      .map((item) => {
-        const record = item.chartRecord!;
-        return {
-          id: record.id,
-          systemLabel: viCopy.chartSystem[record.chartSystem],
-          createdAtLabel: new Date(record.createdAt).toLocaleDateString('vi-VN'),
-          hasExplanation: item.explanationResult !== null,
-        };
-      }),
+    dedupeHistoryChartEntries(history.data?.items ?? []).map((entry) => ({
+      id: entry.chartRecord.id,
+      systemLabel: viCopy.chartSystem[entry.chartRecord.chartSystem],
+      createdAtLabel: new Date(entry.chartRecord.createdAt).toLocaleDateString('vi-VN'),
+      hasExplanation: entry.hasExplanation,
+    })),
   );
 
   function openChart(id: string): void {

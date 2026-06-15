@@ -74,10 +74,14 @@
         oninput={(event) => onValueChange?.(event.currentTarget.value)}
       />
     {:else if type === 'number'}
+      <!-- step="any": bỏ ràng buộc bước nhảy mặc định (step=1) của browser, vốn coi số thập
+           phân (vĩ độ/kinh độ như 10.762622) là invalid và chặn submit im lặng. Nguồn validation
+           thật là validateBirthFormDraft (client) + Zod (backend); browser không phải nguồn. -->
       <input
         class="input"
         id={fieldId}
         type="number"
+        step="any"
         {value}
         {placeholder}
         inputmode={inputmode ?? 'numeric'}

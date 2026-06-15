@@ -47,23 +47,25 @@ export type PalaceSelection = ReturnType<typeof createPalaceSelection>;
 
 export interface ChartDetailModelOptions {
   auth: AuthStore;
-  chartId: string;
+  /** Getter chartId (route param) — đọc reactive trong queryKey/queryFn, giữ phản xạ Svelte 5. */
+  getChartId: () => string;
 }
 
 export function createChartDetailModel(options: ChartDetailModelOptions) {
   const auth = options.auth;
-  const chartId = options.chartId;
 
   const query = createQuery(() => ({
-    queryKey: ['chart-detail', auth.getAccessToken(), chartId],
+    queryKey: ['chart-detail', auth.getAccessToken(), options.getChartId()],
     queryFn: (): Promise<ChartDetailResponse> => {
       const token = auth.getAccessToken();
       if (!token) {
         throw new Error(viCopy.errors.missingChartContext);
       }
-      return fetchChartDetail(token, chartId);
+      return fetchChartDetail(token, options.getChartId());
     },
-    enabled: auth.isAuthenticated && chartId.length > 0,
+    // Chờ có token thật: isAuthenticated có thể true trong khoảnh khắc token chưa nạp/đang
+    // refresh — bật query lúc đó khiến queryFn ném lỗi và hiện banner thừa cho người dùng.
+    enabled: auth.isAuthenticated && !!auth.getAccessToken() && options.getChartId().length > 0,
   }));
 
   const selection = createPalaceSelection();
@@ -77,7 +79,9 @@ export function createChartDetailModel(options: ChartDetailModelOptions) {
   );
 
   return {
-    chartId,
+    get chartId(): string {
+      return options.getChartId();
+    },
     get isPending(): boolean {
       return query.isPending;
     },

@@ -26,11 +26,10 @@
 
   const auth = getAuthStore();
 
-  // chartId chỉ cần đọc giá trị ban đầu: +page.svelte bọc màn này trong {#key chartId}
-  // nên đổi lá số sẽ remount component (model mới, selectedPalaceKey reset). Cố ý không
-  // reactive ở đây — bỏ qua cảnh báo state_referenced_locally.
-  // svelte-ignore state_referenced_locally
-  const detail = createChartDetailModel({ auth, chartId });
+  // getChartId là getter reactive (Svelte 5): model luôn đọc chartId mới nhất trong
+  // queryKey/queryFn mà không cần snapshot lúc mount. +page.svelte vẫn bọc {#key chartId}
+  // để reset selectedPalaceKey khi đổi lá số.
+  const detail = createChartDetailModel({ auth, getChartId: () => chartId });
 
   // chartSnapshotId cho luận giải = chartRecord.id (route chartId). Dashboard điều hướng
   // bằng response.chartRecord.id, và createExplanationRequest.chartSnapshotId là id bản ghi.
@@ -114,7 +113,7 @@
         onclick={explanation.generate}
       />
 
-      {#if explanation.isPending}
+      {#if explanation.isPending && !explanation.hasResult}
         <p class="status">{viCopy.explanation.statusPending}</p>
       {:else if explanation.isError && explanation.errorMessage}
         <NoticeBanner tone="danger" message={explanation.errorMessage} />

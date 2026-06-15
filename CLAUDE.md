@@ -129,3 +129,89 @@ Lưu ý: CLAUDE.md gốc tham chiếu `docs/TOOL_REGISTRY.md` nhưng file đó h
 
 Dừng và xác nhận với người dùng trước. Ghi decision durable: tạo `docs/decisions/NNNN-*.md` từ `docs/templates/decision.md` + `harness-cli.exe decision add`. Không tự nới fail-fast `translateZiweiKey`, không tự tắt test quét Hán, không tự nới boundary import của web.
 </important>
+
+## Skill Reference — bảng tham chiếu nhanh
+
+Gọi skill **TRƯỚC** khi hành động, không gọi sau khi đã làm xong. Skill là công cụ chuyên biệt — dùng đúng skill tiết kiệm thời gian hơn làm tay.
+
+### A. Trước khi code (nạp ngữ cảnh + đánh giá)
+
+| Skill | Khi gọi | Tác dụng |
+|---|---|---|
+| **find-docs** | Cần tra cứu API/SDK/library/framework (Svelte, TanStack, Supabase, NestJS, Zod, Playwright, ...) — kể cả thứ "đã biết" vì training data có thể cũ | Gọi Context7 CLI lấy docs chính xác phiên bản đang dùng. Luôn gọi `library` trước rồi `docs`. Không dùng cho logic nghiệp vụ |
+| **scrutinize** | Review plan/PR/design/approach — cần góc nhìn outsider kiểm tra tính đúng đắn trước khi code | Phân tích intent → trace code path → xác minh change làm đúng điều nó hứa. Dùng trước khi implement task lớn hoặc review code người khác |
+| **scan** | Trước khi bắt đầu phase mới, muốn biết codebase có vấn đề gì đang tồn tại | Quét toàn bộ codebase tìm issues + security problems |
+| **learnings** | Muốn biết team quan tâm gì trong code review, pattern nào được ưa thích | Xem cubic learnings của repo |
+| **wiki** | Cần đọc tài liệu wiki của repo trên cubic | Browse cubic wiki documentation |
+
+### B. Trong khi code (implement Svelte 5 runes)
+
+| Skill | Khi gọi | Tác dụng |
+|---|---|---|
+| **svelte-code-writer** | Tạo/sửa BẤT KỲ file `.svelte` hoặc `.svelte.ts` nào — luôn gọi trước khi viết | Validate Svelte 5 runes, tránh sai `$state`/`$derived`/`$effect`/`$props`. Đây là skill TỔNG — tự route đến các skill con bên dưới khi cần |
+| **svelte-runes** | Dùng `$state`, `$derived`, `$effect`, `$state.raw`, `$derived.by`, `$props`, `$bindable` | Đảm bảo đúng pattern reactive Svelte 5, không lẫn V1 (`@State`, `@Prop`, ...) |
+| **svelte-components** | Dùng thư viện component (Bits UI, Ark UI, Melt UI), form pattern, hoặc tích hợp third-party | Hướng dẫn đúng cách dùng custom elements + component libraries |
+| **svelte-styling** | Viết CSS trong Svelte — scoped styles, `var(--*)`, `:global`, style directive | Đảm bảo styling đúng convention Svelte, không dùng Tailwind |
+| **svelte-template-directives** | Dùng snippets, attachments, `{@html}`, `{@debug}`, global DOM events | Hướng dẫn đúng cú pháp template Svelte 5 |
+| **sveltekit-structure** | Làm routing, layouts, error handling, SSR, `svelte:boundary` | Đảm bảo đúng file naming, nested layouts, error boundaries, pending UI |
+| **sveltekit-data-flow** | Dùng load functions, form actions, server/client boundary, serialization, invalidation | Đảm bảo data flow đúng SvelteKit — project này là SPA nên ít dùng, nhưng vẫn cần cho pattern đúng |
+| **svelte-layerchart** | Dùng LayerChart — tooltip snippets, Chart context, gradients, highlights, axes | Chỉ khi làm việc với chart/visualization |
+| **tanstack-query** | Dùng `createQuery` / `createMutation` — đặc biệt khi nghi ngờ behavior (cache, staleTime, reset data lúc pending, ...) | Tra cứu docs TanStack Query chính xác phiên bản, tránh phải đọc source `node_modules` |
+| **supabase** | Làm auth, database, storage, RLS, migration — bất kỳ task nào chạm Supabase | Hướng dẫn đúng API + pattern cho supabase-js, @supabase/ssr, RLS |
+| **typescript-unit-testing** | Viết/sửa `.spec.ts` — mock, AAA pattern, in-memory DB | Đảm bảo test đúng cấu trúc, mock đúng cách |
+
+### C. Ngay sau khi code (review + validate)
+
+Gọi theo thứ tự: **code-review** → **security-review** (nếu code chạm auth/input/API) → chạy test thật → **verify**
+
+| Skill | Khi gọi | Tác dụng |
+|---|---|---|
+| **code-review** | **MANDATORY** — ngay sau khi viết/sửa code xong, trước khi commit | Review diff: correctness bugs + reuse/simplification/efficiency. Mức low/medium: high-confidence findings; high/max: broader coverage |
+| **simplify** | Sau code-review, muốn clean up code — reuse, simplification, altitude | Chỉ quality, không hunt bugs. Áp dụng trực tiếp các finding vào working tree |
+| **security-review** | Code chạm auth, input validation, database, file system, API call, crypto, payment | Audit toàn diện các vấn đề bảo mật. Gọi TRƯỚC khi commit code nhạy cảm |
+| **verify** | Sau khi sửa, cần xác nhận fix hoạt động thật — chạy app + quan sát behavior | Tự động launch app, verify change hoạt động đúng. Dùng sau khi code-review pass |
+| **run** | Cần chạy app để xem change hoạt động (không chỉ test) | Launch app + drive để xem kết quả thật |
+| **debug-mantra** | Debug — gặp bug, lỗi, stack trace, hoặc hành vi không như mong đợi | 4 bước: reproduce → trace fail path → falsify hypothesis → cross-reference. Gọi TRƯỚC khi sửa bug |
+| **run-review** | Muốn chạy cubic AI review trên local changes trước khi push | Chạy cubic review local, không cần PR |
+| **post-mortem** | Sau khi fix xong một bug quan trọng, trước khi đóng ticket | Viết RCA canonical: root cause → mechanism → fix → validation → how it slipped through |
+
+### D. Sau khi merge (ghi vết + docs)
+
+| Skill | Khi gọi | Tác dụng |
+|---|---|---|
+| **post-mortem** | Bug đã fix + merge, cần viết RCA cho team | Viết bài học kỹ thuật — dùng chung với mục debug trên |
+| **management-talk** | Cần báo cáo cho leadership (VP, director, PM, release manager) | Rewrite kỹ thuật → ngôn ngữ quản lý. Dùng cho JIRA comment, Slack post, standup, email |
+| **improve-claude-md** | CLAUDE.md có `important if` không được tuân thủ tốt, hoặc phát hiện thiếu rule | Phân tích + cải thiện CLAUDE.md để tăng adherence |
+
+### E. Meta / Setup (không thường xuyên)
+
+| Skill | Khi gọi | Tác dụng |
+|---|---|---|
+| **update-config** | Cần đổi settings.json — permissions, env vars, hooks | Cấu hình Claude Code harness. Dùng khi thêm allowlist, đổi hook, set env |
+| **fewer-permission-prompts** | Quá nhiều permission prompt khi chạy Bash/MCP | Quét transcript, tạo allowlist ưu tiên trong settings.json |
+| **claude-api** | Cần reference Claude API — model ids, pricing, params, streaming, token counting | Tra cứu API chính xác, tránh dùng giá trị cũ từ training data |
+| **init** | Khởi tạo CLAUDE.md mới cho codebase chưa có | Tạo file CLAUDE.md ban đầu với phân tích codebase |
+| **prompt-master** | Viết/sửa/tối ưu prompt cho LLM, Cursor, Midjourney, hoặc AI tool khác | Sinh prompt tối ưu cho bất kỳ AI tool nào |
+
+### F. KHÔNG dùng trong repo này
+
+| Skill | Lý do |
+|---|---|
+| **notebooklm** | Google NotebookLM — không liên quan |
+| **deep-research** | Fan-out web search — repo này dùng local docs + Context7 + Exa là đủ |
+| **techdebt-finder** | Tìm technical debt — có thể dùng nhưng không phải workflow chính |
+| **svelte-deployment** | Deploy guide — chưa tới phase deploy |
+| **sveltekit-remote-functions** | `query()`, `form()` pattern — project này là SPA, gọi REST API qua `fetchJson`, không dùng SvelteKit server functions |
+| **claude-hud:setup / claude-hud:configure** | Cấu hình HUD statusline — không liên quan đến code |
+| **keybindings-help** | Phím tắt — không liên quan |
+| **loop** | Recurring task — không dùng trong workflow chính |
+| **comments** | Xem cubic review comments trên PR — có thể dùng nhưng niche, thường đọc trực tiếp trên GitHub |
+| **review** | Review PR — trùng với `code-review` + `scrutinize`, dùng hai skill kia chi tiết hơn |
+
+### G. Quy tắc gọi skill
+
+1. **Gọi TRƯỚC, không gọi sau** — skill cần chạy trước khi bạn hành động, không phải để kiểm tra lại việc đã làm.
+2. **Một skill đúng > làm tay nhiều bước** — nếu phân vân giữa tự làm và gọi skill, gọi skill. Một lần `tanstack-query` tiết kiệm 5 phút grep `node_modules`.
+3. **Skill tổng tự route đến skill con** — `svelte-code-writer` sẽ tự gọi `svelte-runes` / `svelte-styling` / ... khi cần. Bạn chỉ cần gọi skill tổng.
+4. **Không gọi skill trùng lặp** — đọc output skill trước khi quyết định gọi thêm skill khác cho cùng vấn đề.
+5. **Code review là MANDATORY** — mỗi lần viết/sửa code xong phải gọi `code-review` (hoặc `security-review` nếu code nhạy cảm) trước khi commit.

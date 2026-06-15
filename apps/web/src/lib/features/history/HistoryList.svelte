@@ -41,10 +41,6 @@
     })),
   );
 
-  function openChart(id: string): void {
-    void goto(resolve(`/charts/${id}`));
-  }
-
   function goToDashboard(): void {
     void goto(resolve('/'));
   }
@@ -68,13 +64,13 @@
   <ul class="list">
     {#each chartItems as item (item.id)}
       <li>
-        <button type="button" class="item" onclick={() => openChart(item.id)}>
+        <a class="item" href={resolve(`/charts/${item.id}`)}>
           <span class="item-system">{item.systemLabel}</span>
           <span class="item-meta">
             {item.createdAtLabel}
             · {item.hasExplanation ? viCopy.history.savedExplanation : viCopy.history.chartOnly}
           </span>
-        </button>
+        </a>
       </li>
     {/each}
   </ul>
@@ -113,6 +109,7 @@
     background: var(--color-bg-surface);
     color: var(--color-text-primary);
     text-align: left;
+    text-decoration: none;
     cursor: pointer;
   }
 

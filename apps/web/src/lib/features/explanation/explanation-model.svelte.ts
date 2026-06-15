@@ -49,6 +49,12 @@ export interface ExplanationModelOptions {
 export function createExplanationModel(options: ExplanationModelOptions) {
   const auth = options.auth;
 
+  // Giữ markdown thành công gần nhất để tránh giật màn hình khi bấm "Tạo lại": TanStack
+  // reset mutation.data về undefined lúc pending, nên nếu render trực tiếp từ mutation.data
+  // thì nội dung cũ biến mất trong lúc chờ. Cập nhật qua onSuccess (callback, KHÔNG $effect
+  // ghi ngược) — UI tiếp tục hiển thị luận giải cũ tới khi kết quả mới về.
+  let lastRenderedMarkdown = $state<string | null>(null);
+
   const mutation = createMutation(() => ({
     mutationFn: async (): Promise<CreateExplanationResponse> => {
       const token = auth.getAccessToken();
@@ -62,12 +68,12 @@ export function createExplanationModel(options: ExplanationModelOptions) {
       const scope = resolvePalaceScope(options.getSelectedPalaceKey());
       return createExplanation(token, buildPalaceExplanationRequest(chartSnapshotId, scope));
     },
+    onSuccess: (data: CreateExplanationResponse): void => {
+      lastRenderedMarkdown = data.result.renderedMarkdown;
+    },
   }));
 
-  // renderedMarkdown dẫn xuất từ kết quả mutation — không lưu trùng state.
-  const renderedMarkdown = $derived<string | null>(
-    mutation.data?.result.renderedMarkdown ?? null,
-  );
+  // renderedMarkdown = kết quả thành công gần nhất (giữ qua lần "Tạo lại" để không giật màn).
 
   function generate(): void {
     if (mutation.isPending) {
@@ -84,10 +90,10 @@ export function createExplanationModel(options: ExplanationModelOptions) {
       return mutation.isError;
     },
     get hasResult(): boolean {
-      return renderedMarkdown !== null;
+      return lastRenderedMarkdown !== null;
     },
     get renderedMarkdown(): string | null {
-      return renderedMarkdown;
+      return lastRenderedMarkdown;
     },
     get errorMessage(): string | null {
       if (!mutation.isError) {

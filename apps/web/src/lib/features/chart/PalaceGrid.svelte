@@ -6,6 +6,7 @@
   // Quyết định bố cục lấy từ helper thuần US-003 `shouldUseWidePalaceGrid` (chỉ tiêu thụ,
   // không viết lại). Định vị ô theo địa chi là việc trình bày (CSS grid), không phải logic.
   import type { Snippet } from 'svelte';
+  import { MediaQuery } from 'svelte/reactivity';
   import type { PalaceView } from '$lib/features/chart/palace-view-builder';
   import { shouldUseWidePalaceGrid } from '$lib/features/chart/palace-grid-layout';
   import PalaceCell from './PalaceCell.svelte';
@@ -37,9 +38,11 @@
     chenEarthly: { row: 2, col: 1 },
   };
 
-  // isWide: đại diện cho điều kiện "đủ chỗ vẽ bàn rộng". Bàn 4x4 cần màn đủ rộng — quyết
-  // định cuối cùng vẫn qua helper US-003 (chỉ bật khi mọi cung có địa chi chuẩn).
-  const useWideBoard = $derived(shouldUseWidePalaceGrid(true, palaces));
+  // isWide: đủ chỗ vẽ bàn 4x4 (màn > 768px — khớp ngưỡng @media bên dưới). Dưới ngưỡng này
+  // bàn 4x4 chật, ép về lưới responsive theo index. Quyết định cuối vẫn qua helper US-003
+  // (chỉ bật khi mọi cung có địa chi chuẩn). MediaQuery reactive nên xoay/đổi cỡ cập nhật ngay.
+  const wideScreen = new MediaQuery('min-width: 769px');
+  const useWideBoard = $derived(shouldUseWidePalaceGrid(wideScreen.current, palaces));
 
   function cellStyle(palace: PalaceView): string {
     const position = BRANCH_GRID_POSITION[palace.earthlyBranchKey];
@@ -104,23 +107,5 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: var(--space-sm);
-  }
-
-  /* Màn hẹp: bàn 4x4 khó đọc → ép về lưới 2 cột để vẫn xem được 12 cung. */
-  @media (max-width: 768px) {
-    .board {
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: none;
-    }
-
-    .board-slot {
-      grid-row: auto !important;
-      grid-column: auto !important;
-    }
-
-    .board-center {
-      grid-row: auto;
-      grid-column: 1 / 3;
-    }
   }
 </style>

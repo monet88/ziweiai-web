@@ -9,7 +9,7 @@
  * Token đọc tươi từ auth store ngay trong mutationFn (không snapshot lúc tạo model),
  * theo bất biến token tươi (invariants.md §3).
  */
-import { createMutation } from '@tanstack/svelte-query';
+import { createMutation, type QueryClient } from '@tanstack/svelte-query';
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 import type { ChartSystem, CreateChartResponse } from '@ziweiai/contracts';
@@ -26,11 +26,18 @@ import { viCopy } from '$lib/i18n/vi';
 
 export interface DashboardModelOptions {
   auth: AuthStore;
+  /**
+   * QueryClient để invalidate cache lịch sử sau khi tạo lá số. Tạo lá số mới làm danh sách
+   * /history cũ (đang trong staleTime 30s) lỗi thời; không invalidate thì người dùng quay
+   * lại lịch sử trong 30s sẽ không thấy lá số vừa tạo (bug lộ khi tạo liên tiếp nhiều hệ).
+   */
+  queryClient: QueryClient;
   initialChartSystem?: ChartSystem;
 }
 
 export function createDashboardModel(options: DashboardModelOptions) {
   const auth = options.auth;
+  const queryClient = options.queryClient;
 
   // draft: state thuần. Khởi tạo từ factory (US-007 truyền initialChartSystem qua wrapper).
   let draft = $state<BirthFormDraft>(createBirthFormDraft(options.initialChartSystem));
@@ -52,6 +59,9 @@ export function createDashboardModel(options: DashboardModelOptions) {
       return createChart(token, buildCreateChartRequest(draft));
     },
     onSuccess: async (response: CreateChartResponse) => {
+      // Danh sách lịch sử cũ (staleTime 30s) giờ thiếu lá số vừa tạo → invalidate để lần
+      // mở /history (hoặc sidebar dashboard) kế tiếp fetch lại và thấy ngay item mới.
+      await queryClient.invalidateQueries({ queryKey: ['history'] });
       // id thật từ bản ghi lá số; mọi hệ vào chung route chi tiết /charts/[chartId].
       await goto(resolve(`/charts/${response.chartRecord.id}`));
     },

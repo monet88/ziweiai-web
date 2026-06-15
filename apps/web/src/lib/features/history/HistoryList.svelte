@@ -25,7 +25,10 @@
       }
       return fetchHistory(token, HISTORY_SCREEN_LIMIT);
     },
-    enabled: auth.isAuthenticated,
+    // Chờ có token thật: isAuthenticated có thể true trong khoảnh khắc token chưa nạp/đang
+    // refresh — bật query lúc đó khiến queryFn ném missingChartContext và hiện banner lỗi
+    // thừa cho người dùng (khớp chart-detail-model.svelte.ts §enabled).
+    enabled: auth.isAuthenticated && !!auth.getAccessToken(),
   }));
 
   // Gộp view cùng lá số → mục duy nhất; nhãn hệ tiếng Việt + ngày locale vi-VN.

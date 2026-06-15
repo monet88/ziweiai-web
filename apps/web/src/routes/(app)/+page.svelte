@@ -18,7 +18,7 @@
   const auth = getAuthStore();
   const queryClient = useQueryClient();
 
-  const model = createDashboardModel({ auth });
+  const model = createDashboardModel({ auth, queryClient });
 
   let isSigningOut = $state(false);
 
@@ -40,6 +40,18 @@
   function focusForm(): void {
     document.getElementById('birth-day')?.focus();
   }
+
+  // Lối tắt tới màn hình từng hệ thuật số khác (US-007). Mỗi route đặt mặc định hệ tương
+  // ứng cho cùng luồng tạo lá số; nhãn tiếng Việt từ viCopy (bất biến ngôn ngữ).
+  // Giữ route literal ở đây (as const) rồi gọi resolve() ngay tại href để vừa qua kiểm tra
+  // kiểu route của SvelteKit vừa thoả eslint svelte/no-navigation-without-resolve.
+  const systemLinks = [
+    { route: '/bazi', label: viCopy.dashboard.openBazi },
+    { route: '/meihua', label: viCopy.dashboard.openMeihua },
+    { route: '/liuyao', label: viCopy.dashboard.openLiuyao },
+    { route: '/daliuren', label: viCopy.dashboard.openDaliuren },
+    { route: '/qimen', label: viCopy.dashboard.openQimen },
+  ] as const;
 </script>
 
 <AppScaffold
@@ -60,8 +72,22 @@
   {/snippet}
 
   {#snippet sidebar()}
+    <nav class="system-nav" aria-label="Hệ thuật số khác">
+      <h2 class="nav-title">Hệ thuật số khác</h2>
+      <div class="nav-links">
+        {#each systemLinks as link (link.route)}
+          <a class="nav-link" href={resolve(link.route)}>
+            {link.label}
+          </a>
+        {/each}
+      </div>
+      <a class="nav-history" href={resolve('/history')}>
+        {viCopy.dashboard.viewHistory}
+      </a>
+    </nav>
     <DashboardSidebar onCreateFirst={focusForm} />
   {/snippet}
+
 
   <BirthForm {model} />
 </AppScaffold>
@@ -77,5 +103,56 @@
   .session-email {
     color: var(--color-text-muted);
     font-size: 13px;
+  }
+
+  .system-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .nav-title {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .nav-link,
+  .nav-history {
+    display: block;
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border-hairline);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    font-size: 14px;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .nav-history {
+    margin-top: var(--space-xs);
+    color: var(--color-accent-gold-soft);
+    font-weight: 600;
+  }
+
+  .nav-link:hover,
+  .nav-history:hover {
+    border-color: var(--color-border-gold);
+  }
+
+  .nav-link:focus-visible,
+  .nav-history:focus-visible {
+    outline: 2px solid var(--color-accent-gold-soft);
+    outline-offset: 1px;
   }
 </style>

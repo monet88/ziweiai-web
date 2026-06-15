@@ -13,6 +13,7 @@
   import { getAuthStore } from '$lib/auth/auth-context';
   import { NoticeBanner, EmptyStateCard, Spinner } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
+  import { dedupeHistoryChartEntries } from './dashboard-history';
 
   interface Props {
     /** Mở form tạo lá số đầu tiên khi lịch sử rỗng (cuộn tới BirthForm). */
@@ -35,40 +36,17 @@
     enabled: auth.isAuthenticated,
   }));
 
-  // Chỉ giữ mục có chartRecord (id thật để điều hướng). Ngày hiển thị theo locale vi-VN.
-  // /history trả MỘT view cho mỗi lần xem (tạo lá số, mỗi lần luận giải...) → nhiều view có
-  // thể trỏ cùng một chartRecord.id. Gộp về một mục/lá số (key duy nhất, tránh each_key_duplicate
-  // và tránh lặp một lá số trong danh sách); giữ view đầu (history sort viewedAt desc = mới nhất),
-  // bật hasExplanation nếu BẤT KỲ view nào của lá số đó có luận giải.
-  const chartItems = $derived.by(() => {
-    const indexByChartId: Record<string, number> = {};
-    const items: {
-      id: string;
-      systemLabel: string;
-      createdAtLabel: string;
-      hasExplanation: boolean;
-    }[] = [];
-    for (const item of history.data?.items ?? []) {
-      if (item.chartRecord === null) {
-        continue;
-      }
-      const record = item.chartRecord;
-      const existingIndex = indexByChartId[record.id];
-      if (existingIndex !== undefined) {
-        items[existingIndex].hasExplanation =
-          items[existingIndex].hasExplanation || item.explanationResult !== null;
-        continue;
-      }
-      indexByChartId[record.id] = items.length;
-      items.push({
-        id: record.id,
-        systemLabel: viCopy.chartSystem[record.chartSystem],
-        createdAtLabel: new Date(record.createdAt).toLocaleDateString('vi-VN'),
-        hasExplanation: item.explanationResult !== null,
-      });
-    }
-    return items;
-  });
+  // Gộp nhiều view cùng một lá số về một mục (dedupeHistoryChartEntries — hàm thuần, có unit
+  // test) rồi map sang nhãn hiển thị: hệ thuật số tiếng Việt + ngày theo locale vi-VN. Key
+  // theo chartRecord.id sau khi dedupe nên không còn each_key_duplicate.
+  const chartItems = $derived(
+    dedupeHistoryChartEntries(history.data?.items ?? []).map((entry) => ({
+      id: entry.chartRecord.id,
+      systemLabel: viCopy.chartSystem[entry.chartRecord.chartSystem],
+      createdAtLabel: new Date(entry.chartRecord.createdAt).toLocaleDateString('vi-VN'),
+      hasExplanation: entry.hasExplanation,
+    })),
+  );
 
   function openChart(id: string): void {
     void goto(resolve(`/charts/${id}`));

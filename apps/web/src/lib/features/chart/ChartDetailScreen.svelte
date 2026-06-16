@@ -6,6 +6,7 @@
   // Bố cục: tải → bàn 12 cung (Tử Vi) hoặc thẻ tóm tắt (hệ khác) → chi tiết cung đang chọn
   // → khối luận giải AI (markdown sanitize qua MarkdownView). Mọi nhãn tiếng Việt qua viCopy.
   import { getAuthStore } from '$lib/auth/auth-context';
+  import { useQueryClient } from '@tanstack/svelte-query';
   import { AppScaffold, PrimaryButton, SummaryCard, NoticeBanner, FullScreenState, EmptyStateCard } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { createChartDetailModel } from '$lib/features/chart/chart-detail-model.svelte';
@@ -30,6 +31,7 @@
   let { chartId }: Props = $props();
 
   const auth = getAuthStore();
+  const queryClient = useQueryClient();
 
   // getChartId là getter reactive (Svelte 5): model luôn đọc chartId mới nhất trong
   // queryKey/queryFn mà không cần snapshot lúc mount. +page.svelte vẫn bọc {#key chartId}
@@ -40,6 +42,7 @@
   // bằng response.chartRecord.id, và createExplanationRequest.chartSnapshotId là id bản ghi.
   const explanation = createExplanationModel({
     auth,
+    queryClient,
     getChartSnapshotId: () => detail.chartId,
     getSelectedPalaceKey: () => detail.selectedPalaceKey,
   });

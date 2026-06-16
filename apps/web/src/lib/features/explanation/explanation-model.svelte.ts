@@ -46,7 +46,7 @@ export interface ExplanationModelOptions {
    * "Chỉ lá số" sai cho tới khi staleTime hết.
    */
   queryClient: QueryClient;
-  /** Id snapshot lá số (chartRecord.snapshot.snapshotId) — khóa luận giải theo lá số. */
+  /** Id bản ghi lá số (chartRecord.id, trùng route param chartId) — khóa luận giải theo lá số. */
   getChartSnapshotId: () => string | null;
   /** nameKey cung đang chọn ở model chi tiết (null = chưa chọn → overview). */
   getSelectedPalaceKey: () => string | null;
@@ -77,7 +77,10 @@ export function createExplanationModel(options: ExplanationModelOptions) {
     },
     onSuccess: async (data: CreateExplanationResponse): Promise<void> => {
       lastRenderedMarkdown = data.result.renderedMarkdown;
-      await queryClient.invalidateQueries({ queryKey: ['history'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['history'] }),
+        queryClient.invalidateQueries({ queryKey: ['chart-detail'] }),
+      ]);
     },
   }));
 

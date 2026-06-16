@@ -57,4 +57,19 @@ describe('explanation-model invalidate history', () => {
 
     expect(qc.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['history'] });
   });
+
+  it('onSuccess invalidates chart-detail query key after createExplanation', async () => {
+    const qc = mockQueryClient();
+    createExplanationModel({
+      auth: mockAuth() as never,
+      queryClient: qc as never,
+      getChartSnapshotId: () => 'chart-456',
+      getSelectedPalaceKey: () => null,
+    });
+
+    const onSuccess = capturedMutationOptions.onSuccess as (data: unknown) => Promise<void>;
+    await onSuccess({ result: { renderedMarkdown: '# Result' } });
+
+    expect(qc.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['chart-detail'] });
+  });
 });

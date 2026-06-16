@@ -13,7 +13,7 @@
  *   toàn bằng palaceScopeSchema.safeParse: key không thuộc enum scope → overview (null),
  *   không bao giờ ép một key lạ vào request.
  */
-import { createMutation } from '@tanstack/svelte-query';
+import { createMutation, type QueryClient } from '@tanstack/svelte-query';
 import {
   palaceScopeSchema,
   type CreateExplanationResponse,
@@ -40,7 +40,13 @@ export function resolvePalaceScope(selectedPalaceKey: string | null): PalaceScop
 
 export interface ExplanationModelOptions {
   auth: AuthStore;
-  /** Id snapshot lá số (chartRecord.snapshot.snapshotId) — khóa luận giải theo lá số. */
+  /**
+   * QueryClient để invalidate cache lịch sử sau khi tạo luận giải. Tạo luận giải mới bật
+   * hasExplanation trong history response; không invalidate thì sidebar/history hiển thị
+   * "Chỉ lá số" sai cho tới khi staleTime hết.
+   */
+  queryClient: QueryClient;
+  /** Id bản ghi lá số (chartRecord.id, trùng route param chartId) — khóa luận giải theo lá số. */
   getChartSnapshotId: () => string | null;
   /** nameKey cung đang chọn ở model chi tiết (null = chưa chọn → overview). */
   getSelectedPalaceKey: () => string | null;
@@ -48,6 +54,7 @@ export interface ExplanationModelOptions {
 
 export function createExplanationModel(options: ExplanationModelOptions) {
   const auth = options.auth;
+  const queryClient = options.queryClient;
 
   // Giữ markdown thành công gần nhất để tránh giật màn hình khi bấm "Tạo lại": TanStack
   // reset mutation.data về undefined lúc pending, nên nếu render trực tiếp từ mutation.data
@@ -68,8 +75,12 @@ export function createExplanationModel(options: ExplanationModelOptions) {
       const scope = resolvePalaceScope(options.getSelectedPalaceKey());
       return createExplanation(token, buildPalaceExplanationRequest(chartSnapshotId, scope));
     },
-    onSuccess: (data: CreateExplanationResponse): void => {
+    onSuccess: async (data: CreateExplanationResponse): Promise<void> => {
       lastRenderedMarkdown = data.result.renderedMarkdown;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['history'] }),
+        queryClient.invalidateQueries({ queryKey: ['chart-detail'] }),
+      ]);
     },
   }));
 

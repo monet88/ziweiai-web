@@ -1,21 +1,23 @@
 <script lang="ts">
-  // PalaceGrid: bàn 12 cung. Khi mọi cung có địa chi chuẩn + màn rộng → bố cục bàn Tử Vi
-  // truyền thống 4x4 (12 cung quanh viền, trung cung ở giữa cho slot tóm tắt bản mệnh).
-  // Ngược lại (legacy thiếu địa chi chuẩn, hoặc màn hẹp) → lưới responsive xếp theo index.
+  // PalaceGrid: bàn 12 cung. Khi mọi cung có địa chi chuẩn → bố cục bàn Tử Vi truyền thống
+  // 4x4 (12 cung quanh viền, trung cung ở giữa cho slot tóm tắt bản mệnh), kể cả trên mobile
+  // (bàn co giãn theo bề rộng + cuộn ngang khi quá hẹp). Ngược lại (legacy thiếu địa chi
+  // chuẩn) → lưới responsive xếp theo index.
   //
-  // Quyết định bố cục lấy từ helper thuần US-003 `shouldUseWidePalaceGrid` (chỉ tiêu thụ,
-  // không viết lại). Định vị ô theo địa chi là việc trình bày (CSS grid), không phải logic.
+  // Quyết định bố cục lấy từ helper thuần `shouldUseSquareBoard` (chỉ tiêu thụ, không viết
+  // lại). Định vị ô theo địa chi là việc trình bày (CSS grid). Tam phương tứ chính của cung
+  // đang chọn tính qua helper thuần `palace-aspect` trên index vòng cung — KHÔNG import core.
   import type { Snippet } from 'svelte';
-  import { MediaQuery } from 'svelte/reactivity';
   import type { PalaceView } from '$lib/features/chart/palace-view-builder';
-  import { shouldUseWidePalaceGrid } from '$lib/features/chart/palace-grid-layout';
+  import { shouldUseSquareBoard } from '$lib/features/chart/palace-grid-layout';
+  import { getPalaceAspectIndices } from '$lib/features/chart/palace-aspect';
   import PalaceCell from './PalaceCell.svelte';
 
   interface Props {
     palaces: PalaceView[];
     selectedPalaceKey: string | null;
     onSelect: (nameKey: string) => void;
-    /** Slot trung cung (tóm tắt bản mệnh) — chỉ hiển thị ở bố cục bàn rộng. */
+    /** Slot trung cung (tóm tắt bản mệnh) — chỉ hiển thị ở bố cục bàn vuông. */
     center?: Snippet;
   }
 
@@ -38,11 +40,23 @@
     chenEarthly: { row: 2, col: 1 },
   };
 
-  // isWide: đủ chỗ vẽ bàn 4x4 (màn > 768px — khớp ngưỡng @media bên dưới). Dưới ngưỡng này
-  // bàn 4x4 chật, ép về lưới responsive theo index. Quyết định cuối vẫn qua helper US-003
-  // (chỉ bật khi mọi cung có địa chi chuẩn). MediaQuery reactive nên xoay/đổi cỡ cập nhật ngay.
-  const wideScreen = new MediaQuery('min-width: 769px');
-  const useWideBoard = $derived(shouldUseWidePalaceGrid(wideScreen.current, palaces));
+  const useSquareBoard = $derived(shouldUseSquareBoard(palaces));
+
+  // index vòng cung của cung đang chọn → tập tam phương tứ chính để làm nổi. null khi chưa
+  // chọn (không cung nào nổi). Dùng Set cho tra cứu O(1) khi render từng ô.
+  const aspectIndices = $derived.by<Set<number>>(() => {
+    const selected = palaces.find((palace) => palace.nameKey === selectedPalaceKey);
+    if (!selected) {
+      return new Set<number>();
+    }
+    return new Set(getPalaceAspectIndices(selected.index));
+  });
+
+  // inAspect = thuộc tam phương tứ chính NHƯNG không phải chính cung đang chọn (chính cung đã
+  // có style `selected` riêng, không tô trùng).
+  function isInAspect(palace: PalaceView): boolean {
+    return palace.nameKey !== selectedPalaceKey && aspectIndices.has(palace.index);
+  }
 
   function cellStyle(palace: PalaceView): string {
     const position = BRANCH_GRID_POSITION[palace.earthlyBranchKey];
@@ -53,20 +67,23 @@
   }
 </script>
 
-{#if useWideBoard}
-  <div class="board" role="group" aria-label="Bàn 12 cung">
-    {#each palaces as palace (palace.nameKey)}
-      <div class="board-slot" style={cellStyle(palace)}>
-        <PalaceCell
-          {palace}
-          selected={palace.nameKey === selectedPalaceKey}
-          {onSelect}
-        />
-      </div>
-    {/each}
-    {#if center}
-      <div class="board-center">{@render center()}</div>
-    {/if}
+{#if useSquareBoard}
+  <div class="board-scroll">
+    <div class="board" role="group" aria-label="Bàn 12 cung">
+      {#each palaces as palace (palace.nameKey)}
+        <div class="board-slot" style={cellStyle(palace)}>
+          <PalaceCell
+            {palace}
+            selected={palace.nameKey === selectedPalaceKey}
+            inAspect={isInAspect(palace)}
+            {onSelect}
+          />
+        </div>
+      {/each}
+      {#if center}
+        <div class="board-center">{@render center()}</div>
+      {/if}
+    </div>
   </div>
 {:else}
   <div class="grid" role="group" aria-label="Bàn 12 cung">
@@ -74,6 +91,7 @@
       <PalaceCell
         {palace}
         selected={palace.nameKey === selectedPalaceKey}
+        inAspect={isInAspect(palace)}
         {onSelect}
       />
     {/each}
@@ -81,11 +99,19 @@
 {/if}
 
 <style>
+  /* Cho bàn vuông cuộn ngang khi màn quá hẹp thay vì vỡ layout (US-008: hiển thị cả mobile). */
+  .board-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .board {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(4, minmax(116px, auto));
     gap: var(--space-sm);
+    /* Bàn co giãn theo container nhưng không bóp các ô dưới mức đọc được → cuộn ngang. */
+    min-width: 560px;
   }
 
   .board-slot {

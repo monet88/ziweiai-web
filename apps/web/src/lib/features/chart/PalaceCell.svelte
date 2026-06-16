@@ -45,6 +45,8 @@
   onclick={() => onSelect(palace.nameKey)}
   onmouseenter={() => onHover?.(palace.nameKey)}
   onmouseleave={() => onHover?.(null)}
+  onfocus={() => onHover?.(palace.nameKey)}
+  onblur={() => onHover?.(null)}
 >
   <header class="cell-head">
     <span class="palace-name">{palace.name}</span>

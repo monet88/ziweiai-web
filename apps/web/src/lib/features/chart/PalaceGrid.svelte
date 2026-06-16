@@ -146,7 +146,7 @@
           preserveAspectRatio="none"
           aria-hidden="true"
         >
-          {#each aspectLines as line, index (index)}
+          {#each aspectLines as line (`${line.x1}-${line.y1}-${line.x2}-${line.y2}`)}
             <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
           {/each}
         </svg>

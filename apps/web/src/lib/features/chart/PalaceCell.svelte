@@ -13,10 +13,14 @@
     selected: boolean;
     /** Cung thuộc tam phương tứ chính của cung đang chọn (không phải chính cung). */
     inAspect?: boolean;
+    /** Cung NGOÀI tam phương tứ chính của cung đang hover → làm mờ (preview tạm, US-011). */
+    dimmed?: boolean;
     onSelect: (nameKey: string) => void;
+    /** Báo cha cung đang hover (preview tam phương tứ chính); null khi rời chuột. */
+    onHover?: (nameKey: string | null) => void;
   }
 
-  let { palace, selected, inAspect = false, onSelect }: Props = $props();
+  let { palace, selected, inAspect = false, dimmed = false, onSelect, onHover }: Props = $props();
 
   // Bỏ token rỗng (legacy thiếu nhãn → ''). Mỗi nhóm render thành một vùng riêng.
   function visibleStars(stars: StarTokenView[]): StarTokenView[] {
@@ -36,8 +40,11 @@
   class="cell"
   class:selected
   class:in-aspect={inAspect}
+  class:dimmed
   aria-pressed={selected}
   onclick={() => onSelect(palace.nameKey)}
+  onmouseenter={() => onHover?.(palace.nameKey)}
+  onmouseleave={() => onHover?.(null)}
 >
   <header class="cell-head">
     <span class="palace-name">{palace.name}</span>
@@ -113,11 +120,23 @@
     color: var(--color-text-primary);
     text-align: left;
     cursor: pointer;
-    transition: border-color 150ms ease, background-color 150ms ease;
+    transition: border-color 150ms ease, background-color 150ms ease, opacity 150ms ease;
   }
 
   .cell:hover {
     border-color: var(--color-border-gold);
+  }
+
+  /* Hover-preview (US-011): cung NGOÀI tam phương tứ chính của cung đang hover mờ đi để làm
+     nổi trọng tâm. Chỉ là tăng cường trực quan — không khoá tương tác chuột/bàn phím. */
+  .cell.dimmed {
+    opacity: 0.35;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cell {
+      transition: none;
+    }
   }
 
   .cell:focus-visible {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shouldUseWidePalaceGrid } from './palace-grid-layout';
+import { shouldUseSquareBoard } from './palace-grid-layout';
 import type { PalaceView } from './palace-view-builder';
 
 function createPalace(branchKey: string): PalaceView {
@@ -21,9 +21,15 @@ function createPalace(branchKey: string): PalaceView {
 }
 
 describe('palace grid layout', () => {
-  it('keeps wide layout only for canonical ziwei earthly branches', () => {
-    expect(shouldUseWidePalaceGrid(true, [createPalace('ziEarthly'), createPalace('chouEarthly')])).toBe(true);
-    expect(shouldUseWidePalaceGrid(true, [createPalace('legacyEarthlyBranch0')])).toBe(false);
-    expect(shouldUseWidePalaceGrid(false, [createPalace('ziEarthly')])).toBe(false);
+  it('dùng bàn vuông khi mọi cung có địa chi Tử Vi chuẩn (không phụ thuộc bề rộng)', () => {
+    expect(shouldUseSquareBoard([createPalace('ziEarthly'), createPalace('chouEarthly')])).toBe(true);
+  });
+
+  it('legacy thiếu địa chi chuẩn → fallback lưới index', () => {
+    expect(shouldUseSquareBoard([createPalace('legacyEarthlyBranch0')])).toBe(false);
+  });
+
+  it('mảng cung rỗng → false', () => {
+    expect(shouldUseSquareBoard([])).toBe(false);
   });
 });

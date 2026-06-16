@@ -130,9 +130,13 @@
   }
 
   /* Hover-preview (US-011): cung NGOÀI tam phương tứ chính của cung đang hover mờ đi để làm
-     nổi trọng tâm. Chỉ là tăng cường trực quan — không khoá tương tác chuột/bàn phím. */
-  .cell.dimmed {
-    opacity: 0.35;
+     nổi trọng tâm. Chỉ là tăng cường trực quan — không khoá tương tác chuột/bàn phím.
+     Chỉ bật trên thiết bị hover thật (chuột): trên touch, tap fire mouseenter → tránh mờ
+     "dính" (sticky hover) vì tap đã đồng thời chọn cung (selected) như trạng thái bền. */
+  @media (hover: hover) {
+    .cell.dimmed {
+      opacity: 0.35;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

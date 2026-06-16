@@ -10,7 +10,7 @@ Tôi đang có một **monorepo hiện hữu** (`ziweiai`) gồm:
 - **Các package nội bộ** dùng chung qua pnpm workspace.
 
 Tôi muốn tạo **một repo MỚI hoàn toàn** (`ziweiai-web`) bằng cách:
-- **Migrate (mang sang)**: backend `apps/api`, toàn bộ `packages/*`, `supabase/`, và các thư mục nghiên cứu `wiki/` + `raw/` + `.ref/`.
+- **Migrate (mang sang)**: backend `apps/api` (kèm `apps/api/supabase/`), toàn bộ `packages/*`, runtime server-only `vendor/xuanshu-runtime/`, và các thư mục nghiên cứu `wiki/` + `raw/` + `.ref/`.
 - **Thêm mới**: một web app **SvelteKit** (`apps/web`) thay cho client Expo.
 - **Bỏ (drop)**: `apps/app` (Expo) — KHÔNG mang sang repo mới. Logic frontend cần thì viết lại sang Svelte, đọc tham khảo từ repo gốc.
 - **Git**: `git init` mới, 1 commit khởi tạo (không mang lịch sử git repo gốc).
@@ -87,7 +87,7 @@ Các module **logic thuần** (không phụ thuộc React) sẽ move thẳng: ap
 
 ## 6. Kế hoạch 8 phase
 
-1. **Migrate monorepo skeleton** — mang `apps/api` + `packages/*` + `supabase/` + `wiki/raw/.ref`, drop `apps/app`. Validate: `pnpm install` + `turbo build` + `pnpm -F @ziweiai/api test` xanh.
+1. **Migrate monorepo skeleton** — mang `apps/api` (kèm `apps/api/supabase/`) + `packages/*` + `vendor/xuanshu-runtime/` + `wiki/raw/.ref`, drop `apps/app`. Validate: `pnpm install` + `turbo build` + `pnpm -F @ziweiai/api test` xanh.
 2. **Scaffold web + foundations** — thêm `apps/web` (@ziweiai/web), consume `@ziweiai/contracts` qua `workspace:*` (không vendoring). adapter-static SPA. Move/adapt api-client, query-client, supabase-client, env.
 3. **Auth + route guard** — Supabase auth client-only.
 4. **Pure logic + i18n + tokens** — port logic thuần, CJK guard, design tokens.

@@ -1,167 +1,116 @@
 # Harness Components
 
-This taxonomy maps the current `repository-harness` repository to two
-component frameworks used by Phase 2 and updated by Phase 3 active
-observability work:
+> File này map các thành phần Harness của repo `ziweiai-web` về thực tế trên đĩa.
+> Nội dung lấy **trực tiếp từ file/lệnh thật** (không theo template `repository-harness`
+> gốc). Khi code/durable layer đổi, cập nhật file này; nếu nghi ngờ, đối chiếu với
+> `scripts/bin/harness-cli.exe --help` + `scripts/schema/*.sql`.
 
-- Runtime Substrate responsibilities: the 11 responsibility areas the harness
-  should cover.
-- NexAU decomposition: the seven implementation surfaces that influence agent
-  behavior.
+## Bối cảnh
+
+`ziweiai-web` dùng Harness như một **lớp vận hành**, không phải sản phẩm. Sản phẩm là
+monorepo Tử Vi (backend NestJS + web SvelteKit + packages dùng chung); Harness là docs +
+durable layer (SQLite) giúp biến spec thành công việc có proof. CLI là một **binary
+prebuilt** (`scripts/bin/harness-cli.exe`) — repo này KHÔNG chứa mã nguồn Rust (`crates/`,
+`Cargo.toml`) như repo harness gốc; xem [[0005-prebuilt-rust-harness-cli]].
 
 Status values:
 
-- **Covered**: the repository has an explicit file, command, or record for this
-  responsibility.
-- **Partial**: the repository has some support, but the support is incomplete,
-  manual, or not yet measured.
-- **Missing**: no meaningful support exists yet.
+- **Covered**: có file, lệnh, hoặc record cụ thể trong repo cho trách nhiệm này.
+- **Partial**: có hỗ trợ nhưng chưa đầy đủ, thủ công, hoặc lệnh chưa chạy được trên DB hiện tại.
+- **Missing**: chưa có hỗ trợ ý nghĩa nào.
 
 ## Responsibility Map
 
-| # | Responsibility | Status | Harness Files | Evidence | Gap |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Task specification | Covered | `AGENTS.md`, `docs/FEATURE_INTAKE.md`, `docs/templates/story.md`, `docs/templates/spec-intake.md`, `docs/templates/high-risk-story/*`, `docs/stories/*`, `intake` table, `story` table | Requests are classified by type and lane before implementation; normal and high-risk work have templates and durable story rows. | Keep story packets synchronized with future product docs. |
-| 2 | Context selection | Covered | `AGENTS.md`, `docs/CONTEXT_RULES.md`, `docs/ARCHITECTURE.md`, `docs/decisions/*`, `docs/product/README.md`, `scripts/bin/harness-cli score-context` | Phase 2 adds phase-by-lane context rules and retrieval triggers; Phase 5 adds context scoring against recorded trace reads. | Future automation could enforce context selection instead of only measuring it. |
-| 3 | Tool access | Covered | `scripts/bin/harness-cli`, `docs/TOOL_REGISTRY.md`, `tool` table, `crates/harness-cli/*`, `scripts/install-harness.sh`, `scripts/build-harness-cli-release.sh` | The Harness CLI exposes operational commands and a machine-readable tool manifest through `query tools`; external tools can be registered and removed. | Permission profiles and usage analytics remain future work. |
-| 4 | Project memory | Covered | `docs/HARNESS.md`, `docs/decisions/*`, `docs/GLOSSARY.md`, `docs/HARNESS_BACKLOG.md`, `docs/stories/*`, `harness.db`, `decision`, `backlog`, and `trace` tables | Decisions, backlog, stories, and traces preserve durable knowledge across tasks. | Future work should add staleness checks and summarize old traces. |
-| 5 | Task state | Covered | `scripts/bin/harness-cli query matrix`, `docs/TEST_MATRIX.md`, `intake` table, `story` table, `trace` table | Durable records track intake, story status, proof columns, and task traces. | Add lifecycle checks so in-progress stories cannot be forgotten. |
-| 6 | Observability | Partial | `docs/TRACE_SPEC.md`, `trace` table, `scripts/bin/harness-cli trace`, `scripts/bin/harness-cli score-trace`, `scripts/bin/harness-cli query traces`, `scripts/bin/harness-cli query friction`, `docs/HARNESS_MATURITY.md` | Traces are auto-scored when recorded, can be rescored by command, and can be reviewed with friction context. | No dashboard or benchmark ingestion exists in this repo. |
-| 7 | Failure attribution | Partial | `docs/HARNESS_COMPONENTS.md`, `docs/TRACE_SPEC.md`, `trace.errors`, `trace.harness_friction`, `docs/HARNESS_BACKLOG.md`, `backlog` table, `scripts/bin/harness-cli query friction` | Failures can be tied to files, components, friction, backlog proposals, and linked intake lane/type context. | No automated attribution from benchmark failures to harness components exists yet. |
-| 8 | Verification | Covered | `docs/TEST_MATRIX.md`, `scripts/bin/harness-cli query matrix`, `scripts/bin/harness-cli story verify`, `scripts/bin/harness-cli story verify-all`, `scripts/bin/harness-cli trace`, `scripts/bin/harness-cli score-trace`, `story.verify_command`, `story.last_verified_result`, `.github/workflows/harness-cli-release.yml`, `docs/templates/validation-report.md` | Stories can store and run mechanical proof commands individually or in batch, traces warn when linked story verification has not passed, trace quality can be checked mechanically, and release workflow verifies Rust CLI releases. | Benchmark ingestion remains future work. |
-| 9 | Permissions | Partial | `AGENTS.md`, `docs/HARNESS.md`, `docs/FEATURE_INTAKE.md`, `docs/ARCHITECTURE.md`, installer conflict handling in `scripts/install-harness.sh` | Policy describes when agents may update docs and when to ask before architecture or workflow changes. | Permissions are instruction-level only; no enforced policy layer or command allowlist exists. |
-| 10 | Entropy auditing | Covered | `docs/HARNESS_BACKLOG.md`, `docs/HARNESS_AUDIT.md`, `docs/IMPROVEMENT_PROTOCOL.md`, `backlog` table, `trace.harness_friction`, `scripts/bin/harness-cli audit`, `scripts/bin/harness-cli propose`, `docs/HARNESS_MATURITY.md` | Growth rule captures friction, audit detects drift and entropy score, backlog items compare predicted impact to actual outcome, and proposal generation can create reviewable backlog items. | Automated repair remains future work. |
-| 11 | Intervention recording | Covered | `intervention` table, `scripts/bin/harness-cli intervention add`, `scripts/bin/harness-cli query interventions`, `trace` table, `docs/decisions/*`, `docs/stories/*`, `docs/HARNESS.md` | Human, reviewer, CI, and agent interventions are separate durable records and can be filtered by trace, story, or type. | Capture is still manual and advisory. |
+| # | Trách nhiệm | Status | File / lệnh thật | Ghi chú |
+| --- | --- | --- | --- | --- |
+| 1 | Task specification | Covered | `AGENTS.md`, `docs/FEATURE_INTAKE.md`, `docs/templates/story.md`, `docs/templates/high-risk-story/*`, `docs/stories/epics/E01..E10/*`, bảng `intake` + `story` | Request được phân loại type/lane trước khi code; story packet US-001..US-010 sống trong durable layer. |
+| 2 | Context selection | Covered | `CLAUDE.md`, `docs/CONTEXT_RULES.md`, `docs/ARCHITECTURE.md`, `docs/decisions/*`, `SPEC.md` | CLAUDE.md `<important if=...>` blocks định tuyến context theo loại task; `score-context` đo độ phủ context-read so với CONTEXT_RULES. |
+| 3 | Tool access | Covered | `scripts/bin/harness-cli.exe`, `docs/TOOL_REGISTRY.md`, bảng `tool`, `scripts/schema/003-tool.sql` | CLI prebuilt là entrypoint durable; `query tools` xuất manifest công cụ; đăng ký/gỡ tool ngoài qua `tool register`. |
+| 4 | Project memory | Covered | `docs/HARNESS.md`, `docs/decisions/0001..0010`, `docs/GLOSSARY.md`, `docs/HARNESS_BACKLOG.md`, `docs/postmortems/*`, `harness.db` (bảng `decision`, `backlog`, `trace`) | Decision + backlog + story + trace + postmortem giữ tri thức bền across task. |
+| 5 | Task state | Covered | `scripts/bin/harness-cli.exe query matrix`, `docs/TEST_MATRIX.md`, bảng `intake`/`story`/`trace` | Durable record theo dõi intake, story status, cột proof, trace. |
+| 6 | Observability | Partial | `docs/TRACE_SPEC.md`, bảng `trace`, `harness-cli trace`, `score-trace`, `query traces`, `query friction` | Trace auto-score khi ghi, rescore + review friction được; chưa có dashboard/benchmark ingestion. |
+| 7 | Failure attribution | Partial | `docs/HARNESS_BACKLOG.md`, `trace.errors`, `trace.harness_friction`, bảng `backlog`, `query friction` | Lỗi gắn được vào file/friction/backlog + context intake; chưa có attribution tự động từ benchmark. |
+| 8 | Verification | Covered | `docs/TEST_MATRIX.md`, `query matrix`, `story verify`, `story verify-all`, `decision` verify, `story.verify_command`, `docs/templates/validation-report.md`, `scripts/schema/002-story-verify.sql` | Story/decision lưu + chạy proof command, cập nhật `last_verified_result`; trace cảnh báo khi story chưa verify. |
+| 9 | Permissions | Partial | `CLAUDE.md`, `docs/HARNESS.md` (Harness Change Policy), `docs/FEATURE_INTAKE.md` | Chính sách mô tả khi nào agent được tự sửa vs phải hỏi (đổi kiến trúc/boundary/invariant); chỉ ở mức instruction, không có policy layer cưỡng chế. |
+| 10 | Entropy auditing | Covered | `docs/HARNESS_BACKLOG.md`, `docs/HARNESS_AUDIT.md`, `docs/IMPROVEMENT_PROTOCOL.md`, bảng `backlog`, `trace.harness_friction`, `harness-cli audit`, `harness-cli propose` | `audit` phát hiện drift (story mồ côi/chưa verify) + entropy score; backlog so dự đoán vs thực tế; `propose` sinh đề xuất từ friction + intervention + audit drift. |
+| 11 | Intervention recording | Covered | bảng `intervention` (`scripts/schema/004-intervention.sql`), `harness-cli intervention add`, `harness-cli query interventions`, `trace` | Can thiệp của human/reviewer/CI/agent ghi tách khỏi trace; lọc theo trace/story/type. |
 
-## NexAU Cross-Reference
+## Lệnh CLI khả dụng (xác nhận từ `--help` + chạy thật trên `harness.db`)
 
-| Component | Harness Equivalent | Status | Notes |
-| --- | --- | --- | --- |
-| System prompts | `AGENTS.md` plus Harness policy docs | Covered | `AGENTS.md` is the stable shim; `docs/HARNESS.md`, `docs/FEATURE_INTAKE.md`, and `docs/CONTEXT_RULES.md` carry evolving operating instructions. |
-| Tool descriptions | `docs/TOOL_REGISTRY.md`, `scripts/README.md`, `docs/HARNESS.md`, `docs/TRACE_SPEC.md`, CLI help from `crates/harness-cli/src/interface.rs`, `scripts/bin/harness-cli query tools` | Covered | Commands are documented in a standalone registry and exposed as compiled plus registered tool manifest entries. |
-| Tool implementations | `scripts/bin/harness-cli`, `crates/harness-cli/*`, `scripts/schema/001-init.sql`, `scripts/schema/002-story-verify.sql` | Covered | The Rust CLI is the primary durable-layer implementation and stable repo-local entrypoint. |
-| Middleware | installer safety logic, feature intake workflow | Partial | The installer and intake process mediate work, but there is no runtime middleware enforcing policies. |
-| Skills | `docs/templates/*`, `docs/FEATURE_INTAKE.md`, `docs/CONTEXT_RULES.md`, `docs/TRACE_SPEC.md` | Partial | Reusable procedures exist as markdown, not executable or installable agent skills. |
-| Sub-agents | None in this repository | Missing | No delegated specialist agents or sub-agent protocols exist. |
-| Long-term memory | `harness.db`, `docs/decisions/*`, `docs/stories/*`, `docs/HARNESS_BACKLOG.md`, `docs/GLOSSARY.md` | Covered | Durable records and markdown decisions preserve task history and project vocabulary. |
+| Lệnh | Trạng thái thực tế |
+| --- | --- |
+| `init`, `migrate`, `import` | Khả dụng (bootstrap DB). |
+| `intake`, `story`, `decision`, `backlog`, `tool` | Khả dụng — ghi/cập nhật durable record. |
+| `trace`, `score-trace`, `score-context` | Khả dụng — trace auto-score khi ghi. |
+| `query matrix` / `matrix --numeric` / `backlog` / `stats` / `traces` / `friction` / `tools` | Khả dụng. |
+| `audit` | Khả dụng — báo story mồ côi/chưa verify + entropy. |
+| `intervention add` / `query interventions` | Khả dụng — bảng `intervention` đã migrate (schema_version 4). |
+| `propose` / `propose --commit` | Khả dụng — sinh đề xuất từ friction + intervention + audit drift. |
 
-## File Inventory
+## Schema durable layer (thật)
 
-Every tracked project file plus the Phase 2 input file is mapped to at least
-one Runtime Substrate responsibility.
+`scripts/schema/` có 4 file migration (schema_version 4):
 
-| File | Primary Responsibility | Secondary Responsibilities |
+| File | Bảng tạo |
+| --- | --- |
+| `001-init.sql` | `schema_version`, `intake`, `story`, `decision`, `backlog`, `trace` |
+| `002-story-verify.sql` | thêm cột verify cho `story` (`verify_command`, `last_verified_at`, `last_verified_result`) |
+| `003-tool.sql` | `tool` |
+| `004-intervention.sql` | `intervention` (mở khoá `intervention add`/`query interventions`/`propose`) |
+
+## File Inventory (docs + scripts thật)
+
+| File | Trách nhiệm chính | Phụ |
 | --- | --- | --- |
-| `.gitignore` | Tool access | Task state |
-| `AGENTS.md` | Context selection | Task specification, permissions |
-| `README.md` | Task specification | Project memory |
-| `CONTRIBUTING.md` | Intervention recording | Project memory |
-| `Cargo.toml` | Tool access | Verification |
-| `Cargo.lock` | Tool access | Verification |
-| `PHASE2.md` | Task specification | Observability, context selection |
-| `PHASE3.md` | Task specification | Observability, verification, entropy auditing |
-| `PHASE4.md` | Task specification | Verification, observability, task state |
-| `PHASE5.md` | Task specification | Verification, entropy auditing, intervention recording |
-| `crates/harness-cli/Cargo.toml` | Tool access | Verification |
-| `crates/harness-cli/src/main.rs` | Tool access | Tool implementation |
-| `crates/harness-cli/src/domain.rs` | Tool access | Task state, verification |
-| `crates/harness-cli/src/application.rs` | Tool access | Task state |
-| `crates/harness-cli/src/infrastructure.rs` | Tool access | Project memory, task state, observability |
-| `crates/harness-cli/src/interface.rs` | Tool access | Context selection, verification |
-| `docs/ARCHITECTURE.md` | Permissions | Context selection, task specification |
+| `AGENTS.md` | Task specification | Context selection, permissions |
+| `CLAUDE.md` | Context selection | Task specification, permissions |
+| `README.md` | Project memory | Task specification |
+| `PROJECT_SUMMARY.md` | Project memory | Task specification |
+| `SPEC.md` | Task specification | Context selection, project memory |
+| `docs/ARCHITECTURE.md` | Context selection | Permissions (pointer tới SPEC + decisions) |
 | `docs/FEATURE_INTAKE.md` | Task specification | Permissions, context selection |
 | `docs/GLOSSARY.md` | Project memory | Context selection |
 | `docs/HARNESS.md` | Task specification | Project memory, task state, permissions |
 | `docs/HARNESS_BACKLOG.md` | Entropy auditing | Project memory, failure attribution |
 | `docs/HARNESS_COMPONENTS.md` | Failure attribution | Observability, entropy auditing |
 | `docs/HARNESS_MATURITY.md` | Entropy auditing | Observability, verification |
-| `docs/HARNESS_AUDIT.md` | Entropy auditing | Verification, task state |
-| `docs/IMPROVEMENT_PROTOCOL.md` | Entropy auditing | Failure attribution, permissions |
+| `docs/HARNESS_AUDIT.md` | Entropy auditing | Verification |
+| `docs/IMPROVEMENT_PROTOCOL.md` | Entropy auditing | Failure attribution, intervention recording |
 | `docs/CONTEXT_RULES.md` | Context selection | Permissions, task specification |
-| `docs/TRACE_SPEC.md` | Observability | Failure attribution, intervention recording |
+| `docs/TRACE_SPEC.md` | Observability | Failure attribution |
 | `docs/TOOL_REGISTRY.md` | Tool access | Context selection, verification |
-| `docs/README.md` | Project memory | Context selection |
 | `docs/TEST_MATRIX.md` | Verification | Task state |
-| `docs/decisions/0001-harness-first-development.md` | Project memory | Permissions |
-| `docs/decisions/0002-post-spec-product-lifecycle.md` | Project memory | Task specification |
-| `docs/decisions/0003-generic-spec-intake-harness.md` | Project memory | Task specification |
-| `docs/decisions/0004-sqlite-durable-layer.md` | Project memory | Observability, task state |
-| `docs/decisions/0005-prebuilt-rust-harness-cli.md` | Project memory | Tool access |
-| `docs/decisions/0006-phase-4-benchmark-triage.md` | Project memory | Verification |
-| `docs/decisions/0007-improvement-proposal-rules.md` | Project memory | Entropy auditing, permissions |
+| `docs/README.md` | Project memory | Context selection |
+| `docs/skills-setup.md` | Tool access | Context selection |
+| `docs/spec-intake.md` | Task specification | Context selection |
+| `docs/product/overview.md` | Task specification | Project memory |
+| `docs/product/invariants.md` | Permissions | Task specification, verification |
+| `docs/product/api-contract.md` | Task specification | Verification |
+| `docs/product/README.md` | Project memory | Context selection |
+| `docs/decisions/0001..0010-*.md` | Project memory | Permissions |
 | `docs/decisions/README.md` | Project memory | Context selection |
-| `docs/demo/README.md` | Task specification | Project memory |
-| `docs/product/README.md` | Task specification | Project memory |
-| `docs/review-fixes-1d30bf62-to-main.md` | Intervention recording | Failure attribution, verification |
+| `docs/postmortems/US-007-history-cache-stale.md` | Failure attribution | Project memory |
 | `docs/stories/README.md` | Task specification | Project memory |
-| `docs/stories/US-001-install-harness.md` | Task specification | Verification, intervention recording |
-| `docs/stories/US-008-trace-quality-scoring.md` | Task specification | Observability, verification |
-| `docs/stories/US-009-enriched-friction-query.md` | Task specification | Failure attribution, observability |
-| `docs/stories/US-011-backlog-outcome-workflow.md` | Task specification | Entropy auditing, project memory |
-| `docs/stories/US-012-story-verify-command-field.md` | Task specification | Verification |
-| `docs/stories/US-015-story-verify-command.md` | Task specification | Verification |
-| `docs/stories/US-016-auto-trace-scoring-on-write.md` | Task specification | Observability, verification |
-| `docs/stories/US-017-pre-close-verification-gate.md` | Task specification | Verification, permissions |
-| `docs/stories/US-018-phase4-cli-ux-hardening.md` | Task specification | Tool access, verification |
-| `docs/stories/US-019-machine-readable-tool-registry.md` | Task specification | Tool access |
-| `docs/stories/US-020-batch-story-verification.md` | Task specification | Verification |
-| `docs/stories/US-021-intervention-recording-schema.md` | Task specification | Intervention recording |
-| `docs/stories/US-022-context-rule-measurement.md` | Task specification | Context selection |
-| `docs/stories/US-023-drift-detection-entropy-score.md` | Task specification | Entropy auditing |
-| `docs/stories/US-024-improvement-proposal-pipeline.md` | Task specification | Entropy auditing, permissions |
 | `docs/stories/backlog.md` | Task specification | Project memory |
-| `docs/stories/epics/README.md` | Task specification | Project memory |
-| `docs/stories/epics/E01-durable-layer/US-002-rust-harness-cli/overview.md` | Task specification | Project memory |
-| `docs/stories/epics/E01-durable-layer/US-002-rust-harness-cli/design.md` | Task specification | Tool access, permissions |
-| `docs/stories/epics/E01-durable-layer/US-002-rust-harness-cli/execplan.md` | Task specification | Verification, task state |
-| `docs/stories/epics/E01-durable-layer/US-002-rust-harness-cli/validation.md` | Verification | Intervention recording |
-| `docs/stories/epics/E02-phase-2-observability-taxonomy/phase-2-progress.md` | Task state | Intervention recording |
-| `docs/stories/epics/E03-phase-5-evolution-infrastructure/phase-5-progress.md` | Task state | Verification, entropy auditing |
+| `docs/stories/epics/E01..E10/US-00N-*.md` | Task specification | Verification, project memory |
 | `docs/templates/decision.md` | Project memory | Task specification |
-| `docs/templates/spec-intake.md` | Task specification | Context selection |
 | `docs/templates/story.md` | Task specification | Verification |
-| `docs/templates/validation-report.md` | Verification | Intervention recording |
-| `docs/templates/high-risk-story/overview.md` | Task specification | Context selection |
-| `docs/templates/high-risk-story/design.md` | Task specification | Permissions |
-| `docs/templates/high-risk-story/execplan.md` | Task state | Verification |
-| `docs/templates/high-risk-story/validation.md` | Verification | Failure attribution |
+| `docs/templates/spec-intake.md` | Task specification | Context selection |
+| `docs/templates/validation-report.md` | Verification | Failure attribution |
+| `docs/templates/high-risk-story/{overview,design,execplan,validation}.md` | Task specification | Verification, permissions |
 | `scripts/README.md` | Tool access | Context selection |
-| `scripts/bin/harness-cli` | Tool access | Task state, observability |
-| `scripts/bin/harness-cli` | Tool access | Task state, observability |
-| `scripts/install-harness.sh` | Tool access | Permissions |
-| `scripts/build-harness-cli-release.sh` | Verification | Tool access |
-| `scripts/schema/001-init.sql` | Task state | Observability, project memory |
-| `scripts/schema/002-story-verify.sql` | Verification | Task state, project memory |
-| `scripts/schema/003-tool-registry.sql` | Tool access | Project memory |
+| `scripts/bin/harness-cli.exe` | Tool access | Task state, observability |
+| `scripts/schema/001-init.sql` | Task state | Project memory, observability |
+| `scripts/schema/002-story-verify.sql` | Verification | Task state |
+| `scripts/schema/003-tool.sql` | Tool access | Project memory |
 | `scripts/schema/004-intervention.sql` | Intervention recording | Failure attribution |
-| `.github/ISSUE_TEMPLATE/agent-failure-case.md` | Failure attribution | Entropy auditing |
-| `.github/ISSUE_TEMPLATE/pattern-request.md` | Entropy auditing | Intervention recording |
-| `.github/ISSUE_TEMPLATE/real-world-example.md` | Project memory | Intervention recording |
-| `.github/workflows/harness-cli-release.yml` | Verification | Tool access |
 
 ## Coverage Summary
 
-- Covered: 8/11 responsibilities.
-- Partial: 3/11 responsibilities.
-- Missing: 0/11 responsibilities.
+- Covered: 7/11 (Task specification, Context selection, Tool access, Project memory, Task state, Verification, Intervention recording).
+- Partial: 4/11 (Observability, Failure attribution, Permissions, Entropy auditing).
+- Missing: 0/11.
 
-Covered responsibilities:
-
-- Task specification.
-- Context selection.
-- Tool access.
-- Project memory.
-- Task state.
-- Verification.
-- Entropy auditing.
-- Intervention recording.
-Partial responsibilities:
-
-- Observability.
-- Failure attribution.
-- Permissions.
-
-Phase 5 converts tool access, entropy auditing, and intervention recording into
-covered responsibilities with a registry, drift audit, proposal loop, and
-intervention schema. Later phases should focus on benchmark ingestion,
-component-level attribution, permission enforcement, and tool usage analytics.
+Bước kế tiếp để nâng coverage: thêm benchmark ingestion cho Observability/Failure
+attribution, và một lint rule cho phần private-env (xem `docs/product/invariants.md §1`).
+Tất cả nên vào backlog qua `harness-cli backlog add` thay vì claim sẵn ở đây.

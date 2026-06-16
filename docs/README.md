@@ -1,31 +1,36 @@
 # Documentation Map
 
-This directory holds the project harness and any product contract derived from a
-future user-provided spec.
+Tài liệu của `ziweiai-web`: harness vận hành + hợp đồng sản phẩm. SPEC.md (gốc repo) là
+nguồn sự thật về *intent*; code + test là sự thật về *behavior*; khi lệch xem
+[[0006-spec-vs-code-naming]].
 
-## Main Files
+## Harness (cách người + agent làm việc)
 
-- `HARNESS.md`: how humans and agents collaborate.
-- `FEATURE_INTAKE.md`: how prompts become tiny, normal, or high-risk work.
-- `ARCHITECTURE.md`: architecture discovery and boundary rules.
-- `TEST_MATRIX.md`: legacy proof map; current proof status is queried with
+- `HARNESS.md`: luồng làm việc harness, durable layer, task loop.
+- `HARNESS_COMPONENTS.md`: bản đồ file ↔ trách nhiệm harness (theo repo thật).
+- `HARNESS_MATURITY.md`: thang trưởng thành H0–H5 + trạng thái hiện tại.
+- `HARNESS_BACKLOG.md`: danh sách cải tiến cũ; bản ghi hiện tại dùng
+  `scripts/bin/harness-cli backlog`.
+- `FEATURE_INTAKE.md`: phân loại prompt thành lane tiny / normal / high-risk.
+- `CONTEXT_RULES.md`: quy tắc chọn context theo phase × lane.
+- `TRACE_SPEC.md`: trường trace, tier chất lượng, friction.
+- `TOOL_REGISTRY.md`: danh mục lệnh harness-cli + tool ngoài.
+- `TEST_MATRIX.md`: ảnh chụp proof 10 story; trạng thái sống query bằng
   `scripts/bin/harness-cli query matrix`.
-- `HARNESS_BACKLOG.md`: legacy improvement list; current improvement records
-  are stored with `scripts/bin/harness-cli backlog`.
-- `GLOSSARY.md`: shared terms.
+- `ARCHITECTURE.md`: con trỏ tới kiến trúc thật (SPEC Part A5 + decisions 0006/0007).
+- `GLOSSARY.md`: thuật ngữ chung.
+- `spec-intake.md`, `skills-setup.md`: ghi chú vận hành.
 
-## Folders
+## Thư mục
 
-- `product/`: current product truth, empty until a spec is derived.
-- `stories/`: feature packets and backlog.
-- `decisions/`: durable decisions and tradeoffs.
-- `demo/`: concrete walkthroughs that show how the harness transforms input
-  into agent-ready work.
-- `templates/`: reusable spec-intake, story, plan, decision, and validation
-  formats.
+- `product/`: hợp đồng sản phẩm hiện hành — `overview.md`, `invariants.md`, `api-contract.md`.
+- `stories/`: story packet (epics E01–E10) + backlog.
+- `decisions/`: quyết định durable 0001–0010.
+- `postmortems/`: phân tích sự cố sau khi fix (vd `US-007-history-cache-stale.md`).
+- `templates/`: mẫu spec-intake, story (normal + high-risk), decision, validation.
 
-## Current State
+## Trạng thái hiện tại
 
-Harness v0 exists before implementation. These docs define how the project will
-grow; they do not imply that app code, tests, CI, or deployment automation exist
-yet.
+Web v1 (Phase 1–8) đã ship: SvelteKit SPA + 6 hệ thuật số + history + luận giải AI, backend
+NestJS + contracts + astro-engine. Story US-001..007 `implemented`; US-008/009/010 `planned`
+(lá số trực quan, truy cập ẩn danh, AI premium). Xem SPEC.md Phần C để biết roadmap.

@@ -27,15 +27,28 @@ scripts/bin/harness-cli.exe  # durable-layer CLI (intake/story/trace/matrix)
 
 <important if="you are starting a code task in this repo">
 
-Read the foundation in this order BEFORE editing code:
+# Agent Instructions
 
-1. `SPEC.md` — single source of truth. Part A (context + 2 invariants + migrate map + API surface + React→Svelte mapping), Part B (web architecture, Sections 1–22), Part C (8 phases).
-2. `docs/product/invariants.md` — 2 mandatory invariants (language + security). Violation = blocker.
-3. `docs/HARNESS.md`, `docs/FEATURE_INTAKE.md`, `docs/ARCHITECTURE.md`, `docs/CONTEXT_RULES.md` — workflow + settled architectural decisions.
-4. Story packet for the current phase: `docs/stories/epics/`. Run `scripts/bin/harness-cli.exe query matrix` to see proof status.
-5. `docs/decisions/` if the task touches architecture / naming / boundary.
+Add project-specific agent instructions here.
 
-SPEC is the truth about *intent*. Code + tests are the truth about *behavior*. When they diverge, read `docs/decisions/0006-spec-vs-code-naming.md` then confirm the real names in `packages/contracts/src/`.
+<!-- HARNESS:BEGIN -->
+## Harness
+
+This repo uses Harness. Before work, read:
+
+- `README.md`
+- `docs/HARNESS.md`
+- `docs/FEATURE_INTAKE.md`
+- `docs/ARCHITECTURE.md`
+- `docs/CONTEXT_RULES.md`
+- `docs/TOOL_REGISTRY.md`
+- `scripts/bin/harness-cli query matrix` on macOS/Linux, or `.\scripts\bin\harness-cli.exe query matrix` on Windows
+
+Use the Rust Harness CLI at `scripts/bin/harness-cli.exe` on Windows as the main operational tool. Before a
+step that could use an external tool, run `scripts/bin/harness-cli query tools
+--capability <name> --status present` to see what is equipped; an absent
+capability is a clean skip.
+<!-- HARNESS:END -->
 
 This repo runs a mandatory harness workflow (normal/high-risk lanes), in order: intake → story breakdown → (fix doc drift if any) → implement → validate + update matrix → trace; architecture change → decision. Each step's detail appears in context below.
 </important>

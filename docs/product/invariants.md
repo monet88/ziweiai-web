@@ -18,7 +18,15 @@
 Chỉ `PUBLIC_*` được lộ ra client: `PUBLIC_API_BASE_URL`, `PUBLIC_SUPABASE_URL`,
 `PUBLIC_SUPABASE_ANON_KEY` (anon key là public theo thiết kế Supabase).
 
-Cơ chế chặn: ESLint `no-restricted-imports` ở `apps/web` + CI + test quét bundle.
+Cơ chế chặn (chính xác theo code):
+
+- ESLint `no-restricted-imports` (`apps/web/eslint.config.mjs`) **chỉ** chặn 4 engine
+  package: `@ziweiai/core`, `@ziweiai/astro-engine`, `iztro`, `lunar-javascript`. Đây là
+  hàng rào có hiệu lực ở lint/CI.
+- Phần secret/private-env (`process.env`, `$env/static/private`, `$env/dynamic/private`)
+  hiện **chưa có lint rule riêng**: được giữ bằng (a) quy ước "web chỉ đọc `$env/static/public`",
+  và (b) SvelteKit báo lỗi build khi client code import `$env/*/private`. Một lint rule chặn
+  tường minh là backlog (xem `harness-cli query backlog`).
 
 ## 2. Bất biến ngôn ngữ — Không chữ Hán ở frontend
 
@@ -29,9 +37,14 @@ Frontend KHÔNG BAO GIỜ hiển thị chữ Hán. Mọi nhãn là tiếng Việ
   fallback im lặng ra chữ Hán.
 - Chữ Hán (`displayName`) chỉ xuất hiện read-time khi parse **snapshot legacy v1** (qua
   `z.preprocess(normalizeLegacyChartSnapshot)` trong contract). Web giữ **CJK guard**
-  (regex `\p{Script=Han}`) + fallback hiển thị `"Thuật ngữ cũ"`.
+  (regex `CJK_TEXT_PATTERN`) + fallback hiển thị `"Thuật ngữ cũ"`.
 - Web có `src/lib/text/cjk.ts` (copy giá trị `CJK_TEXT_PATTERN`, **không** import `@ziweiai/core`).
-- Test quét `\p{Script=Han}` trên output UI để chặn rò chữ Hán hardcode.
+- `CJK_TEXT_PATTERN` rộng hơn `\p{Script=Han}` đơn lẻ — chặn cả Han + Hiragana/Katakana
+  (Nhật) + Hangul (Hàn) + Bopomofo (chú âm) + dấu câu CJK (U+3000–303F) + ký tự fullwidth
+  (U+FF00–FFEF). Nguồn chuẩn: `packages/core/src/text/cjk-guard.ts`.
+- Test quét guard chạy trên **output formatter ở mức logic** (vd `no-han-characters.test.ts`),
+  không quét artifact `build/`. Cùng pattern cũng được dùng **server-side trên output AI**
+  (`containsCjkText` reject → router không failover sang chữ Hán).
 
 ## 3. Bất biến token tươi
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -40,7 +40,7 @@ chốt test quét chữ Hán toàn cục. Sau story: tất cả Success Criteria
 
 ## Validation
 
-`scripts\bin\harness-cli.exe story update --id US-007 --unit 1 --integration 0 --e2e 1 --platform 0`
+`scripts\bin\harness-cli.exe story update --id US-007 --unit 1 --integration 0 --e2e 1 --platform 1`
 
 | Layer | Expected proof |
 | --- | --- |

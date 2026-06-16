@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -42,12 +42,14 @@ tiếng Việt, không rò chữ Hán.
 
 ## Validation
 
-`scripts\bin\harness-cli.exe story update --id US-006 --unit 1 --integration 0 --e2e 1 --platform 0`
+`scripts\bin\harness-cli.exe story update --id US-006 --unit 1 --integration 1 --e2e 1 --platform 1`
+
+> Proof khớp matrix durable (nguồn sự thật): unit 1, integration 1, e2e 1, platform 1.
 
 | Layer | Expected proof |
 | --- | --- |
 | Unit | test quét Hán trên output palace + explanation; reset state theo chartId |
-| Integration | — |
+| Integration | luận giải theo cung qua `POST /explanations` (backend thật) |
 | E2E | mở lá số → chọn cung → luận giải markdown tiếng Việt → đổi lá số → reset |
 | Platform | `pnpm check` + `tsc --noEmit` xanh |
 | Release | — |

@@ -37,7 +37,7 @@ Read the foundation in this order BEFORE editing code:
 
 SPEC is the truth about *intent*. Code + tests are the truth about *behavior*. When they diverge, read `docs/decisions/0006-spec-vs-code-naming.md` then confirm the real names in `packages/contracts/src/`.
 
-This repo runs a mandatory harness workflow (normal/high-risk lanes), in order: intake → story breakdown → (fix doc drift if any) → implement → validate + update matrix → trace; architecture change → decision. Each step's detail appears in context below. (The upstream CLAUDE.md references `docs/TOOL_REGISTRY.md` but that file is currently missing — logged to backlog.)
+This repo runs a mandatory harness workflow (normal/high-risk lanes), in order: intake → story breakdown → (fix doc drift if any) → implement → validate + update matrix → trace; architecture change → decision. Each step's detail appears in context below.
 </important>
 
 <important if="you need to run build / test / lint / typecheck / dev commands">

@@ -7,11 +7,26 @@
   // Quyết định bố cục lấy từ helper thuần `shouldUseSquareBoard` (chỉ tiêu thụ, không viết
   // lại). Định vị ô theo địa chi là việc trình bày (CSS grid). Tam phương tứ chính của cung
   // đang chọn tính qua helper thuần `palace-aspect` trên index vòng cung — KHÔNG import core.
+  //
+  // US-011: lớp SVG overlay vẽ đường nối tam phương tứ chính + hover-dim. Ba trạng thái:
+  //   - Mặc định (chưa tương tác): auto-chọn cung Mệnh làm cung hiệu lực → vẽ sẵn đường nối +
+  //     làm nổi tam phương tứ chính, KHÔNG mờ ô nào. Auto-Mệnh là trạng thái TRÌNH BÀY cục bộ
+  //     của bàn, KHÔNG ghi vào `selectedPalaceKey` của model (model đó điều khiển phạm vi luận
+  //     giải AI — overview vs cung; giữ nguyên mặc định overview của US-006). Tách selection
+  //     của bàn khỏi explanation đúng như taibu.
+  //   - Click (bền): `selectedPalaceKey` (từ model) → cung hiệu lực + đánh dấu `selected`
+  //     (aria-pressed), giữ sau khi rời chuột.
+  //   - Hover (tạm): `hoveredPalaceKey` (state cục bộ) ưu tiên cao nhất cho lớp trình bày;
+  //     rời chuột → quay về cung đang chọn (hoặc auto-Mệnh). Hover KHÔNG đổi aria-pressed.
   import type { Snippet } from 'svelte';
   import type { PalaceView } from '$lib/features/chart/palace-view-builder';
   import { shouldUseSquareBoard } from '$lib/features/chart/palace-grid-layout';
   import { getPalaceAspectIndices } from '$lib/features/chart/palace-aspect';
+  import { buildAspectLines, type AspectLine, type GridCell } from '$lib/features/chart/palace-board-geometry';
   import PalaceCell from './PalaceCell.svelte';
+
+  // Cung Mệnh (auto-chọn mặc định cho lớp trình bày). Khớp nameKey snapshot (US-006).
+  const SOUL_PALACE_KEY = 'soulPalace';
 
   interface Props {
     palaces: PalaceView[];
@@ -42,20 +57,44 @@
 
   const useSquareBoard = $derived(shouldUseSquareBoard(palaces));
 
-  // index vòng cung của cung đang chọn → tập tam phương tứ chính để làm nổi. null khi chưa
-  // chọn (không cung nào nổi). Dùng Set cho tra cứu O(1) khi render từng ô.
+  // Hover tạm (preview tam phương tứ chính); null khi rời chuột. Tách khỏi selectedPalaceKey.
+  let hoveredPalaceKey = $state<string | null>(null);
+
+  // Cung Mệnh có trong bàn không (auto-chọn mặc định). null khi snapshot thiếu Mệnh → không vẽ.
+  const soulPalaceKey = $derived(
+    palaces.some((palace) => palace.nameKey === SOUL_PALACE_KEY) ? SOUL_PALACE_KEY : null,
+  );
+
+  // Cung hiệu lực cho lớp trình bày (đường nối + nổi + dim), theo thứ tự ưu tiên:
+  // hover (tạm) → click (bền) → auto-Mệnh (mặc định). null khi thiếu cả ba → không vẽ gì.
+  const activePalaceKey = $derived(hoveredPalaceKey ?? selectedPalaceKey ?? soulPalaceKey);
+
+  const activePalace = $derived<PalaceView | null>(
+    palaces.find((palace) => palace.nameKey === activePalaceKey) ?? null,
+  );
+
+  // Tập index tam phương tứ chính của cung hiệu lực. Rỗng khi không có cung hiệu lực.
   const aspectIndices = $derived.by<Set<number>>(() => {
-    const selected = palaces.find((palace) => palace.nameKey === selectedPalaceKey);
-    if (!selected) {
+    if (!activePalace) {
       return new Set<number>();
     }
-    return new Set(getPalaceAspectIndices(selected.index));
+    return new Set(getPalaceAspectIndices(activePalace.index));
   });
 
-  // inAspect = thuộc tam phương tứ chính NHƯNG không phải chính cung đang chọn (chính cung đã
-  // có style `selected` riêng, không tô trùng).
+  // inAspect = thuộc tam phương tứ chính của cung hiệu lực NHƯNG không phải chính cung hiệu lực
+  // (chính cung dùng style `selected` riêng khi là cung click; không tô trùng viền aspect).
   function isInAspect(palace: PalaceView): boolean {
-    return palace.nameKey !== selectedPalaceKey && aspectIndices.has(palace.index);
+    return palace.nameKey !== activePalaceKey && aspectIndices.has(palace.index);
+  }
+
+  // dim chỉ bật khi đang hover (preview): mọi cung NGOÀI tam phương tứ chính của cung hover mờ
+  // đi. Không hover (mặc định / chỉ click) → không mờ ô nào, giữ bàn rõ như lá số giấy.
+  function isDimmed(palace: PalaceView): boolean {
+    return hoveredPalaceKey !== null && !aspectIndices.has(palace.index);
+  }
+
+  function handleHover(nameKey: string | null): void {
+    hoveredPalaceKey = nameKey;
   }
 
   function cellStyle(palace: PalaceView): string {
@@ -65,18 +104,62 @@
     }
     return `grid-row: ${position.row}; grid-column: ${position.col};`;
   }
+
+  // --- Lớp đường nối SVG (chỉ ở bố cục bàn vuông) ---
+  // CSS grid của bàn là 1-indexed; hình học SVG (palace-board-geometry) dùng 0-indexed.
+  function toGridCell(palace: PalaceView): GridCell | null {
+    const position = BRANCH_GRID_POSITION[palace.earthlyBranchKey];
+    if (!position) {
+      return null;
+    }
+    return { row: position.row - 1, col: position.col - 1 };
+  }
+
+  // Đoạn thẳng nối từ cung hiệu lực tới từng cung tam phương tứ chính (đã loại chính cung).
+  // Rỗng khi: không bàn vuông, không cung hiệu lực, hoặc không định vị được ô (degrade gọn).
+  const aspectLines = $derived.by<AspectLine[]>(() => {
+    if (!useSquareBoard || !activePalace) {
+      return [];
+    }
+    const fromCell = toGridCell(activePalace);
+    if (!fromCell) {
+      return [];
+    }
+    const toCells = palaces
+      .filter((palace) => palace.nameKey !== activePalaceKey && aspectIndices.has(palace.index))
+      .map(toGridCell)
+      .filter((cell): cell is GridCell => cell !== null);
+    return buildAspectLines(fromCell, toCells);
+  });
 </script>
 
 {#if useSquareBoard}
   <div class="board-scroll">
     <div class="board" role="group" aria-label="Bàn 12 cung">
+      <!-- Lớp đường nối tam phương tứ chính: SVG phủ tuyệt đối lên bàn, toạ độ viewBox 0–100
+           khớp lưới co giãn (preserveAspectRatio="none"). Trang trí thuần → aria-hidden +
+           pointer-events none để không chắn click/hover của ô. -->
+      {#if aspectLines.length > 0}
+        <svg
+          class="aspect-overlay"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          {#each aspectLines as line, index (index)}
+            <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+          {/each}
+        </svg>
+      {/if}
       {#each palaces as palace (palace.nameKey)}
         <div class="board-slot" style={cellStyle(palace)}>
           <PalaceCell
             {palace}
             selected={palace.nameKey === selectedPalaceKey}
             inAspect={isInAspect(palace)}
+            dimmed={isDimmed(palace)}
             {onSelect}
+            onHover={handleHover}
           />
         </div>
       {/each}
@@ -106,12 +189,31 @@
   }
 
   .board {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(4, minmax(116px, auto));
     gap: var(--space-sm);
     /* Bàn co giãn theo container nhưng không bóp các ô dưới mức đọc được → cuộn ngang. */
     min-width: 560px;
+  }
+
+  /* Đường nối phủ toàn bàn, nằm trên ô (z) nhưng không chắn tương tác. preserveAspectRatio
+     none cho phép toạ độ 0–100 co giãn khớp lưới. */
+  .aspect-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .aspect-overlay line {
+    stroke: var(--color-accent-gold-soft);
+    stroke-width: 0.5;
+    stroke-opacity: 0.7;
+    vector-effect: non-scaling-stroke;
   }
 
   .board-slot {

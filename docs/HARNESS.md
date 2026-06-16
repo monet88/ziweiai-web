@@ -274,7 +274,12 @@ back into `story update`. The default matrix output is human-readable
 
 ## Phase 5 Evolution Commands
 
-Tool discovery:
+> Trạng thái thật trong repo này (đã verify trên `harness.db`, schema_version 4 —
+> các file schema là `001-init.sql`, `002-story-verify.sql`, `003-tool.sql`,
+> `004-intervention.sql`): bảng `intervention` đã được áp qua migration 004, nên
+> các lệnh `intervention add`, `query interventions`, và `propose` **chạy thật**.
+
+Tool discovery (hoạt động):
 
 ```bash
 scripts/bin/harness-cli query tools --summary
@@ -282,7 +287,7 @@ scripts/bin/harness-cli query tools --json
 scripts/bin/harness-cli tool register --name <name> --command <cmd> --description <text> --responsibility Verification
 ```
 
-Context and drift checks:
+Context and drift checks (hoạt động):
 
 ```bash
 scripts/bin/harness-cli score-context <trace-id>
@@ -290,8 +295,8 @@ scripts/bin/harness-cli audit
 ```
 
 `score-context` is advisory; it reports context-rule coverage without changing
-the trace. `audit` reports drift categories and an entropy score documented in
-`docs/HARNESS_AUDIT.md`.
+the trace. `audit` reports drift categories (orphaned/unverified stories,
+open backlog) and an entropy score, chi tiết ở `docs/HARNESS_AUDIT.md`.
 
 Interventions are separate from traces:
 
@@ -310,9 +315,9 @@ scripts/bin/harness-cli propose
 scripts/bin/harness-cli propose --commit
 ```
 
-`propose` prints deterministic proposals from repeated friction, interventions,
-and audit drift. `--commit` creates proposed backlog items only; it does not
-edit policy docs or approve the proposal.
+`propose` in đề xuất tất định từ friction + intervention + audit drift; `--commit`
+chỉ tạo backlog item dạng `proposed`, không sửa policy docs. Vòng review đầy đủ:
+`docs/IMPROVEMENT_PROTOCOL.md`.
 
 ## Decision Records
 

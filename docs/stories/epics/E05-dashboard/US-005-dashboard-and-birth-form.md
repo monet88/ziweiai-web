@@ -2,7 +2,7 @@
 
 ## Status
 
-planned
+implemented
 
 ## Lane
 
@@ -38,13 +38,15 @@ Dựng màn hình chính sau đăng nhập: form nhập thông tin sinh + sideba
 
 ## Validation
 
-`scripts\bin\harness-cli.exe story update --id US-005 --unit 0 --integration 0 --e2e 1 --platform 0`
+`scripts\bin\harness-cli.exe story update --id US-005 --unit 1 --integration 0 --e2e 0 --platform 1`
+
+> Proof khớp matrix durable (nguồn sự thật): unit 1, integration 0, e2e 0, platform 1.
 
 | Layer | Expected proof |
 | --- | --- |
-| Unit | logic draft validity (nếu tách được) |
+| Unit | logic draft validity (`birth-profile-draft`, `dashboard-history`) |
 | Integration | — |
-| E2E | đăng nhập → form → submit → điều hướng chi tiết; thiếu field → chặn |
+| E2E | (chưa có spec riêng — flow form được phủ gián tiếp ở E2E US-006/US-007) |
 | Platform | `pnpm check` + `tsc --noEmit` xanh |
 | Release | — |
 

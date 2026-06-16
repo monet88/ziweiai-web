@@ -1,133 +1,50 @@
 # Architecture
 
-No application stack is selected yet.
+> **Nguồn sự thật**: kiến trúc chi tiết sống trong `SPEC.md` (Phần A + Phần B) và
+> `docs/decisions/`. File này chỉ là **bản đồ định hướng** + con trỏ — KHÔNG mô tả lại
+> để tránh drift. Khi cần chi tiết, đọc:
+>
+> - `SPEC.md` Phần A5 — cây phụ thuộc monorepo (xác nhận từ `package.json`).
+> - `SPEC.md` Phần B — kiến trúc `apps/web` (Section 1–22).
+> - `docs/decisions/0007-web-server-boundary.md` — boundary client/server.
+> - `docs/decisions/0006-spec-vs-code-naming.md` — vì sao tên trong code ≠ minh hoạ SPEC.
+> - `docs/product/invariants.md` — 3 bất biến cứng (boundary, ngôn ngữ, token tươi).
 
-No application code exists yet. This document defines generic architecture
-questions and boundary rules that future implementation should adapt after a
-user-provided spec and stack decision exist.
+## Hình dạng thật (Phase 1–8 đã ship)
 
-## Discovery Before Shape
-
-Before proposing implementation shape, identify:
-
-- Product surfaces: browser, mobile, desktop, CLI, API, worker, or service.
-- Runtime stack: language, framework, database, queues, providers, and hosting.
-- Core domains: the product concepts that deserve stable names and contracts.
-- Boundary inputs: user input, API requests, webhooks, jobs, files, credentials,
-  provider payloads, and environment configuration.
-- Validation ladder: the smallest checks that can prove the selected stack.
-
-Record stack choices in `docs/decisions/` when they meaningfully constrain
-future work.
-
-## Default Layering
+Monorepo pnpm + Turbo. Backend NestJS + SvelteKit SPA + package nội bộ dùng chung:
 
 ```text
-domain
-  <- application
-      <- infrastructure
-          <- interface
-              <- app surfaces
+packages/config        tsconfig/eslint base (không dep runtime)
+  └─ packages/contracts    Zod v4 — SHARED api + web (triệt tiêu schema drift)
+       └─ packages/core         logic + iztro          ← SERVER-ONLY
+            └─ packages/astro-engine  iztro + lunar-javascript + temporal ← SERVER-ONLY
+                 └─ apps/api          NestJS (contracts + core + astro-engine)
+apps/web                 SvelteKit SPA — CHỈ import @ziweiai/contracts
+vendor/xuanshu-runtime   runtime SERVER-ONLY (LiuYao/DaLiuRen/QiMen bridge)
 ```
 
-## Candidate Structure
+Chuỗi phụ thuộc một chiều: `contracts → core → astro-engine → apps/api`. `apps/web` đứng
+ngoài chuỗi engine, chỉ chạm `@ziweiai/contracts`. Đây là **bất biến boundary** (xem mục
+Dependency Rule + decision 0007), không phải khuyến nghị.
 
-```text
-app/
-  domain/
-    entities/
-    value-objects/
-    repositories/
-    services/
+## Dependency Rule (ràng buộc cứng, có hiệu lực ở lint/CI)
 
-  application/
-    commands/
-    queries/
-    handlers/
-
-  infrastructure/
-    database/
-    logging/
-    notifications/
-
-  interface/
-    controllers/
-    dto/
-    presenters/
-    routes/
-    middlewares/
-
-surfaces/
-  browser/
-  mobile/
-  desktop/
-  cli/
-```
-
-This is a thinking template, not a scaffold. Create real folders only when a
-story enters implementation and the selected stack needs them.
-
-## Dependency Rule
-
-Inner layers must not depend on outer layers.
-
-| Layer | May depend on | Must not depend on |
-| --- | --- | --- |
-| domain | nothing project-external except tiny pure utilities | framework, database, UI, provider, process/env |
-| application | domain | framework, UI, provider, database concrete clients |
-| infrastructure | domain, application | interface controllers or UI |
-| interface | all backend layers | UI state or platform shell assumptions |
-| app surfaces | API contracts and app-facing clients | domain internals directly |
+`apps/web` KHÔNG được import `@ziweiai/core`, `@ziweiai/astro-engine`, `iztro`,
+`lunar-javascript`. ESLint `no-restricted-imports` (`apps/web/eslint.config.mjs`) chặn 4
+package này ở lint-time. Lý do: chúng kéo ephemeris + hàng trăm literal chữ Hán vào client
+bundle, vi phạm cả boundary lẫn bất biến ngôn ngữ. Cần một hằng nhỏ từ core (vd
+`CJK_TEXT_PATTERN`) → **copy giá trị** vào `apps/web/src/lib/text/cjk.ts`, không import.
 
 ## Parse-First Boundary Rule
 
-Unknown data must be parsed at boundaries before it enters inner code.
+Dữ liệu lạ phải được parse bằng schema `@ziweiai/contracts` trước khi vào inner code. Áp
+dụng ở: HTTP request/response, identity claims (Supabase JWT), env, row trả về từ
+Supabase client. Web KHÔNG tự định nghĩa DTO — mọi response UI dùng đều `parse()` qua
+contracts (xem `docs/product/api-contract.md`). Engine chỉ chạy server-side; web nhận
+`chartSnapshotSchema` đã chuẩn hoá (slug key ASCII, không chữ Hán).
 
-Boundaries include:
+## Observability
 
-- HTTP request bodies, params, and query strings.
-- Session payloads and identity claims.
-- Environment variables.
-- Database rows returned from external clients.
-- Platform shell payloads.
-- Deep links, tokens, and signed URLs.
-- Provider webhooks, events, and async payloads.
-
-Target flow:
-
-```text
-unknown input
-  -> parser
-  -> typed DTO or command
-  -> application use case
-  -> domain object/value object
-```
-
-Inner layers should work with meaningful product types such as `UserId`,
-`AccountId`, `WorkspaceId`, `Role`, `DateRange`, or domain-specific IDs,
-rather than repeatedly validating raw strings.
-
-## Command/Query Boundary
-
-If the product has both reads and writes, keep command/query separation clear at
-the code level even when the storage layer is simple:
-
-- Commands mutate state and own audit side effects.
-- Queries read state and format for consumers.
-- Shared domain rules live in domain/application, not controllers.
-
-## Observability Contract
-
-The future server should emit one canonical JSON log line per request with:
-
-- timestamp
-- level
-- request_id
-- user_id when known
-- action
-- duration_ms
-- status_code
-- message
-
-Audit logs are product records. Application logs are operational records. Do not
-use one as a substitute for the other.
+Backend gắn `request-id.middleware.ts` cho mỗi request; error trả về theo envelope
+`{ code, message, requestId }` (`apiErrorSchema`). Chi tiết error-map: `api-contract.md`.

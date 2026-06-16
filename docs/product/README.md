@@ -1,14 +1,15 @@
 # Product Docs
 
-This directory is intentionally generic and mostly empty in Harness v0.
+Hợp đồng sản phẩm hiện tại của `ziweiai-web`, dẫn xuất từ `SPEC.md` (SPEC là input
+material, không phải living plan — xem `docs/HARNESS.md` §Spec Lifecycle).
 
-When a user provides a project spec, derive smaller product contract files here
-instead of keeping one large spec as the living plan. Name files by the product
-domains that actually exist in that spec, for example `overview.md`,
-`billing.md`, `workflows.md`, `permissions.md`, or `api-conventions.md`.
+## File hiện có
 
-Do not create domain files before the spec just to fill the folder. Empty
-structure is healthier than fake product truth.
+- `overview.md` — bối cảnh sản phẩm + phạm vi.
+- `invariants.md` — 3 bất biến (boundary client/server, ngôn ngữ không-Hán, token tươi).
+  Vi phạm = build fail; sửa chỉ qua decision record.
+- `api-contract.md` — hợp đồng API web ↔ api (endpoint, schema, error-map), tên lấy
+  trực tiếp từ `packages/contracts` + `apps/api`.
 
 ## Update Rule
 

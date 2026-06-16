@@ -250,11 +250,13 @@ Benchmark indicators:
 Current status:
 
 - Partially achieved by Phase 5. `scripts/bin/harness-cli audit` detects
-  durable-state drift, `scripts/bin/harness-cli propose` generates structured
-  improvement proposals from friction, interventions, and audit results, and
-  `docs/IMPROVEMENT_PROTOCOL.md` defines the review loop. H5 is not fully
-  achieved until repeated benchmark outcomes prove proposed improvements create
-  measurable positive deltas or are explicitly reverted.
+  durable-state drift (orphaned/unverified stories, open backlog), `score-context`
+  reports context-rule coverage, `intervention add/query` ghi và truy vấn
+  intervention, và `propose` sinh đề xuất từ friction + intervention + audit drift —
+  tất cả chạy được sau khi áp migration `004-intervention.sql` (schema_version 4).
+  Các doc `docs/HARNESS_AUDIT.md` + `docs/IMPROVEMENT_PROTOCOL.md` mô tả audit score
+  và proposal loop. H5 vẫn **partial** cho tới khi benchmark lặp lại chứng minh
+  proposal loop cải thiện harness theo thời gian.
 
 Activated responsibilities:
 
@@ -272,7 +274,7 @@ Activated responsibilities:
 | H2 | Achieved | `scripts/bin/harness-cli`, `scripts/schema/001-init.sql`, durable story records, `docs/HARNESS_COMPONENTS.md`, `docs/HARNESS_MATURITY.md`, `docs/TRACE_SPEC.md`, and `docs/CONTEXT_RULES.md` define the Phase 2 surface. |
 | H3 | Partial | Phase 3 adds `scripts/bin/harness-cli score-trace`, enriched friction context, and the backlog outcome loop; Phase 4 auto-scores traces on write. Component-level benchmark attribution remains open. |
 | H4 | Achieved | Phase 4 adds story-level `verify_command`, `story verify`, and trace-time verification warnings. Phase 5 adds `story verify-all` for batch story proof. |
-| H5 | Partial | Phase 5 adds `audit`, `score-context`, `intervention add/query`, `propose`, `docs/HARNESS_AUDIT.md`, and `docs/IMPROVEMENT_PROTOCOL.md`; repeated benchmark outcome proof remains open. |
+| H5 | Partial | Phase 5 adds `audit`, `score-context`, `intervention add/query`, và `propose` — tất cả chạy được sau migration `004-intervention.sql` (schema_version 4); `docs/HARNESS_AUDIT.md` + `docs/IMPROVEMENT_PROTOCOL.md` mô tả audit score + proposal loop. Repeated benchmark outcome proof còn mở. |
 
 ## Responsibility Activation
 
@@ -309,8 +311,11 @@ proof-column updates remain separate work.
 ## Phase 5 Interpretation
 
 Phase 5 completes H4 by adding batch story verification and starts H5 by adding
-tool discovery, intervention records, context scoring, drift audit, and
-deterministic proposal generation. The repository may claim H5 partial only
-when those commands and docs are present and validated; it must not claim full
-H5 until benchmark runs or trace outcomes prove the proposal loop improves the
-harness over time.
+context scoring (`score-context`), drift audit (`audit`), intervention records
+(`intervention add` / `query interventions`), and deterministic proposal
+generation (`propose`) — all operational in this database after migration
+`004-intervention.sql` (schema_version 4: `001-init`, `002-story-verify`,
+`003-tool`, `004-intervention`). The audit score and proposal loop are
+documented in `docs/HARNESS_AUDIT.md` and `docs/IMPROVEMENT_PROTOCOL.md`.
+The repository must not claim full H5 until repeated benchmark runs or trace
+outcomes prove the loop improves the harness over time.

@@ -1,272 +1,98 @@
-# repository-harness
+# ziweiai-web
 
-Turn any software repo into an agent-ready workspace.
+Monorepo fullstack cho sản phẩm luận giải **Tử Vi / chiêm tinh**: backend NestJS + web SvelteKit (Svelte 5 runes) + các package nội bộ dùng chung. Lá số do engine server-only tính, luận giải sinh bằng AI, auth Supabase client-only.
 
-`repository-harness` is a repository-level operating harness for Claude Code,
-Codex, Cursor, and other coding agents. It gives agents the missing project
-context they need before they change code: where to start, what the product
-contract says, how risky the work is, what proof is required, and which
-decisions future agents should inherit.
+Repo này được migrate từ monorepo gốc `ziweiai` (NestJS + Expo). Phần client Expo bị bỏ và viết lại bằng SvelteKit; backend và toàn bộ package dùng chung được mang nguyên sang để **contracts trở thành package workspace dùng chung giữa api và web**, triệt tiêu schema drift.
 
-The app is what users touch. The harness is what agents touch.
-
-## Why Star This Repo
-
-Star this repo if you want practical, reusable patterns for making AI-assisted
-software development more reliable, inspectable, and easier for humans to steer.
-
-This project is exploring a simple idea:
-
-> Coding agents do not only need better prompts. They need better repositories.
-
-## The Problem
-
-Most repos are built for humans reading code in a familiar codebase. Coding
-agents usually enter with only a chat prompt and a shallow snapshot of files.
-That leads to common failure modes:
-
-- The agent edits code before understanding product intent.
-- Important constraints live only in chat history or in someone's head.
-- Validation expectations are vague or discovered too late.
-- Architecture tradeoffs are repeated instead of inherited.
-- Large requests do not get broken into reviewable story-sized work.
-
-## The Harness Approach
-
-A repository starts to have a harness when it helps an agent answer practical
-engineering questions without relying only on chat history:
-
-- What should I read first?
-- What type of work is this?
-- Which product contract does it affect?
-- How risky is the change?
-- What proof will show the work is done?
-- What decision or lesson should future agents inherit?
-
-In this repo, those answers live in:
-
-- `AGENTS.md` — the stable agent shim with local project notes and Harness
-  doc links.
-- `docs/HARNESS.md` — the human-agent collaboration model.
-- `docs/FEATURE_INTAKE.md` — tiny, normal, and high-risk work classification.
-- `docs/ARCHITECTURE.md` — architecture discovery and boundary rules.
-- `docs/TEST_MATRIX.md` — behavior-to-proof validation expectations.
-- `docs/stories/` — story packets and backlog items.
-- `docs/decisions/` — durable decisions and tradeoffs.
-- `docs/templates/` — reusable spec, story, decision, and validation templates.
-
-OpenAI describes this shift as an agent-first world where humans steer and
-agents execute:
-
-https://openai.com/index/harness-engineering/
-
-## Install Harness Into A Project
-
-From a target project directory, run:
-
-```bash
-curl -fsSL "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh?$(date +%s)" | bash -s -- --yes
-```
-
-On Windows PowerShell, run:
-
-```powershell
-& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.ps1"))) -Yes
-```
-
-If the target already has `AGENTS.md`, `docs/`, or `scripts/`, choose one:
-
-```bash
-# Update an existing Harness repo without moving existing files
-curl -fsSL "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh?$(date +%s)" | bash -s -- --merge --yes
-
-# Back up and replace AGENTS.md, docs/, and scripts/
-curl -fsSL "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh?$(date +%s)" | bash -s -- --override --yes
-```
-
-```powershell
-# Update an existing Harness repo without moving existing files
-& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.ps1"))) -Merge -Yes
-
-# Back up and replace AGENTS.md, docs/, and scripts/
-& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.ps1"))) -Override -Yes
-```
-
-Use `--merge` when a project already has Harness and you want to append newly
-added Harness files without moving the existing `AGENTS.md`, `docs/`, or
-`scripts/` paths into backup. Existing files stay untouched; only missing
-Harness files are created.
-
-For older Harness installs whose `AGENTS.md` still contains the full generated
-operating guide, refresh it into the small stable shim:
-
-```bash
-curl -fsSL "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh?$(date +%s)" | bash -s -- --merge --refresh-agent-shim --yes
-```
-
-The refresh backs up the existing file. If it detects the old
-Harness-generated guide, it replaces it with the shim. If the file appears
-custom, it appends or updates a marked Harness block instead of overwriting the
-project's local instructions.
-
-If the project is driven with Claude Code, add `--claude`. Claude Code never
-auto-loads `AGENTS.md`, so without this the installed harness is invisible to
-fresh sessions. The flag installs (or refreshes) a `CLAUDE.md` whose marked
-Harness block `@`-imports `AGENTS.md` and `docs/FEATURE_INTAKE.md` into every
-session's context. An existing `CLAUDE.md` gets the block appended after a
-backup; plain installs without the flag never touch `CLAUDE.md`:
-
-```bash
-curl -fsSL "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh?$(date +%s)" | bash -s -- --claude --yes
-```
-
-Or install into a specific path:
-
-```bash
-curl -fsSL "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.sh?$(date +%s)" | bash -s -- --directory /path/to/project --yes
-```
-
-```powershell
-& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/hoangnb24/repository-harness/main/scripts/install-harness.ps1"))) -Directory C:\path\to\project -Yes
-```
-
-Use `--dry-run` on Bash or `-DryRun` on PowerShell to preview changes before
-writing files.
-
-The installer also downloads the prebuilt Harness CLI for the current platform,
-verifies its `.sha256` checksum, and installs it at
-`scripts/bin/harness-cli` on macOS/Linux or `scripts/bin/harness-cli.exe` on
-Windows. The Rust CLI is the main Harness tool and stable command path.
-
-Harness CLI release assets are published from tags by the
-`Harness CLI Release` GitHub Actions workflow. The installer expects each
-release to include `harness-cli-<platform>` and
-`harness-cli-<platform>.sha256` assets for macOS arm64, macOS x64, Linux x64,
-Linux arm64, and Windows x64. The Windows asset is
-`harness-cli-windows-x64.exe` plus `harness-cli-windows-x64.exe.sha256`.
-
-Merged pull requests are recorded in `CHANGELOG.md` by the
-`Post-Merge Maintenance` workflow. When a merged PR changes the Rust CLI source,
-schema, Cargo metadata, or CLI release packaging, that workflow bumps the CLI
-patch version, updates `scripts/harness-cli-release-tag`, creates a
-`harness-cli-v*` tag, and runs the Harness CLI release build for that tag.
-
-## Try The Flow
-
-The fastest way to understand the harness is to inspect the tiny demo:
-
-- `docs/demo/README.md`: shows how a simple product idea becomes product docs,
-  stories, validation expectations, and decisions before implementation starts.
-
-A typical flow looks like this:
+## Cấu trúc
 
 ```text
-human intent or product spec
-  -> product contract
-  -> feature intake
-  -> story packet
-  -> validation expectations
-  -> implementation work
-  -> decision or lesson captured for future agents
+apps/
+  api/                    # NestJS backend (+ supabase/ migrations bên trong)
+  web/                    # SvelteKit SPA — Svelte 5 runes
+packages/
+  config/                 # tsconfig/base + eslint/base (không có runtime dep)
+  contracts/              # Zod schemas + types — DÙNG CHUNG bởi api + web (zod v4)
+  core/                   # logic, kéo theo iztro — SERVER-ONLY
+  astro-engine/           # iztro + lunar-javascript + temporal — SERVER-ONLY
+vendor/xuanshu-runtime/   # runtime SERVER-ONLY (LiuYao/DaLiuRen/QiMen bridge)
+docs/                     # SPEC, product contract, story packets, decisions
+scripts/bin/harness-cli.exe   # CLI lớp durable (intake/story/trace/matrix)
+SPEC.md                   # nguồn chân lý duy nhất — full spec 8 phase
 ```
 
-Implementation prompts do not go straight to code. They first pass through
-feature intake, become story-sized work when needed, and then carry both product
-validation and harness maintenance expectations.
+Tài liệu nền tảng nên đọc theo thứ tự: `SPEC.md` → `docs/product/invariants.md` → `docs/HARNESS.md` + `docs/ARCHITECTURE.md` → story packets trong `docs/stories/epics/` → `docs/decisions/`.
 
-## Tool Registry
+## Stack
 
-The harness can use optional external tools (linters, code-graph servers,
-deploy checks) without depending on any of them. You register a tool as a
-provider of a *capability*, the harness scans whether it is actually present,
-and a workflow step uses whatever is equipped — an absent tool is a clean skip,
-never a failure.
+| Lớp | Công nghệ |
+|---|---|
+| Backend | NestJS 11, Zod v4, Supabase JS |
+| Web | SvelteKit 2 + Svelte 5 runes, Vite, `@tanstack/svelte-query`, `@supabase/supabase-js` |
+| Web render | `adapter-static` chế độ SPA (`ssr=false`, `prerender=false`, `fallback: index.html`) — app sau đăng nhập, không cần SSR/SEO |
+| Styling | scoped CSS + CSS custom properties (design tokens). **Không dùng Tailwind** |
+| Engine lá số | iztro + lunar-javascript + `@js-temporal` (server-only) |
+| Monorepo | pnpm workspace + Turbo. `pnpm@10.17.1`, Node `>=22` |
 
-```bash
-# register a tool as a provider of a capability
-scripts/bin/harness-cli tool register --name deploy-check --kind cli \
-  --capability deploy-verification --command ./scripts/deploy-check.sh \
-  --responsibility Verification --description "Verify deploy health before release"
+## Hai bất biến bắt buộc
 
-# scan presence (writes present/missing/unknown)
-scripts/bin/harness-cli tool check
+Đây là ràng buộc cốt lõi, vi phạm là blocker. Chi tiết: `docs/product/invariants.md`.
 
-# a step looks up what is equipped for a purpose
-scripts/bin/harness-cli query tools --capability deploy-verification --status present
-```
+**1. Biên giới server (security).** `apps/web` chỉ được import `@ziweiai/contracts` từ workspace nội bộ. TUYỆT ĐỐI không import `@ziweiai/core`, `@ziweiai/astro-engine`, `iztro`, `lunar-javascript` — chúng kéo engine tính lá số + ephemeris + chữ Hán vào bundle client. ESLint `no-restricted-imports` chặn ở mức lint. Cần một hằng/regex nhỏ từ core (vd `CJK_TEXT_PATTERN`) → copy giá trị vào `apps/web/src/lib/text/cjk.ts`, không import core.
 
-Kinds (`cli`, `binary`, `mcp`, `skill`, `http`) make it agent-generic: each
-agent runtime uses what it can orchestrate. See `docs/TOOL_REGISTRY.md` for the
-full model, the degrade ladder, and how to wire a tool into a flow step.
+**2. Ngôn ngữ (Han-character invariant).** Frontend không bao giờ chứa chữ Hán — mọi nhãn đều tiếng Việt. `translateZiweiKey` là fail-fast (thiếu key → throw; cấm fallback ngầm về chữ Hán). Snapshot legacy v1 có `displayName` chữ Hán → guard bằng `CJK_TEXT_PATTERN` + fallback `"Thuật ngữ cũ"`. Mọi output UI phải qua test quét `\p{Script=Han}`.
 
-## Current State
+## Bản đồ rewrite React → Svelte 5
 
-This repository is in Harness v0.
+| React (Expo) | Svelte 5 |
+|---|---|
+| `useState` | `$state` |
+| `useMemo` | `$derived` |
+| `useEffect` | `$effect` (đừng port máy móc — nhiều effect nên thành `$derived` hoặc event handler) |
+| `useQuery` / `useMutation` | `createQuery` / `createMutation` (wrap options trong hàm: `createQuery(() => ({ ... }))`) |
+| `useRouter` | `goto` |
+| `EXPO_PUBLIC_*` / `process.env` | `$env/static/public` (`PUBLIC_*`) |
 
-There is no application implementation and no baked-in product specification
-yet. The current work is the reusable project harness: the file structure,
-agent operating model, feature intake process, story templates, and validation
-expectations that help humans and agents turn a future user-provided spec into
-implementation work.
+Mapping đầy đủ: `SPEC.md` Part A8.
 
-## Product Sources
+## API backend
 
-No product contract is currently defined.
+5 endpoint: `GET /health` (public), `POST /charts`, `GET /charts/:id`, `POST /explanations`, `GET /history?limit=N` (đều cần Bearer). Mọi response UI dùng phải `parse()` bằng schema từ `@ziweiai/contracts` (tên camelCase: `historyListResponseSchema`, `chartDetailResponseSchema`, ...) — web không tự định nghĩa DTO. Token = `session.access_token` gửi qua header `Authorization: Bearer`. Chi tiết: `docs/product/api-contract.md`.
 
-When a user provides a project specification, add or reference it as the input
-spec for the first buildout, then derive smaller living artifacts from it:
+## Cấu hình env
 
-- `docs/product/`: current product contract files, created from the spec.
-- `docs/stories/`: story packets and backlog created from selected work.
-- `docs/TEST_MATRIX.md`: behavior-to-proof control panel.
-- `docs/decisions/`: durable decisions and tradeoffs.
+Chỉ tiền tố `PUBLIC_*` được lộ ra bundle client:
 
-Do not keep a project-specific spec or product breakdown in this harness until
-a real project supplies one.
+- `PUBLIC_API_BASE_URL`
+- `PUBLIC_SUPABASE_URL`
+- `PUBLIC_SUPABASE_ANON_KEY`
 
-## Repository Structure
+Web đọc env qua `$env/static/public`, không qua `process.env`. Secret server (`SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `DEEPSEEK_API_KEY`, `GEMINI_API_KEY`, `OPENAI_COMPAT_API_KEY`, geocoding key) chỉ sống trong `apps/api`. Không commit `.env` thật.
 
-```text
-project/
-  AGENTS.md
-  README.md
-  docs/
-    HARNESS.md
-    FEATURE_INTAKE.md
-    ARCHITECTURE.md
-    TEST_MATRIX.md
-    HARNESS_BACKLOG.md
-    product/
-    stories/
-    decisions/
-    demo/
-    templates/
-  scripts/
-    README.md
-```
+## Lệnh thường dùng
 
-## Contributing
+Chạy từ repo root.
 
-This project is early and benefits most from real-world agent failure cases,
-example harness installs, docs improvements, and reusable workflow patterns.
-See `CONTRIBUTING.md` for contribution ideas.
+| Lệnh | Tác dụng |
+|---|---|
+| `pnpm install` | Cài deps toàn workspace |
+| `turbo build` | Build mọi package theo thứ tự phụ thuộc |
+| `turbo test` | Test toàn workspace |
+| `turbo typecheck` | Typecheck toàn workspace |
+| `pnpm lint` | ESLint toàn workspace (`--max-warnings=0`) |
+| `pnpm -F @ziweiai/api dev` | Chạy backend NestJS |
+| `pnpm -F @ziweiai/api test` | Test backend (Vitest) |
+| `pnpm -F @ziweiai/web dev` | Chạy web SvelteKit |
+| `pnpm -F @ziweiai/web build` | Build SPA tĩnh ra `build/` |
+| `pnpm -F @ziweiai/web check` | svelte-check + tsc |
+| `pnpm -F @ziweiai/web e2e` | Playwright E2E |
 
-Useful contributions include:
+## Trạng thái
 
-- Show how the harness works in a real project.
-- Add missing templates or improve existing ones.
-- Propose validation patterns for different stacks.
-- Share failures where an agent made the wrong change because the repo lacked
-  context.
-- Compare harness behavior across Claude Code, Codex, Cursor, and other tools.
+Đã hoàn thành 8 phase (story US-001..US-007): scaffold foundation → auth + route guard → logic thuần + i18n + design tokens → UI primitives → dashboard + birth form → chi tiết lá số Tử Vi + luận giải → các hệ thuật số khác + lịch sử.
 
-## Share
+Xem proof status: `scripts/bin/harness-cli.exe query matrix`.
 
-If this idea resonates, please star the repo and share it with someone building
-with coding agents.
+## Quy trình harness
 
-Short description:
-
-> An agent-ready repo harness for Claude Code, Codex, Cursor, and other coding
-> agents: AGENTS.md, product contracts, story packets, validation matrix, and
-> decision records.
+Repo chạy harness workflow bắt buộc (lane normal/high-risk), theo thứ tự: intake → story breakdown → (fix doc drift nếu có) → implement → validate + update matrix → trace; thay đổi kiến trúc → decision. Chi tiết: `docs/HARNESS.md`, `docs/FEATURE_INTAKE.md`. CLI ở `scripts/bin/harness-cli.exe`.

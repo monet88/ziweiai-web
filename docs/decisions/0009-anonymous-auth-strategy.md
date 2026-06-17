@@ -45,11 +45,26 @@ phải ràng buộc kỹ thuật.
    đọc được lá số người khác; chỉ chấp nhận nếu lá số không chứa PII. Không cần nếu
    dùng anon sign-in. Loại ở giai đoạn này.
 
+## Cập nhật khi triển khai (US-009)
+
+Giả định "backend KHÔNG cần sửa một dòng nào" hoá ra **gần đúng nhưng không tuyệt
+đối**. Token ẩn danh Supabase phát ra trường `email: ""` (chuỗi rỗng, KHÔNG phải
+null). `authenticatedUserSchema.email` là `z.email().nullable()` → `z.email()` reject
+chuỗi rỗng → `verifyAccessToken` ném lỗi → guard trả **401** cho mọi request ẩn danh.
+
+Sửa tối thiểu (không nới lỏng bảo mật, không đổi schema/guard/RLS/quota): trong
+`supabase-auth.service.ts` đổi `email: payload.email ?? null` → `payload.email || null`
+để coalesce chuỗi rỗng về null trước khi parse. Chữ ký ES256 (qua JWKS) + `userId` UUID
+vẫn verify như cũ. Có test hồi quy cho token ẩn danh `email=""`.
+
+Ngoài ra `config.toml` local bật `enable_anonymous_sign_ins = true` (mặc định `false`)
+— đây là follow-up đã nêu sẵn bên dưới, cần bật ở cả project Supabase cloud trước release.
+
 ## Consequences
 
 Positive:
 
-- Backend (guard/ownership/quota/FK/RLS) không đổi → rủi ro thấp nhất.
+- Backend gần như không đổi (chỉ một dòng coalesce email rỗng) → rủi ro thấp.
 - Bất biến biên giới import + ngôn ngữ không bị động tới.
 - Đường nâng cấp anon→email rõ ràng.
 

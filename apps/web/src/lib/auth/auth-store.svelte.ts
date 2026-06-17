@@ -23,13 +23,35 @@ export class AuthStore {
   init(): () => void {
     let active = true;
 
-    void supabase.auth.getSession().then(({ data }) => {
+    void supabase.auth.getSession().then(async ({ data }) => {
       if (!active) {
         return;
       }
-      this.session = data.session;
-      this.user = data.session?.user ?? null;
-      this.isInitializing = false;
+      if (data.session) {
+        this.session = data.session;
+        this.user = data.session.user;
+        this.isInitializing = false;
+        return;
+      }
+      // Chưa có phiên → cấp danh tính ẩn danh (decision 0009): khách lập/xem lá số
+      // không cần đăng nhập, vẫn có JWT thật → contract Bearer + ownership không đổi.
+      // Nếu anonymous sign-in chưa bật / lỗi mạng thì vẫn tắt cờ initializing để UI
+      // không treo (layout hiện trạng thái fallback thay vì màn chờ vô hạn).
+      try {
+        const { data: anonData, error } = await supabase.auth.signInAnonymously();
+        if (!active) {
+          return;
+        }
+        const anonSession = error ? null : (anonData.session ?? null);
+        this.session = anonSession;
+        this.user = anonSession?.user ?? null;
+        this.isInitializing = false;
+      } catch {
+        if (!active) {
+          return;
+        }
+        this.isInitializing = false;
+      }
     });
 
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
@@ -54,6 +76,11 @@ export class AuthStore {
 
   get isAuthenticated(): boolean {
     return this.session !== null;
+  }
+
+  /** true khi phiên hiện tại là phiên ẩn danh (Supabase anonymous sign-in, decision 0009). */
+  get isAnonymous(): boolean {
+    return this.session?.user.is_anonymous === true;
   }
 
   async signInWithPassword(email: string, password: string): Promise<void> {

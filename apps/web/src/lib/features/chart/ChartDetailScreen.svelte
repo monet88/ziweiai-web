@@ -125,7 +125,7 @@
       {#if explanation.isPaymentRequired}
         <PrimaryButton
           label={viCopy.explanation.premiumCta}
-          variant="accent"
+          variant="gold"
           onclick={() => goto(resolve('/pricing'))}
         />
         <p class="hint">{viCopy.explanation.premiumHint}</p>

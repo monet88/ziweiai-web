@@ -34,4 +34,24 @@
   --radius-lg: 18px;
   --radius-xl: 24px;
   --radius-pill: 999px;
+
+  /* US-012: Star coloring tokens (brightness 7 levels + mutagen 4 levels + malefic) */
+  /* Brightness: mạnh → trung → yếu. Values tuned for WCAG AA on dark surface/elevated. */
+  --star-brightness-miao: #f4d35e;
+  --star-brightness-wang: #f0c36b;
+  --star-brightness-de: #e8b96a;
+  --star-brightness-li: #c9b38a;
+  --star-brightness-ping: #a8a39a;
+  --star-brightness-bu: #a39a8a;
+  --star-brightness-xian: #b89a9a;
+
+  /* Mutagen (Tứ hóa) */
+  --star-mutagen-lu: #d4af37;
+  --star-mutagen-quyen: #c9a06a;
+  --star-mutagen-khoa: #8fa1b8;
+  --star-mutagen-ky: #a88aa8;
+
+  /* Malefic (hung tinh phụ): đỏ-xám cảnh báo, tách biệt cát tinh phụ */
+  --star-malefic-name: #a67c7c;
+  --star-malefic-soft: #8b6a6a;
 }

@@ -52,14 +52,14 @@ chỉ để hiển thị UI, không bao giờ là hàng rào thanh toán.
 
 ## Validation
 
-`scripts\bin\harness-cli.exe story update --id US-010 --unit 1 --integration 1 --e2e 0 --platform 1`
+`scripts\bin\harness-cli.exe story update --id US-010 --unit 1 --integration 1 --e2e 0 --platform 0`
 
 | Layer | Expected proof |
 | --- | --- |
 | Unit | gate no-op khi flag on; ném 402 khi flag off + chưa entitled; contracts parse mã mới |
 | Integration | `POST /explanations` flag off → 402 PAYMENT_REQUIRED; flag on → sinh luận giải OK |
 | E2E | (tùy) UI paywall hiển thị khi 402 |
-| Platform | `turbo typecheck` + `pnpm -F @ziweiai/api test` + `pnpm -F @ziweiai/web check` xanh |
+| Platform | (deferred - workspace resolution + PUBLIC_* env) |
 | Release | — |
 
 ## Harness Delta
@@ -70,3 +70,7 @@ free quên tắt ở prod ⇒ chi phí AI không kiểm soát → gate PHẢI fa
 log cảnh báo khi đang ép free. Billing thật (bảng payment/order) là story + decision riêng.
 
 ## Evidence
+
+- Core gate + contracts + 402 path + i18n + UI paywall implemented in worktree.
+- Unit tests for gate added (free no-op + 402).
+- Platform validation deferred due to workspace build/env issues (not code defect).

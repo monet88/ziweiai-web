@@ -179,8 +179,17 @@ export const viCopy = {
     regenerate: 'Tạo lại luận giải',
     statusPending: 'Đang tạo luận giải…',
     statusFailed: 'Tạo luận giải thất bại.',
-    emptyBody: 'Nhấn "Tạo luận giải" để AI luận giải mục này.',
-    selectedBadge: 'Cung đang chọn',
+    premiumCta: 'Nâng cấp để dùng luận giải AI',
+    premiumHint: 'Tính năng này yêu cầu gói trả phí. Hiện đang miễn phí thử nghiệm.',
+  },
+  pricing: {
+    heroEyebrow: 'Gói dịch vụ',
+    heroTitle: 'Nâng cấp luận giải AI',
+    heroSubtitle: 'Mở khóa luận giải AI chuyên sâu cho lá số của bạn.',
+    backToDashboard: 'Quay lại bảng điều khiển',
+    comingSoonTitle: 'Sắp ra mắt',
+    comingSoonDescription:
+      'Thanh toán đang được hoàn thiện. Trong giai đoạn thử nghiệm, tính năng luận giải AI vẫn miễn phí cho mọi người.',
   },
   errors: {
     authenticationFailed: 'Xác thực không thành công.',

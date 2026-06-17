@@ -117,6 +117,11 @@ export class ExplanationsService {
         });
       }
 
+      // US-010 (decision 0010): gate ENTITLEMENT đặt TRƯỚC mọi thao tác tạo/claim request record
+      // sinh generation mới. Cache-hit ở trên đã free (kết quả đã có). Khi flag=false + chưa entitled
+      // → ném 402 ngay, KHÔNG ghi/đổi state request (tránh ô nhiễm 'failed' + tốn lifecycle).
+      this.assertCanUseAiExplanation();
+
       // Sửa P1 race (violation): logic reuse trước đây (line 68) cho cả pending/running/failed gây duplicate worker
       // (hai concurrent call cùng idempotencyKey đều thấy no-result -> đều generate + createResult).
       // + race: loser createResult unique conflict (do constraint explanation_request_id unique) -> catch set 'failed'
@@ -283,6 +288,8 @@ export class ExplanationsService {
         palaceScope: input.palaceScope ?? null,
       });
     } else {
+      // US-010 (decision 0010): gate TRƯỚC khi tạo request record mới (cache-hit đã bypass ở trên).
+      this.assertCanUseAiExplanation();
       const failureRetainsUntil = buildFailedExplanationRetentionTimestamp(new Date());
       request = await this.persistenceGateway.createExplanationRequest({
         ownerUserId: user.userId,
@@ -321,10 +328,7 @@ export class ExplanationsService {
         requestState: 'running',
       });
 
-      // US-010: gate trước khi gọi provider (cache-hit đã bypass ở trên)
-    this.assertCanUseAiExplanation();
-
-    const providerResult = await this.providerRouter.generate(input.providerPreference, {
+      const providerResult = await this.providerRouter.generate(input.providerPreference, {
         chartSnapshot: chartRecord.snapshot,
         explanationKind: input.explanationKind,
         explanationContext,

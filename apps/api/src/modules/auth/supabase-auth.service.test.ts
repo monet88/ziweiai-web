@@ -67,6 +67,23 @@ describe('SupabaseAuthService', () => {
     expect(user.email).toBe('user@example.com');
   });
 
+  it('normalizes empty anonymous email to null (Supabase anon token phát email="")', async () => {
+    // Token ẩn danh của Supabase mang email="" (chuỗi rỗng) chứ không phải vắng mặt → nếu để
+    // nguyên thì authenticatedUserSchema (z.email()) reject. Coalesce "" → null cho anon đi qua.
+    const token = signHs256(
+      {
+        sub: '0f8fad5b-d9cb-469f-a165-70867728950e',
+        email: '',
+        exp: Math.floor(Date.now() / 1000) + 60,
+      },
+      apiEnv.SUPABASE_JWT_SECRET,
+    );
+
+    const user = await new SupabaseAuthService().verifyAccessToken(token);
+    expect(user.userId).toBe('0f8fad5b-d9cb-469f-a165-70867728950e');
+    expect(user.email).toBeNull();
+  });
+
   it('rejects an expired token', async () => {
     const token = signHs256(
       {

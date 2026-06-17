@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
   import type { Snippet } from 'svelte';
 
@@ -12,25 +10,19 @@
 
   const auth = getAuthStore();
 
-  // Guard: chỉ quyết định redirect SAU khi init xong (isInitializing=false) để tránh
-  // vòng lặp redirect khi session đang được nạp lại từ localStorage.
-  $effect(() => {
-    if (!auth.isInitializing && !auth.isAuthenticated) {
-      void goto(resolve('/sign-in'), { replaceState: true });
-    }
-  });
+  // Không còn tường đăng nhập (decision 0009 / US-009): AuthStore.init() cấp phiên ẩn
+  // danh khi chưa có session, nên sau init mọi khách đều có JWT thật → dashboard + lập +
+  // xem lá số chạy dưới phiên ẩn danh. Guard chỉ còn nhiệm vụ CHỜ init xong, không đá ai
+  // về /sign-in. (Trường hợp anonymous sign-in chưa bật → session null; vẫn render để UI
+  // báo lỗi tại tầng request thay vì redirect mù.)
 </script>
 
 {#if auth.isInitializing}
   <main class="state">
-    <p>Đang kiểm tra phiên đăng nhập…</p>
+    <p>Đang chuẩn bị không gian tử vi của bạn…</p>
   </main>
-{:else if auth.isAuthenticated}
-  {@render children()}
 {:else}
-  <main class="state">
-    <p>Đang chuyển tới trang đăng nhập…</p>
-  </main>
+  {@render children()}
 {/if}
 
 <style>

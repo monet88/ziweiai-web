@@ -61,13 +61,18 @@
 >
   {#snippet action()}
     <div class="session">
-      <span class="session-email">{auth.user?.email ?? viCopy.dashboard.unknownUser}</span>
-      <PrimaryButton
-        label={viCopy.dashboard.signOut}
-        variant="surface"
-        loading={isSigningOut}
-        onclick={handleSignOut}
-      />
+      {#if auth.isAnonymous}
+        <span class="session-email">{viCopy.dashboard.anonymousSession}</span>
+        <a class="session-cta" href={resolve('/sign-in')}>{viCopy.dashboard.signInOrSignUp}</a>
+      {:else}
+        <span class="session-email">{auth.user?.email ?? viCopy.dashboard.unknownUser}</span>
+        <PrimaryButton
+          label={viCopy.dashboard.signOut}
+          variant="surface"
+          loading={isSigningOut}
+          onclick={handleSignOut}
+        />
+      {/if}
     </div>
   {/snippet}
 
@@ -103,6 +108,26 @@
   .session-email {
     color: var(--color-text-muted);
     font-size: 13px;
+  }
+
+  .session-cta {
+    padding: var(--space-xs) var(--space-md);
+    border: 1px solid var(--color-border-gold);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--color-accent-gold-soft);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .session-cta:hover {
+    background: var(--color-border-gold);
+  }
+
+  .session-cta:focus-visible {
+    outline: 2px solid var(--color-accent-gold-soft);
+    outline-offset: 1px;
   }
 
   .system-nav {

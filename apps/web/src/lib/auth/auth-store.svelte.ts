@@ -42,9 +42,15 @@ export class AuthStore {
         if (!active) {
           return;
         }
-        const anonSession = error ? null : (anonData.session ?? null);
-        this.session = anonSession;
-        this.user = anonSession?.user ?? null;
+        // Chỉ gán khi CHƯA có session: signInAnonymously() thành công cũng fire
+        // onAuthStateChange('SIGNED_IN'). Nếu trong lúc anon đang bay mà một phiên thật
+        // (email) đã được set qua handler → this.session !== null → KHÔNG ghi đè bằng anon
+        // (tránh race nuốt mất phiên thật). Lỗi anon → giữ session null, chỉ tắt cờ.
+        if (this.session === null) {
+          const anonSession = error ? null : (anonData.session ?? null);
+          this.session = anonSession;
+          this.user = anonSession?.user ?? null;
+        }
         this.isInitializing = false;
       } catch {
         if (!active) {

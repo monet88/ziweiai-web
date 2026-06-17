@@ -137,6 +137,36 @@ describe('AuthStore', () => {
     expect(store.isAnonymous).toBe(false);
   });
 
+  it('init() KHÔNG ghi đè phiên email bằng anon khi xảy ra race (phiên thật đến trước)', async () => {
+    // signInAnonymously đang bay; trong khe đó onAuthStateChange set phiên email thật.
+    // Khi anon resolve, this.session đã != null → anon KHÔNG được ghi đè phiên thật.
+    let resolveAnon: ((value: unknown) => void) | undefined;
+    mockAuth.signInAnonymously.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAnon = resolve;
+      }),
+    );
+    let handler: (event: string, session: unknown) => void = () => {};
+    mockAuth.onAuthStateChange.mockImplementation((cb) => {
+      handler = cb;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
+
+    const store = new AuthStore();
+    store.init();
+    await vi.waitFor(() => expect(mockAuth.signInAnonymously).toHaveBeenCalledOnce());
+
+    // Phiên email thật đến qua handler trong lúc anon còn in-flight.
+    handler('SIGNED_IN', makeSession('email-tok', false));
+    expect(store.getAccessToken()).toBe('email-tok');
+
+    // Anon resolve muộn → không nuốt mất phiên email.
+    resolveAnon?.({ data: { session: makeAnonSession('anon-tok') }, error: null });
+    await vi.waitFor(() => expect(store.isInitializing).toBe(false));
+    expect(store.getAccessToken()).toBe('email-tok');
+    expect(store.isAnonymous).toBe(false);
+  });
+
   it('init() cleanup hủy subscription', () => {
     const unsubscribe = vi.fn();
     mockAuth.onAuthStateChange.mockReturnValue({ data: { subscription: { unsubscribe } } });

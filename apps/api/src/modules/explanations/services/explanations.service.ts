@@ -35,7 +35,9 @@ export class ExplanationsService {
   ) {}
 
   async createExplanation(user: AuthenticatedUser, ipAddress: string, input: CreateExplanationRequest) {
-    await this.assertCanCreateExplanation(user.userId, ipAddress);
+    // email === null ⟺ phiên ẩn danh (decision 0009): app chỉ có email+password, anon JWT
+    // không mang email → dùng làm tín hiệu áp trần daily-per-IP cho đường anon.
+    await this.assertCanCreateExplanation(user.userId, ipAddress, user.email === null);
 
     const chartRecord = await this.persistenceGateway.findChartSnapshotById(user.userId, input.chartSnapshotId);
     if (!chartRecord) {
@@ -431,9 +433,9 @@ export class ExplanationsService {
     });
   }
 
-  private async assertCanCreateExplanation(userId: string, ipAddress: string): Promise<void> {
+  private async assertCanCreateExplanation(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateExplanation(userId, ipAddress);
+      await this.quotasService.assertCanCreateExplanation(userId, ipAddress, isAnonymous);
     } catch (error) {
       throw new ApiErrorHttpException(HttpStatus.TOO_MANY_REQUESTS, 'RATE_LIMITED', error instanceof Error ? error.message : 'Đã vượt hạn mức tạo luận giải.');
     }

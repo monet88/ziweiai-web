@@ -23,8 +23,11 @@ match trong cả `apps/api` lẫn `packages/contracts`). `apiErrorCodeSchema` ch
   cạnh `assertCanCreateExplanation`, **trước** khi gọi provider và tạo
   `explanation_requests`. Cờ client KHÔNG bao giờ là hàng rào thanh toán (dễ bypass).
 - Thêm 1 env flag ở `apps/api/src/config/env.ts`: `AI_EXPLANATION_FREE_FOR_ALL`
-  (`z.coerce.boolean().default(true)`). Khi `true` (mặc định, giai đoạn test) → gate là
+  (`z.stringbool().default(true)`). Khi `true` (mặc định, giai đoạn test) → gate là
   no-op, mọi danh tính dùng AI miễn phí. Khi `false` → fail-closed, yêu cầu entitlement.
+  Dùng `z.stringbool` (zod v4) chứ KHÔNG dùng `z.coerce.boolean()`: env luôn là chuỗi,
+  mà `Boolean("false") === true` nên `z.coerce.boolean()` khiến `=false` vẫn ra `true`
+  (gate vô hiệu ở prod). `z.stringbool` parse `"false"/"0"/"no"` → `false` đúng nghĩa.
 - Thêm mã lỗi `PAYMENT_REQUIRED` vào `apiErrorCodeSchema` (`packages/contracts`), trả
   HTTP 402 khi không có quyền. Web parse mọi lỗi qua contracts nên phải thêm mã này
   trước, kèm thông điệp tiếng Việt (không chữ Hán).

@@ -182,6 +182,15 @@ export const viCopy = {
     premiumCta: 'Nâng cấp để dùng luận giải AI',
     premiumHint: 'Tính năng này yêu cầu gói trả phí. Hiện đang miễn phí thử nghiệm.',
   },
+  pricing: {
+    heroEyebrow: 'Gói dịch vụ',
+    heroTitle: 'Nâng cấp luận giải AI',
+    heroSubtitle: 'Mở khóa luận giải AI chuyên sâu cho lá số của bạn.',
+    backToDashboard: 'Quay lại bảng điều khiển',
+    comingSoonTitle: 'Sắp ra mắt',
+    comingSoonDescription:
+      'Thanh toán đang được hoàn thiện. Trong giai đoạn thử nghiệm, tính năng luận giải AI vẫn miễn phí cho mọi người.',
+  },
   errors: {
     authenticationFailed: 'Xác thực không thành công.',
     createChartFailed: 'Đã xảy ra lỗi khi lập lá số. Vui lòng thử lại sau.',

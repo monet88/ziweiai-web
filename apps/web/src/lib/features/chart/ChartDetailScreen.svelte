@@ -138,7 +138,7 @@
       {/if}
       {#if explanation.isPending && !explanation.hasResult}
         <p class="status">{viCopy.explanation.statusPending}</p>
-      {:else if explanation.isError && explanation.errorMessage}
+      {:else if explanation.isError && explanation.errorMessage && !explanation.isPaymentRequired}
         <NoticeBanner tone="danger" message={explanation.errorMessage} />
       {:else if explanation.hasResult && explanation.renderedMarkdown}
         <article class="result">

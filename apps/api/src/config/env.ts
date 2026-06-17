@@ -47,7 +47,7 @@ export function loadWorkspaceEnvFile(searchRoots: string[] = [process.cwd(), __d
 
 loadWorkspaceEnvFile();
 
-const apiEnvSchema = z.object({
+export const apiEnvSchema = z.object({
   API_PORT: z.coerce.number().int().positive().default(3000),
   API_SERVICE_NAME: z.string().min(1).default('ziweiai-api'),
   API_CORS_ORIGINS: z
@@ -72,7 +72,10 @@ const apiEnvSchema = z.object({
   GEMINI_SDK_BASE_URL: z.preprocess((value) => value ?? process.env.GEMINI_API_BASE_URL, z.string().url().optional()),
   GEMINI_MODEL: z.string().min(1).default('gemini-3.5-flash'),
   AI_DEFAULT_PROVIDER: z.enum(['auto', 'deepseek', 'openai-compat', 'gemini']).default('auto'),
-  AI_EXPLANATION_FREE_FOR_ALL: z.coerce.boolean().default(true),
+  // z.stringbool (zod v4): "false"/"0"/"no" → false, "true"/"1"/"yes" → true.
+  // KHÔNG dùng z.coerce.boolean() — nó chạy Boolean(string) nên mọi chuỗi non-empty
+  // (kể cả "false") đều thành true, khiến AI_EXPLANATION_FREE_FOR_ALL=false vô hiệu ở prod.
+  AI_EXPLANATION_FREE_FOR_ALL: z.stringbool().default(true),
   npm_package_version: z.string().min(1).optional(),
 });
 

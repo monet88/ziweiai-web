@@ -1,0 +1,300 @@
+# Instincts generated from https://github.com/monet88/ziweiai-web
+# Generated: 2026-06-17T15:57:43.068Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: ziweiai-web-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: docs
+
+## Evidence
+
+- 1 commits analyzed
+- Detected conventional commit pattern
+- Examples: docs(spec): Phase 12-18 roadmap (US-012..US-018) + decisions 0011/0012/0013
+
+---
+id: ziweiai-web-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Commit Length
+
+## Action
+
+Write moderate-length commit messages (~75 characters)
+
+## Evidence
+
+- Average commit message length: 75 chars
+- Based on 1 commits
+
+---
+id: ziweiai-web-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: ziweiai-web-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: ziweiai-web-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: ziweiai-web-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: ziweiai-web-instinct-file-naming
+trigger: "When creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct File Naming
+
+## Action
+
+Name the file using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.files
+
+---
+id: ziweiai-web-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Function Naming
+
+## Action
+
+Name the function using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.functions
+
+---
+id: ziweiai-web-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Class Naming
+
+## Action
+
+Name the class using PascalCase
+
+## Evidence
+
+- Pattern in namingConventions.classes
+
+---
+id: ziweiai-web-instinct-constant-naming
+trigger: "When declaring a constant"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Constant Naming
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE
+
+## Evidence
+
+- Pattern in namingConventions.constants
+
+---
+id: ziweiai-web-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in importStyle
+
+---
+id: ziweiai-web-instinct-export-style
+trigger: "When exporting modules or functions"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle
+
+---
+id: ziweiai-web-instinct-commit-prefix
+trigger: "When making a documentation-related commit"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Commit Prefix
+
+## Action
+
+Prefix the commit message with 'docs'
+
+## Evidence
+
+- Seen in commit 'docs(spec): Phase 12-18 roadmap (US-012..US-018) + decisions 0011/0012/0013'
+- Pattern in commits.prefixes
+
+---
+id: ziweiai-web-instinct-commit-format
+trigger: "When writing a commit message"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Commit Format
+
+## Action
+
+Follow the conventional commit format: <type>(<scope>): <description>
+
+## Evidence
+
+- Seen in commit 'docs(spec): Phase 12-18 roadmap (US-012..US-018) + decisions 0011/0012/0013'
+- Pattern in commits.type
+
+---
+id: ziweiai-web-instinct-test-location
+trigger: "When adding new tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Test Location
+
+## Action
+
+Place test files in a separate directory from source files
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation
+

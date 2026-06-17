@@ -99,6 +99,12 @@ export const viCopy = {
     'da-liu-ren': 'Đại Lục Nhâm',
     'qi-men-dun-jia': 'Kỳ Môn Độn Giáp',
     'zi-wei-dou-shu': 'Tử Vi Đẩu Số',
+    hepan: 'Hợp Hôn',
+    mangpai: 'Manh Phái',
+    tarot: 'Tarot',
+    mbti: 'MBTI',
+    face: 'Xem Tướng',
+    palm: 'Xem Tay',
   },
   confidence: {
     blocked: 'Bị chặn',

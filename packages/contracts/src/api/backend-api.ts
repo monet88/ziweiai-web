@@ -23,6 +23,10 @@ export const apiErrorCodeSchema = z.enum([
   'PROVIDER_UNAVAILABLE',
   'INTERNAL_ERROR',
   'PAYMENT_REQUIRED',
+  // US-017: new error codes for extended systems
+  'IDENTITY_REQUIRED',      // anon user hit face/palm (requires email identity)
+  'FEATURE_DISABLED',       // feature flag off for a system
+  'VISION_QUOTA_EXCEEDED',  // separate vision quota exceeded
 ]);
 
 export const authenticatedUserSchema = z.object({

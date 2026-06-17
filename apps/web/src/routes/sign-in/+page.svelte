@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { useQueryClient } from '@tanstack/svelte-query';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
 
   // Nhãn tiếng Việt hardcode tạm — i18n tập trung là US-003 (bất biến ngôn ngữ: không chữ Hán).
   const auth = getAuthStore();
+  const queryClient = useQueryClient();
 
   let email = $state('');
   let password = $state('');
@@ -26,12 +28,16 @@
     try {
       if (mode === 'sign-in') {
         await auth.signInWithPassword(email, password);
+        // Chuyển từ phiên ẩn danh (decision 0009) sang phiên email → xoá cache query
+        // để không rò dữ liệu/lịch sử của phiên anon trước đó (bất biến token tươi §3).
+        queryClient.clear();
         await goto(resolve('/'));
       } else {
         const { needsEmailConfirmation } = await auth.signUpWithPassword(email, password);
         if (needsEmailConfirmation) {
           noticeMessage = 'Tài khoản đã tạo. Vui lòng kiểm tra email để xác nhận trước khi đăng nhập.';
         } else {
+          queryClient.clear();
           await goto(resolve('/'));
         }
       }

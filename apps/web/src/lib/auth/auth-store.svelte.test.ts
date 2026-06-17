@@ -11,6 +11,7 @@ const mockAuth = vi.hoisted(() => ({
   getSession: vi.fn(),
   onAuthStateChange: vi.fn(),
   signInWithPassword: vi.fn(),
+  signInAnonymously: vi.fn(),
   signUp: vi.fn(),
   signOut: vi.fn(),
 }));
@@ -21,10 +22,17 @@ vi.mock('$lib/supabase/supabase-client', () => ({
 
 import { AuthStore } from './auth-store.svelte';
 
-function makeSession(token: string) {
+function makeSession(token: string, isAnonymous = false) {
   return {
     access_token: token,
-    user: { id: 'u1', email: 'a@b.com' },
+    user: { id: 'u1', email: 'a@b.com', is_anonymous: isAnonymous },
+  };
+}
+
+function makeAnonSession(token: string) {
+  return {
+    access_token: token,
+    user: { id: 'anon-1', email: undefined, is_anonymous: true },
   };
 }
 
@@ -32,6 +40,7 @@ describe('AuthStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuth.getSession.mockResolvedValue({ data: { session: null } });
+    mockAuth.signInAnonymously.mockResolvedValue({ data: { session: null }, error: null });
     mockAuth.onAuthStateChange.mockReturnValue({
       data: { subscription: { unsubscribe: vi.fn() } },
     });
@@ -83,6 +92,79 @@ describe('AuthStore', () => {
     expect(store.getAccessToken()).toBe('old');
     handler('TOKEN_REFRESHED', makeSession('new'));
     expect(store.getAccessToken()).toBe('new');
+  });
+
+  it('init() cấp phiên ẩn danh khi chưa có session (decision 0009)', async () => {
+    mockAuth.signInAnonymously.mockResolvedValue({
+      data: { session: makeAnonSession('anon-tok') },
+      error: null,
+    });
+    const store = new AuthStore();
+    store.init();
+    await vi.waitFor(() => expect(store.isInitializing).toBe(false));
+    expect(mockAuth.signInAnonymously).toHaveBeenCalledOnce();
+    expect(store.isAuthenticated).toBe(true);
+    expect(store.isAnonymous).toBe(true);
+    expect(store.getAccessToken()).toBe('anon-tok');
+  });
+
+  it('init() KHÔNG gọi signInAnonymously khi đã có session', async () => {
+    mockAuth.getSession.mockResolvedValue({ data: { session: makeSession('tok-1') } });
+    const store = new AuthStore();
+    store.init();
+    await vi.waitFor(() => expect(store.isInitializing).toBe(false));
+    expect(mockAuth.signInAnonymously).not.toHaveBeenCalled();
+    expect(store.isAnonymous).toBe(false);
+  });
+
+  it('init() tắt cờ initializing khi anonymous sign-in lỗi (không treo UI)', async () => {
+    mockAuth.signInAnonymously.mockResolvedValue({
+      data: { session: null },
+      error: { message: 'Anonymous sign-ins are disabled' },
+    });
+    const store = new AuthStore();
+    store.init();
+    await vi.waitFor(() => expect(store.isInitializing).toBe(false));
+    expect(store.isAuthenticated).toBe(false);
+    expect(store.isAnonymous).toBe(false);
+  });
+
+  it('isAnonymous false cho phiên email thường', async () => {
+    mockAuth.getSession.mockResolvedValue({ data: { session: makeSession('tok-1', false) } });
+    const store = new AuthStore();
+    store.init();
+    await vi.waitFor(() => expect(store.isInitializing).toBe(false));
+    expect(store.isAnonymous).toBe(false);
+  });
+
+  it('init() KHÔNG ghi đè phiên email bằng anon khi xảy ra race (phiên thật đến trước)', async () => {
+    // signInAnonymously đang bay; trong khe đó onAuthStateChange set phiên email thật.
+    // Khi anon resolve, this.session đã != null → anon KHÔNG được ghi đè phiên thật.
+    let resolveAnon: ((value: unknown) => void) | undefined;
+    mockAuth.signInAnonymously.mockReturnValue(
+      new Promise((resolve) => {
+        resolveAnon = resolve;
+      }),
+    );
+    let handler: (event: string, session: unknown) => void = () => {};
+    mockAuth.onAuthStateChange.mockImplementation((cb) => {
+      handler = cb;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
+
+    const store = new AuthStore();
+    store.init();
+    await vi.waitFor(() => expect(mockAuth.signInAnonymously).toHaveBeenCalledOnce());
+
+    // Phiên email thật đến qua handler trong lúc anon còn in-flight.
+    handler('SIGNED_IN', makeSession('email-tok', false));
+    expect(store.getAccessToken()).toBe('email-tok');
+
+    // Anon resolve muộn → không nuốt mất phiên email.
+    resolveAnon?.({ data: { session: makeAnonSession('anon-tok') }, error: null });
+    await vi.waitFor(() => expect(store.isInitializing).toBe(false));
+    expect(store.getAccessToken()).toBe('email-tok');
+    expect(store.isAnonymous).toBe(false);
   });
 
   it('init() cleanup hủy subscription', () => {

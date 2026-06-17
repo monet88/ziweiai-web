@@ -142,6 +142,8 @@ export const viCopy = {
     regularMonth: 'Tháng thường',
     signedInAs: 'Đăng nhập bằng',
     signOut: 'Đăng xuất',
+    anonymousSession: 'Bạn đang xem ẩn danh',
+    signInOrSignUp: 'Đăng nhập / Đăng ký',
     timezone: 'Múi giờ',
     timezonePlaceholder: 'Asia/Ho_Chi_Minh',
     divinationMomentNotice: 'Hệ này lập quẻ theo thời điểm bạn gieo quẻ, không cần giới tính. Hãy nhập thời điểm muốn xem.',

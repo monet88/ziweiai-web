@@ -44,6 +44,10 @@ playwright-report/
 # Temp tooling output.
 whyzod.txt
 
+# HTML UI preview reference (không phải nguồn build) + báo cáo review nội bộ.
+templates/ui-reference/
+plans/reports/
+
 # Environment / secrets — never commit real values.
 .env
 .env.*
@@ -51,3 +55,4 @@ whyzod.txt
 
 # Supabase local temp.
 apps/api/supabase/.temp/
+apps/api/supabase/.branches/

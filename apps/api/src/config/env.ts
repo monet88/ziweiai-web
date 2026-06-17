@@ -76,6 +76,17 @@ export const apiEnvSchema = z.object({
   // KHÔNG dùng z.coerce.boolean() — nó chạy Boolean(string) nên mọi chuỗi non-empty
   // (kể cả "false") đều thành true, khiến AI_EXPLANATION_FREE_FOR_ALL=false vô hiệu ở prod.
   AI_EXPLANATION_FREE_FOR_ALL: z.stringbool().default(true),
+  // US-013: bền hoá quota anon daily-per-IP qua store chia sẻ (thay Map in-memory).
+  // memory = dev/test (default, không cần dependency ngoài); upstash = REST qua fetch (prod);
+  // redis = giữ enum mở, chưa triển khai (factory ném khi chọn). Validate giá trị URL/token
+  // cho driver thật ở resolve-time (factory) để default `memory` không cần env mới.
+  QUOTA_STORE_DRIVER: z.enum(['memory', 'redis', 'upstash']).default('memory'),
+  QUOTA_REDIS_URL: z.string().optional(),
+  QUOTA_UPSTASH_REST_URL: z.string().url().optional(),
+  QUOTA_UPSTASH_REST_TOKEN: z.string().optional(),
+  // Khi store ngoài mất kết nối: open = cho qua + log warn (mặc định, ưu tiên ổn định —
+  // quota là chống lạm dụng, không phải hàng rào bảo mật); closed = chặn (ném quota error).
+  QUOTA_FAIL_MODE: z.enum(['open', 'closed']).default('open'),
   npm_package_version: z.string().min(1).optional(),
 });
 

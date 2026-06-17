@@ -65,9 +65,12 @@ export class SupabaseAuthService {
       throw new Error('JWT expired.');
     }
 
+    // Anon JWT (Supabase anonymous sign-in, decision 0009) phát email="" (chuỗi rỗng),
+    // không phải null. z.email() reject chuỗi rỗng → chuẩn hoá "" về null để anon user
+    // parse qua authenticatedUserSchema. User email thường vẫn giữ nguyên email thật.
     return authenticatedUserSchema.parse({
       userId: payload.sub,
-      email: payload.email ?? null,
+      email: payload.email || null,
     });
   }
 

@@ -21,7 +21,9 @@ export class ChartsController {
     @Body() body: unknown,
   ): Promise<CreateChartResponse> {
     const input = createChartRequestSchema.parse(body);
-    return this.chartsService.createChart(currentUser.userId, request.ip ?? 'unknown', input);
+    // email === null ⟺ phiên ẩn danh (decision 0009): app chỉ có email+password, anon JWT
+    // không mang email → truyền cờ để quota áp trần daily-per-IP cho đường anon.
+    return this.chartsService.createChart(currentUser.userId, request.ip ?? 'unknown', input, currentUser.email === null);
   }
 
   @Get(':chartSnapshotId')

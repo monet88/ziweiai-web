@@ -30,8 +30,8 @@ export class ChartsService {
     private readonly quotasService: QuotasService,
   ) {}
 
-  async createChart(userId: string, ipAddress: string, input: CreateChartRequest): Promise<CreateChartResponse> {
-    await this.assertCanCreateChart(userId, ipAddress);
+  async createChart(userId: string, ipAddress: string, input: CreateChartRequest, isAnonymous = false): Promise<CreateChartResponse> {
+    await this.assertCanCreateChart(userId, ipAddress, isAnonymous);
 
     const adapter = this.getAdapter(input.chartSystem);
     const viewYear = adapter.usesViewYear ? (input.viewYear ?? new Date().getUTCFullYear()) : undefined;
@@ -120,9 +120,9 @@ export class ChartsService {
     return adapter;
   }
 
-  private async assertCanCreateChart(userId: string, ipAddress: string): Promise<void> {
+  private async assertCanCreateChart(userId: string, ipAddress: string, isAnonymous = false): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateChart(userId, ipAddress);
+      await this.quotasService.assertCanCreateChart(userId, ipAddress, isAnonymous);
     } catch (error) {
       throw new ApiErrorHttpException(HttpStatus.TOO_MANY_REQUESTS, 'RATE_LIMITED', error instanceof Error ? error.message : 'Đã vượt hạn mức lập lá số.');
     }

@@ -22,6 +22,7 @@ export const apiErrorCodeSchema = z.enum([
   'PROVIDER_TIMEOUT',
   'PROVIDER_UNAVAILABLE',
   'INTERNAL_ERROR',
+  'PAYMENT_REQUIRED',
 ]);
 
 export const authenticatedUserSchema = z.object({

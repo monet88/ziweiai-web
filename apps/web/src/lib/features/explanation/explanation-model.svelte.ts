@@ -106,6 +106,9 @@ export function createExplanationModel(options: ExplanationModelOptions) {
     get renderedMarkdown(): string | null {
       return lastRenderedMarkdown;
     },
+    get isPaymentRequired(): boolean {
+      return mutation.isError && mutation.error instanceof ApiError && mutation.error.kind === 'payment-required';
+    },
     get errorMessage(): string | null {
       if (!mutation.isError) {
         return null;

@@ -14,7 +14,8 @@ export type ApiErrorKind =
   | 'validation' // 422
   | 'server' // 500
   | 'network' // fetch thất bại
-  | 'parse'; // Zod parse fail (integration bug)
+  | 'parse' // Zod parse fail
+  | 'payment-required'; // 402
 
 export class ApiError extends Error {
   readonly kind: ApiErrorKind;
@@ -36,6 +37,8 @@ function mapStatusToKind(status: number): ApiErrorKind {
       return 'forbidden';
     case 404:
       return 'not-found';
+    case 402:
+      return 'payment-required';
     case 422:
       return 'validation';
     default:
@@ -86,7 +89,24 @@ export async function fetchJson<T>(
 
   if (!response.ok) {
     const kind = mapStatusToKind(response.status);
-    throw new ApiError(kind, `Yêu cầu thất bại (${response.status}).`, response.status);
+    // Ưu tiên message tiếng Việt từ backend (apiErrorSchema: { code, message, requestId }).
+    // Đọc body một lần ở đây; nếu không phải JSON hợp lệ thì rơi về message generic.
+    let message = `Yêu cầu thất bại (${response.status}).`;
+    try {
+      const errorBody: unknown = await response.json();
+      if (
+        errorBody !== null &&
+        typeof errorBody === 'object' &&
+        'message' in errorBody &&
+        typeof (errorBody as { message: unknown }).message === 'string' &&
+        (errorBody as { message: string }).message.length > 0
+      ) {
+        message = (errorBody as { message: string }).message;
+      }
+    } catch {
+      // Body không phải JSON (ví dụ 500 trả HTML) → giữ message generic.
+    }
+    throw new ApiError(kind, message, response.status);
   }
 
   let raw: unknown;

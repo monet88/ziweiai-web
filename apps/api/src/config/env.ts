@@ -72,6 +72,7 @@ const apiEnvSchema = z.object({
   GEMINI_SDK_BASE_URL: z.preprocess((value) => value ?? process.env.GEMINI_API_BASE_URL, z.string().url().optional()),
   GEMINI_MODEL: z.string().min(1).default('gemini-3.5-flash'),
   AI_DEFAULT_PROVIDER: z.enum(['auto', 'deepseek', 'openai-compat', 'gemini']).default('auto'),
+  AI_EXPLANATION_FREE_FOR_ALL: z.coerce.boolean().default(true),
   npm_package_version: z.string().min(1).optional(),
 });
 

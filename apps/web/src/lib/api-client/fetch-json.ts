@@ -14,7 +14,8 @@ export type ApiErrorKind =
   | 'validation' // 422
   | 'server' // 500
   | 'network' // fetch thất bại
-  | 'parse'; // Zod parse fail (integration bug)
+  | 'parse' // Zod parse fail
+  | 'payment-required'; // 402
 
 export class ApiError extends Error {
   readonly kind: ApiErrorKind;
@@ -36,8 +37,8 @@ function mapStatusToKind(status: number): ApiErrorKind {
       return 'forbidden';
     case 404:
       return 'not-found';
-    case 422:
-      return 'validation';
+    case 402: return 'payment-required';
+    case 422: return 'validation';
     default:
       return 'server';
   }

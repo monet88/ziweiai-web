@@ -321,7 +321,10 @@ export class ExplanationsService {
         requestState: 'running',
       });
 
-      const providerResult = await this.providerRouter.generate(input.providerPreference, {
+      // US-010: gate trước khi gọi provider (cache-hit đã bypass ở trên)
+    this.assertCanUseAiExplanation();
+
+    const providerResult = await this.providerRouter.generate(input.providerPreference, {
         chartSnapshot: chartRecord.snapshot,
         explanationKind: input.explanationKind,
         explanationContext,
@@ -480,4 +483,17 @@ export class ExplanationsService {
     }
     return Date.now() - updatedAtMs > EXPLANATION_INFLIGHT_STALE_MS;
   }
+
+  private assertCanUseAiExplanation(): void {
+    if (apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
+      this.logger.warn("AI_EXPLANATION_FREE_FOR_ALL=true — gate bypassed (free for all). Set false in production.");
+      return;
+    }
+    throw new ApiErrorHttpException(
+      HttpStatus.PAYMENT_REQUIRED,
+      "PAYMENT_REQUIRED",
+      "Tính năng luận giải AI yêu cầu gói trả phí. Vui lòng nâng cấp để tiếp tục."
+    );
+  }
+
 }

@@ -6,6 +6,7 @@ import type { SupabasePersistenceGateway } from '../../../database/supabase-pers
 import type { QuotasService } from '../../quotas/quotas.service';
 import type { ExplanationProviderRouter } from '../../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError } from '../../../providers/ai/provider-errors';
+import { apiEnv } from '../../../config/env';
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 // Test file sử dụng any cho mock fixture phức tạp (snapshot, persistence records) — phổ biến trong Nest/Vitest.
@@ -609,5 +610,41 @@ describe('ExplanationsService (with palaceScope)', () => {
     expect(persistence.createExplanationResult).toHaveBeenCalled();
     // ensure we didn't short-circuit before creating the request (i.e. no early INVALID_INPUT)
     expect(persistence.createExplanationRequest).toHaveBeenCalled();
+  });
+});
+
+
+
+
+describe('US-010 AI explanation gate', () => {
+  it('no-op when AI_EXPLANATION_FREE_FOR_ALL=true (default test)', async () => {
+    const prev = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
+    (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = true;
+    const user = createAuthenticatedUser();
+    const input = createExplanationRequest('soulPalace');
+    const chartRecord = createChartRecord();
+    (persistence.findChartSnapshotById as any).mockResolvedValue(chartRecord);
+    (persistence.findExplanationRequestByIdempotencyKey as any).mockResolvedValue(null);
+    (persistence.createExplanationRequest as any).mockResolvedValue({ id: 'req-free', requestState: 'pending' });
+    (persistence.updateExplanationRequest as any).mockResolvedValue({ id: 'req-free', requestState: 'completed' });
+    (persistence.createExplanationResult as any).mockResolvedValue({ id: 'res-free', renderedMarkdown: 'free ok' });
+    (persistence.createHistoryView as any).mockResolvedValue(undefined);
+    (providerRouter.generate as any).mockResolvedValue({ renderedMarkdown: 'free ok', providerMetadata: {} });
+    await service.createExplanation(user, '127.0.0.1', input);
+    expect(providerRouter.generate).toHaveBeenCalled();
+    (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = prev;
+  });
+
+  it('throws 402 PAYMENT_REQUIRED when flag=false and no entitlement', async () => {
+    const prev = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
+    (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = false;
+    const user = createAuthenticatedUser();
+    const input = createExplanationRequest('careerPalace');
+    const chartRecord = createChartRecord();
+    (persistence.findChartSnapshotById as any).mockResolvedValue(chartRecord);
+    (persistence.findExplanationRequestByIdempotencyKey as any).mockResolvedValue(null);
+    (persistence.createExplanationRequest as any).mockResolvedValue({ id: 'req-pay', requestState: 'pending' });
+    await expect(service.createExplanation(user, '127.0.0.1', input)).rejects.toMatchObject({ status: HttpStatus.PAYMENT_REQUIRED });
+    (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = prev;
   });
 });

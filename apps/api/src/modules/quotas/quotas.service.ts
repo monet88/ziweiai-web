@@ -16,6 +16,12 @@ export class QuotasService {
   // được bằng cách xoá localStorage / mở incognito → quota daily-per-user (đếm theo DB) bị
   // reset trắng. IP thường cố định hơn nên dùng làm khoá chặn lạm dụng dài hạn cho anon
   // (đặc biệt /explanations gọi LLM tốn chi phí thật). User thường vẫn đếm daily theo DB.
+  //
+  // TODO(backlog #20): bộ đếm này in-memory nên KHÔNG bền — restart process reset trắng,
+  // và chạy đa-instance thì mỗi instance đếm riêng → trần thực tế nhân theo số instance.
+  // Khi có Redis (hoặc store chia sẻ tương đương) → chuyển anonDailyIpBuckets sang INCR +
+  // EXPIRE theo khoá `anon-{chart|explanation}:{ip}` để chia sẻ trạng thái + tự hết hạn.
+  // Chưa làm migration DB cho việc này: tránh lưu IP (PII) vào bảng owned + thêm schema.
   private readonly anonDailyIpBuckets = new Map<string, SlidingWindowBucket>();
 
   constructor(private readonly persistenceGateway: SupabasePersistenceGateway) {}

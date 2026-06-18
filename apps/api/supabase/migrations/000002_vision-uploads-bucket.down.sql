@@ -1,10 +1,12 @@
 -- Rollback for 000002_vision-uploads-bucket
 
--- Drop cron job if present
+-- Drop cron job if present. pg_cron may be absent in local/CI environments.
 do $$
 begin
-  if exists (select 1 from cron.job where jobname = 'vision-uploads-cleanup') then
-    perform cron.unschedule('vision-uploads-cleanup');
+  if to_regclass('cron.job') is not null and to_regprocedure('cron.unschedule(text)') is not null then
+    if exists (select 1 from cron.job where jobname = 'vision-uploads-cleanup') then
+      perform cron.unschedule('vision-uploads-cleanup');
+    end if;
   end if;
 end
 $$;

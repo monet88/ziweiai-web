@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { drawDeterministic, TAROT_DECK } from './tarot-deck';
 
 const HAN_TEXT_PATTERN = /\p{Script=Han}/u;
+const RNG_MAX_OUTPUT_SEED = String.fromCharCode(5_898, 63_488);
+const ZERO_STATE_SEED = String.fromCharCode(60_881, 9_566, 45_958);
 
 describe('tarot deck (US-017)', () => {
   it('có đủ 78 lá Rider-Waite', () => {
@@ -34,5 +36,21 @@ describe('tarot deck (US-017)', () => {
   it('trả đúng số lá cho spread 3 lá và Celtic Cross', () => {
     expect(drawDeterministic('three-card', 3)).toHaveLength(3);
     expect(drawDeterministic('celtic-cross', 10)).toHaveLength(10);
+  });
+
+  it('không tạo chỉ số ngoài deck khi RNG trả uint32 tối đa', () => {
+    const cards = drawDeterministic(RNG_MAX_OUTPUT_SEED, 3);
+
+    expect(cards).toHaveLength(3);
+    expect(cards[0]?.id).toBe('pentacles_king');
+    expect(cards.every((card) => typeof card.id === 'string' && card.id.length > 0)).toBe(true);
+  });
+
+  it('sửa state 0 của xorshift để không rơi vào chuỗi suy biến', () => {
+    const cards = drawDeterministic(ZERO_STATE_SEED, 3);
+
+    expect(cards).toHaveLength(3);
+    expect(cards.map((card) => card.id)).toEqual(['wands_three', 'cups_three', 'pentacles_seven']);
+    expect(cards.some((card) => !card.reversed)).toBe(true);
   });
 });

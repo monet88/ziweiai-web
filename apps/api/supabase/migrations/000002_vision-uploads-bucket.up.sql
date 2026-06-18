@@ -33,21 +33,27 @@ create policy "vision_uploads_owner_delete"
   );
 
 -- Scheduled cleanup: delete objects older than 7 days, daily at 03:00 UTC.
--- Requires pg_cron extension (enabled on Supabase by default on most plans).
+-- pg_cron is available on most Supabase plans; skip scheduling when absent so local/CI migrations still apply.
 do $$
 begin
-  if exists (select 1 from cron.job where jobname = 'vision-uploads-cleanup') then
-    perform cron.unschedule('vision-uploads-cleanup');
-  end if;
+  if to_regclass('cron.job') is null
+    or to_regprocedure('cron.unschedule(text)') is null
+    or to_regprocedure('cron.schedule(text,text,text)') is null then
+    raise warning 'pg_cron extension is not enabled. Scheduled cleanup for vision-uploads was not scheduled.';
+  else
+    if exists (select 1 from cron.job where jobname = 'vision-uploads-cleanup') then
+      perform cron.unschedule('vision-uploads-cleanup');
+    end if;
 
-  perform cron.schedule(
-    'vision-uploads-cleanup',
-    '0 3 * * *',
-    $job$
-    delete from storage.objects
-    where bucket_id = 'vision-uploads'
-      and created_at < now() - interval '7 days';
-    $job$
-  );
+    perform cron.schedule(
+      'vision-uploads-cleanup',
+      '0 3 * * *',
+      $job$
+      delete from storage.objects
+      where bucket_id = 'vision-uploads'
+        and created_at < now() - interval '7 days';
+      $job$
+    );
+  end if;
 end
 $$;

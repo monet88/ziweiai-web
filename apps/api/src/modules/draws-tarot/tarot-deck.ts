@@ -14,6 +14,9 @@ export interface TarotCardDraw {
   reversed: boolean;
 }
 
+const RANDOM_UINT32_BOUND = 0x100000000;
+const FALLBACK_XORSHIFT_STATE = 0x9e3779b9;
+
 const MINOR_RANKS = [
   { id: 'ace', label: 'Át' },
   { id: 'two', label: 'Hai' },
@@ -83,12 +86,12 @@ function nextRandom(state: number): { value: number; state: number } {
   nextState ^= nextState << 13;
   nextState ^= nextState >>> 17;
   nextState ^= nextState << 5;
-  return { value: (nextState >>> 0) / 0xffffffff, state: nextState >>> 0 };
+  return { value: (nextState >>> 0) / RANDOM_UINT32_BOUND, state: nextState >>> 0 };
 }
 
 export function drawDeterministic(seed: string | undefined, count: number): TarotCardDraw[] {
   const effectiveSeed = seed ?? `${Date.now()}`;
-  let state = hashSeed(effectiveSeed);
+  let state = hashSeed(effectiveSeed) || FALLBACK_XORSHIFT_STATE;
   const deck = [...TAROT_DECK];
   const result: TarotCardDraw[] = [];
   const drawCount = Math.min(Math.max(count, 0), deck.length);

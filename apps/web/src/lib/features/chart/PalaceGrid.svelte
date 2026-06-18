@@ -19,10 +19,19 @@
   //   - Hover (tạm): `hoveredPalaceKey` (state cục bộ) ưu tiên cao nhất cho lớp trình bày;
   //     rời chuột → quay về cung đang chọn (hoặc auto-Mệnh). Hover KHÔNG đổi aria-pressed.
   import type { Snippet } from 'svelte';
+  import { createQuery } from '@tanstack/svelte-query';
   import type { PalaceView } from '$lib/features/chart/palace-view-builder';
   import { shouldUseSquareBoard } from '$lib/features/chart/palace-grid-layout';
   import { getPalaceAspectIndices } from '$lib/features/chart/palace-aspect';
   import { buildAspectLines, type AspectLine, type GridCell } from '$lib/features/chart/palace-board-geometry';
+  import { buildPalaceFlowFlagsMap, type PalaceFlowView } from '$lib/features/chart/palace-flow-flags';
+  import {
+    fetchChartHoroscope,
+    DEFAULT_HOROSCOPE_SCOPES,
+    HOROSCOPE_QUERY_STALE_MS,
+    HOROSCOPE_QUERY_GC_MS,
+  } from '$lib/api-client';
+  import { getAuthStore } from '$lib/auth/auth-context';
   import PalaceCell from './PalaceCell.svelte';
 
   // Cung Mệnh (auto-chọn mặc định cho lớp trình bày). Khớp nameKey snapshot (US-006).
@@ -32,11 +41,61 @@
     palaces: PalaceView[];
     selectedPalaceKey: string | null;
     onSelect: (nameKey: string) => void;
+    /** US-014: id lá số để fetch vận hạn. Trống → tắt flow-info. */
+    chartId?: string;
+    /** US-014: bật lớp flow-info đa màu (mặc định bật; tắt cho test / non-Tử-Vi). */
+    enableFlowInfo?: boolean;
     /** Slot trung cung (tóm tắt bản mệnh) — chỉ hiển thị ở bố cục bàn vuông. */
     center?: Snippet;
   }
 
-  let { palaces, selectedPalaceKey, onSelect, center }: Props = $props();
+  let { palaces, selectedPalaceKey, onSelect, chartId = '', enableFlowInfo = true, center }: Props = $props();
+
+  const auth = getAuthStore();
+
+  // US-014: lát cắt vận hạn = hôm nay theo MÚI GIỜ ĐỊA PHƯƠNG của người xem. Dùng
+  // getFullYear/getMonth/getDate (KHÔNG toISOString — UTC lệch 1 ngày cho GMT+7 lúc
+  // 00:00–07:00, hiển thị sai lưu nhật). SPA tĩnh không SSR nên client-local an toàn.
+  // Cố định trong vòng đời component (panel tương tác chọn mốc là US-015).
+  const now = new Date();
+  const asOf = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+  // Vận hạn deterministic theo (chartId, asOf) → staleTime dài. Token vào queryKey để tách
+  // cache theo phiên (đổi user / đăng xuất không tái dùng frame cũ — khớp pattern US-006);
+  // token vẫn đọc TƯƠI trong queryFn (bất biến §3). Lỗi/đang tải KHÔNG chặn render bàn.
+  const horoscopeQuery = createQuery(() => ({
+    queryKey: ['horoscope', auth.getAccessToken(), chartId, asOf],
+    queryFn: () => {
+      const token = auth.getAccessToken();
+      if (!token) {
+        throw new Error('Thiếu token để tính vận hạn.');
+      }
+      return fetchChartHoroscope(token, chartId, asOf, DEFAULT_HOROSCOPE_SCOPES);
+    },
+    enabled:
+      enableFlowInfo &&
+      palaces.length === 12 &&
+      chartId.length > 0 &&
+      auth.isAuthenticated &&
+      !!auth.getAccessToken(),
+    staleTime: HOROSCOPE_QUERY_STALE_MS,
+    gcTime: HOROSCOPE_QUERY_GC_MS,
+  }));
+
+  // Map palaceIndex → flow-flags. translateZiweiKey fail-fast: snapshot legacy có key lạ →
+  // throw trong helper → bắt ở đây, degrade thành map rỗng (bàn vẫn render, không flow-info).
+  const flagsByIndex = $derived.by<Map<number, PalaceFlowView>>(() => {
+    const frame = horoscopeQuery.data?.frame ?? null;
+    if (!frame) {
+      return new Map<number, PalaceFlowView>();
+    }
+    try {
+      return buildPalaceFlowFlagsMap(palaces, frame);
+    } catch (error) {
+      console.warn('[palace-grid] bỏ qua flow-info do key vận hạn lạ', error);
+      return new Map<number, PalaceFlowView>();
+    }
+  });
 
   // Vị trí ô bàn Tử Vi theo địa chi (CSS grid 4x4, 1-indexed). Nam ở trên: Tỵ-Ngọ-Mùi-Thân
   // hàng trên, viền theo chiều kim đồng hồ. Trung cung (hàng 2-3, cột 2-3) dành cho tóm tắt.
@@ -158,6 +217,7 @@
             selected={palace.nameKey === selectedPalaceKey}
             inAspect={isInAspect(palace)}
             dimmed={isDimmed(palace)}
+            flowFlags={flagsByIndex.get(palace.index) ?? null}
             {onSelect}
             onHover={handleHover}
           />
@@ -175,6 +235,7 @@
         {palace}
         selected={palace.nameKey === selectedPalaceKey}
         inAspect={isInAspect(palace)}
+        flowFlags={flagsByIndex.get(palace.index) ?? null}
         {onSelect}
       />
     {/each}

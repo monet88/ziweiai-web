@@ -85,6 +85,7 @@
           palaces={detail.palaces}
           selectedPalaceKey={detail.selectedPalaceKey}
           onSelect={detail.selectPalace}
+          chartId={detail.chartId}
         >
           {#snippet center()}
             <h3 class="center-title">{copy.centerSummaryTitle}</h3>

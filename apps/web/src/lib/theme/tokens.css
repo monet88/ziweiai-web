@@ -54,4 +54,17 @@
   /* Malefic (hung tinh phụ): đỏ-xám cảnh báo, tách biệt cát tinh phụ */
   --star-malefic-name: #a67c7c;
   --star-malefic-soft: #8b6a6a;
+
+  /* US-014: màu 4 tầng vận hạn (thanh chỉ báo + chip flow-info). Mỗi tầng có
+     bản solid (thanh + chữ chip) và soft (nền chip ~14% alpha). Tone tách rõ:
+     đại vận tím, lưu niên xanh dương, lưu nguyệt xanh lá, lưu nhật cam.
+     Contrast solid vs --color-bg-surface giữ ≥ AA (đã cân với US-012). */
+  --color-flow-decadal: oklch(70% 0.15 300);
+  --color-flow-decadal-soft: oklch(70% 0.15 300 / 0.14);
+  --color-flow-yearly: oklch(72% 0.13 245);
+  --color-flow-yearly-soft: oklch(72% 0.13 245 / 0.14);
+  --color-flow-monthly: oklch(74% 0.13 150);
+  --color-flow-monthly-soft: oklch(74% 0.13 150 / 0.14);
+  --color-flow-daily: oklch(76% 0.15 65);
+  --color-flow-daily-soft: oklch(76% 0.15 65 / 0.14);
 }

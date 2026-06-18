@@ -8,6 +8,7 @@
   // thái đang chọn. `inAspect` làm nổi cung thuộc tam phương tứ chính của cung đang chọn.
   import type { PalaceView, StarTokenView } from '$lib/features/chart/palace-view-builder';
   import { getStarColors, getStarTitle } from '$lib/features/chart/star-color';
+  import type { HighlightTier, PalaceFlowView } from '$lib/features/chart/palace-flow-flags';
 
   interface Props {
     palace: PalaceView;
@@ -16,12 +17,26 @@
     inAspect?: boolean;
     /** Cung NGOÀI tam phương tứ chính của cung đang hover → làm mờ (preview tạm, US-011). */
     dimmed?: boolean;
+    /** Flow-info vận hạn cho ô (US-014). null/undefined = ô không phải cung Mệnh tầng nào. */
+    flowFlags?: PalaceFlowView | null;
     onSelect: (nameKey: string) => void;
     /** Báo cha cung đang hover (preview tam phương tứ chính); null khi rời chuột. */
     onHover?: (nameKey: string | null) => void;
   }
 
-  let { palace, selected, inAspect = false, dimmed = false, onSelect, onHover }: Props = $props();
+  let { palace, selected, inAspect = false, dimmed = false, flowFlags = null, onSelect, onHover }: Props = $props();
+
+  // Nhãn Việt cố định cho 4 tầng vận hạn (US-014). Thứ tự hiển thị: Vận → Niên → Nguyệt → Nhật.
+  const FLOW_TIER_LABELS: Record<HighlightTier, string> = {
+    decadal: 'Vận',
+    yearly: 'Niên',
+    monthly: 'Nguyệt',
+    daily: 'Nhật',
+  };
+  const FLOW_TIER_ORDER: HighlightTier[] = ['decadal', 'yearly', 'monthly', 'daily'];
+
+  // Các tầng đang hoạt động trên ô này (đúng thứ tự), dùng cho thanh chỉ báo + chip footer.
+  const activeTiers = $derived(flowFlags ? FLOW_TIER_ORDER.filter((tier) => flowFlags[tier]) : []);
 
   // Bỏ token rỗng (legacy thiếu nhãn → ''). Mỗi nhóm render thành một vùng riêng.
   function visibleStars(stars: StarTokenView[]): StarTokenView[] {
@@ -49,6 +64,14 @@
   onfocus={() => onHover?.(palace.nameKey)}
   onblur={() => onHover?.(null)}
 >
+  {#if activeTiers.length > 0}
+    <div class="flow-bar" aria-hidden="true">
+      {#each activeTiers as tier (tier)}
+        <span class="flow-bar__seg flow-bar__seg--{tier}"></span>
+      {/each}
+    </div>
+  {/if}
+
   <header class="cell-head">
     <span class="palace-name">{palace.name}</span>
     {#if palace.stemBranch}
@@ -111,6 +134,20 @@
       {#if palace.changsheng}<span class="meta changsheng">{palace.changsheng}</span>{/if}
       {#if palace.decadalRange}<span class="meta decadal">{palace.decadalRange}</span>{/if}
       {#if agesLabel}<span class="meta ages">{agesLabel}</span>{/if}
+    </footer>
+  {/if}
+
+  {#if activeTiers.length > 0 && flowFlags}
+    <footer class="flow-info">
+      {#each activeTiers as tier (tier)}
+        <span class="flow-chip flow-chip--{tier}">
+          <span class="flow-chip__label">{FLOW_TIER_LABELS[tier]}</span>
+          <span class="flow-chip__value">{flowFlags[tier]?.stemBranch}</span>
+          {#if tier === 'decadal' && flowFlags.decadal?.agesRange}
+            <span class="flow-chip__ages">{flowFlags.decadal.agesRange}</span>
+          {/if}
+        </span>
+      {/each}
     </footer>
   {/if}
 </button>
@@ -256,5 +293,76 @@
 
   .meta.changsheng {
     color: var(--color-accent-gold-soft);
+  }
+
+  /* US-014: thanh chỉ báo vận hạn ở mép trên ô — chia đều theo số tầng đang có,
+     mỗi mảnh nền màu của tầng tương ứng. Trang trí thuần → aria-hidden ở template. */
+  .flow-bar {
+    display: flex;
+    gap: 1px;
+    height: 3px;
+    margin: -2px -2px 2px;
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+  }
+
+  .flow-bar__seg {
+    flex: 1;
+  }
+
+  .flow-bar__seg--decadal {
+    background: var(--color-flow-decadal);
+  }
+  .flow-bar__seg--yearly {
+    background: var(--color-flow-yearly);
+  }
+  .flow-bar__seg--monthly {
+    background: var(--color-flow-monthly);
+  }
+  .flow-bar__seg--daily {
+    background: var(--color-flow-daily);
+  }
+
+  /* Dòng flow-info ở đáy ô: chip mỗi tầng với nhãn Việt + can-chi (+ dải tuổi cho đại vận). */
+  .flow-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: var(--space-xs);
+  }
+
+  .flow-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    padding: 1px 6px;
+    border-radius: var(--radius-pill);
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .flow-chip__label {
+    font-weight: 600;
+  }
+
+  .flow-chip__ages {
+    color: var(--color-text-muted);
+  }
+
+  .flow-chip--decadal {
+    background: var(--color-flow-decadal-soft);
+    color: var(--color-flow-decadal);
+  }
+  .flow-chip--yearly {
+    background: var(--color-flow-yearly-soft);
+    color: var(--color-flow-yearly);
+  }
+  .flow-chip--monthly {
+    background: var(--color-flow-monthly-soft);
+    color: var(--color-flow-monthly);
+  }
+  .flow-chip--daily {
+    background: var(--color-flow-daily-soft);
+    color: var(--color-flow-daily);
   }
 </style>

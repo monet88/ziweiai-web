@@ -2,6 +2,7 @@ export const astroEngineRuntime = 'server-only';
 
 export * from './adapters/astro-adapter';
 export * from './adapters/iztro-chart-adapter';
+export * from './ziwei-horoscope';
 export * from './adapters/liuyao-adapter';
 export * from './adapters/daliuren-adapter';
 export * from './adapters/qimen-adapter';

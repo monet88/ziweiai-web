@@ -1,0 +1,498 @@
+# Instincts generated from https://github.com/monet88/ziweiai-web
+# Generated: 2026-06-18T05:45:22.759Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: ziweiai-web-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: feat, fix
+
+## Evidence
+
+- 2 commits analyzed
+- Detected conventional commit pattern
+- Examples: feat(us-013): bền hoá quota anon daily-per-IP qua QuotaCounterStore (memory + upstash), fix(us-013): add fetch timeout + check EXPIRE result in upstash quota store
+
+---
+id: ziweiai-web-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Commit Length
+
+## Action
+
+Write moderate-length commit messages (~81 characters)
+
+## Evidence
+
+- Average commit message length: 81 chars
+- Based on 2 commits
+
+---
+id: ziweiai-web-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: ziweiai-web-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: ziweiai-web-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: ziweiai-web-arch-feature-based
+trigger: "when adding a new feature"
+confidence: 0.85
+domain: architecture
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Arch Feature Based
+
+## Action
+
+Create a new folder in src/features/ with all related code colocated
+
+## Evidence
+
+- Feature-based module organization detected
+- Structure: src/features/[feature-name]/
+
+---
+id: ziweiai-web-test-framework
+trigger: "when writing tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Test Framework
+
+## Action
+
+Use vitest as the test framework
+
+## Evidence
+
+- Test framework detected: vitest
+- File pattern: *.test.ts
+
+---
+id: ziweiai-web-test-naming
+trigger: "when creating a test file"
+confidence: 0.85
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Test Naming
+
+## Action
+
+Name test files using the pattern: *.test.ts
+
+## Evidence
+
+- File pattern: *.test.ts
+- Consistent across test files
+
+---
+id: ziweiai-web-workflow-add-or-update-quota-store-driver
+trigger: "when doing add or update quota store driver"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Workflow Add Or Update Quota Store Driver
+
+## Action
+
+Follow the add-or-update-quota-store-driver workflow:
+1. Define or update the quota store driver implementation (e.g., upstash.ts, memory.ts).
+2. Write or update corresponding tests for the driver (e.g., upstash.test.ts, memory.test.ts).
+3. Update the quota store interface/abstraction if needed (quota-counter-store.ts).
+4. Modify the factory or DI setup to register/select the driver (index.ts, quotas.module.ts).
+5. Update service logic to use the new/updated driver (quotas.service.ts).
+6. Add or update environment variable documentation (.env.example, env.ts).
+7. Write or update documentation and planning files (docs/stories, plans/).
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: apps/api/src/modules/quotas/counter-stores/*.ts, apps/api/src/modules/quotas/counter-stores/*.test.ts, apps/api/src/modules/quotas/counter-stores/quota-counter-store.ts
+
+---
+id: ziweiai-web-workflow-driver-bugfix-and-test-update
+trigger: "when doing driver bugfix and test update"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/monet88/ziweiai-web
+---
+
+# Ziweiai Web Workflow Driver Bugfix And Test Update
+
+## Action
+
+Follow the driver-bugfix-and-test-update workflow:
+1. Update the quota store driver implementation to fix the bug (e.g., upstash.ts).
+2. Add or update tests to cover the new behavior or bugfix (e.g., upstash.test.ts).
+3. Log or handle errors as needed in the driver.
+4. Reference review feedback or PR findings in the commit message.
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: apps/api/src/modules/quotas/counter-stores/*.ts, apps/api/src/modules/quotas/counter-stores/*.test.ts
+
+---
+id: ziweiai-web-instinct-file-naming
+trigger: "When creating or renaming a file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct File Naming
+
+## Action
+
+Name the file using camelCase convention
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.files
+- Observed in apps/api/src/modules/quotas/counter-stores/upstash.ts
+
+---
+id: ziweiai-web-instinct-function-naming
+trigger: "When defining a function"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Function Naming
+
+## Action
+
+Name the function using camelCase convention
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.functions
+- Seen in apps/api/src/modules/quotas/counter-stores/upstash.ts
+
+---
+id: ziweiai-web-instinct-class-naming
+trigger: "When defining a class"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Class Naming
+
+## Action
+
+Name the class using PascalCase convention
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.classes
+- Seen in apps/api/src/modules/quotas/counter-stores/quota-counter-store.ts
+
+---
+id: ziweiai-web-instinct-constant-naming
+trigger: "When defining a constant"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Constant Naming
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE convention
+
+## Evidence
+
+- Pattern in codeStyle.namingConventions.constants
+
+---
+id: ziweiai-web-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in codeStyle.importStyle
+- Seen in apps/api/src/modules/quotas/quotas.service.ts
+
+---
+id: ziweiai-web-instinct-export-style
+trigger: "When exporting modules or functions"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in codeStyle.exportStyle
+- Seen in apps/api/src/modules/quotas/quotas.service.ts
+
+---
+id: ziweiai-web-instinct-test-location
+trigger: "When adding or updating tests"
+confidence: 0.7
+domain: testing
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Test Location
+
+## Action
+
+Place test files alongside implementation files (mixed test location)
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation
+- apps/api/src/modules/quotas/counter-stores/upstash.test.ts
+
+---
+id: ziweiai-web-instinct-test-pattern
+trigger: "When naming a test file"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Test Pattern
+
+## Action
+
+Use the pattern *.test.ts for test files
+
+## Evidence
+
+- Pattern in testing.filePattern
+- apps/api/src/modules/quotas/counter-stores/upstash.test.ts
+
+---
+id: ziweiai-web-instinct-test-framework
+trigger: "When writing tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Test Framework
+
+## Action
+
+Use the vitest testing framework
+
+## Evidence
+
+- Pattern in testing.framework
+- Seen in package.json dependencies
+
+---
+id: ziweiai-web-instinct-unit-test-type
+trigger: "When writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Unit Test Type
+
+## Action
+
+Write unit tests
+
+## Evidence
+
+- Pattern in testing.testTypes
+- apps/api/src/modules/quotas/counter-stores/upstash.test.ts
+
+---
+id: ziweiai-web-instinct-commit-format
+trigger: "When making a git commit"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Commit Format
+
+## Action
+
+Use conventional commit format with 'feat' or 'fix' prefix and a short scope (e.g., feat(us-013): ...)
+
+## Evidence
+
+- Pattern in commits.prefixes
+- Seen in commit: feat(us-013): bền hoá quota anon daily-per-IP qua QuotaCounterStore (memory + upstash)
+
+---
+id: ziweiai-web-instinct-commit-length
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Commit Length
+
+## Action
+
+Keep the commit message around 80 characters on average
+
+## Evidence
+
+- Pattern in commits.averageLength
+
+---
+id: ziweiai-web-instinct-add-quota-store-driver
+trigger: "When someone wants to add a new quota storage backend or update an existing one for rate limiting"
+confidence: 0.95
+domain: workflow
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Add Quota Store Driver
+
+## Action
+
+Follow the workflow: implement/update driver, update tests, update abstraction, modify DI/factory, update service logic, update env docs, update planning/docs
+
+## Evidence
+
+- Workflow: add-or-update-quota-store-driver
+- Files: apps/api/src/modules/quotas/counter-stores/*.ts, .env.example, docs/stories/epics/*, plans/*.md
+
+---
+id: ziweiai-web-instinct-driver-bugfix-and-test-update
+trigger: "When someone needs to address a bug, timeout, or review finding in a quota store driver"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: monet88/ziweiai-web
+---
+
+# Ziweiai Web Instinct Driver Bugfix And Test Update
+
+## Action
+
+Update the driver implementation, add/update tests, handle/log errors, reference review/PR feedback in commit
+
+## Evidence
+
+- Workflow: driver-bugfix-and-test-update
+- Files: apps/api/src/modules/quotas/counter-stores/*.ts, *.test.ts
+

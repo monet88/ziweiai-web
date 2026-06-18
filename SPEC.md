@@ -1309,6 +1309,300 @@ contracts (api + web cùng parse); reasonKey/thông báo paywall phải là key 
 (`translateZiweiKey` fail-fast + test quét Hán); chưa có nguồn entitlement thật — giai đoạn
 này entitlement chỉ là khái niệm, cờ free che đi (xem Unresolved).
 
+---
+
+> **Các phase MỚI (12–18)** mở rộng web v1+ theo các trục: trình bày sao chuẩn lá số giấy,
+> scale anon quota, engine vận hạn server-side, mở rộng hệ luận giải, trợ lý AI hội thoại.
+> Quyết định nền: `docs/decisions/0011-horoscope-engine-boundary.md` (engine vận hạn server-side),
+> `docs/decisions/0012-extended-divination-systems.md` (6 hệ luận giải mới + storage ảnh),
+> `docs/decisions/0013-ai-conversation-channel.md` (multi-turn + SSE + bảng `conversations`).
+
+## Phase 12 — Tô màu sao bàn Tử Vi (brightness / tứ hóa / nhóm sao)
+
+**Story**: `docs/stories/epics/E12-ziwei-star-coloring/US-012-ziwei-star-coloring.md` ·
+Lane **normal** · chỉ chạm `apps/web` (không đổi contract/api/DB). Quyết định nền:
+`docs/decisions/0007-web-server-boundary.md` (web chỉ presentational, không tự tính).
+
+**Mục tiêu**: trên bàn vuông Phase 9, làm sao "đọc được" trực quan như lá số giấy — chủ
+tinh đậm màu, phụ tinh nhạt, tạp tinh xám; tứ hóa (Lộc/Quyền/Khoa/Kỵ) đánh ký hiệu màu
+riêng; brightness (miếu/vượng/đắc/hãm/bình) thể hiện qua intensity. Không tính lại,
+chỉ ánh xạ field đã có (`brightness`, `mutagen`, group) sang style.
+
+**Quyết định nền**: dùng dữ liệu sẵn của `palace-view-builder.ts` — `palaceSchema` đã
+expose `brightness` + `mutagen` + nhóm sao theo loại. Bảng màu là **design token ở
+`apps/web/src/lib/styles/tokens.css`**, không hardcode trong component. Mọi nhãn vẫn
+qua `translateZiweiKey` (Lộc/Quyền/Khoa/Kỵ là 4 key tiếng Việt; brightness là 5 key).
+
+**Bước chính** (chỉ `apps/web`):
+- `tokens.css`: thêm biến `--star-major`, `--star-minor`, `--star-misc`,
+  `--mutagen-lu/quyen/khoa/ky`, `--brightness-{mieu,vuong,dac,binh,ham}` (palette OKLCH
+  có contrast đạt WCAG AA trên nền `--surface`).
+- `PalaceCell.svelte`: split render-list theo nhóm sao (chủ/phụ/tạp); apply class
+  `data-star-group` + `data-brightness` + `data-mutagen` để CSS pick token.
+- `palace-view-builder.ts`: surface `mutagenKey` cho từng sao (đã có) + `groupKey`
+  (compute từ `starCategorySchema` đã có ở contracts) — không thêm logic mới.
+- `vi.ts`: bổ sung copy mới cho 4 mutagen + 5 brightness label (đã có một phần ở P9,
+  bổ sung phần thiếu); legend nhỏ ở chart detail giải nghĩa màu.
+
+**Validation**: `pnpm -F @ziweiai/web check` + `pnpm -F @ziweiai/web test` (test quét
+Hán + test snapshot mapping group/mutagen/brightness → class) xanh; E2E: mở lá số → chủ
+tinh đậm, phụ/tạp nhạt dần, sao có tứ hóa hiển thị ký hiệu màu, kiểm contrast bằng axe.
+
+**Rủi ro**: contrast màu kém ở mobile dark mode → kiểm bằng axe + manual; mutagen key
+mới thiếu ở `vi.ts` → `translateZiweiKey` throw (test bắt sớm); cám dỗ tô màu bằng
+inline style chứ không token → không scale + lệch hệ thiết kế (CẤM, dùng CSS vars).
+
+## Phase 13 — Quota anon bền hoá qua Redis/Upstash
+
+**Story**: `docs/stories/epics/E13-anon-quota-persistence/US-013-anon-quota-persistence.md` ·
+Lane **normal** · chỉ chạm `apps/api` + env. Quyết định nền:
+`docs/decisions/0009-anonymous-auth-strategy.md` (anon JWT đã có; quota in-memory chỉ
+là tạm thời, ghi rõ TODO bền hoá).
+
+**Mục tiêu**: thay store quota anon hiện tại (in-memory `Map` trong process api) bằng
+Redis/Upstash để: (1) bền qua restart, (2) chính xác khi chạy nhiều instance, (3)
+chống bypass bằng restart container. Không đổi mặt API.
+
+**Quyết định nền**: dùng **Upstash Redis REST** (HTTP, không cần TCP keep-alive, hợp
+serverless) — `@upstash/redis`. Key shape `quota:anon:<bucket>:<ip>:<yyyy-mm-dd>` với
+TTL = 24h, dùng `INCR` + `EXPIRE` atomically (script Lua tối thiểu). Fallback: nếu
+biến env không cấu hình → log warn + dùng in-memory như cũ (giữ DX local dev).
+
+**Bước chính** (chỉ `apps/api`):
+- `apps/api/src/config/env.ts`: thêm `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`
+  (optional). Khi thiếu → flag `quotaStore = 'memory'`.
+- `apps/api/src/modules/quotas/stores/upstash-quota-store.ts`: implement interface
+  `QuotaStore` (`incrAndGet(key, ttlSec)`), wrap `@upstash/redis`.
+- `quotas.module.ts`: provider chọn store theo flag (`memory` vs `upstash`).
+- `quotas.service.ts`: refactor `assertCanCreate*` để gọi store qua interface — không
+  lộ chi tiết Redis ra ngoài service.
+- Test integration: dùng `@upstash/redis` test instance hoặc mock HTTP; thêm test fall-back.
+
+**Validation**: `pnpm -F @ziweiai/api test` (unit + integration store) xanh; smoke local
+với env Upstash thật → 2 request liên tiếp cùng IP ăn quota đúng; restart api → quota
+KHÔNG reset (so với hiện tại reset theo process); env trống → vẫn dùng memory store.
+
+**Rủi ro**: Upstash latency thêm 30–80ms mỗi request quota-checked → đo và chấp nhận
+(cheaper than DB); rò token Upstash vào client bundle → giữ ở `apps/api` (boundary 0007
+đã chặn ngoài web); race condition đếm sai khi không atomic → bắt buộc `INCR`+`EXPIRE`
+trong 1 pipeline/Lua; account Upstash chia sẻ giữa staging/prod → key prefix theo env.
+
+## Phase 14 — Highlight đa màu vận hạn + flow-info ô (US-014)
+
+**Story**: `docs/stories/epics/E14-ziwei-flow-info/US-014-ziwei-flow-info.md` · Lane
+**high-risk** · chạm `apps/api` + `packages/contracts` + `apps/web`. Quyết định nền:
+`docs/decisions/0011-horoscope-engine-boundary.md` (engine vận hạn server-side, web
+chỉ nhận snapshot).
+
+**Mục tiêu**: trên bàn vuông, mỗi ô cung hiển thị flow-info (đại vận / lưu niên / lưu
+nguyệt / lưu nhật) ở góc + highlight đa màu khi cung trùng vai trò vận hạn — port
+trực quan từ `.ref/taibu` `PalaceCell` hiển thị 4 dải màu (Mệnh vận / Thân vận / Tài
+bạch vận / Quan lộc vận).
+
+**Quyết định nền (đã chốt)**: 4 tầng vận hạn KHÔNG tự tính ở web (vi phạm 0007);
+backend trả qua endpoint mới `POST /charts/:id/horoscope` (decision 0011), web cache
+qua TanStack Query key `['horoscope', chartId, asOf]`. Đợt đầu chỉ cần 1 `asOf` mặc
+định (= năm dương hiện tại) cho US-014; chọn mốc tương tác là Phase 15.
+
+**Bước chính**:
+- `packages/contracts/src/horoscope/`: tạo `horoscope-frame.ts` (extend `horoscopeSchema`
+  thêm `monthly?` + `daily?`, đặt tên `horoscopeFrameSchema`) + `horoscope-request.ts`
+  + `horoscope-response.ts` (decision 0011).
+- `apps/api/src/modules/horoscope/`: module + controller + service gọi
+  `@ziweiai/astro-engine`. Bearer auth + ownership check `chartId`. Đặt cùng quota key
+  với `assertCanCreateChart` (rẻ, không LLM).
+- `apps/web/src/lib/api/api-client.ts`: thêm `fetchChartHoroscope(chartId, asOf)`.
+- `PalaceCell.svelte`: thêm vùng flow-info (góc dưới); ánh xạ `horoscopeFrame.decadal/yearly`
+  vào CSS `data-flow-role` (mệnh-vận / thân-vận / ...) → token màu ở `tokens.css`.
+- `vi.ts`: copy mới cho 4 vai trò vận hạn + nhãn flow-info.
+
+**Validation**: `pnpm -F @ziweiai/api test` (horoscope service tính đúng + ownership);
+`turbo typecheck`; `pnpm -F @ziweiai/web test` (Hán scan + mapping role→class); E2E:
+mở lá số → flow-info hiển thị ở mỗi cung tiếng Việt → chuyển sang ô đại vận → highlight
+4 vai trò đúng.
+
+**Rủi ro**: `horoscopeFrameSchema` mở rộng phải backward-compat (snapshot cũ chỉ
+`decadal/age/yearly` vẫn parse được) → optional field; engine `iztro` ở server có thể
+trả khoá Hán ở field mới → guard `translateZiweiKey` fail-fast + test quét Hán; chi
+phí latency thêm 1 round-trip ngay khi mở lá số → prefetch cùng `fetchChartDetail`
+hoặc lazy on-view-port.
+
+## Phase 15 — Panel vận hạn tương tác (đại vận → lưu niên → lưu nguyệt → lưu nhật)
+
+**Story**: `docs/stories/epics/E15-ziwei-horoscope-panel/US-015-ziwei-horoscope-panel.md` ·
+Lane **high-risk** · chạm `apps/web` (kéo dài API + contracts của Phase 14). Quyết
+định nền: `docs/decisions/0011-horoscope-engine-boundary.md`.
+
+**Mục tiêu**: panel chọn mốc thời gian — port từ `.ref/taibu`
+`ZiweiHoroscopePanel.tsx` — state machine 4 bước: chọn đại vận (1 trong 8) → lưu niên
+(năm trong khoảng đại vận) → lưu nguyệt (12) → lưu nhật (28-31). Mỗi bước gọi lại
+`fetchChartHoroscope` với `asOf` thay đổi; bàn vuông cập nhật flow-info + highlight
+đa màu theo mốc đang xem.
+
+**Quyết định nền**: state machine ở client (XState ngầm hoặc `$state` machine thủ
+công), KHÔNG có endpoint mới — tái dùng `POST /charts/:id/horoscope` của Phase 14 với
+`scopes` + `asOf` thay đổi. Cache TanStack Query staleTime cao (`5 phút` — vận hạn
+deterministic theo `chartId + asOf`); prefetch các mốc kế cận khi user hover.
+
+**Bước chính** (chỉ `apps/web`):
+- `apps/web/src/lib/features/horoscope/horoscope-panel-state.svelte.ts`: state machine
+  4 bước + reset + commit; expose `currentAsOf` derived → trigger `createQuery`.
+- `HoroscopePanel.svelte`: 4 row picker (đại vận / năm / tháng / ngày) — picker UI
+  đơn giản (button list) không animate layout (theo `web/coding-style.md`).
+- `ChartDetailScreen.svelte`: nhúng panel cạnh bàn vuông; cập nhật `PalaceGrid` qua
+  prop `horoscopeFrame` (thay `horoscopeFrame` mặc định Phase 14).
+- `vi.ts`: copy mới cho 4 bước + nút "đặt lại mốc".
+
+**Validation**: `pnpm -F @ziweiai/web test` (state machine transitions + Hán scan)
+xanh; E2E: chọn đại vận 2 → đợi panel cập nhật → chọn năm 2030 → flow-info đổi đúng;
+reset → quay về `asOf` mặc định; chuyển nhanh giữa các mốc → không double-fetch (cache
+hit).
+
+**Rủi ro**: spam request khi user kéo qua nhiều mốc → debounce 200ms trong state
+machine; staleTime quá ngắn → cache miss thường xuyên (5 phút là điểm cân); panel
+mobile dễ chật → ưu tiên scroll dọc + collapse 4 picker, không animate width/height;
+hành vi "chọn lưu nhật khi chưa chọn lưu niên" → state machine cấm bước nhảy (test
+explicit).
+
+## Phase 16 — Vận ngày + vận tháng + báo cáo năm (US-016)
+
+**Story**: `docs/stories/epics/E16-time-fortune-reports/US-016-time-fortune-reports.md` ·
+Lane **high-risk** · chạm `apps/api` + `packages/contracts` + `apps/web`. Quyết định
+nền: `docs/decisions/0011-horoscope-engine-boundary.md` (engine vận hạn) +
+`docs/decisions/0010-premium-ai-entitlement-flag.md` (gate AI cho báo cáo năm).
+
+**Mục tiêu**: 3 view tổng hợp port từ `.ref/taibu` `/daily`, `/monthly`,
+`/user/annual-report`. Vận ngày + vận tháng = engine deterministic (không LLM).
+Báo cáo năm = engine + LLM tổng hợp 12 lưu nguyệt → 1 narrative tiếng Việt.
+
+**Quyết định nền (đã chốt)**:
+- 2 endpoint mới deterministic: `GET /charts/:id/daily?asOf=YYYY-MM-DD`,
+  `GET /charts/:id/monthly?asOf=YYYY-MM` — cache TanStack Query, không tốn LLM.
+- 1 endpoint LLM `POST /charts/:id/annual-report` — gắn `assertCanUseAiExplanation`
+  + cờ riêng `AI_ANNUAL_REPORT_ENABLED` (default `false` lúc test) để tránh chi phí
+  LLM 12-lượt khi chưa sẵn sàng. Quota riêng `API_ANNUAL_REPORT_PER_DAY_PER_USER`
+  (mặc định `1`).
+- Cache DB cho daily/monthly: chưa bắt buộc trong story này (tốn TTL design); ghi
+  TODO Unresolved cho decision sau.
+
+**Bước chính**:
+- `packages/contracts/src/horoscope/`: thêm `dailyFortuneRequestSchema/Response`,
+  `monthlyFortuneRequestSchema/Response`, `annualReportRequestSchema/Response`.
+- `apps/api/src/modules/horoscope/`: 3 route handler mới + 3 service method;
+  annual-report ghép `computeZiweiHoroscope` (lưu niên + 12 lưu nguyệt) → prompt
+  builder → LLM → response.
+- `apps/web/src/lib/api/api-client.ts`: `fetchDailyFortune`, `fetchMonthlyFortune`,
+  `createAnnualReport`.
+- `apps/web/src/routes/(app)/charts/[chartId]/(reports)/daily/+page.svelte`,
+  `monthly/+page.svelte`, `annual/+page.svelte` — 3 trang con dưới chart detail.
+- `vi.ts`: copy mới cho 3 view + paywall annual report.
+
+**Validation**: `pnpm -F @ziweiai/api test` (3 endpoint + gate AI annual fail-closed
+khi `AI_ANNUAL_REPORT_ENABLED=false`); `pnpm -F @ziweiai/web test` (Hán scan các trang
+mới); E2E: vào daily → narrative tiếng Việt; monthly → 12 sub-period; annual khi cờ
+bật → markdown dài; cờ tắt → CTA paywall thay vì sinh.
+
+**Rủi ro**: annual report tốn 12 lượt LLM → nếu cờ rò bật lúc tải đỉnh sẽ đốt token →
+gate AI + quota daily 1/user + cờ riêng đều phải fail-closed; daily/monthly không LLM
+nhưng vẫn tốn engine compute → cache TanStack Query staleTime 1 ngày cho daily, 1
+tháng cho monthly; copy paywall annual phải tiếng Việt + key qua `translateZiweiKey`.
+
+## Phase 17 — Khung 6 hệ luận giải mới (Hợp Hôn / Manh Phái / Tarot / MBTI / Xem Tướng / Xem Tay)
+
+**Story**: `docs/stories/epics/E17-extended-divination-systems/US-017-extended-divination-systems.md` ·
+Lane **high-risk** · chạm `apps/api` + `packages/contracts` + `apps/web` + Supabase
+(Storage bucket mới). Quyết định nền:
+`docs/decisions/0012-extended-divination-systems.md`.
+
+**Mục tiêu**: mở rộng từ 6 hệ hiện có lên 12 — port `.ref/taibu` `hepan/mangpai/tarot/
+mbti/face/palm`. Story US-017 = epic parent định nghĩa khung chung; 6 epic con
+(US-017a..f) triển khai TUẦN TỰ theo độ phức tạp tăng dần.
+
+**Quyết định nền (đã chốt)**:
+- Mở rộng `chartSystemSchema` thành 12 giá trị (backward-compat thuần thêm).
+- **Đa hình endpoint**: `POST /charts` giữ cho 7 hệ "1 birth-input" (6 cũ +
+  Manh Phái); thêm `POST /pairings` (Hợp Hôn), `POST /quizzes/mbti`, `POST /draws/tarot`,
+  `POST /vision/face`, `POST /vision/palm` (multipart, 1 ảnh ≤ 4MB).
+- **Storage ảnh**: Supabase Storage bucket `vision-uploads` (private, RLS owner-only),
+  auto-delete 7 ngày qua `pg_cron`.
+- **Bắt email identity** cho `face/palm` (anon-user bị chặn — vision tốn token + PII
+  sinh trắc); 4 hệ còn lại cho phép anon.
+- **6 cờ feature riêng**: `EXTENDED_SYSTEM_<HEPAN|MANGPAI|TAROT|MBTI|FACE|PALM>_ENABLED`
+  (mặc định `false`); quota vision riêng `API_VISION_REQUESTS_PER_DAY_PER_USER=5`.
+- Gate AI dùng chung `assertCanUseAiExplanation` (decision 0010) — 1 chỗ tắt cho cả
+  12 hệ AI khi tích hợp thanh toán.
+
+**Bước chính**:
+- `packages/contracts/src/`: thêm `chart-system.ts` (12 giá trị), `mbti-result.ts`,
+  `tarot-draw.ts`, `vision-analysis.ts`, `pairing-snapshot.ts`.
+- `apps/api/src/modules/`: 4 module mới (`pairings/`, `quizzes/`, `draws/`, `vision/`);
+  module `mangpai` bổ sung trong `charts/`.
+- Migration Supabase mới: bucket `vision-uploads` + RLS policy + scheduled cleanup.
+- `apps/web`: 6 trang dashboard tile mới + 6 luồng input (form / quiz / image upload).
+- `vi.ts`: copy lớn cho 6 hệ (~50+ key).
+
+**Validation**: mỗi epic con (US-017a..f) phải xanh độc lập trước khi bật cờ tương ứng;
+test integration vision phải verify Storage cleanup chạy thật trước khi bật `FACE/PALM`;
+test Hán scan + ESLint boundary (web không import core) trên TẤT CẢ build mới.
+
+**Rủi ro**: 4 endpoint + 1 bucket + 1 cron = mặt API + ops phình → không bật đồng loạt,
+chỉ flag từng cờ; vision PII (chân dung/khuôn tay = sinh trắc) → audit Storage policy +
+auto-delete 7 ngày + bắt email identity; chi phí LLM vision gấp 5–10× → quota
+cứng 5/user/ngày + ràng buộc email; backlog story tăng đáng kể → sẵn sàng cắt phạm vi
+(VD: chỉ làm 4 hệ không-vision trước khi đụng face/palm).
+
+## Phase 18 — Trợ lý AI hội thoại nhiều lượt (multi-turn + quick prompts + SSE)
+
+**Story**: `docs/stories/epics/E18-ai-conversation/US-018-ai-conversation.md` · Lane
+**high-risk** · chạm `apps/api` + `packages/contracts` + `apps/web` + Supabase
+(migration bảng mới). Quyết định nền: `docs/decisions/0013-ai-conversation-channel.md`.
+
+**Mục tiêu**: thay 1-shot `POST /explanations` bằng kênh hội thoại nhiều lượt — port
+pattern `.ref/xuanshu/components/ai/{AIAssistant,AIChatWindow,QuickPrompts}.tsx`. Khung
+chat overlay cạnh lá số, gợi ý câu hỏi nhanh tiếng Việt, streaming token, ghi nhớ
+context (snapshot + lịch sử lượt).
+
+**Quyết định nền (đã chốt)**:
+- Module mới `apps/api/src/modules/conversations` với 3 endpoint: `POST /conversations`
+  (tạo phiên, gắn `chartId?`), `GET /conversations/:id` (lịch sử), `POST
+  /conversations/:id/messages` (thêm lượt + stream SSE).
+- **Schema mới**: 2 bảng `conversations` + `conversation_messages` (RLS owner-only).
+  Migration mới — yêu cầu staging test trước.
+- **SSE streaming**: `text/event-stream`, `event: token | done | error`. Web dùng
+  `fetch + Response.body` reader (không lib mới). Reverse-proxy phải set
+  `X-Accel-Buffering: no`.
+- **Ngân sách context**: `max_messages_per_turn = 12` (drop lượt cũ), snapshot lá số
+  inject ở `system` lượt đầu + summary ngắn mỗi turn.
+- **Quota riêng**: `API_CONVERSATION_MESSAGES_PER_DAY_PER_USER=30`,
+  `API_ANON_CONVERSATION_MESSAGES_PER_DAY_PER_IP=10`.
+- **Quick prompts an toàn**: client gửi `quickPromptKey` (enum tiếng Việt), server resolve
+  prompt thật — chống prompt injection từ UI.
+- Gate AI: `assertCanUseAiExplanation` áp TRƯỚC mỗi `POST /messages` + cờ
+  `AI_CONVERSATION_ENABLED` (default `false` lúc test).
+
+**Bước chính**:
+- Migration SQL: `conversations`, `conversation_messages` + RLS.
+- `packages/contracts/src/conversations/`: `quick-prompt.ts`, `conversation-message.ts`,
+  `conversation-stream-event.ts` (token/done/error).
+- `apps/api/src/modules/conversations/`: controller + service + `build-conversation-prompt.ts`
+  + SSE writer.
+- `apps/web/src/lib/features/conversation/`: `conversation-model.svelte.ts` (`$state`
+  messages + streaming cursor), `ConversationPanel.svelte` overlay,
+  `conversation-stream.ts` (fetch + reader).
+- `vi.ts`: copy panel + ~10 quick-prompt label.
+
+**Validation**: migration apply staging xanh; `pnpm -F @ziweiai/api test` (gate AI +
+quota + SSE chunking + buffer 12 messages); `pnpm -F @ziweiai/web test` (Hán scan
+panel + stream parser); E2E: mở panel → chọn quick prompt → nhận stream token tiếng
+Việt → hỏi tiếp → context giữ → cờ tắt → CTA paywall.
+
+**Rủi ro**: migration DB rủi ro release → có script `down` + staging test bắt buộc;
+SSE bị buffer ở Cloudflare/Nginx mặc định → `X-Accel-Buffering: no` + ghi vào release
+guide; token cost tăng theo độ dài hội thoại → quota daily là trần cuối + max 12
+messages buffer; multi-turn dễ inject prompt → `quickPromptKey` enum + escape user
+content; anon + email cùng share quota khi upgrade → key quota theo `userId` ổn định
+sau anon→email link.
+
 ## Success Criteria (toàn dự án)
 
 **Web v1 (Phase 1–8) — đã đạt:**
@@ -1334,6 +1628,34 @@ này entitlement chỉ là khái niệm, cờ free che đi (xem Unresolved).
   (free khi test); tắt cờ + chưa entitled → server trả `402 PAYMENT_REQUIRED`, web hiển thị
   CTA paywall tiếng Việt; gate luôn fail-closed ở server, client flag chỉ để hiển thị.
 
+**Phase 12–18 — tiêu chí chấp nhận mới:**
+
+- **P12 (tô màu sao)**: mở lá số → chủ tinh đậm, phụ tinh nhạt, tạp tinh xám; sao có tứ
+  hóa hiển thị ký hiệu màu Lộc/Quyền/Khoa/Kỵ; brightness (miếu/vượng/đắc/bình/hãm) phân
+  cấp intensity; axe pass WCAG AA; test quét Hán vẫn xanh.
+- **P13 (anon quota Redis)**: cấu hình Upstash → quota anon bền qua restart api + đếm
+  đúng khi chạy nhiều instance; thiếu env → fallback in-memory + log warn; test integration
+  store xanh; latency quota check ổn định trong 30–80ms.
+- **P14 (flow-info + highlight)**: mỗi cung hiển thị flow-info (đại vận/lưu niên) tiếng
+  Việt; highlight đa màu cho 4 vai trò vận hạn (Mệnh/Thân/Tài/Quan vận); web KHÔNG tự
+  tính, gọi `POST /charts/:id/horoscope`; backward-compat snapshot cũ (chỉ
+  decadal/age/yearly).
+- **P15 (panel vận hạn)**: state machine 4 bước đại vận → lưu niên → lưu nguyệt → lưu
+  nhật chạy đúng (cấm nhảy bước); chuyển mốc → `fetchChartHoroscope` cache hit khi quay
+  lại; reset trở về `asOf` mặc định; mobile không tràn.
+- **P16 (vận ngày/tháng/năm)**: `GET /charts/:id/daily` + `monthly` deterministic,
+  không LLM; `POST /charts/:id/annual-report` gắn `AI_ANNUAL_REPORT_ENABLED` (default
+  `false`) + quota 1/user/ngày; tắt cờ → CTA paywall annual; bật cờ → narrative tiếng
+  Việt 12-lưu-nguyệt.
+- **P17 (6 hệ mới)**: `chartSystemSchema` mở rộng 12 giá trị backward-compat; 4 endpoint
+  đa hình `/pairings`/`/quizzes/mbti`/`/draws/tarot`/`/vision/{face,palm}` hoạt động khi
+  cờ tương ứng bật; bucket `vision-uploads` private + auto-delete 7 ngày chạy thật;
+  face/palm chặn anon-user.
+- **P18 (AI hội thoại)**: bảng `conversations` + `conversation_messages` migrated
+  staging; SSE stream token tiếng Việt qua `POST /messages`; quick prompts qua enum
+  (chống injection); cờ `AI_CONVERSATION_ENABLED=false` mặc định + gate AI fail-closed;
+  buffer 12 messages + summary mỗi turn.
+
 ## Rủi ro xuyên suốt
 
 - **Boundary leak** (quan trọng nhất): web vô tình import `core`/`astro-engine` → ESLint
@@ -1354,3 +1676,12 @@ này entitlement chỉ là khái niệm, cờ free che đi (xem Unresolved).
 - **Đường nâng cấp anon → email (P10)**: `signInAnonymously` rồi `linkIdentity`/`updateUser`
   để giữ lá số khi khách đăng nhập sau — chưa test kỹ, chốt cách di trú lá số anon sang
   email account ở story sau.
+- **Cache DB cho daily/monthly (P16)**: hiện chỉ cache TanStack Query phía client. Nếu
+  traffic tăng cần cache server-side (`horoscope_daily_cache(chart_id, as_of)` + TTL),
+  decision riêng khi đo được hot-spot.
+- **PII compliance vision (P17)**: trước khi bật `EXTENDED_SYSTEM_FACE_ENABLED` /
+  `_PALM_ENABLED` thật, audit Storage RLS + `pg_cron` cleanup chạy thật + ghi rõ Việt
+  ngữ "ảnh xoá sau 7 ngày" trên UI upload.
+- **LLM provider stateful chat (P18)**: nếu chuyển sang provider hỗ trợ thread native
+  (Anthropic Messages, OpenAI Threads) sẽ giảm chi phí gửi context lặp; chưa cấp thiết,
+  decision riêng khi cost LLM hội thoại vượt ngưỡng.

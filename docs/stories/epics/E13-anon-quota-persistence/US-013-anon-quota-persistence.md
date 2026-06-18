@@ -117,7 +117,9 @@ cửa sổ 60s đã đủ ngắn để mất một phút sau restart không có 
     `INCR` + `EXPIRE` rẻ hơn Upstash REST nếu QPS cao.
 - Pattern atomic INCR + EXPIRE:
   - Redis: pipeline `INCR key` + `EXPIRE key ttl NX` (NX để TTL chỉ set lần
-    đầu, không reset cửa sổ). Đọc count từ INCR, so với limit.
+    đầu, không reset cửa sổ). Đọc count từ INCR, so với limit. `EXPIRE ... NX`
+    cần Redis >= 7.0; với 6.x dùng Lua (`INCR`, nếu count==1 thì `PEXPIRE`) để
+    set TTL atomic ở lần đầu.
   - Upstash REST: 1 request `pipeline` body `[["INCR", key], ["EXPIRE", key, ttl, "NX"]]`.
 - Khoá có `yyyy-mm-dd` (UTC) để tự cuốn cửa sổ; TTL 24h là backstop chống rò
   key khi đồng hồ instance lệch.

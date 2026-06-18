@@ -182,6 +182,15 @@ export const viCopy = {
     premiumCta: 'Nâng cấp để dùng luận giải AI',
     premiumHint: 'Tính năng này yêu cầu gói trả phí. Hiện đang miễn phí thử nghiệm.',
   },
+  assistant: {
+    title: 'Trợ lý AI hội thoại',
+    hint: 'Hãy chọn một gợi ý nhanh hoặc nhập câu hỏi để bắt đầu hội thoại.',
+    placeholder: 'Nhập câu hỏi của bạn...',
+    send: 'Gửi',
+    quickPromptsLabel: 'Gợi ý nhanh',
+    roleUser: 'Bạn',
+    roleAssistant: 'Trợ lý',
+  },
   pricing: {
     heroEyebrow: 'Gói dịch vụ',
     heroTitle: 'Nâng cấp luận giải AI',

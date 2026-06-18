@@ -69,6 +69,31 @@ export const explanationResultRecordSchema = z.object({
   createdAt: z.iso.datetime(),
 });
 
+export const conversationStatusSchema = z.enum(['active', 'archived']);
+export const conversationMessageRoleSchema = z.enum(['user', 'assistant']);
+
+export const conversationRecordSchema = z.object({
+  id: z.uuid(),
+  ownerUserId: z.uuid(),
+  chartSnapshotId: z.uuid(),
+  title: z.string().min(1).nullable(),
+  status: conversationStatusSchema,
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+});
+
+export const conversationMessageRecordSchema = z.object({
+  id: z.uuid(),
+  ownerUserId: z.uuid(),
+  conversationId: z.uuid(),
+  role: conversationMessageRoleSchema,
+  content: z.string().trim().min(1),
+  quickPromptKey: z.string().min(1).nullable(),
+  providerName: z.string().min(1).nullable(),
+  providerMetadata: z.record(z.string(), z.string()),
+  createdAt: z.iso.datetime(),
+});
+
 export const historyViewRecordSchema = z.object({
   id: z.uuid(),
   ownerUserId: z.uuid(),
@@ -80,9 +105,13 @@ export const historyViewRecordSchema = z.object({
 export type ExplanationRequestState = z.infer<typeof explanationRequestStateSchema>;
 export type PromptStorageMode = z.infer<typeof promptStorageModeSchema>;
 export type CacheScope = z.infer<typeof cacheScopeSchema>;
+export type ConversationStatus = z.infer<typeof conversationStatusSchema>;
+export type ConversationMessageRole = z.infer<typeof conversationMessageRoleSchema>;
 export type ProfileRecord = z.infer<typeof profileRecordSchema>;
 export type BirthProfileRecord = z.infer<typeof birthProfileRecordSchema>;
 export type ChartSnapshotRecord = z.infer<typeof chartSnapshotRecordSchema>;
 export type ExplanationRequestRecord = z.infer<typeof explanationRequestRecordSchema>;
 export type ExplanationResultRecord = z.infer<typeof explanationResultRecordSchema>;
+export type ConversationRecord = z.infer<typeof conversationRecordSchema>;
+export type ConversationMessageRecord = z.infer<typeof conversationMessageRecordSchema>;
 export type HistoryViewRecord = z.infer<typeof historyViewRecordSchema>;

@@ -76,6 +76,9 @@ export const apiEnvSchema = z.object({
   // KHÔNG dùng z.coerce.boolean() — nó chạy Boolean(string) nên mọi chuỗi non-empty
   // (kể cả "false") đều thành true, khiến AI_EXPLANATION_FREE_FOR_ALL=false vô hiệu ở prod.
   AI_EXPLANATION_FREE_FOR_ALL: z.stringbool().default(true),
+  AI_CONVERSATION_ENABLED: z.stringbool().default(false),
+  API_CONVERSATION_MESSAGES_PER_DAY_PER_USER: z.coerce.number().int().positive().default(30),
+  AI_CONVERSATION_BUFFER_MESSAGES: z.coerce.number().int().positive().default(12),
   npm_package_version: z.string().min(1).optional(),
 });
 

@@ -4,6 +4,10 @@ import { chartSystemSchema } from '../chart/chart-system';
 import {
   createChartRequestSchema,
   createExplanationRequestSchema,
+  createConversationMessageRequestSchema,
+  createConversationRequestSchema,
+  conversationDetailResponseSchema,
+  conversationStreamEventSchema,
   historyListResponseSchema,
 } from './backend-api';
 
@@ -132,5 +136,63 @@ describe('backend API contracts', () => {
   it('accepts an empty history list envelope', () => {
     const payload = historyListResponseSchema.parse({ items: [] });
     expect(payload.items).toHaveLength(0);
+  });
+
+  it('accepts conversation creation payloads', () => {
+    const payload = createConversationRequestSchema.parse({
+      chartSnapshotId: '0f8fad5b-d9cb-469f-a165-70867728950e',
+      title: '  Hỏi nhanh về lá số  ',
+    });
+
+    expect(payload.chartSnapshotId).toBe('0f8fad5b-d9cb-469f-a165-70867728950e');
+    expect(payload.title).toBe('Hỏi nhanh về lá số');
+  });
+
+  it('requires exactly one conversation message source', () => {
+    expect(createConversationMessageRequestSchema.parse({ content: 'Hỏi về công việc' }).content).toBe('Hỏi về công việc');
+    expect(createConversationMessageRequestSchema.parse({ quickPromptKey: 'career' }).quickPromptKey).toBe('career');
+    expect(() => createConversationMessageRequestSchema.parse({})).toThrow();
+    expect(() => createConversationMessageRequestSchema.parse({ content: 'Tự nhập', quickPromptKey: 'overview' })).toThrow();
+  });
+
+  it('rejects unknown quick prompt keys', () => {
+    expect(() => createConversationMessageRequestSchema.parse({ quickPromptKey: 'ignore-all-rules' })).toThrow();
+  });
+
+  it('accepts typed conversation stream events', () => {
+    expect(conversationStreamEventSchema.parse({ type: 'chunk', delta: 'Xin chào' }).type).toBe('chunk');
+    const done = conversationStreamEventSchema.parse({
+      type: 'done',
+      message: {
+        id: '1f8fad5b-d9cb-469f-a165-70867728950e',
+        ownerUserId: 'dff0da0d-f89c-4485-8d11-4e58fc00b8cb',
+        conversationId: '0f8fad5b-d9cb-469f-a165-70867728950e',
+        role: 'assistant',
+        content: 'Luận giải mẫu.',
+        quickPromptKey: null,
+        providerName: 'deepseek',
+        providerMetadata: { provider: 'deepseek' },
+        createdAt: '2026-06-18T00:02:00.000Z',
+      },
+    });
+
+    expect(done.type).toBe('done');
+  });
+
+  it('accepts conversation detail envelopes', () => {
+    const payload = conversationDetailResponseSchema.parse({
+      conversation: {
+        id: '0f8fad5b-d9cb-469f-a165-70867728950e',
+        ownerUserId: 'dff0da0d-f89c-4485-8d11-4e58fc00b8cb',
+        chartSnapshotId: 'a9ac741c-7423-4767-90d7-f8b6781ccf0a',
+        title: null,
+        status: 'active',
+        createdAt: '2026-06-18T00:00:00.000Z',
+        updatedAt: '2026-06-18T00:00:00.000Z',
+      },
+      messages: [],
+    });
+
+    expect(payload.messages).toHaveLength(0);
   });
 });

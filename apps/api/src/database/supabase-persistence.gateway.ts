@@ -6,6 +6,8 @@ import {
   explanationRequestRecordSchema,
   explanationResultRecordSchema,
   historyViewRecordSchema,
+  conversationRecordSchema,
+  conversationMessageRecordSchema,
   type BirthInput,
   type BirthProfileRecord,
   type ChartSnapshot,
@@ -16,6 +18,8 @@ import {
   type NormalizedBirth,
   type PromptStorageMode,
   type CacheScope,
+  type ConversationRecord,
+  type ConversationMessageRecord,
 } from '@ziweiai/contracts';
 import { apiEnv } from '../config/env';
 import { normalizePostgresTimestamp } from './postgres-timestamp';
@@ -408,6 +412,97 @@ export class SupabasePersistenceGateway {
     return count ?? 0;
   }
 
+  async createConversation(params: {
+    ownerUserId: string;
+    chartSnapshotId: string;
+    title?: string | null;
+  }): Promise<ConversationRecord> {
+    const { data, error } = await this.client
+      .from('conversations')
+      .insert({
+        owner_user_id: params.ownerUserId,
+        chart_snapshot_id: params.chartSnapshotId,
+        title: params.title ?? null,
+        status: 'active',
+      })
+      .select('*')
+      .single();
+    this.throwIfError(error);
+    return this.toConversationRecord(data);
+  }
+
+  async listConversationsForChart(ownerUserId: string, chartSnapshotId: string): Promise<ConversationRecord[]> {
+    const { data, error } = await this.client
+      .from('conversations')
+      .select('*')
+      .eq('owner_user_id', ownerUserId)
+      .eq('chart_snapshot_id', chartSnapshotId)
+      .order('created_at', { ascending: false });
+    this.throwIfError(error);
+    return (data ?? []).map((row: SupabaseRow) => this.toConversationRecord(row));
+  }
+
+  async findConversationById(ownerUserId: string, conversationId: string): Promise<ConversationRecord | null> {
+    const { data, error } = await this.client
+      .from('conversations')
+      .select('*')
+      .eq('owner_user_id', ownerUserId)
+      .eq('id', conversationId)
+      .maybeSingle();
+    this.throwIfError(error);
+    return data ? this.toConversationRecord(data) : null;
+  }
+
+  async createConversationMessage(params: {
+    ownerUserId: string;
+    conversationId: string;
+    role: 'user' | 'assistant';
+    content: string;
+    quickPromptKey?: string | null;
+    providerName?: string | null;
+    providerMetadata?: Record<string, string>;
+  }): Promise<ConversationMessageRecord> {
+    const { data, error } = await this.client
+      .from('conversation_messages')
+      .insert({
+        owner_user_id: params.ownerUserId,
+        conversation_id: params.conversationId,
+        role: params.role,
+        content: params.content,
+        quick_prompt_key: params.quickPromptKey ?? null,
+        provider_name: params.providerName ?? null,
+        provider_metadata: params.providerMetadata ?? {},
+      })
+      .select('*')
+      .single();
+    this.throwIfError(error);
+    return this.toConversationMessageRecord(data);
+  }
+
+  async listRecentConversationMessages(ownerUserId: string, conversationId: string, limit: number): Promise<ConversationMessageRecord[]> {
+    const { data, error } = await this.client
+      .from('conversation_messages')
+      .select('*')
+      .eq('owner_user_id', ownerUserId)
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    this.throwIfError(error);
+    const records = (data ?? []).map((row: SupabaseRow) => this.toConversationMessageRecord(row));
+    // Reverse to chronological order (oldest of the recent window first)
+    return records.reverse();
+  }
+
+  async countConversationMessagesSince(ownerUserId: string, sinceIso: string): Promise<number> {
+    const { count, error } = await this.client
+      .from('conversation_messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('owner_user_id', ownerUserId)
+      .gte('created_at', sinceIso);
+    this.throwIfError(error);
+    return count ?? 0;
+  }
+
   private toBirthProfileRecord(row: SupabaseRow): BirthProfileRecord {
     return birthProfileRecordSchema.parse({
       id: row.id,
@@ -478,6 +573,40 @@ export class SupabasePersistenceGateway {
       chartSnapshotId: row.chart_snapshot_id,
       explanationResultId: row.explanation_result_id,
       viewedAt: normalizePostgresTimestamp(row.viewed_at as string | null | undefined),
+    });
+  }
+
+  private toConversationRecord(row: SupabaseRow): ConversationRecord {
+    return conversationRecordSchema.parse({
+      id: row.id,
+      ownerUserId: row.owner_user_id,
+      chartSnapshotId: row.chart_snapshot_id,
+      title: row.title ?? null,
+      status: row.status,
+      createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
+      updatedAt: normalizePostgresTimestamp(row.updated_at as string | null | undefined),
+    });
+  }
+
+  private toConversationMessageRecord(row: SupabaseRow): ConversationMessageRecord {
+    const providerMetadataRow = row.provider_metadata;
+    const providerMetadata =
+      providerMetadataRow && typeof providerMetadataRow === 'object'
+        ? Object.fromEntries(
+            Object.entries(providerMetadataRow as Record<string, unknown>).map(([key, value]) => [key, String(value)]),
+          )
+        : {};
+
+    return conversationMessageRecordSchema.parse({
+      id: row.id,
+      ownerUserId: row.owner_user_id,
+      conversationId: row.conversation_id,
+      role: row.role,
+      content: row.content,
+      quickPromptKey: row.quick_prompt_key ?? null,
+      providerName: row.provider_name ?? null,
+      providerMetadata,
+      createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
     });
   }
 

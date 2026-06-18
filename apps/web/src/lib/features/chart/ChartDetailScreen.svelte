@@ -21,6 +21,7 @@
   import DaliurenDetailCard from '$lib/features/chart/DaliurenDetailCard.svelte';
   import QimenDetailCard from '$lib/features/chart/QimenDetailCard.svelte';
   import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
+  import AssistantPanel from '$lib/features/assistant/AssistantPanel.svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
@@ -125,7 +126,7 @@
       {#if explanation.isPaymentRequired}
         <PrimaryButton
           label={viCopy.explanation.premiumCta}
-          variant="accent"
+          variant="gold"
           onclick={() => goto(resolve('/pricing'))}
         />
         <p class="hint">{viCopy.explanation.premiumHint}</p>
@@ -147,6 +148,15 @@
       {:else}
         <EmptyStateCard title={copy.noExplanationTitle} description={copy.noExplanationDescription} />
       {/if}
+    </section>
+
+    <section class="assistant-section" aria-labelledby="assistant-title">
+      <AssistantPanel
+        chartSnapshotId={detail.chartId}
+        onConversationCreated={() => {
+          /* no-op: panel tự quản lý conversation id; có thể mở rộng để lưu vào chart-detail cache */
+        }}
+      />
     </section>
   {/if}
 </AppScaffold>

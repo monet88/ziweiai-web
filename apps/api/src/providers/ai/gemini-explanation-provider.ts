@@ -4,10 +4,13 @@ import { containsCjkText } from '@ziweiai/core';
 import { apiEnv } from '../../config/env';
 import {
   buildExplanationPrompt,
-  type AiExplanationProvider,
+  type AiConversationProvider,
+  type ConversationPromptPayload,
+  type ConversationProviderResult,
   type ExplanationPromptPayload,
   type ExplanationProviderResult,
 } from './ai-explanation-provider';
+import { buildConversationPrompt } from './build-conversation-prompt';
 import { EXPLANATION_SYSTEM_PROMPT } from './ai-explanation-provider';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
 
@@ -45,7 +48,7 @@ function buildGeminiSdkEndpoint(model: string): string {
   return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 }
 
-function buildGeminiSdkRequest(payload: ExplanationPromptPayload): RequestInit {
+function buildGeminiSdkRequest(params: { prompt: string }): RequestInit {
   const headers: Record<string, string> = apiEnv.GEMINI_SDK_BASE_URL
     ? {
         Authorization: `Bearer ${apiEnv.GEMINI_API_KEY}`,
@@ -65,7 +68,7 @@ function buildGeminiSdkRequest(payload: ExplanationPromptPayload): RequestInit {
       },
       contents: [
         {
-          parts: [{ text: buildExplanationPrompt(payload) }],
+          parts: [{ text: params.prompt }],
         },
       ],
     }),
@@ -74,7 +77,7 @@ function buildGeminiSdkRequest(payload: ExplanationPromptPayload): RequestInit {
 }
 
 @Injectable()
-export class GeminiExplanationProvider implements AiExplanationProvider {
+export class GeminiExplanationProvider implements AiConversationProvider {
   private readonly logger = new Logger(GeminiExplanationProvider.name);
   readonly providerName = 'gemini';
 
@@ -82,14 +85,37 @@ export class GeminiExplanationProvider implements AiExplanationProvider {
     return apiEnv.GEMINI_API_KEY.length > 0;
   }
 
+  async generateConversation(payload: ConversationPromptPayload): Promise<ConversationProviderResult> {
+    return this.generateContent({
+      prompt: buildConversationPrompt(payload),
+      emptyMessage: 'Gemini không trả về nội dung hội thoại.',
+      metadataKind: 'conversation',
+      modelOverride: payload.modelOverride,
+    });
+  }
+
   async generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {
+    return this.generateContent({
+      prompt: buildExplanationPrompt(payload),
+      emptyMessage: 'Gemini không trả về nội dung luận giải.',
+      metadataKind: 'explanation',
+      modelOverride: payload.modelOverride,
+    });
+  }
+
+  private async generateContent(params: {
+    prompt: string;
+    emptyMessage: string;
+    metadataKind: 'explanation' | 'conversation';
+    modelOverride?: string;
+  }): Promise<ExplanationProviderResult> {
     if (!this.isAvailable()) {
       throw new ProviderUnavailableError('Chưa cấu hình Gemini.');
     }
 
     try {
-      const model = payload.modelOverride ?? apiEnv.GEMINI_MODEL;
-      const response = await fetch(buildGeminiSdkEndpoint(model), buildGeminiSdkRequest(payload));
+      const model = params.modelOverride ?? apiEnv.GEMINI_MODEL;
+      const response = await fetch(buildGeminiSdkEndpoint(model), buildGeminiSdkRequest({ prompt: params.prompt }));
 
       const body = await readGeminiResponseBody(response);
 
@@ -109,7 +135,7 @@ export class GeminiExplanationProvider implements AiExplanationProvider {
         .join('')
         .trim();
       if (!renderedMarkdown) {
-        throw new ProviderUnavailableError('Gemini không trả về nội dung luận giải.');
+        throw new ProviderUnavailableError(params.emptyMessage);
       }
 
       if (containsCjkText(renderedMarkdown)) {
@@ -122,6 +148,7 @@ export class GeminiExplanationProvider implements AiExplanationProvider {
         providerMetadata: {
           provider: this.providerName,
           model,
+          kind: params.metadataKind,
           totalTokens: String(body.usageMetadata?.totalTokenCount ?? 0),
           promptTokens: String(body.usageMetadata?.promptTokenCount ?? 0),
           completionTokens: String(body.usageMetadata?.candidatesTokenCount ?? 0),

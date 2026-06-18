@@ -3,10 +3,13 @@ import { containsCjkText } from '@ziweiai/core';
 import { apiEnv } from '../../config/env';
 import {
   buildExplanationPrompt,
-  type AiExplanationProvider,
+  type AiConversationProvider,
+  type ConversationPromptPayload,
+  type ConversationProviderResult,
   type ExplanationPromptPayload,
   type ExplanationProviderResult,
 } from './ai-explanation-provider';
+import { buildConversationPrompt } from './build-conversation-prompt';
 import { EXPLANATION_SYSTEM_PROMPT } from './ai-explanation-provider';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
 
@@ -25,7 +28,7 @@ function buildChatCompletionsEndpoint(): string {
 }
 
 @Injectable()
-export class OpenAiCompatibleExplanationProvider implements AiExplanationProvider {
+export class OpenAiCompatibleExplanationProvider implements AiConversationProvider {
   private readonly logger = new Logger(OpenAiCompatibleExplanationProvider.name);
   readonly providerName = 'openai-compat';
 
@@ -33,13 +36,36 @@ export class OpenAiCompatibleExplanationProvider implements AiExplanationProvide
     return apiEnv.OPENAI_COMPAT_API_KEY.length > 0;
   }
 
+  async generateConversation(payload: ConversationPromptPayload): Promise<ConversationProviderResult> {
+    return this.generateChatCompletion({
+      prompt: buildConversationPrompt(payload),
+      emptyMessage: 'Nhà cung cấp OpenAI-compatible không trả về nội dung hội thoại.',
+      metadataKind: 'conversation',
+      modelOverride: payload.modelOverride,
+    });
+  }
+
   async generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {
+    return this.generateChatCompletion({
+      prompt: buildExplanationPrompt(payload),
+      emptyMessage: 'Nhà cung cấp OpenAI-compatible không trả về nội dung luận giải.',
+      metadataKind: 'explanation',
+      modelOverride: payload.modelOverride,
+    });
+  }
+
+  private async generateChatCompletion(params: {
+    prompt: string;
+    emptyMessage: string;
+    metadataKind: 'explanation' | 'conversation';
+    modelOverride?: string;
+  }): Promise<ExplanationProviderResult> {
     if (!this.isAvailable()) {
       throw new ProviderUnavailableError('Chưa cấu hình nhà cung cấp OpenAI-compatible.');
     }
 
     try {
-      const model = payload.modelOverride ?? apiEnv.OPENAI_COMPAT_MODEL;
+      const model = params.modelOverride ?? apiEnv.OPENAI_COMPAT_MODEL;
       const response = await fetch(buildChatCompletionsEndpoint(), {
         method: 'POST',
         headers: {
@@ -50,7 +76,7 @@ export class OpenAiCompatibleExplanationProvider implements AiExplanationProvide
           model,
           messages: [
             { role: 'system', content: EXPLANATION_SYSTEM_PROMPT },
-            { role: 'user', content: buildExplanationPrompt(payload) },
+            { role: 'user', content: params.prompt },
           ],
           stream: false,
           temperature: 0.7,

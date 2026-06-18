@@ -4,15 +4,18 @@ import { containsCjkText } from '@ziweiai/core';
 import { apiEnv } from '../../config/env';
 import {
   buildExplanationPrompt,
-  type AiExplanationProvider,
+  type AiConversationProvider,
   type ExplanationPromptPayload,
+  type ConversationPromptPayload,
+  type ConversationProviderResult,
   type ExplanationProviderResult,
 } from './ai-explanation-provider';
+import { buildConversationPrompt } from './build-conversation-prompt';
 import { EXPLANATION_SYSTEM_PROMPT } from './ai-explanation-provider';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
 
 @Injectable()
-export class DeepseekExplanationProvider implements AiExplanationProvider {
+export class DeepseekExplanationProvider implements AiConversationProvider {
   private readonly logger = new Logger(DeepseekExplanationProvider.name);
   readonly providerName = 'deepseek';
 
@@ -20,13 +23,37 @@ export class DeepseekExplanationProvider implements AiExplanationProvider {
     return apiEnv.DEEPSEEK_API_KEY.length > 0;
   }
 
+  async generateConversation(payload: ConversationPromptPayload): Promise<ConversationProviderResult> {
+    const result = await this.generateChatCompletion({
+      prompt: buildConversationPrompt(payload),
+      emptyMessage: 'DeepSeek không trả về nội dung hội thoại.',
+      metadataKind: 'conversation',
+      modelOverride: payload.modelOverride,
+    });
+    return result;
+  }
+
   async generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {
+    return this.generateChatCompletion({
+      prompt: buildExplanationPrompt(payload),
+      emptyMessage: 'DeepSeek không trả về nội dung luận giải.',
+      metadataKind: 'explanation',
+      modelOverride: payload.modelOverride,
+    });
+  }
+
+  private async generateChatCompletion(params: {
+    prompt: string;
+    emptyMessage: string;
+    metadataKind: 'explanation' | 'conversation';
+    modelOverride?: string;
+  }): Promise<ExplanationProviderResult> {
     if (!this.isAvailable()) {
       throw new ProviderUnavailableError('Chưa cấu hình DeepSeek.');
     }
 
     try {
-      const model = payload.modelOverride ?? apiEnv.DEEPSEEK_MODEL;
+      const model = params.modelOverride ?? apiEnv.DEEPSEEK_MODEL;
       const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -37,7 +64,7 @@ export class DeepseekExplanationProvider implements AiExplanationProvider {
           model,
           messages: [
             { role: 'system', content: EXPLANATION_SYSTEM_PROMPT },
-            { role: 'user', content: buildExplanationPrompt(payload) },
+            { role: 'user', content: params.prompt },
           ],
           stream: false,
           temperature: 0.7,
@@ -58,7 +85,7 @@ export class DeepseekExplanationProvider implements AiExplanationProvider {
 
       const renderedMarkdown = body.choices?.[0]?.message?.content?.trim();
       if (!renderedMarkdown) {
-        throw new ProviderUnavailableError('DeepSeek không trả về nội dung luận giải.');
+        throw new ProviderUnavailableError(params.emptyMessage);
       }
 
       if (containsCjkText(renderedMarkdown)) {
@@ -71,6 +98,7 @@ export class DeepseekExplanationProvider implements AiExplanationProvider {
         providerMetadata: {
           provider: this.providerName,
           model,
+          kind: params.metadataKind,
           totalTokens: String(body.usage?.total_tokens ?? 0),
           promptTokens: String(body.usage?.prompt_tokens ?? 0),
           completionTokens: String(body.usage?.completion_tokens ?? 0),

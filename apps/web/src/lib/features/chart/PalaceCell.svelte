@@ -69,7 +69,7 @@
         {#each majorStars as star (star.key)}
           {@const colors = getStarColors(star)}
           {@const title = getStarTitle(star)}
-          <li class="star major" class:malefic={colors.isMalefic} style="{colors.nameColor ? `--star-name-color: ${colors.nameColor};` : ''}{colors.brightnessColor ? `--star-brightness-color: ${colors.brightnessColor};` : ''}{colors.mutagenColor ? `--star-mutagen-color: ${colors.mutagenColor};` : ''}" title={title} tabindex="0" role="text">
+          <li class="star major" class:malefic={colors.isMalefic} style="{colors.nameColor ? `--star-name-color: ${colors.nameColor};` : ''}{colors.brightnessColor ? `--star-brightness-color: ${colors.brightnessColor};` : ''}{colors.mutagenColor ? `--star-mutagen-color: ${colors.mutagenColor};` : ''}" title={title}>
             <span class="star-name" style={colors.nameColor ? 'color: var(--star-name-color);' : ''}>{star.name}</span>
             {#if star.brightness}<span class="star-meta" style={colors.brightnessColor ? 'color: var(--star-brightness-color);' : ''}>{star.brightness}</span>{/if}
             {#if star.mutagen}<span class="star-mutagen" style={colors.mutagenColor ? 'color: var(--star-mutagen-color);' : ''}>{star.mutagen}</span>{/if}
@@ -83,7 +83,7 @@
         {#each minorStars as star (star.key)}
           {@const colors = getStarColors(star)}
           {@const title = getStarTitle(star)}
-          <li class="star minor" class:malefic={colors.isMalefic} style="{colors.nameColor ? `--star-name-color: ${colors.nameColor};` : ''}{colors.brightnessColor ? `--star-brightness-color: ${colors.brightnessColor};` : ''}{colors.mutagenColor ? `--star-mutagen-color: ${colors.mutagenColor};` : ''}" title={title} tabindex="0" role="text">
+          <li class="star minor" class:malefic={colors.isMalefic} style="{colors.nameColor ? `--star-name-color: ${colors.nameColor};` : ''}{colors.brightnessColor ? `--star-brightness-color: ${colors.brightnessColor};` : ''}{colors.mutagenColor ? `--star-mutagen-color: ${colors.mutagenColor};` : ''}" title={title}>
             <span class="star-name" style={colors.nameColor ? 'color: var(--star-name-color);' : ''}>{star.name}</span>
             {#if star.brightness}<span class="star-meta" style={colors.brightnessColor ? 'color: var(--star-brightness-color);' : ''}>{star.brightness}</span>{/if}
             {#if star.mutagen}<span class="star-mutagen" style={colors.mutagenColor ? 'color: var(--star-mutagen-color);' : ''}>{star.mutagen}</span>{/if}
@@ -97,7 +97,7 @@
         {#each adjectiveStars as star (star.key)}
           {@const colors = getStarColors(star)}
           {@const title = getStarTitle(star)}
-          <li class="star adjective" class:malefic={colors.isMalefic} style="{colors.nameColor ? `--star-name-color: ${colors.nameColor};` : ''}{colors.mutagenColor ? `--star-mutagen-color: ${colors.mutagenColor};` : ''}" title={title} tabindex="0" role="text">
+          <li class="star adjective" class:malefic={colors.isMalefic} style="{colors.nameColor ? `--star-name-color: ${colors.nameColor};` : ''}{colors.mutagenColor ? `--star-mutagen-color: ${colors.mutagenColor};` : ''}" title={title}>
             <span class="star-name" style={colors.nameColor ? 'color: var(--star-name-color);' : ''}>{star.name}</span>
             {#if star.mutagen}<span class="star-mutagen" style={colors.mutagenColor ? 'color: var(--star-mutagen-color);' : ''}>{star.mutagen}</span>{/if}
           </li>

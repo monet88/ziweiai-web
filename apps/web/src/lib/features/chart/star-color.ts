@@ -77,13 +77,16 @@ export function getStarColors(star: StarTokenView): {
 } {
   const isMalefic = MINOR_MALEFIC_KEYS.includes(star.key as MinorMaleficKey);
 
-  const brightnessColor = star.brightnessKey
-    ? `var(${BRIGHTNESS_COLOR_TOKENS[star.brightnessKey]})`
-    : null;
+  // Guard `in`: snapshot lỗi/legacy có thể chứa key ngoài enum → bỏ qua thay vì sinh "var(undefined)".
+  const brightnessColor =
+    star.brightnessKey && star.brightnessKey in BRIGHTNESS_COLOR_TOKENS
+      ? `var(${BRIGHTNESS_COLOR_TOKENS[star.brightnessKey]})`
+      : null;
 
-  const mutagenColor = star.mutagenKey
-    ? `var(${MUTAGEN_COLOR_TOKENS[star.mutagenKey]})`
-    : null;
+  const mutagenColor =
+    star.mutagenKey && star.mutagenKey in MUTAGEN_COLOR_TOKENS
+      ? `var(${MUTAGEN_COLOR_TOKENS[star.mutagenKey]})`
+      : null;
 
   // Chỉ tô tên sao cho hung tinh phụ; chủ tinh giữ màu theo nhóm (major/minor) để không xung đột.
   const nameColor = isMalefic ? `var(${MALEFIC_NAME_TOKEN})` : null;

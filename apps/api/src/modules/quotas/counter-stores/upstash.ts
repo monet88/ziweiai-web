@@ -58,6 +58,7 @@ export class UpstashRestQuotaCounterStore implements QuotaCounterStore {
           ['INCR', key],
           ['EXPIRE', key, String(ttlSeconds), 'NX'],
         ]),
+        signal: AbortSignal.timeout(5000),
       });
 
       if (!response.ok) {
@@ -66,8 +67,14 @@ export class UpstashRestQuotaCounterStore implements QuotaCounterStore {
 
       const payload = (await response.json()) as UpstashPipelineResult[];
       const incrResult = payload?.[0];
+      const expireResult = payload?.[1];
       if (!incrResult || incrResult.error !== undefined || incrResult.result === undefined) {
         return this.onUnavailable('malformed pipeline response');
+      }
+      if (expireResult?.error !== undefined) {
+        this.logger.warn(
+          `quota-store.expire_failed driver=upstash key=${key} error=${expireResult.error}`,
+        );
       }
 
       const count = Number(incrResult.result);

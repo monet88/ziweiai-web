@@ -6,13 +6,22 @@ import {
   LunarJavascriptBaziAdapter,
   MeiHuaAdapter,
   QimenAdapter,
+  computeZiweiHoroscope,
   type AstrologyChartAdapter,
 } from '@ziweiai/astro-engine';
 import { buildChartSnapshotDedupeKey } from '../../../database/idempotency';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { QuotasService } from '../../quotas/quotas.service';
-import { createChartResponseSchema, type ChartSystem, type CreateChartRequest, type CreateChartResponse } from '@ziweiai/contracts';
+import {
+  createChartResponseSchema,
+  horoscopeResponseSchema,
+  type ChartSystem,
+  type CreateChartRequest,
+  type CreateChartResponse,
+  type HoroscopeResponse,
+  type HoroscopeScope,
+} from '@ziweiai/contracts';
 
 @Injectable()
 export class ChartsService {
@@ -90,6 +99,41 @@ export class ChartsService {
       snapshot: chartRecord.snapshot,
       explanationResults,
     };
+  }
+
+  /**
+   * Tính vận hạn Tử Vi theo `asOf` cho một lá số đã lưu (US-014, decision 0011).
+   *
+   * Engine chạy server-side, web KHÔNG tự tính (boundary 0007). Dùng chung quota
+   * `assertCanCreateChart` (rẻ, không gọi LLM). Không sở hữu / không tồn tại → 404
+   * (không lộ tồn tại); chart system khác → 400.
+   */
+  async computeHoroscope(
+    userId: string,
+    ipAddress: string,
+    chartId: string,
+    asOf: string,
+    scopes: HoroscopeScope[],
+    isAnonymous = false,
+  ): Promise<HoroscopeResponse> {
+    const chartRecord = await this.persistenceGateway.findChartSnapshotById(userId, chartId);
+    if (!chartRecord) {
+      throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số đã lưu.');
+    }
+
+    if (chartRecord.snapshot.chartSystem !== 'zi-wei-dou-shu') {
+      throw new ApiErrorHttpException(
+        HttpStatus.BAD_REQUEST,
+        'INVALID_INPUT',
+        'Vận hạn chỉ áp dụng cho lá số Tử Vi.',
+      );
+    }
+
+    await this.assertCanCreateChart(userId, ipAddress, isAnonymous);
+
+    const frame = computeZiweiHoroscope({ snapshot: chartRecord.snapshot, asOf, scopes });
+
+    return horoscopeResponseSchema.parse({ chartId, asOf, frame });
   }
 
   private async ensureBirthProfile(userId: string, input: CreateChartRequest, snapshot: CreateChartResponse['snapshot']) {

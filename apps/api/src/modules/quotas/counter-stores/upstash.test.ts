@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Logger } from '@nestjs/common';
 import { UpstashRestQuotaCounterStore } from './upstash';
 
 function mockFetchResult(incrResult: number): void {
@@ -83,5 +84,40 @@ describe('UpstashRestQuotaCounterStore', () => {
     const store = new UpstashRestQuotaCounterStore({ ...config, failMode: 'open' });
     const result = await store.incrementAndCheck('k', 1, 86_400);
     expect(result.allowed).toBe(true);
+  });
+
+  it('fail-open: fetch timeout → allowed=true', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+      }) as never,
+    );
+    const store = new UpstashRestQuotaCounterStore({ ...config, failMode: 'open' });
+    const result = await store.incrementAndCheck('k', 1, 86_400);
+    expect(result.allowed).toBe(true);
+  });
+
+  it('logs warn when EXPIRE fails but still returns INCR count', async () => {
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => [
+        { result: 5 },
+        { error: 'EXPIRE NX failed' },
+      ],
+    }));
+    vi.stubGlobal('fetch', fetchSpy as never);
+
+    const store = new UpstashRestQuotaCounterStore(config);
+    const result = await store.incrementAndCheck('k', 10, 86_400);
+
+    expect(result).toEqual({ count: 5, allowed: true });
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('quota-store.expire_failed'),
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('EXPIRE NX failed'),
+    );
   });
 });

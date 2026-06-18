@@ -53,14 +53,18 @@
 
   const auth = getAuthStore();
 
-  // US-014: lát cắt vận hạn = hôm nay. asOf suy ra client-side (chấp nhận lệch múi giờ ±1 ngày,
-  // đủ cho Phase 1 — panel tương tác chọn mốc là US-015). Cố định trong vòng đời component.
-  const asOf = new Date().toISOString().slice(0, 10);
+  // US-014: lát cắt vận hạn = hôm nay theo MÚI GIỜ ĐỊA PHƯƠNG của người xem. Dùng
+  // getFullYear/getMonth/getDate (KHÔNG toISOString — UTC lệch 1 ngày cho GMT+7 lúc
+  // 00:00–07:00, hiển thị sai lưu nhật). SPA tĩnh không SSR nên client-local an toàn.
+  // Cố định trong vòng đời component (panel tương tác chọn mốc là US-015).
+  const now = new Date();
+  const asOf = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-  // Vận hạn deterministic theo (chartId, asOf) → staleTime dài. Token đọc TƯƠI trong queryFn
-  // (bất biến §3). Lỗi/đang tải KHÔNG chặn render bàn (degrade gọn: map rỗng).
+  // Vận hạn deterministic theo (chartId, asOf) → staleTime dài. Token vào queryKey để tách
+  // cache theo phiên (đổi user / đăng xuất không tái dùng frame cũ — khớp pattern US-006);
+  // token vẫn đọc TƯƠI trong queryFn (bất biến §3). Lỗi/đang tải KHÔNG chặn render bàn.
   const horoscopeQuery = createQuery(() => ({
-    queryKey: ['horoscope', chartId, asOf],
+    queryKey: ['horoscope', auth.getAccessToken(), chartId, asOf],
     queryFn: () => {
       const token = auth.getAccessToken();
       if (!token) {

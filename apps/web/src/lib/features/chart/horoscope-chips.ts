@@ -33,7 +33,9 @@ const copy = viCopy.horoscope;
 
 /** Parse dải đại vận "6–15" / "6-15" → { startAge, endAge }. null nếu không đọc được. */
 export function parseDecadalRange(range: string | null): { startAge: number; endAge: number } | null {
-  if (!range) {
+  // Guard kiểu nghiêm ngặt (review cubic+gemini): hàm thao tác chuỗi ở ranh giới dữ liệu
+  // snapshot — chặn cả null lẫn non-string trước khi gọi .match() phòng input lệch type runtime.
+  if (typeof range !== 'string') {
     return null;
   }
   const match = range.match(/(\d+)\D+(\d+)/u);

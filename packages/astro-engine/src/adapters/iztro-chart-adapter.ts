@@ -59,9 +59,13 @@ interface IztroHoroscopeSource {
   decadal: IztroHoroscopeItemSource;
   age: IztroHoroscopeAgeSource;
   yearly: IztroHoroscopeItemSource;
+  // iztro cũng trả lưu nguyệt + lưu nhật khi gọi `.horoscope(date)`. Adapter lá số gốc
+  // (US-006) không dùng nhưng engine vận hạn (US-014) cần — để optional cho tương thích.
+  monthly?: IztroHoroscopeItemSource;
+  daily?: IztroHoroscopeItemSource;
 }
 
-interface IztroAstrolabeSource {
+export interface IztroAstrolabeSource {
   gender: string;
   solarDate: string;
   lunarDate: string;
@@ -83,7 +87,7 @@ const ZIWEI_ADAPTER_VERSION = {
   configProfile: PHASE3_CONFIG_PROFILE,
 } as const;
 
-function toIztroGender(input: BirthInput): '男' | '女' | null {
+export function toIztroGender(input: BirthInput): '男' | '女' | null {
   if (input.sexOrGenderForChart === 'male') {
     return '男';
   }
@@ -121,7 +125,7 @@ function mapPalace(palace: IztroPalaceSource): Palace {
   };
 }
 
-function mapHoroscopeItem(item: IztroHoroscopeItemSource) {
+export function mapHoroscopeItem(item: IztroHoroscopeItemSource) {
   return {
     index: item.index,
     heavenlyStemKey: toHeavenlyStemKey(item.heavenlyStem),
@@ -131,7 +135,7 @@ function mapHoroscopeItem(item: IztroHoroscopeItemSource) {
   };
 }
 
-function mapHoroscopeAge(item: IztroHoroscopeAgeSource) {
+export function mapHoroscopeAge(item: IztroHoroscopeAgeSource) {
   return {
     index: item.index,
     nominalAge: item.nominalAge,
@@ -168,6 +172,33 @@ function buildViewDate(viewYear?: number): Date {
   // được yêu cầu. Ngày 1/1 luôn rơi trước mốc đầu năm âm lịch (Tết) nên iztro sẽ tính
   // lưu niên và tuổi theo chu kỳ năm trước, gây lệch một năm.
   return new Date(Date.UTC(year, 6, 1));
+}
+
+/**
+ * Dựng astrolabe iztro từ một `BirthInput` đã chuẩn hoá giới tính + chỉ số giờ.
+ *
+ * Tách ra để engine vận hạn (US-014 `computeZiweiHoroscope`) tái dùng đúng cùng
+ * cấu hình + cùng chiều quay cung như khi lập lá số gốc — nếu dựng khác đường,
+ * `index` cung Mệnh vận sẽ lệch so với `palace.index` của snapshot đã lưu.
+ */
+export function buildZiweiAstrolabeSource(
+  input: BirthInput,
+  gender: '男' | '女',
+  timeIndex: number,
+): IztroAstrolabeSource {
+  astro.config(PHASE3_IZTRO_CONFIG);
+  const dateStr = `${input.date.year}-${String(input.date.month).padStart(2, '0')}-${String(input.date.day).padStart(2, '0')}`;
+
+  return (input.calendar === 'gregorian'
+    ? astro.bySolar(dateStr, timeIndex, gender, true, 'zh-CN')
+    : astro.byLunar(
+        dateStr,
+        timeIndex,
+        gender,
+        input.date.isLeapMonth ?? false,
+        true,
+        'zh-CN',
+      )) as unknown as IztroAstrolabeSource;
 }
 
 export class IztroChartAdapter implements AstrologyChartAdapter {
@@ -211,19 +242,7 @@ export class IztroChartAdapter implements AstrologyChartAdapter {
       });
     }
 
-    astro.config(PHASE3_IZTRO_CONFIG);
-    const dateStr = `${input.date.year}-${String(input.date.month).padStart(2, '0')}-${String(input.date.day).padStart(2, '0')}`;
-
-    const source = (input.calendar === 'gregorian'
-      ? astro.bySolar(dateStr, timeIndex, gender, true, 'zh-CN')
-      : astro.byLunar(
-          dateStr,
-          timeIndex,
-          gender,
-          input.date.isLeapMonth ?? false,
-          true,
-          'zh-CN',
-        )) as unknown as IztroAstrolabeSource;
+    const source = buildZiweiAstrolabeSource(input, gender, timeIndex);
 
     const base = createBaseSnapshotFields({
       input,

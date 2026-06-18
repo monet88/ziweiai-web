@@ -105,8 +105,10 @@ export class ChartsService {
    * Tính vận hạn Tử Vi theo `asOf` cho một lá số đã lưu (US-014, decision 0011).
    *
    * Engine chạy server-side, web KHÔNG tự tính (boundary 0007). Dùng chung quota
-   * `assertCanCreateChart` (rẻ, không gọi LLM). Không sở hữu / không tồn tại → 404
-   * (không lộ tồn tại); chart system khác → 400.
+   * `assertCanCreateChart` (rẻ, không gọi LLM). Quota check ĐẦU TIÊN (khớp `createChart`):
+   * user đã hết hạn mức không kích hoạt được DB read, và phản hồi đồng nhất bất kể
+   * lá số tồn tại hay không (tránh side-channel dò tồn tại qua 404 vs 429). Không sở hữu
+   * / không tồn tại → 404; chart system khác → 400.
    */
   async computeHoroscope(
     userId: string,
@@ -116,6 +118,8 @@ export class ChartsService {
     scopes: HoroscopeScope[],
     isAnonymous = false,
   ): Promise<HoroscopeResponse> {
+    await this.assertCanCreateChart(userId, ipAddress, isAnonymous);
+
     const chartRecord = await this.persistenceGateway.findChartSnapshotById(userId, chartId);
     if (!chartRecord) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số đã lưu.');
@@ -128,8 +132,6 @@ export class ChartsService {
         'Vận hạn chỉ áp dụng cho lá số Tử Vi.',
       );
     }
-
-    await this.assertCanCreateChart(userId, ipAddress, isAnonymous);
 
     const frame = computeZiweiHoroscope({ snapshot: chartRecord.snapshot, asOf, scopes });
 

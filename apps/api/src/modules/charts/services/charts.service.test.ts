@@ -653,8 +653,9 @@ describe('ChartsService.computeHoroscope', () => {
     await expect(
       service.computeHoroscope(HOROSCOPE_USER, '127.0.0.1', HOROSCOPE_CHART, '2026-06-17', ['decadal']),
     ).rejects.toThrow(/Không tìm thấy lá số/);
-    // Không tính engine + không tiêu quota khi không sở hữu.
-    expect(quotasService.assertCanCreateChart).not.toHaveBeenCalled();
+    // Quota check chạy TRƯỚC khi query DB (defense-in-depth + phản hồi đồng nhất);
+    // user hết hạn mức không kích hoạt được DB read.
+    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
   });
 
   it('400 khi chart không phải zi-wei-dou-shu', async () => {
@@ -666,7 +667,7 @@ describe('ChartsService.computeHoroscope', () => {
     await expect(
       service.computeHoroscope(HOROSCOPE_USER, '127.0.0.1', HOROSCOPE_CHART, '2026-06-17', ['decadal']),
     ).rejects.toThrow(/chỉ áp dụng cho lá số Tử Vi/);
-    expect(quotasService.assertCanCreateChart).not.toHaveBeenCalled();
+    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
   });
 
   it('429 khi quota assertCanCreateChart vượt', async () => {

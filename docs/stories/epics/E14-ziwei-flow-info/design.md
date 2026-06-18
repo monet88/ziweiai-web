@@ -137,8 +137,7 @@ Schema `horoscopeRequestSchema` ở
 horoscopeRequestSchema = z.object({
   asOf: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   scopes: z.array(z.enum(['decadal','yearly','monthly','daily']))
-            .nonempty()
-            .refine(arr => arr.includes('decadal') && arr.includes('yearly')),
+            .nonempty(),  // subset bất kỳ không rỗng; US-015/US-016 gọi đơn scope ['yearly']/['monthly']/['daily']
 })
 ```
 

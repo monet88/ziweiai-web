@@ -106,7 +106,7 @@ component mount, gọi `selectDecadal(defaultDecadalIndex())` đúng 1 lần qua
 - `buildDecadalChips(palaces)` → 10 chip từ `snapshot.palaces[*].decadalRange + ages`,
   sort theo `startAge`. Nguồn KHÔNG cần gọi engine.
 - `buildYearlyChips(decadalChip, birthYear, horoscopeFrame)` → khi đại vận đã chọn,
-  đẩy lần lượt 12 năm; mỗi năm gắn `yearly` lấy từ `horoscopeFrame` (đã fetch
+  đẩy lần lượt 10 năm (đại vận luôn 10 năm); mỗi năm gắn `yearly` lấy từ `horoscopeFrame` (đã fetch
   trước; nếu thiếu năm cụ thể → chip để "—" + disabled cho tới khi data tới).
 - `buildMonthlyChips(yearlyHoroscopeFrame)` → 12 chip tháng âm của lưu niên.
 - `buildDailyChips(monthlyHoroscopeFrame, year, month)` → 28–31 chip dựa

@@ -291,13 +291,16 @@ async assertCanSendConversationMessage(userId: string, ipAddress: string, isAnon
   this.assertSlidingWindow(this.ipBuckets, `ip:${ipAddress}`, apiEnv.API_REQUESTS_PER_MINUTE_PER_IP, 60_000);
   this.assertSlidingWindow(this.userBuckets, `user:${userId}`, apiEnv.API_REQUESTS_PER_MINUTE_PER_USER, 60_000);
   if (isAnonymous) {
-    this.assertSlidingWindow(
-      this.anonDailyIpBuckets,
+    // US-013: hạn ngạch anon theo ngày/IP đi qua QuotaCounterStore bền vững
+    // (memory|upstash), KHÔNG dùng map in-memory `anonDailyIpBuckets` cũ.
+    const { allowed } = await this.quotaCounterStore.incrementAndCheck(
       `anon-conv-msg:${ipAddress}`,
       apiEnv.API_ANON_CONVERSATION_MESSAGES_PER_DAY_PER_IP,
       ONE_DAY_MS,
-      'Daily conversation message quota exceeded.',
     );
+    if (!allowed) {
+      throw new TooManyRequestsException('Daily conversation message quota exceeded.');
+    }
     return;
   }
   // user thường: đếm theo DB count messages role='user' trong 24h

@@ -122,10 +122,15 @@ export const monthlyFortuneResponseSchema = z.object({
   frame: horoscopeFrameSchema,        // chỉ field `monthly` tồn tại
   summary: z.string().min(1),
 });
+// annual cần 12 lưu nguyệt → KHÔNG tái dùng horoscopeFrameSchema (monthly là 1 item).
+export const annualReportFrameSchema = z.object({
+  yearly: horoscopeItemSchema,
+  monthly: z.array(horoscopeItemSchema).length(12),
+});
 export const annualReportResponseSchema = z.object({
   chartId: z.string().uuid(),
   year: z.number().int(),
-  frame: horoscopeFrameSchema,        // yearly + monthly[12]
+  frame: annualReportFrameSchema,     // yearly + monthly[12]
   markdown: z.string().min(1),
 });
 ```

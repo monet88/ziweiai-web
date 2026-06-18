@@ -19,12 +19,48 @@
     dimmed?: boolean;
     /** Flow-info vận hạn cho ô (US-014). null/undefined = ô không phải cung Mệnh tầng nào. */
     flowFlags?: PalaceFlowView | null;
+    /** US-015: ô là cung Mệnh đại vận đang chọn (overlay panel vận hạn). Tách khỏi inAspect. */
+    isInDecadal?: boolean;
+    /** US-015: ô là cung Mệnh lưu niên đang chọn. */
+    isInYearly?: boolean;
+    /** US-015: ô là cung Mệnh lưu nguyệt đang chọn. */
+    isInMonthly?: boolean;
+    /** US-015: ô là cung Mệnh lưu nhật đang chọn. */
+    isInDaily?: boolean;
     onSelect: (nameKey: string) => void;
     /** Báo cha cung đang hover (preview tam phương tứ chính); null khi rời chuột. */
     onHover?: (nameKey: string | null) => void;
   }
 
-  let { palace, selected, inAspect = false, dimmed = false, flowFlags = null, onSelect, onHover }: Props = $props();
+  let {
+    palace,
+    selected,
+    inAspect = false,
+    dimmed = false,
+    flowFlags = null,
+    isInDecadal = false,
+    isInYearly = false,
+    isInMonthly = false,
+    isInDaily = false,
+    onSelect,
+    onHover,
+  }: Props = $props();
+
+  // US-015: viền highlight cung Mệnh vận của (các) tầng đang chọn ở panel. Một ô chỉ có 1
+  // `outline` CSS, nên khi nhiều tầng cùng trỏ về 1 cung (hiếm) ta xếp chồng nhiều vòng bằng
+  // box-shadow: mỗi tầng 1 ring spread tăng dần. Liệt kê ring ngoài cùng (spread lớn) TRƯỚC để
+  // ring trong (spread nhỏ) vẽ đè lên trên → 4 vòng song song lồng nhau. Tách hẳn `inAspect`
+  // (US-011 dùng border) + `:focus-visible` (dùng outline) → không đè nhau.
+  const horoscopeRing = $derived(
+    [
+      isInDaily ? '0 0 0 8px var(--color-horoscope-daily)' : null,
+      isInMonthly ? '0 0 0 6px var(--color-horoscope-monthly)' : null,
+      isInYearly ? '0 0 0 4px var(--color-horoscope-yearly)' : null,
+      isInDecadal ? '0 0 0 2px var(--color-horoscope-decadal)' : null,
+    ]
+      .filter((ring): ring is string => ring !== null)
+      .join(', '),
+  );
 
   // Nhãn Việt cố định cho 4 tầng vận hạn (US-014). Thứ tự hiển thị: Vận → Niên → Nguyệt → Nhật.
   const FLOW_TIER_LABELS: Record<HighlightTier, string> = {
@@ -57,6 +93,11 @@
   class:selected
   class:in-aspect={inAspect}
   class:dimmed
+  class:in-decadal={isInDecadal}
+  class:in-yearly={isInYearly}
+  class:in-monthly={isInMonthly}
+  class:in-daily={isInDaily}
+  style={horoscopeRing ? `box-shadow: ${horoscopeRing};` : ''}
   aria-pressed={selected}
   onclick={() => onSelect(palace.nameKey)}
   onmouseenter={() => onHover?.(palace.nameKey)}

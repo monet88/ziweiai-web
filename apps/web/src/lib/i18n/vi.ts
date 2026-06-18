@@ -92,6 +92,18 @@ export const viCopy = {
     timezone: 'Múi giờ',
     visibleMessage: 'Thông điệp hiển thị',
   },
+  horoscope: {
+    panelTitle: 'Vận hạn',
+    decadal: { title: 'Đại vận (10 năm)', ageSuffix: 'tuổi' },
+    yearly: { title: 'Lưu niên', emptyHint: 'Chọn đại vận để xem lưu niên.' },
+    monthly: { title: 'Lưu nguyệt', emptyHint: 'Chọn lưu niên để xem lưu nguyệt.' },
+    daily: { title: 'Lưu nhật', emptyHint: 'Chọn lưu nguyệt để xem lưu nhật.' },
+    monthFormat: 'Tháng {month}',
+    unavailableHint: 'Lá số chưa có dữ liệu đại vận.',
+    loading: 'Đang tính vận hạn...',
+    error: 'Không tải được vận hạn. Hãy thử lại.',
+    missingValue: '—',
+  },
   chartSystem: {
     'ba-zi': 'Bát Tự',
     'mei-hua-yi-shu': 'Mai Hoa Dịch Số',

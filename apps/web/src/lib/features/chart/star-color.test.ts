@@ -94,6 +94,21 @@ describe('getStarColors (US-012)', () => {
     expect(result.mutagenColor).toBe('var(--star-mutagen-lu)');
     expect(result.isMalefic).toBe(false);
   });
+
+  it('ignores brightnessKey/mutagenKey outside the known enum (no "var(undefined)")', () => {
+    const star = {
+      key: 'test',
+      name: 'Test',
+      group: 'major',
+      brightness: 'X',
+      mutagen: 'Y',
+      brightnessKey: 'not-a-key',
+      mutagenKey: 'not-a-key',
+    } as unknown as StarTokenView;
+    const result = getStarColors(star);
+    expect(result.brightnessColor).toBeNull();
+    expect(result.mutagenColor).toBeNull();
+  });
 });
 
 describe('getStarTitle (US-012)', () => {

@@ -16,6 +16,7 @@ export default tseslint.config(
       '.ref/**',
       '**/.ref/**',
       'vendor/xuanshu-runtime/**',
+      'templates/ui-reference/**',
       'harness.db*',
     ],
   },

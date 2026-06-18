@@ -2,8 +2,10 @@ import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
 import {
   chartDetailResponseSchema,
   createChartRequestSchema,
+  horoscopeRequestSchema,
   type AuthenticatedUser,
   type CreateChartResponse,
+  type HoroscopeResponse,
 } from '@ziweiai/contracts';
 import { z } from 'zod';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -33,5 +35,25 @@ export class ChartsController {
   ) {
     const parsedChartSnapshotId = z.uuid().parse(chartSnapshotId);
     return chartDetailResponseSchema.parse(await this.chartsService.getChartDetail(currentUser.userId, parsedChartSnapshotId));
+  }
+
+  @Post(':chartSnapshotId/horoscope')
+  async computeHoroscope(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Req() request: AuthenticatedRequest,
+    @Param('chartSnapshotId') chartSnapshotId: string,
+    @Body() body: unknown,
+  ): Promise<HoroscopeResponse> {
+    const parsedChartId = z.uuid().parse(chartSnapshotId);
+    const input = horoscopeRequestSchema.parse(body);
+    // email === null ⟺ phiên ẩn danh (decision 0009) — quota daily-per-IP cho đường anon.
+    return this.chartsService.computeHoroscope(
+      currentUser.userId,
+      request.ip ?? 'unknown',
+      parsedChartId,
+      input.asOf,
+      input.scopes,
+      currentUser.email === null,
+    );
   }
 }

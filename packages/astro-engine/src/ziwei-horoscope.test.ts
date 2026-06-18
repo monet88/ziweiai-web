@@ -6,7 +6,7 @@ import { computeZiweiHoroscope } from './ziwei-horoscope';
 // Bộ phát hiện CJK mở rộng — giữ đồng bộ với phase-3.test.ts (astro-engine không phụ
 // thuộc @ziweiai/core nên định nghĩa cục bộ).
 const CJK_TEXT_PATTERN =
-  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Bopomofo}　-〿＀-￯]/u;
+  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Bopomofo}\u3000-\u303F\uFF00-\uFFEF]/u;
 
 const ziweiBirth: BirthInput = {
   calendar: 'gregorian',

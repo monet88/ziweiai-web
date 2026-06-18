@@ -76,7 +76,7 @@ Port logic chạy ở server theo quyết định `0011` (web KHÔNG nhập engi
 | Layer | Expected proof |
 | --- | --- |
 | Unit | engine port (daily/monthly/annual) giữ deterministic; gate annual 402 khi cờ off; quota annual 429 khi vượt |
-| Integration | `GET /:id/daily` 200 + Việt; `GET /:id/monthly` 200 + Việt; `POST /:id/annual-report` 200 (cờ on) + cache hit lần hai; 402 khi cờ off; 403 khi không phải owner; 400 khi non-Tử-Vi |
+| Integration | `GET /:id/daily` 200 + Việt; `GET /:id/monthly` 200 + Việt; `POST /:id/annual-report` 200 (cờ on) + cache hit lần hai; 402 khi cờ off; 404 khi không phải owner (không lộ existence); 400 khi non-Tử-Vi |
 | E2E | UI dashboard: card daily/monthly hiển thị; modal annual report mở + render Markdown; CTA paywall xuất hiện khi 402 |
 | Platform | `pnpm -F @ziweiai/web check` + backend test xanh; migration `annual_reports` apply + rollback OK |
 | Release | — |

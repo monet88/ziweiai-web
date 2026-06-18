@@ -12,7 +12,7 @@ high-risk
 
 Trên bàn 12 cung Tử Vi, mỗi ô phải:
 
-1. Nhận **highlight đa màu** cho 4 tầng vận hạn theo `asOf = hôm nay (server)`:
+1. Nhận **highlight đa màu** cho 4 tầng vận hạn theo `asOf = hôm nay` (suy ra client-side, chấp nhận lệch múi giờ ±1 ngày):
    đại vận (tím) / lưu niên (xanh dương) / lưu nguyệt (xanh lá) / lưu nhật (cam).
    Khi 1 ô là cung Mệnh của ≥ 2 tầng → vẽ thanh chỉ báo nhiều màu chia đều ở mép trên.
 2. Hiển thị dòng **flow-info ở đáy ô**: 4 chip "Vận / Niên / Nguyệt / Nhật" với

@@ -1,6 +1,11 @@
 <script lang="ts">
   // AnnualReportModal (US-016): trình bày Markdown báo cáo năm trong overlay. Render markdown
   // qua MarkdownView (sanitize, không render HTML thô — bất biến bảo mật). Nhận onClose từ parent.
+  //
+  // A11y: backdrop và panel là HAI thẻ ANH EM (không lồng điều khiển tương tác — tránh trình
+  // đọc màn hình coi cả overlay là một nút). Backdrop chỉ là lớp nền click-để-đóng (role
+  // presentation). Escape bắt ở <svelte:window> để đóng kể cả khi focus chưa vào panel; panel
+  // tự nhận focus khi mount (use:autofocus) để keyboard user vào ngay vùng dialog.
   import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
   import { viCopy } from '$lib/i18n/vi';
 
@@ -14,26 +19,23 @@
 
   const copy = viCopy.fortune.annual;
 
-  // Modal chỉ mount khi mở → focus panel ngay khi mount để keyboard user vào được vùng dialog
-  // và phím Escape (xử lý ở backdrop) hoạt động mà không cần tab trước. Action chạy 1 lần on-mount.
+  // Modal chỉ mount khi mở → focus panel ngay để keyboard user vào vùng dialog. Chạy 1 lần on-mount.
   function autofocus(node: HTMLElement): void {
     node.focus();
   }
 </script>
 
-<div
-  class="modal-backdrop"
-  role="button"
-  tabindex="0"
-  aria-label={copy.close}
-  onclick={onClose}
+<svelte:window
   onkeydown={(event) => {
-    if (event.key === 'Escape' || event.key === 'Enter') {
+    if (event.key === 'Escape') {
       onClose();
     }
   }}
->
-  <!-- Dừng propagation để click trong panel không đóng modal. -->
+/>
+
+<div class="modal-wrapper">
+  <div class="modal-backdrop" role="presentation" onclick={onClose}></div>
+
   <div
     class="modal-panel"
     role="dialog"
@@ -41,8 +43,6 @@
     aria-labelledby="annual-report-modal-title"
     tabindex="-1"
     use:autofocus
-    onclick={(event) => event.stopPropagation()}
-    onkeydown={(event) => event.stopPropagation()}
   >
     <header class="modal-head">
       <h2 class="modal-title" id="annual-report-modal-title">{copy.title} {year}</h2>
@@ -55,7 +55,7 @@
 </div>
 
 <style>
-  .modal-backdrop {
+  .modal-wrapper {
     position: fixed;
     inset: 0;
     z-index: 50;
@@ -63,10 +63,16 @@
     align-items: center;
     justify-content: center;
     padding: var(--space-lg);
+  }
+
+  .modal-backdrop {
+    position: absolute;
+    inset: 0;
     background: rgba(0, 0, 0, 0.55);
   }
 
   .modal-panel {
+    position: relative;
     display: flex;
     flex-direction: column;
     width: min(720px, 100%);

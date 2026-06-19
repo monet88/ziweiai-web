@@ -20,6 +20,11 @@ export class HoroscopeEngineAdapter {
    */
   computeAnnualFrame(snapshot: ChartSnapshot, year: number): AnnualReportFrame {
     const yearlyFrame = this.computeFrame(snapshot, `${year}-06-15`, ['yearly']);
+    if (!yearlyFrame.yearly) {
+      // Đối xứng với guard `frame.monthly` bên dưới: ném sớm với thông điệp rõ thay vì để
+      // `{ yearly: undefined }` rơi xuống tầng schema parse (lỗi khó truy nguồn).
+      throw new Error(`Engine không trả lưu niên cho năm ${year}.`);
+    }
     const monthly: HoroscopeItem[] = [];
 
     for (let month = 1; month <= 12; month += 1) {

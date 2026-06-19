@@ -22,7 +22,6 @@
   let { auth, chartId }: Props = $props();
 
   const copy = viCopy.fortune.annual;
-  const year = currentYear();
 
   let isModalOpen = $state(false);
 
@@ -32,6 +31,9 @@
       if (!token) {
         throw new ApiError('unauthorized', viCopy.errors.missingChartContext);
       }
+      // Năm tính TƯƠI tại thời điểm bấm (không đóng băng lúc mount): phiên dài qua giao thừa
+      // vẫn tạo đúng báo cáo năm hiện tại. Modal hiển thị theo year server trả (mutation.data.year).
+      const year = currentYear();
       return createAnnualReport(token, { chartId, year });
     },
     onSuccess: (): void => {
@@ -76,7 +78,7 @@
 </section>
 
 {#if isModalOpen && mutation.data}
-  <AnnualReportModal markdown={mutation.data.markdown} {year} onClose={() => (isModalOpen = false)} />
+  <AnnualReportModal markdown={mutation.data.markdown} year={mutation.data.year} onClose={() => (isModalOpen = false)} />
 {/if}
 
 <style>

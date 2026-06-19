@@ -5,7 +5,7 @@
   import type { MonthlyFortuneResponse } from '@ziweiai/contracts';
   import type { AuthStore } from '$lib/auth/auth-store.svelte';
   import { fetchMonthlyFortune, MONTHLY_FORTUNE_QUERY_STALE_MS } from '$lib/api-client';
-  import { currentMonthAsOf } from './fortune-dates';
+  import { createCurrentDate } from './current-date.svelte';
   import { viCopy } from '$lib/i18n/vi';
 
   interface Props {
@@ -16,10 +16,12 @@
   let { auth, chartId }: Props = $props();
 
   const copy = viCopy.fortune.monthly;
-  const asOf = currentMonthAsOf();
+  // Mốc tháng PHẢN ỨNG (không đóng băng lúc mount): phiên dài qua giao thừa tháng sẽ tự đổi queryKey → fetch lại.
+  const date = createCurrentDate();
 
   const query = createQuery<MonthlyFortuneResponse>(() => {
     const token = auth.getAccessToken();
+    const asOf = date.month;
     return {
       queryKey: ['fortune', 'monthly', token, chartId, asOf],
       queryFn: (): Promise<MonthlyFortuneResponse> => {
@@ -39,7 +41,7 @@
 <article class="fortune-card" aria-labelledby="monthly-fortune-title">
   <header class="fortune-card__head">
     <h3 class="fortune-card__title" id="monthly-fortune-title">{copy.title}</h3>
-    <span class="fortune-card__date">{asOf}</span>
+    <span class="fortune-card__date">{date.month}</span>
   </header>
 
   {#if query.isPending}

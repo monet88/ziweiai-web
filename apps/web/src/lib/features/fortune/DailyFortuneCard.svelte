@@ -7,7 +7,7 @@
   import type { DailyFortuneResponse } from '@ziweiai/contracts';
   import type { AuthStore } from '$lib/auth/auth-store.svelte';
   import { fetchDailyFortune, DAILY_FORTUNE_QUERY_STALE_MS } from '$lib/api-client';
-  import { todayAsOf } from './fortune-dates';
+  import { createCurrentDate } from './current-date.svelte';
   import { viCopy } from '$lib/i18n/vi';
 
   interface Props {
@@ -18,10 +18,12 @@
   let { auth, chartId }: Props = $props();
 
   const copy = viCopy.fortune.daily;
-  const asOf = todayAsOf();
+  // Mốc ngày PHẢN ỨNG (không đóng băng lúc mount): phiên dài qua nửa đêm sẽ tự đổi queryKey → fetch lại.
+  const date = createCurrentDate();
 
   const query = createQuery<DailyFortuneResponse>(() => {
     const token = auth.getAccessToken();
+    const asOf = date.today;
     return {
       queryKey: ['fortune', 'daily', token, chartId, asOf],
       queryFn: (): Promise<DailyFortuneResponse> => {
@@ -41,7 +43,7 @@
 <article class="fortune-card" aria-labelledby="daily-fortune-title">
   <header class="fortune-card__head">
     <h3 class="fortune-card__title" id="daily-fortune-title">{copy.title}</h3>
-    <span class="fortune-card__date">{asOf}</span>
+    <span class="fortune-card__date">{date.today}</span>
   </header>
 
   {#if query.isPending}

@@ -9,7 +9,6 @@
   // đồng nội bộ giữa helper + panel. Mọi nhãn tiếng Việt qua viCopy + translateZiweiKey (fail-fast).
   import { viCopy } from '$lib/i18n/vi';
   import type { HoroscopePanelModel } from '$lib/features/chart/horoscope-panel-model.svelte';
-  import type { HoroscopeChip as HoroscopeChipData } from '$lib/features/chart/horoscope-chips';
   import HoroscopeSection from './HoroscopeSection.svelte';
   import HoroscopeChip from './HoroscopeChip.svelte';
 
@@ -20,11 +19,6 @@
   let { model }: Props = $props();
 
   const copy = viCopy.horoscope;
-
-  // Value tầng từ chip key (`<tier>-<value>`). Key do helper sinh, luôn có dạng này.
-  function chipValue(chip: HoroscopeChipData): number {
-    return Number(chip.key.slice(chip.key.indexOf('-') + 1));
-  }
 </script>
 
 <aside class="panel" aria-label={copy.panelTitle}>
@@ -50,7 +44,7 @@
           secondary={item.secondary}
           selected={item.selected}
           tier="decadal"
-          onClick={() => model.selectDecadal(chipValue(item))}
+          onClick={() => model.selectDecadal(item.value)}
         />
       {/snippet}
     </HoroscopeSection>
@@ -67,7 +61,7 @@
           secondary={item.secondary}
           selected={item.selected}
           tier="yearly"
-          onClick={() => model.selectYearlyByYear(chipValue(item))}
+          onClick={() => model.selectYearlyByYear(item.value)}
         />
       {/snippet}
     </HoroscopeSection>
@@ -85,7 +79,7 @@
             secondary={item.secondary}
             selected={item.selected}
             tier="monthly"
-            onClick={() => model.selectMonthly(chipValue(item))}
+            onClick={() => model.selectMonthly(item.value)}
           />
         {/snippet}
       </HoroscopeSection>
@@ -104,7 +98,7 @@
             secondary={item.secondary}
             selected={item.selected}
             tier="daily"
-            onClick={() => model.selectDaily(chipValue(item))}
+            onClick={() => model.selectDaily(item.value)}
           />
         {/snippet}
       </HoroscopeSection>

@@ -190,6 +190,23 @@
     flex-direction: column;
   }
 
+  /* US-015: bàn 12 cung + panel vận hạn. Mobile (mặc định): panel xếp dưới bàn, cuộn dọc.
+     Desktop (>768px): split 2 cột — bàn co giãn (3fr), panel cố định bên phải (2fr) cuộn
+     dọc nội bộ khi 4 vùng vượt chiều cao. */
+  .board-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  @media (min-width: 769px) {
+    .board-layout {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      align-items: start;
+    }
+  }
+
   .center-title {
     margin: 0 0 var(--space-sm);
     color: var(--color-accent-gold-soft);

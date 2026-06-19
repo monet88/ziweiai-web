@@ -21,6 +21,11 @@ import type { HoroscopeSelection } from './horoscope-selection.svelte';
 export interface HoroscopeChip {
   /** Khoá ổn định cho `{#each}` Svelte. */
   key: string;
+  /**
+   * Giá trị tầng để truyền thẳng vào `select*` khi click (review gemini): index cung đại vận /
+   * năm dương / tháng / ngày. Tách khỏi `key` để panel KHÔNG phải parse chuỗi (giảm coupling).
+   */
+  value: number;
   /** Nhãn chính tiếng Việt (vd "Mệnh", "2026", "Tháng 6", "15"). */
   primary: string;
   /** Nhãn phụ (dải tuổi / tuổi nominal / tên cung Mệnh vận đích). */
@@ -81,6 +86,7 @@ export function buildDecadalChips(
         range,
         chip: {
           key: `decadal-${palace.index}`,
+          value: palace.index,
           primary: palace.name,
           secondary: palace.decadalRange ? `${palace.decadalRange} ${copy.decadal.ageSuffix}` : copy.missingValue,
           selected: selection.decadalIndex === palace.index,
@@ -110,6 +116,7 @@ export function buildYearlyChips(params: {
     const year = params.birthYear + age;
     chips.push({
       key: `yearly-${year}`,
+      value: year,
       primary: String(year),
       secondary: `${age} ${copy.decadal.ageSuffix}`,
       selected: params.selection.yearlyYear === year,
@@ -135,6 +142,7 @@ export function buildMonthlyChips(params: {
         : copy.missingValue;
     chips.push({
       key: `monthly-${month}`,
+      value: month,
       primary: copy.monthFormat.replace('{month}', String(month)),
       secondary,
       selected: isSelected,
@@ -163,6 +171,7 @@ export function buildDailyChips(params: {
         : copy.missingValue;
     chips.push({
       key: `daily-${day}`,
+      value: day,
       primary: String(day),
       secondary,
       selected: isSelected,

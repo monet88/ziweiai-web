@@ -76,6 +76,14 @@ export const apiEnvSchema = z.object({
   // KHÔNG dùng z.coerce.boolean() — nó chạy Boolean(string) nên mọi chuỗi non-empty
   // (kể cả "false") đều thành true, khiến AI_EXPLANATION_FREE_FOR_ALL=false vô hiệu ở prod.
   AI_EXPLANATION_FREE_FOR_ALL: z.stringbool().default(true),
+  // US-016: cờ riêng cho đường báo cáo năm (LLM tổng hợp lưu niên + 12 lưu nguyệt) — tốn token
+  // gấp ~3-5 lần một explanation nên cần phanh độc lập với AI_EXPLANATION_FREE_FOR_ALL. Mặc định
+  // `false` (fail-closed): bật lên mới sinh báo cáo mới được. Dùng z.stringbool cùng lý do ở trên
+  // (z.coerce.boolean() khiến "false" → true). Annual gate fail-closed cả hai cờ: một on một off → 402.
+  AI_ANNUAL_REPORT_ENABLED: z.stringbool().default(false),
+  // US-016: quota riêng cho báo cáo năm, KHÔNG dùng chung API_EXPLANATIONS_PER_DAY_PER_USER.
+  // Số thấp (mặc định 2/ngày/user) vì mỗi báo cáo đốt token đáng kể.
+  API_ANNUAL_REPORTS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(2),
   // US-013: bền hoá quota anon daily-per-IP qua store chia sẻ (thay Map in-memory).
   // memory = dev/test (default, không cần dependency ngoài); upstash = REST qua fetch (prod);
   // redis = giữ enum mở, chưa triển khai (factory ném khi chọn). Validate giá trị URL/token

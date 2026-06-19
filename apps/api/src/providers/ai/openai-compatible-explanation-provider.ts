@@ -50,7 +50,7 @@ export class OpenAiCompatibleExplanationProvider implements AiExplanationProvide
           model,
           messages: [
             { role: 'system', content: EXPLANATION_SYSTEM_PROMPT },
-            { role: 'user', content: buildExplanationPrompt(payload) },
+            { role: 'user', content: payload.promptOverride ?? buildExplanationPrompt(payload) },
           ],
           stream: false,
           temperature: 0.7,

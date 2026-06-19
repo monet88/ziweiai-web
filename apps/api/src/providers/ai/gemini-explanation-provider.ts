@@ -65,7 +65,7 @@ function buildGeminiSdkRequest(payload: ExplanationPromptPayload): RequestInit {
       },
       contents: [
         {
-          parts: [{ text: buildExplanationPrompt(payload) }],
+          parts: [{ text: payload.promptOverride ?? buildExplanationPrompt(payload) }],
         },
       ],
     }),

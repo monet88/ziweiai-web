@@ -64,7 +64,8 @@ test('US-015: panel vận hạn 4 tầng — chọn phân cấp + overlay 4 màu
   });
 
   // ---- (1) Panel hiển thị, vùng đại vận có chip; đại vận mặc định preselect ----
-  const panel = page.getByRole('group', { name: 'Vận hạn' });
+  // Panel là <aside aria-label="Vận hạn"> → landmark complementary (không phải group).
+  const panel = page.getByRole('complementary', { name: 'Vận hạn' });
   await expect(panel).toBeVisible();
 
   const decadalSection = page.getByRole('group', { name: 'Đại vận (10 năm)' });

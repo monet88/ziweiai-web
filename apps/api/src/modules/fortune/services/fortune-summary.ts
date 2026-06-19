@@ -7,6 +7,12 @@ import { containsCjkText, formatZiweiTokenVi } from '@ziweiai/core';
 const HAN_SAFE_FALLBACK = 'Thuật ngữ cũ';
 
 function viTerm(key: string): string {
+  // Guard phòng thủ tại biên render: nếu một key rỗng/không phải chuỗi lọt vào (dữ liệu cũ,
+  // engine đổi shape) thì trả nhãn an toàn thay vì để `formatZiweiTokenVi` ném — bất biến §2
+  // (không rò chữ Hán, không crash summary) ưu tiên hơn việc bắt lỗi sớm ở đây.
+  if (typeof key !== 'string' || key.length === 0) {
+    return HAN_SAFE_FALLBACK;
+  }
   const vi = formatZiweiTokenVi(key);
   return containsCjkText(vi) ? HAN_SAFE_FALLBACK : vi;
 }

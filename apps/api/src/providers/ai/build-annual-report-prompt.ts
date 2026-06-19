@@ -22,6 +22,12 @@ const MONTH_LABELS_VI = [
 ];
 
 function term(key: string): string {
+  // Guard phòng thủ tại biên dựng prompt: key rỗng/không phải chuỗi (dữ liệu cũ, engine đổi
+  // shape) trả nhãn an toàn thay vì để `formatZiweiTokenVi` ném — bất biến §2 (không rò chữ Hán
+  // vào prompt LLM, không vỡ luồng tạo báo cáo) ưu tiên hơn việc fail sớm ở đây. Đồng bộ `viTerm`.
+  if (typeof key !== 'string' || key.length === 0) {
+    return HAN_SAFE_FALLBACK;
+  }
   const vi = formatZiweiTokenVi(key);
   return containsCjkText(vi) ? HAN_SAFE_FALLBACK : vi;
 }

@@ -67,4 +67,12 @@
   --color-flow-monthly-soft: oklch(74% 0.13 150 / 0.14);
   --color-flow-daily: oklch(76% 0.15 65);
   --color-flow-daily-soft: oklch(76% 0.15 65 / 0.14);
+
+  /* US-015: outline highlight cung Mệnh vận trên bàn cho panel chọn mốc. Alias 4 tầng
+     vận hạn của US-014 → outline đồng màu với thanh flow-bar/chip cùng tầng (nhất quán
+     trực quan, DRY, đã cân AA). Tách biệt --color-accent-gold* (lớp inAspect US-011). */
+  --color-horoscope-decadal: var(--color-flow-decadal);
+  --color-horoscope-yearly: var(--color-flow-yearly);
+  --color-horoscope-monthly: var(--color-flow-monthly);
+  --color-horoscope-daily: var(--color-flow-daily);
 }

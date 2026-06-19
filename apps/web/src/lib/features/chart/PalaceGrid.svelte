@@ -25,6 +25,7 @@
   import { getPalaceAspectIndices } from '$lib/features/chart/palace-aspect';
   import { buildAspectLines, type AspectLine, type GridCell } from '$lib/features/chart/palace-board-geometry';
   import { buildPalaceFlowFlagsMap, type PalaceFlowView } from '$lib/features/chart/palace-flow-flags';
+  import type { HoroscopeOverlay } from '$lib/features/chart/horoscope-overlay';
   import {
     fetchChartHoroscope,
     DEFAULT_HOROSCOPE_SCOPES,
@@ -45,11 +46,21 @@
     chartId?: string;
     /** US-014: bật lớp flow-info đa màu (mặc định bật; tắt cho test / non-Tử-Vi). */
     enableFlowInfo?: boolean;
+    /** US-015: overlay highlight cung Mệnh vận 4 tầng (panel chọn mốc). null = không tô. */
+    horoscopeOverlay?: HoroscopeOverlay | null;
     /** Slot trung cung (tóm tắt bản mệnh) — chỉ hiển thị ở bố cục bàn vuông. */
     center?: Snippet;
   }
 
-  let { palaces, selectedPalaceKey, onSelect, chartId = '', enableFlowInfo = true, center }: Props = $props();
+  let {
+    palaces,
+    selectedPalaceKey,
+    onSelect,
+    chartId = '',
+    enableFlowInfo = true,
+    horoscopeOverlay = null,
+    center,
+  }: Props = $props();
 
   const auth = getAuthStore();
 
@@ -190,6 +201,26 @@
       .filter((cell): cell is GridCell => cell !== null);
     return buildAspectLines(fromCell, toCells);
   });
+
+  // US-015: 4 boolean overlay vận hạn cho 1 cung (theo index). null overlay → tất cả false →
+  // bàn về trạng thái US-011 thuần. Tách hẳn isInAspect (US-011) — hai overlay sống chung.
+  function horoscopeFlags(palace: PalaceView): {
+    isInDecadal: boolean;
+    isInYearly: boolean;
+    isInMonthly: boolean;
+    isInDaily: boolean;
+  } {
+    const overlay = horoscopeOverlay;
+    if (!overlay) {
+      return { isInDecadal: false, isInYearly: false, isInMonthly: false, isInDaily: false };
+    }
+    return {
+      isInDecadal: overlay.decadalPalaceIndex === palace.index,
+      isInYearly: overlay.yearlyPalaceIndex === palace.index,
+      isInMonthly: overlay.monthlyPalaceIndex === palace.index,
+      isInDaily: overlay.dailyPalaceIndex === palace.index,
+    };
+  }
 </script>
 
 {#if useSquareBoard}
@@ -211,6 +242,7 @@
         </svg>
       {/if}
       {#each palaces as palace (palace.nameKey)}
+        {@const flags = horoscopeFlags(palace)}
         <div class="board-slot" style={cellStyle(palace)}>
           <PalaceCell
             {palace}
@@ -218,6 +250,10 @@
             inAspect={isInAspect(palace)}
             dimmed={isDimmed(palace)}
             flowFlags={flagsByIndex.get(palace.index) ?? null}
+            isInDecadal={flags.isInDecadal}
+            isInYearly={flags.isInYearly}
+            isInMonthly={flags.isInMonthly}
+            isInDaily={flags.isInDaily}
             {onSelect}
             onHover={handleHover}
           />
@@ -231,11 +267,16 @@
 {:else}
   <div class="grid" role="group" aria-label="Bàn 12 cung">
     {#each palaces as palace (palace.nameKey)}
+      {@const flags = horoscopeFlags(palace)}
       <PalaceCell
         {palace}
         selected={palace.nameKey === selectedPalaceKey}
         inAspect={isInAspect(palace)}
         flowFlags={flagsByIndex.get(palace.index) ?? null}
+        isInDecadal={flags.isInDecadal}
+        isInYearly={flags.isInYearly}
+        isInMonthly={flags.isInMonthly}
+        isInDaily={flags.isInDaily}
         {onSelect}
       />
     {/each}

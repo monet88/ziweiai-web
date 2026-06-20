@@ -23,6 +23,9 @@
   import DaliurenDetailCard from '$lib/features/chart/DaliurenDetailCard.svelte';
   import QimenDetailCard from '$lib/features/chart/QimenDetailCard.svelte';
   import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
+  import DailyFortuneCard from '$lib/features/fortune/DailyFortuneCard.svelte';
+  import MonthlyFortuneCard from '$lib/features/fortune/MonthlyFortuneCard.svelte';
+  import AnnualReportButton from '$lib/features/fortune/AnnualReportButton.svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
@@ -143,6 +146,17 @@
       <SummaryCard title={copy.chartSummary} items={summaryItems} />
     {/if}
 
+    {#if showBoard}
+      <section class="fortune-section" aria-labelledby="fortune-title">
+        <h2 class="section-title" id="fortune-title">{viCopy.fortune.sectionTitle}</h2>
+        <div class="fortune-grid">
+          <DailyFortuneCard {auth} chartId={detail.chartId} />
+          <MonthlyFortuneCard {auth} chartId={detail.chartId} />
+        </div>
+        <AnnualReportButton {auth} chartId={detail.chartId} />
+      </section>
+    {/if}
+
     <section class="explanation-section" aria-labelledby="explanation-title">
       <h2 class="section-title" id="explanation-title">{copy.explanationTitle}</h2>
       <p class="hint">{selectionHint}</p>
@@ -185,9 +199,25 @@
   }
 
   .board-section,
+  .fortune-section,
   .explanation-section {
     display: flex;
     flex-direction: column;
+  }
+
+  /* US-016: section vận hạn — hai card (ngày/tháng) song song trên desktop, xếp dọc mobile;
+     nút báo cáo năm bên dưới. */
+  .fortune-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+  }
+
+  @media (min-width: 769px) {
+    .fortune-grid {
+      grid-template-columns: 1fr 1fr;
+    }
   }
 
   /* US-015: bàn 12 cung + panel vận hạn. Mobile (mặc định): panel xếp dưới bàn, cuộn dọc.

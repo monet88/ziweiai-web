@@ -14,15 +14,21 @@ import {
   healthResponseSchema,
   historyListResponseSchema,
   horoscopeResponseSchema,
+  annualReportResponseSchema,
+  dailyFortuneResponseSchema,
+  monthlyFortuneResponseSchema,
+  type AnnualReportResponse,
   type ChartDetailResponse,
   type CreateChartRequest,
   type CreateChartResponse,
   type CreateExplanationRequest,
   type CreateExplanationResponse,
+  type DailyFortuneResponse,
   type HealthResponse,
   type HistoryListResponse,
   type HoroscopeResponse,
   type HoroscopeScope,
+  type MonthlyFortuneResponse,
 } from '@ziweiai/contracts';
 import { fetchJson } from './fetch-json';
 
@@ -102,5 +108,49 @@ export function createExplanation(
     method: 'POST',
     token,
     body: request,
+  });
+}
+
+/** US-016: vận hạn deterministic theo (chartId, asOf) → cache TanStack dài. */
+export const DAILY_FORTUNE_QUERY_STALE_MS = 60 * 60 * 1000;
+export const MONTHLY_FORTUNE_QUERY_STALE_MS = 6 * 60 * 60 * 1000;
+export const ANNUAL_REPORT_QUERY_STALE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * GET /charts/:id/daily?asOf=YYYY-MM-DD — Bearer (US-016).
+ *
+ * Vận ngày thuần đọc (KHÔNG LLM): cung lưu nhật + tứ hóa + đoạn văn template tiếng Việt.
+ * Engine chạy server-side (boundary 0007). Response parse qua schema — sai shape → throw.
+ */
+export function fetchDailyFortune(
+  token: string,
+  chartId: string,
+  asOf: string,
+): Promise<DailyFortuneResponse> {
+  return fetchJson(`/charts/${chartId}/daily?asOf=${asOf}`, dailyFortuneResponseSchema, { token });
+}
+
+/** GET /charts/:id/monthly?asOf=YYYY-MM — Bearer (US-016). Vận tháng thuần đọc, KHÔNG LLM. */
+export function fetchMonthlyFortune(
+  token: string,
+  chartId: string,
+  asOf: string,
+): Promise<MonthlyFortuneResponse> {
+  return fetchJson(`/charts/${chartId}/monthly?asOf=${asOf}`, monthlyFortuneResponseSchema, { token });
+}
+
+/**
+ * POST /charts/:id/annual-report?year=YYYY — Bearer (US-016).
+ *
+ * Báo cáo năm có LLM + gate kép (entitlement + cờ riêng) → có thể trả 402 PAYMENT_REQUIRED;
+ * caller hiển thị CTA paywall. Cache-hit trả Markdown cũ không re-gate (decision 0010).
+ */
+export function createAnnualReport(
+  token: string,
+  request: { chartId: string; year: number },
+): Promise<AnnualReportResponse> {
+  return fetchJson(`/charts/${request.chartId}/annual-report?year=${request.year}`, annualReportResponseSchema, {
+    method: 'POST',
+    token,
   });
 }

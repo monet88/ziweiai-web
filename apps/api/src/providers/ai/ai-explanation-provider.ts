@@ -25,6 +25,15 @@ export interface ExplanationPromptPayload {
   // nguồn public nào set (luôn undefined) — provider fallback về ENV model mặc định.
   // Khi expose qua public input sau này phải kèm allowlist + đưa model vào idempotency key.
   modelOverride?: string;
+  // US-016: prompt user dựng sẵn (vd báo cáo năm) để tái dùng provider chain (timeout + CJK
+  // guard + failover) thay vì viết provider riêng. Khi set, provider dùng chuỗi này làm user
+  // message thay cho `buildExplanationPrompt(payload)`. System prompt vẫn là EXPLANATION_SYSTEM_PROMPT.
+  promptOverride?: string;
+  // US-016: override timeout (ms) cho call provider này, thay cho AI_PROVIDER_TIMEOUT_MS mặc định.
+  // Báo cáo năm tổng hợp lưu niên + 12 lưu nguyệt (~600-1200 từ) nên sinh lâu hơn explanation
+  // thường — đường annual truyền AI_ANNUAL_REPORT_TIMEOUT_MS để không bị 504 ở 15s. Khi không set,
+  // provider dùng AI_PROVIDER_TIMEOUT_MS như cũ.
+  timeoutMsOverride?: number;
 }
 
 export interface AiExplanationProvider {

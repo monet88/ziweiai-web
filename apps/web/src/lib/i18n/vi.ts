@@ -194,6 +194,31 @@ export const viCopy = {
     premiumCta: 'Nâng cấp để dùng luận giải AI',
     premiumHint: 'Tính năng này yêu cầu gói trả phí. Hiện đang miễn phí thử nghiệm.',
   },
+  fortune: {
+    sectionTitle: 'Vận hạn',
+    daily: {
+      title: 'Vận hôm nay',
+      loading: 'Đang tính vận ngày…',
+      error: 'Không tải được vận ngày. Thử lại sau.',
+      empty: 'Chưa có dữ liệu vận ngày.',
+    },
+    monthly: {
+      title: 'Vận tháng này',
+      loading: 'Đang tính vận tháng…',
+      error: 'Không tải được vận tháng. Thử lại sau.',
+      empty: 'Chưa có dữ liệu vận tháng.',
+    },
+    annual: {
+      title: 'Báo cáo năm',
+      generateCta: 'Tạo báo cáo năm',
+      loading: 'Đang tạo báo cáo năm, vui lòng đợi…',
+      error: 'Không tạo được báo cáo năm. Thử lại sau.',
+      close: 'Đóng',
+      featureLockedBeta: 'Báo cáo năm AI tạm khoá ở giai đoạn beta. Vui lòng quay lại sau.',
+      paywallCta: 'Nâng cấp để tạo báo cáo năm',
+      paywallHint: 'Tính năng tổng hợp 12 lưu nguyệt + xu hướng cả năm thuộc gói trả phí.',
+    },
+  },
   pricing: {
     heroEyebrow: 'Gói dịch vụ',
     heroTitle: 'Nâng cấp luận giải AI',

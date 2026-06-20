@@ -22,6 +22,16 @@ import { normalizePostgresTimestamp } from './postgres-timestamp';
 
 type SupabaseRow = Record<string, unknown>;
 
+/** Bản ghi cache báo cáo năm (US-016). Không phải public contract — chỉ dùng nội bộ server. */
+export interface AnnualReportRecord {
+  id: string;
+  ownerUserId: string;
+  chartSnapshotId: string;
+  year: number;
+  markdown: string;
+  createdAt: string | null;
+}
+
 @Injectable()
 export class SupabasePersistenceGateway {
   private readonly client: SupabaseClient;
@@ -408,6 +418,61 @@ export class SupabasePersistenceGateway {
     return count ?? 0;
   }
 
+  /** US-016: cache-hit báo cáo năm theo (chart, year). RLS owner-only chặn chéo user, nhưng vẫn lọc
+   * owner_user_id để truy vấn dùng đúng index + rõ ý định. */
+  async findAnnualReportByChartAndYear(
+    ownerUserId: string,
+    chartSnapshotId: string,
+    year: number,
+  ): Promise<AnnualReportRecord | null> {
+    const { data, error } = await this.client
+      .from('annual_reports')
+      .select('*')
+      .eq('owner_user_id', ownerUserId)
+      .eq('chart_snapshot_id', chartSnapshotId)
+      .eq('year', year)
+      .maybeSingle();
+    this.throwIfError(error);
+    return data ? this.toAnnualReportRecord(data) : null;
+  }
+
+  /**
+   * US-016: tạo row báo cáo năm. Race hai caller cùng (chart, year): unique index
+   * `annual_reports_chart_year_idx` chặn bản thứ hai → Postgres trả 23505. Bắt riêng mã này rồi
+   * đọc lại row của caller thắng (idempotent) thay vì ném — đúng thiết kế "mỗi (chart, year) sinh 1 lần".
+   */
+  async createAnnualReport(params: {
+    ownerUserId: string;
+    chartSnapshotId: string;
+    year: number;
+    markdown: string;
+    providerMetadata: Record<string, string>;
+  }): Promise<AnnualReportRecord> {
+    const { data, error } = await this.client
+      .from('annual_reports')
+      .insert({
+        owner_user_id: params.ownerUserId,
+        chart_snapshot_id: params.chartSnapshotId,
+        year: params.year,
+        markdown: params.markdown,
+        provider_metadata: params.providerMetadata,
+      })
+      .select('*')
+      .single();
+
+    if (error && (error as { code?: string }).code === '23505') {
+      const existing = await this.findAnnualReportByChartAndYear(params.ownerUserId, params.chartSnapshotId, params.year);
+      if (existing) {
+        return existing;
+      }
+      // Cực hiếm: unique violation nhưng re-read trống (row bị xóa xen giữa). Ném lỗi nghiệp vụ
+      // rõ ràng thay vì để `throwIfError` rò raw message Postgres 23505 ra tầng trên.
+      throw new Error('Không thể ghi báo cáo năm do xung đột ghi đồng thời. Vui lòng thử lại.');
+    }
+    this.throwIfError(error);
+    return this.toAnnualReportRecord(data);
+  }
+
   private toBirthProfileRecord(row: SupabaseRow): BirthProfileRecord {
     return birthProfileRecordSchema.parse({
       id: row.id,
@@ -479,6 +544,19 @@ export class SupabasePersistenceGateway {
       explanationResultId: row.explanation_result_id,
       viewedAt: normalizePostgresTimestamp(row.viewed_at as string | null | undefined),
     });
+  }
+
+  // Báo cáo năm là bản ghi nội bộ server (không phải public contract) nên map trực tiếp,
+  // không qua zod schema như các record khác. `year` từ Postgres về dạng number sẵn.
+  private toAnnualReportRecord(row: SupabaseRow): AnnualReportRecord {
+    return {
+      id: String(row.id),
+      ownerUserId: String(row.owner_user_id),
+      chartSnapshotId: String(row.chart_snapshot_id),
+      year: Number(row.year),
+      markdown: String(row.markdown),
+      createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
+    };
   }
 
   private throwIfError(error: { message: string } | null): void {

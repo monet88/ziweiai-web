@@ -4,11 +4,12 @@ import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ChartsModule } from './modules/charts/charts.module';
 import { ExplanationsModule } from './modules/explanations/explanations.module';
+import { FortuneModule } from './modules/fortune/fortune.module';
 import { HistoryModule } from './modules/history/history.module';
 import { QuotasModule } from './modules/quotas/quotas.module';
 
 @Module({
-  imports: [AuthModule, ChartsModule, ExplanationsModule, HealthModule, HistoryModule, QuotasModule],
+  imports: [AuthModule, ChartsModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, QuotasModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

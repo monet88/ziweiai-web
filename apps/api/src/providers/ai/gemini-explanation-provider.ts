@@ -65,11 +65,11 @@ function buildGeminiSdkRequest(payload: ExplanationPromptPayload): RequestInit {
       },
       contents: [
         {
-          parts: [{ text: buildExplanationPrompt(payload) }],
+          parts: [{ text: payload.promptOverride ?? buildExplanationPrompt(payload) }],
         },
       ],
     }),
-    signal: AbortSignal.timeout(apiEnv.AI_PROVIDER_TIMEOUT_MS),
+    signal: AbortSignal.timeout(payload.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS),
   };
 }
 

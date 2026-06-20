@@ -54,11 +54,13 @@ export class ApiErrorFilter implements ExceptionFilter {
         requestId,
       }),
     );
-    // Nhánh fallback (non-HttpException/non-Zod): lỗi ngoài dự kiến phải để lại stack trace,
-    // không nuốt im lặng. requestId giúp truy vết theo header x-request-id.
+    // Nhánh fallback (non-HttpException/non-Zod): lỗi ngoài dự kiến phải để lại thông tin,
+    // không nuốt im lặng. requestId giúp truy vết theo header x-request-id. Chi tiết lỗi đưa
+    // vào message (param 1); param 2 chỉ nhận stack trace thật để không làm nhiễu log
+    // aggregation (Datadog/Kibana mong đợi stack ở đây). Non-Error → stack undefined.
     this.logger.error(
-      `Lỗi máy chủ ngoài dự kiến (requestId=${requestId ?? 'null'})`,
-      exception instanceof Error ? exception.stack : String(exception),
+      `Lỗi máy chủ ngoài dự kiến (requestId=${requestId ?? 'null'}): ${exception instanceof Error ? exception.message : String(exception)}`,
+      exception instanceof Error ? exception.stack : undefined,
     );
   }
 }

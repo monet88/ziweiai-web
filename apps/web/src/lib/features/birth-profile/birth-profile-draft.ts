@@ -30,7 +30,7 @@ export type BirthFormFieldErrors = Partial<{
 
 /**
  * Mặc định địa điểm cho bản Việt Nam. Toạ độ + múi giờ không còn nhập tay trên form
- * (xem decision 0015): engine chỉ dùng `timezone` để quy giờ sinh → UTC, còn vĩ/kinh độ
+ * (xem decision 0015): engine chỉ dùng `timezone` để quy giờ sinh sang UTC, còn vĩ/kinh độ
  * hiện CHƯA tham gia phép tính lá số (true solar time đang `deferred`). Vẫn phải gửi
  * `place.manual` đầy đủ để snapshot không rơi vào trạng thái `blocked` (PLACE_UNRESOLVED).
  * Toạ độ là trung tâm TP.HCM — giá trị mồi, không ảnh hưởng kết quả khi true solar time tắt.

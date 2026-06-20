@@ -29,7 +29,7 @@ hợp hiếm, đẩy xuống mục "Nâng cao" tuỳ chọn mở.
 
 | Hạng mục | Quyết định | Lý do |
 |---|---|---|
-| Toạ độ + múi giờ | Thu vào mục "Nâng cao" có thể mở; mặc định `Asia/Ho_Chi_Minh` + toạ độ HCMC `(10.8231, 106.6297)` | Sinh ngoài VN vẫn chỉnh được; bản VN không phải nhập |
+| Toạ độ + múi giờ | Ẩn hẳn khỏi form (không có mục "Nâng cao"); mặc định `Asia/Ho_Chi_Minh` + toạ độ HCMC `(10.8231, 106.6297)` điền sẵn trong draft | Engine chưa dùng toạ độ; bản VN không cần nhập. Khi làm geocoding sẽ mở lại (decision 0015 Follow-Up) |
 | Ô "Nơi sinh" | Ẩn; gắn nhãn cố định `"Việt Nam"` | Bản VN không cần chọn quốc gia |
 | Picker ngày sinh | Dropdown Ngày (1–31) / Tháng (1–12) / Năm | Dễ bấm mobile; chạy cho cả Dương & Âm lịch |
 

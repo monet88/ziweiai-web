@@ -5,7 +5,7 @@
   //
   // Lịch lunar mới hiện loại tháng nhuận; biết giờ mới hiện giờ/phút (khớp ràng buộc
   // birthInputSchema). Địa điểm (toạ độ + múi giờ) KHÔNG nhập tay nữa: mặc định Việt Nam,
-  // điền sẵn trong createBirthFormDraft (xem decision 0014). Ngày/tháng/năm dùng dropdown
+  // điền sẵn trong createBirthFormDraft (xem decision 0015). Ngày/tháng/năm dùng dropdown
   // cho dễ chọn trên mobile, chạy cho cả Dương lẫn Âm lịch.
   import {
     PrimaryButton,
@@ -26,8 +26,9 @@
   const copy = viCopy.dashboard;
 
   // Options dropdown ngày sinh. Ngày 1–31, tháng 1–12 (validate chéo ngày-tháng-năm thực tế
-  // do backend birthInputSchema + iztro lo); năm 1900→2026 xếp giảm dần để năm gần đây ở đầu.
-  const CURRENT_YEAR = 2026;
+  // do backend birthInputSchema + iztro lo); năm 1900→năm hiện tại, xếp giảm dần để năm gần
+  // đây ở đầu. Lấy năm hiện tại tại runtime (SPA chạy ở browser) để dropdown không stale.
+  const CURRENT_YEAR = new Date().getFullYear();
   const EARLIEST_YEAR = 1900;
   const dayOptions = Array.from({ length: 31 }, (_, index) => {
     const value = String(index + 1);

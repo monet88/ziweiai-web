@@ -70,10 +70,17 @@ export const apiEnvSchema = z.object({
   DEEPSEEK_API_KEY: z.string().default(''),
   DEEPSEEK_MODEL: z.string().min(1).default('deepseek-v4-pro'),
   OPENAI_COMPAT_API_KEY: z.string().default(''),
-  OPENAI_COMPAT_BASE_URL: z.string().url().default('https://api.openai.com'),
+  // z.preprocess chuyển '' → undefined: env khai báo nhưng để trống (OPENAI_COMPAT_BASE_URL=)
+  // đọc ra chuỗi rỗng, z.url() reject '' và default KHÔNG áp dụng (vì '' ≠ undefined) → crash khởi động.
+  OPENAI_COMPAT_BASE_URL: z.preprocess((val) => (val === '' ? undefined : val), z.url().default('https://api.openai.com')),
   OPENAI_COMPAT_MODEL: z.string().min(1).default('gpt-4o-mini'),
   GEMINI_API_KEY: z.string().default(''),
-  GEMINI_SDK_BASE_URL: z.preprocess((value) => value ?? process.env.GEMINI_API_BASE_URL, z.string().url().optional()),
+  // z.preprocess gộp fallback GEMINI_API_BASE_URL + chuẩn hoá '' → undefined (env để trống không
+  // làm z.url() reject rồi crash); kết quả undefined để .optional() cho qua an toàn.
+  GEMINI_SDK_BASE_URL: z.preprocess((value) => {
+    const val = value ?? process.env.GEMINI_API_BASE_URL;
+    return val === '' ? undefined : val;
+  }, z.url().optional()),
   GEMINI_MODEL: z.string().min(1).default('gemini-3.5-flash'),
   AI_DEFAULT_PROVIDER: z.enum(['auto', 'deepseek', 'openai-compat', 'gemini']).default('auto'),
   // z.stringbool (zod v4): "false"/"0"/"no" → false, "true"/"1"/"yes" → true.
@@ -94,7 +101,9 @@ export const apiEnvSchema = z.object({
   // cho driver thật ở resolve-time (factory) để default `memory` không cần env mới.
   QUOTA_STORE_DRIVER: z.enum(['memory', 'redis', 'upstash']).default('memory'),
   QUOTA_REDIS_URL: z.string().optional(),
-  QUOTA_UPSTASH_REST_URL: z.string().url().optional(),
+  // z.preprocess '' → undefined: env optional thường để trống (QUOTA_UPSTASH_REST_URL=), chuỗi rỗng
+  // không qua z.url() dù có .optional() → crash khởi động. Chỉ áp khi driver=upstash mới cần URL thật.
+  QUOTA_UPSTASH_REST_URL: z.preprocess((val) => (val === '' ? undefined : val), z.url().optional()),
   QUOTA_UPSTASH_REST_TOKEN: z.string().optional(),
   // Khi store ngoài mất kết nối: open = cho qua + log warn (mặc định, ưu tiên ổn định —
   // quota là chống lạm dụng, không phải hàng rào bảo mật); closed = chặn (ném quota error).

@@ -40,6 +40,7 @@ export class OpenAiCompatibleExplanationProvider implements AiExplanationProvide
 
     try {
       const model = payload.modelOverride ?? apiEnv.OPENAI_COMPAT_MODEL;
+      const timeoutMs = payload.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
       const response = await fetch(buildChatCompletionsEndpoint(), {
         method: 'POST',
         headers: {
@@ -50,13 +51,13 @@ export class OpenAiCompatibleExplanationProvider implements AiExplanationProvide
           model,
           messages: [
             { role: 'system', content: EXPLANATION_SYSTEM_PROMPT },
-            { role: 'user', content: buildExplanationPrompt(payload) },
+            { role: 'user', content: payload.promptOverride ?? buildExplanationPrompt(payload) },
           ],
           stream: false,
           temperature: 0.7,
           max_tokens: 2048,
         }),
-        signal: AbortSignal.timeout(apiEnv.AI_PROVIDER_TIMEOUT_MS),
+        signal: AbortSignal.timeout(timeoutMs),
       });
 
       // Đọc raw text trước rồi mới thử parse JSON: upstream có thể trả non-JSON

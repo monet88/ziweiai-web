@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { CreateChartRequest, CreateChartResponse } from '@ziweiai/contracts';
+import type { ChartSystem, CreateChartRequest, CreateChartResponse } from '@ziweiai/contracts';
 import { buildChartSnapshotDedupeKey } from '../../../database/idempotency';
 import { ChartsService } from './charts.service';
 
@@ -601,6 +601,88 @@ describe('ChartsService', () => {
     ).rejects.toThrow(/chưa được bật ở backend/);
 
     expect(persistenceGateway.createChartSnapshot).not.toHaveBeenCalled();
+  });
+});
+
+function buildChartRecord(snapshot: CreateChartResponse['snapshot']) {
+  return {
+    id: '33333333-3333-3333-8333-333333333333',
+    ownerUserId: '22222222-2222-2222-8222-222222222222',
+    birthProfileId: '11111111-1111-1111-8111-111111111111',
+    chartSystem: snapshot.chartSystem,
+    snapshotDedupeKey: '0123456789abcdef',
+    snapshot,
+    inputHashDigest: snapshot.inputHash.digest,
+    confidenceLevel: snapshot.calculationConfidence.level,
+    createdAt: snapshot.createdAt,
+  };
+}
+
+const HOROSCOPE_USER = '22222222-2222-2222-8222-222222222222';
+const HOROSCOPE_CHART = '33333333-3333-3333-8333-333333333333';
+
+describe('ChartsService.computeHoroscope', () => {
+  it('trả frame hợp lệ cho lá số Tử Vi đã sở hữu (engine thật)', async () => {
+    const snapshot = buildSnapshot();
+    const persistenceGateway = {
+      findChartSnapshotById: vi.fn(async () => buildChartRecord(snapshot)),
+    };
+    const quotasService = { assertCanCreateChart: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+
+    const result = await service.computeHoroscope(
+      HOROSCOPE_USER,
+      '127.0.0.1',
+      HOROSCOPE_CHART,
+      '2026-06-17',
+      ['decadal', 'yearly', 'monthly', 'daily'],
+    );
+
+    expect(result.chartId).toBe(HOROSCOPE_CHART);
+    expect(result.asOf).toBe('2026-06-17');
+    expect(result.frame.decadal.index).toBeGreaterThanOrEqual(0);
+    expect(result.frame.yearly.index).toBeGreaterThanOrEqual(0);
+    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
+  });
+
+  it('404 khi lá số không tồn tại / không sở hữu', async () => {
+    const persistenceGateway = { findChartSnapshotById: vi.fn(async () => null) };
+    const quotasService = { assertCanCreateChart: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+
+    await expect(
+      service.computeHoroscope(HOROSCOPE_USER, '127.0.0.1', HOROSCOPE_CHART, '2026-06-17', ['decadal']),
+    ).rejects.toThrow(/Không tìm thấy lá số/);
+    // Quota check chạy TRƯỚC khi query DB (defense-in-depth + phản hồi đồng nhất);
+    // user hết hạn mức không kích hoạt được DB read.
+    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
+  });
+
+  it('400 khi chart không phải zi-wei-dou-shu', async () => {
+    const snapshot = buildSnapshot({ chartSystem: 'ba-zi' });
+    const persistenceGateway = { findChartSnapshotById: vi.fn(async () => buildChartRecord(snapshot)) };
+    const quotasService = { assertCanCreateChart: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+
+    await expect(
+      service.computeHoroscope(HOROSCOPE_USER, '127.0.0.1', HOROSCOPE_CHART, '2026-06-17', ['decadal']),
+    ).rejects.toThrow(/chỉ áp dụng cho lá số Tử Vi/);
+    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
+  });
+
+  it('429 khi quota assertCanCreateChart vượt', async () => {
+    const snapshot = buildSnapshot();
+    const persistenceGateway = { findChartSnapshotById: vi.fn(async () => buildChartRecord(snapshot)) };
+    const quotasService = {
+      assertCanCreateChart: vi.fn(async () => {
+        throw new Error('Đã vượt hạn mức lập lá số.');
+      }),
+    };
+    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+
+    await expect(
+      service.computeHoroscope(HOROSCOPE_USER, '127.0.0.1', HOROSCOPE_CHART, '2026-06-17', ['decadal']),
+    ).rejects.toMatchObject({ getStatus: expect.any(Function) });
   });
 });
 

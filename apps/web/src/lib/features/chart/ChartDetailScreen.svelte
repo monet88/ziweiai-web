@@ -15,12 +15,17 @@
   import { formatCenterSummaryItems, formatChartSummaryItems } from '$lib/features/chart/chart-display';
   import { getChartDetailSelectionHint } from '$lib/features/chart/chart-explanation-intent';
   import PalaceGrid from '$lib/features/chart/PalaceGrid.svelte';
+  import ZiweiHoroscopePanel from '$lib/features/chart/ZiweiHoroscopePanel.svelte';
+  import { createHoroscopePanelModel } from '$lib/features/chart/horoscope-panel-model.svelte';
   import BaziDetailCard from '$lib/features/chart/BaziDetailCard.svelte';
   import MeihuaDetailCard from '$lib/features/chart/MeihuaDetailCard.svelte';
   import LiuyaoDetailCard from '$lib/features/chart/LiuyaoDetailCard.svelte';
   import DaliurenDetailCard from '$lib/features/chart/DaliurenDetailCard.svelte';
   import QimenDetailCard from '$lib/features/chart/QimenDetailCard.svelte';
   import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
+  import DailyFortuneCard from '$lib/features/fortune/DailyFortuneCard.svelte';
+  import MonthlyFortuneCard from '$lib/features/fortune/MonthlyFortuneCard.svelte';
+  import AnnualReportButton from '$lib/features/fortune/AnnualReportButton.svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
@@ -49,6 +54,15 @@
 
   const copy = viCopy.chart;
 
+  // US-015: model panel vận hạn — parent sở hữu, đọc overlay truyền vào <PalaceGrid> + truyền
+  // model cho <ZiweiHoroscopePanel>. Một nguồn reactive duy nhất, KHÔNG $effect ghi ngược.
+  const horoscope = createHoroscopePanelModel({
+    auth,
+    getChartId: () => detail.chartId,
+    getSnapshot: () => detail.snapshot,
+    getPalaces: () => detail.palaces,
+  });
+
   const showBoard = $derived(shouldRenderZiweiBoard(detail.chartSystem, detail.palaces.length));
   const detailState = $derived(getChartDetailState(detail.chartSystem, detail.palaces.length));
   const summaryItems = $derived(detail.snapshot ? formatChartSummaryItems(detail.snapshot.summary) : []);
@@ -58,6 +72,15 @@
   const explanationButtonLabel = $derived(
     detail.selectedPalace ? copy.generatePalaceExplanation : copy.generateOverviewExplanation,
   );
+
+  // Áp đại vận mặc định khi snapshot Tử Vi sẵn sàng. ensureDefault có guard `locked` (chỉ
+  // áp 1 lần + dừng nếu user đã tương tác) nên gọi lại an toàn; đọc snapshot/palaces trong
+  // effect → tự rerun khi data tới muộn. KHÔNG ghi ngược selection ngoài lần default này.
+  $effect.pre(() => {
+    if (showBoard) {
+      horoscope.ensureDefault();
+    }
+  });
 </script>
 
 <AppScaffold
@@ -81,23 +104,28 @@
     {#if showBoard}
       <section class="board-section" aria-labelledby="palace-board-title">
         <h2 class="section-title" id="palace-board-title">{copy.twelvePalaceTitle}</h2>
-        <PalaceGrid
-          palaces={detail.palaces}
-          selectedPalaceKey={detail.selectedPalaceKey}
-          onSelect={detail.selectPalace}
-        >
-          {#snippet center()}
-            <h3 class="center-title">{copy.centerSummaryTitle}</h3>
-            <dl class="center-list">
-              {#each centerItems as item (item.label)}
-                <div class="center-row">
-                  <dt>{item.label}</dt>
-                  <dd>{item.value}</dd>
-                </div>
-              {/each}
-            </dl>
-          {/snippet}
-        </PalaceGrid>
+        <div class="board-layout">
+          <PalaceGrid
+            palaces={detail.palaces}
+            selectedPalaceKey={detail.selectedPalaceKey}
+            onSelect={detail.selectPalace}
+            chartId={detail.chartId}
+            horoscopeOverlay={horoscope.overlay}
+          >
+            {#snippet center()}
+              <h3 class="center-title">{copy.centerSummaryTitle}</h3>
+              <dl class="center-list">
+                {#each centerItems as item (item.label)}
+                  <div class="center-row">
+                    <dt>{item.label}</dt>
+                    <dd>{item.value}</dd>
+                  </div>
+                {/each}
+              </dl>
+            {/snippet}
+          </PalaceGrid>
+          <ZiweiHoroscopePanel model={horoscope} />
+        </div>
       </section>
     {:else if detail.palaces.length === 0 && detail.chartSystem === 'zi-wei-dou-shu'}
       <EmptyStateCard
@@ -116,6 +144,17 @@
       <QimenDetailCard snapshot={detail.snapshot} />
     {:else}
       <SummaryCard title={copy.chartSummary} items={summaryItems} />
+    {/if}
+
+    {#if showBoard}
+      <section class="fortune-section" aria-labelledby="fortune-title">
+        <h2 class="section-title" id="fortune-title">{viCopy.fortune.sectionTitle}</h2>
+        <div class="fortune-grid">
+          <DailyFortuneCard {auth} chartId={detail.chartId} />
+          <MonthlyFortuneCard {auth} chartId={detail.chartId} />
+        </div>
+        <AnnualReportButton {auth} chartId={detail.chartId} />
+      </section>
     {/if}
 
     <section class="explanation-section" aria-labelledby="explanation-title">
@@ -160,9 +199,42 @@
   }
 
   .board-section,
+  .fortune-section,
   .explanation-section {
     display: flex;
     flex-direction: column;
+  }
+
+  /* US-016: section vận hạn — hai card (ngày/tháng) song song trên desktop, xếp dọc mobile;
+     nút báo cáo năm bên dưới. */
+  .fortune-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+  }
+
+  @media (min-width: 769px) {
+    .fortune-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  /* US-015: bàn 12 cung + panel vận hạn. Mobile (mặc định): panel xếp dưới bàn, cuộn dọc.
+     Desktop (>768px): split 2 cột — bàn co giãn (3fr), panel cố định bên phải (2fr) cuộn
+     dọc nội bộ khi 4 vùng vượt chiều cao. */
+  .board-layout {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  @media (min-width: 769px) {
+    .board-layout {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      align-items: start;
+    }
   }
 
   .center-title {

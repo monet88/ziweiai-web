@@ -12,6 +12,10 @@ export type StarTokenView = {
   group: SnapshotStar['group'];
   brightness: string | null;
   mutagen: string | null;
+  /** Raw key từ snapshot để tô màu (US-012). Không dùng cho nhãn UI. */
+  brightnessKey?: import('@ziweiai/contracts').BrightnessKey;
+  /** Raw key từ snapshot để tô màu (US-012). Không dùng cho nhãn UI. */
+  mutagenKey?: import('@ziweiai/contracts').MutagenKey;
 };
 
 export type PalaceView = {
@@ -54,6 +58,8 @@ function buildStarToken(star: SnapshotStar): StarTokenView {
     group: star.group,
     brightness: star.brightnessKey ? translateZiweiKey(star.brightnessKey) : null,
     mutagen: star.mutagen ? translateZiweiKey(star.mutagen) : null,
+    brightnessKey: star.brightnessKey,
+    mutagenKey: star.mutagen,
   };
 }
 

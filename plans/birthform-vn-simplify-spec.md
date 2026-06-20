@@ -11,7 +11,7 @@ bằng dropdown dễ chọn — mà **không** làm lá số rơi vào `level: '
 
 ### Người dùng đích
 Người dùng VN tạo lá số; sinh trong nước là mặc định. Sinh ngoài VN là trường
-hợp hiếm, đẩy xuống mục "Nâng cao" tuỳ chọn mở.
+hợp hiếm, hiện chưa hỗ trợ nhập địa điểm tay (sẽ mở lại khi làm geocoding).
 
 ## 2. Bối cảnh kỹ thuật (vì sao trường nào cần)
 
@@ -57,29 +57,30 @@ const VN_DEFAULT_PLACE_LABEL = 'Việt Nam';
 ## 5. Tiêu chí chấp nhận (Acceptance Criteria)
 
 1. **AC-1 — Form gọn mặc định:** Khi mở form, KHÔNG thấy ô nơi sinh, vĩ độ,
-   kinh độ, múi giờ. Thay vào đó có nút/disclosure "Nâng cao" (đóng sẵn).
+   kinh độ, múi giờ — các trường này ẩn hẳn, KHÔNG có mục "Nâng cao".
 2. **AC-2 — Submit không nhập toạ độ:** Người dùng chỉ nhập ngày/giờ/giới tính
    rồi "Lập lá số" → request gửi `place.manual` đầy đủ (timezone + toạ độ VN),
    `place.label = "Việt Nam"`, và lá số KHÔNG `blocked` vì lý do địa điểm.
-3. **AC-3 — Mục Nâng cao:** Mở "Nâng cao" hiện lại múi giờ + vĩ độ + kinh độ,
-   điền sẵn mặc định VN, cho phép chỉnh tay (giữ validate cũ). Đóng lại vẫn dùng
-   giá trị đã chỉnh.
+3. **AC-3 — Mặc định địa điểm ẩn:** Toạ độ + múi giờ điền sẵn mặc định VN trong
+   `createBirthFormDraft`, KHÔNG hiển thị trên UI. Khi làm geocoding sau này sẽ
+   mở lại đường nhập địa điểm (decision 0015 Follow-Up).
 4. **AC-4 — Dropdown ngày sinh:** Ngày/Tháng/Năm là `<select>` (Ngày 1–31,
    Tháng 1–12, Năm từ **1900 → 2026 (năm hiện tại), xếp giảm dần** để năm gần
    đây nằm đầu danh sách). Chọn xong submit ra đúng `date.year/month/day`. Chạy
    cho cả Dương & Âm lịch (kể cả tháng nhuận).
 5. **AC-5 — Bất biến ngôn ngữ:** Mọi nhãn tiếng Việt; không lọt ký tự Han
    (`\p{Script=Han}`). Nhãn "Việt Nam" là tiếng Việt hợp lệ.
-6. **AC-6 — Không hồi quy validate:** `validateBirthFormDraft` vẫn báo lỗi đúng
-   khi toạ độ/múi giờ bị xoá rỗng trong mục Nâng cao.
+6. **AC-6 — Validate gọn:** `validateBirthFormDraft` chỉ còn validate
+   ngày/tháng/năm + giờ/phút; toạ độ/múi giờ không còn input nên bỏ validate
+   (luôn điền sẵn hằng số mặc định VN).
 
 ## 6. Cấu trúc thay đổi (file dự kiến)
 
 - `apps/web/src/lib/features/birth-profile/birth-profile-draft.ts` — thêm hằng
   số mặc định VN; `createBirthFormDraft` điền sẵn.
-- `apps/web/src/lib/features/dashboard/BirthForm.svelte` — ẩn nơi sinh; nhóm
-  toạ độ/múi giờ vào `<details>`/disclosure "Nâng cao"; đổi 3 ô number ngày sinh
-  → `SelectField` (hoặc component dropdown ngày mới nếu cần).
+- `apps/web/src/lib/features/dashboard/BirthForm.svelte` — ẩn hẳn nơi sinh +
+  toạ độ + múi giờ (KHÔNG có mục "Nâng cao"); đổi 3 ô number ngày sinh
+  → `SelectField` dropdown.
 - `apps/web/src/lib/i18n/vi.ts` — thêm khoá: `advancedSection`,
   `vnDefaultPlaceLabel`(="Việt Nam") nếu cần; có thể bỏ `locationPlaceholder`.
 - Tests:

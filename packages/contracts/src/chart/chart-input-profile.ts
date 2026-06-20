@@ -22,6 +22,13 @@ export const chartInputProfiles: Record<ChartSystem, ChartInputProfile> = {
   'liu-yao': { inputKind: 'divination', requiresGender: false },
   'da-liu-ren': { inputKind: 'divination', requiresGender: false },
   'qi-men-dun-jia': { inputKind: 'divination', requiresGender: false },
+  // US-017 new systems (framework)
+  'hepan': { inputKind: 'natal', requiresGender: false }, // pairing of two births
+  'mangpai': { inputKind: 'natal', requiresGender: false },
+  'tarot': { inputKind: 'divination', requiresGender: false },
+  'mbti': { inputKind: 'divination', requiresGender: false },
+  'face': { inputKind: 'divination', requiresGender: false },
+  'palm': { inputKind: 'divination', requiresGender: false },
 };
 
 export function getChartInputProfile(system: ChartSystem): ChartInputProfile {

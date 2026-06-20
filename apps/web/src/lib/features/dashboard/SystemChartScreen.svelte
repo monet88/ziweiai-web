@@ -3,7 +3,7 @@
   // dashboard-model + BirthForm với initialChartSystem riêng — KHÔNG fork logic tạo lá số.
   // Mỗi route hệ (/bazi, /meihua, /liuyao, /daliuren, /qimen) chỉ truyền chartSystem +
   // hero copy riêng; luồng tạo lá số → điều hướng /charts/[id] giữ nguyên (id thật từ API).
-  import type { ChartSystem } from '@ziweiai/contracts';
+  import type { ImplementedChartSystem } from '@ziweiai/contracts';
   import { useQueryClient } from '@tanstack/svelte-query';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -14,7 +14,7 @@
   import BirthForm from './BirthForm.svelte';
 
   interface Props {
-    chartSystem: ChartSystem;
+    chartSystem: ImplementedChartSystem;
     eyebrow: string;
     title: string;
     subtitle: string;

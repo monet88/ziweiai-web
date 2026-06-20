@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { implementedChartSystems } from '../chart/chart-system';
 import { chartSystemSchema } from '../chart/chart-system';
 import {
+  apiErrorCodeSchema,
   createChartRequestSchema,
   createExplanationRequestSchema,
   historyListResponseSchema,
@@ -127,6 +128,13 @@ describe('backend API contracts', () => {
 
     expect(liuyaoPayload.chartSystem).toBe('liu-yao');
     expect(daliurenPayload.chartSystem).toBe('da-liu-ren');
+  });
+
+  it('accepts the US-017 extended-system API error codes and rejects unknown codes', () => {
+    expect(apiErrorCodeSchema.parse('IDENTITY_REQUIRED')).toBe('IDENTITY_REQUIRED');
+    expect(apiErrorCodeSchema.parse('FEATURE_DISABLED')).toBe('FEATURE_DISABLED');
+    expect(apiErrorCodeSchema.parse('VISION_QUOTA_EXCEEDED')).toBe('VISION_QUOTA_EXCEEDED');
+    expect(apiErrorCodeSchema.safeParse('UNKNOWN_CODE').success).toBe(false);
   });
 
   it('accepts an empty history list envelope', () => {

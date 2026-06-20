@@ -165,11 +165,23 @@ const qimenSnapshot = asSnapshot({
 });
 
 describe('no chữ Hán — output toàn hệ (US-007)', () => {
-  it('nhãn 6 hệ thuật số đều tiếng Việt, 0 ký tự CJK', () => {
-    const labels = (['ba-zi', 'mei-hua-yi-shu', 'liu-yao', 'da-liu-ren', 'qi-men-dun-jia', 'zi-wei-dou-shu'] as const).map(
-      (system) => formatChartSystemLabel(system),
-    );
+  it('nhãn 12 hệ thuật số đều tiếng Việt, 0 ký tự CJK', () => {
+    const labels = ([
+      'ba-zi',
+      'mei-hua-yi-shu',
+      'liu-yao',
+      'da-liu-ren',
+      'qi-men-dun-jia',
+      'zi-wei-dou-shu',
+      'hepan',
+      'mangpai',
+      'tarot',
+      'mbti',
+      'face',
+      'palm',
+    ] as const).map((system) => formatChartSystemLabel(system));
     expect(labels).toContain(viCopy.chartSystem['ba-zi']);
+    expect(labels).toContain(viCopy.chartSystem.tarot);
     assertNoCjk(labels);
   });
 

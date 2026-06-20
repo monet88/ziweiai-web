@@ -68,13 +68,35 @@ describe('buildCreateChartRequest', () => {
 });
 
 describe('createBirthFormDraft', () => {
-  it('defaults to Tử Vi when no system passed and leaves coordinates blank', () => {
+  it('defaults to Tử Vi and pre-fills Vietnam location so charts never block on place', () => {
     const draft = createBirthFormDraft();
 
     expect(draft.chartSystem).toBe('zi-wei-dou-shu');
-    expect(draft.latitude).toBe('');
-    expect(draft.longitude).toBe('');
-    expect(draft.timezone).toBe('');
+    expect(draft.latitude).toBe('10.8231');
+    expect(draft.longitude).toBe('106.6297');
+    expect(draft.timezone).toBe('Asia/Ho_Chi_Minh');
+    expect(draft.placeLabel).toBe('Việt Nam');
+  });
+
+  it('builds a valid create-chart request straight from defaults plus date/time/gender', () => {
+    const draft = createBirthFormDraft();
+    const request = buildCreateChartRequest({
+      ...draft,
+      birthDay: '14',
+      birthMonth: '8',
+      birthYear: '1992',
+      hour: '9',
+      minute: '30',
+      gender: 'female',
+    });
+
+    // place.manual đầy đủ → snapshot không rơi vào PLACE_UNRESOLVED/blocked.
+    expect(request.birthInput.place.manual).toEqual({
+      latitude: 10.8231,
+      longitude: 106.6297,
+      timezone: 'Asia/Ho_Chi_Minh',
+    });
+    expect(request.birthInput.place.label).toBe('Việt Nam');
   });
 
   it('honours the initial chart system from a system wrapper', () => {
@@ -118,16 +140,6 @@ describe('validateBirthFormDraft', () => {
 
     expect(errors.hour).toBeTruthy();
     expect(errors.minute).toBeTruthy();
-  });
-
-  it('rejects out-of-range coordinates and missing timezone', () => {
-    const errors = validateBirthFormDraft(
-      buildDraft({ latitude: '120', longitude: '-200', timezone: '   ' }),
-    );
-
-    expect(errors.latitude).toBeTruthy();
-    expect(errors.longitude).toBeTruthy();
-    expect(errors.timezone).toBeTruthy();
   });
 
   it('rejects hex, scientific, and decimal notations for integer date fields', () => {

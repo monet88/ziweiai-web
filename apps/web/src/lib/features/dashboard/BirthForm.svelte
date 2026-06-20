@@ -4,11 +4,13 @@
   // hiện sau khi đã thử submit (model.submitAttempted) để không nhuộm đỏ form lúc trống.
   //
   // Lịch lunar mới hiện loại tháng nhuận; biết giờ mới hiện giờ/phút (khớp ràng buộc
-  // birthInputSchema). Toạ độ + múi giờ nhập tay (chưa có geocoding — xem warnings).
+  // birthInputSchema). Địa điểm (toạ độ + múi giờ) KHÔNG nhập tay nữa: mặc định Việt Nam,
+  // điền sẵn trong createBirthFormDraft (xem decision 0015). Ngày/tháng/năm dùng dropdown
+  // cho dễ chọn trên mobile, chạy cho cả Dương lẫn Âm lịch.
   import {
     PrimaryButton,
-    TextInputField,
     SelectField,
+    TextInputField,
     NoticeBanner,
   } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
@@ -22,6 +24,24 @@
   let { model }: Props = $props();
 
   const copy = viCopy.dashboard;
+
+  // Options dropdown ngày sinh. Ngày 1–31, tháng 1–12 (validate chéo ngày-tháng-năm thực tế
+  // do backend birthInputSchema + iztro lo); năm 1900→năm hiện tại, xếp giảm dần để năm gần
+  // đây ở đầu. Lấy năm hiện tại tại runtime (SPA chạy ở browser) để dropdown không stale.
+  const CURRENT_YEAR = new Date().getFullYear();
+  const EARLIEST_YEAR = 1900;
+  const dayOptions = Array.from({ length: 31 }, (_, index) => {
+    const value = String(index + 1);
+    return { label: value, value };
+  });
+  const monthOptions = Array.from({ length: 12 }, (_, index) => {
+    const value = String(index + 1);
+    return { label: value, value };
+  });
+  const yearOptions = Array.from({ length: CURRENT_YEAR - EARLIEST_YEAR + 1 }, (_, index) => {
+    const value = String(CURRENT_YEAR - index);
+    return { label: value, value };
+  });
 
   const calendarOptions = [
     { label: copy.gregorianCalendar, value: 'gregorian' },
@@ -63,29 +83,32 @@
   />
 
   <div class="grid-3">
-    <TextInputField
+    <SelectField
       label={copy.day}
       fieldId="birth-day"
-      type="number"
       value={model.draft.birthDay}
+      options={dayOptions}
+      placeholder={copy.dayPlaceholder}
       onValueChange={(value) => model.setField('birthDay', value)}
       errorText={errorFor('birthDay')}
       disabled={model.isSubmitting}
     />
-    <TextInputField
+    <SelectField
       label={copy.month}
       fieldId="birth-month"
-      type="number"
       value={model.draft.birthMonth}
+      options={monthOptions}
+      placeholder={copy.monthPlaceholder}
       onValueChange={(value) => model.setField('birthMonth', value)}
       errorText={errorFor('birthMonth')}
       disabled={model.isSubmitting}
     />
-    <TextInputField
+    <SelectField
       label={copy.year}
       fieldId="birth-year"
-      type="number"
       value={model.draft.birthYear}
+      options={yearOptions}
+      placeholder={copy.yearPlaceholder}
       onValueChange={(value) => model.setField('birthYear', value)}
       errorText={errorFor('birthYear')}
       disabled={model.isSubmitting}
@@ -154,48 +177,6 @@
       />
     </div>
   {/if}
-
-  <TextInputField
-    label={copy.placeLabel}
-    fieldId="birth-place"
-    value={model.draft.placeLabel}
-    placeholder={copy.locationPlaceholder}
-    onValueChange={(value) => model.setField('placeLabel', value)}
-    disabled={model.isSubmitting}
-  />
-
-  <div class="grid-2">
-    <TextInputField
-      label={copy.latitude}
-      fieldId="birth-latitude"
-      type="number"
-      value={model.draft.latitude}
-      onValueChange={(value) => model.setField('latitude', value)}
-      errorText={errorFor('latitude')}
-      disabled={model.isSubmitting}
-    />
-    <TextInputField
-      label={copy.longitude}
-      fieldId="birth-longitude"
-      type="number"
-      value={model.draft.longitude}
-      onValueChange={(value) => model.setField('longitude', value)}
-      errorText={errorFor('longitude')}
-      disabled={model.isSubmitting}
-    />
-  </div>
-
-  <TextInputField
-    label={copy.timezone}
-    fieldId="birth-timezone"
-    value={model.draft.timezone}
-    placeholder={copy.timezonePlaceholder}
-    onValueChange={(value) => model.setField('timezone', value)}
-    errorText={errorFor('timezone')}
-    disabled={model.isSubmitting}
-  />
-
-  <NoticeBanner message={viCopy.warnings.manualLocation} tone="info" />
 
   {#if model.submitAttempted && !model.isValid}
     <NoticeBanner message={viCopy.dashboardValidation.formInvalid} tone="danger" />

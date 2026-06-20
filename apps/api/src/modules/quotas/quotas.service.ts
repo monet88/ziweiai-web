@@ -73,6 +73,26 @@ export class QuotasService {
     }
   }
 
+  /**
+   * Quota riêng cho báo cáo năm (US-016): KHÔNG dùng chung quota explanations.
+   *
+   * Đường này tốn token LLM cao nên trần thấp (`API_ANNUAL_REPORTS_PER_DAY_PER_USER`,
+   * mặc định 2/ngày/user). Đếm qua `QuotaCounterStore` (bền qua restart sau US-013) với
+   * cửa sổ ngày UTC. Anon đếm theo IP (chống reset phiên bằng cách xoá localStorage /
+   * incognito — cùng lý do `assertCanCreateExplanation`), user thường đếm theo userId.
+   * Rate-limit per-minute per-IP/per-user vẫn áp như các đường khác.
+   */
+  async assertCanCreateAnnualReport(userId: string, ipAddress: string, isAnonymous = false): Promise<void> {
+    this.assertSlidingWindow(this.ipBuckets, `ip:${ipAddress}`, apiEnv.API_REQUESTS_PER_MINUTE_PER_IP, 60_000);
+    this.assertSlidingWindow(this.userBuckets, `user:${userId}`, apiEnv.API_REQUESTS_PER_MINUTE_PER_USER, 60_000);
+
+    const dayKey = utcDayKey(Date.now());
+    const counterKey = isAnonymous
+      ? `annual-report:ip:${ipAddress}:${dayKey}`
+      : `annual-report:user:${userId}:${dayKey}`;
+    await this.assertAnonDailyQuota(counterKey, apiEnv.API_ANNUAL_REPORTS_PER_DAY_PER_USER, 'Daily annual report quota exceeded.');
+  }
+
   private async assertAnonDailyQuota(key: string, limit: number, message: string): Promise<void> {
     const { allowed } = await this.counterStore.incrementAndCheck(key, limit, ONE_DAY_SECONDS);
     if (!allowed) {

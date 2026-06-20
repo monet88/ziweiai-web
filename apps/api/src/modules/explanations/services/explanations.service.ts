@@ -8,6 +8,7 @@ import {
   type ExplanationRequestRecord,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
+import { assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
 import { apiEnv } from '../../../config/env';
 import { buildExplanationRequestIdempotencyKey } from '../../../database/idempotency';
 import { buildFailedExplanationRetentionTimestamp, DEFAULT_PROMPT_STORAGE_MODE, PERSONALIZED_CACHE_SCOPE, shouldStorePrompt } from '../../../database/persistence-lifecycle';
@@ -489,15 +490,10 @@ export class ExplanationsService {
   }
 
   private assertCanUseAiExplanation(): void {
-    if (apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
-      this.logger.warn("AI_EXPLANATION_FREE_FOR_ALL=true — gate bypassed (free for all). Set false in production.");
-      return;
-    }
-    throw new ApiErrorHttpException(
-      HttpStatus.PAYMENT_REQUIRED,
-      "PAYMENT_REQUIRED",
-      "Tính năng luận giải AI yêu cầu gói trả phí. Vui lòng nâng cấp để tiếp tục."
-    );
+    // US-016: logic gate đã trích ra module chung `common/entitlement/ai-entitlement.guard`
+    // để AnnualReportService dùng lại (decision 0010). Giữ method wrapper để 2 call-site cũ
+    // trong service này không đổi.
+    assertCanUseAiExplanation(this.logger);
   }
 
 }

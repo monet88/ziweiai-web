@@ -27,6 +27,7 @@ export class DeepseekExplanationProvider implements AiExplanationProvider {
 
     try {
       const model = payload.modelOverride ?? apiEnv.DEEPSEEK_MODEL;
+      const timeoutMs = payload.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
       const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -37,14 +38,14 @@ export class DeepseekExplanationProvider implements AiExplanationProvider {
           model,
           messages: [
             { role: 'system', content: EXPLANATION_SYSTEM_PROMPT },
-            { role: 'user', content: buildExplanationPrompt(payload) },
+            { role: 'user', content: payload.promptOverride ?? buildExplanationPrompt(payload) },
           ],
           stream: false,
           temperature: 0.7,
           max_tokens: 2048,
           thinking: { type: 'disabled' },
         }),
-        signal: AbortSignal.timeout(apiEnv.AI_PROVIDER_TIMEOUT_MS),
+        signal: AbortSignal.timeout(timeoutMs),
       });
 
       const body = (await response.json()) as {

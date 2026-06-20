@@ -70,4 +70,42 @@ describe('QuotasService', () => {
       await expect(service.assertCanCreateChart('user-stable', '10.0.0.3')).resolves.toBeUndefined();
     }
   });
+
+  describe('assertCanCreateAnnualReport (US-016)', () => {
+    it('cho qua khi dưới hạn (mặc định 2/ngày) rồi chặn ở lần thứ 3 cho user thường', async () => {
+      const service = makeService({
+        countChartSnapshotsSince: async () => 0,
+        countExplanationRequestsSince: async () => 0,
+      });
+
+      await expect(service.assertCanCreateAnnualReport('user-annual', '10.0.1.1')).resolves.toBeUndefined();
+      await expect(service.assertCanCreateAnnualReport('user-annual', '10.0.1.1')).resolves.toBeUndefined();
+      await expect(service.assertCanCreateAnnualReport('user-annual', '10.0.1.1')).rejects.toThrow(
+        'Daily annual report quota exceeded.',
+      );
+    });
+
+    it('anon đếm theo IP: đổi userId vẫn chặn ở lần thứ 3 trên cùng IP (chống reset phiên)', async () => {
+      const service = makeService({
+        countChartSnapshotsSince: async () => 0,
+        countExplanationRequestsSince: async () => 0,
+      });
+
+      await expect(service.assertCanCreateAnnualReport('anon-a', '10.0.1.2', true)).resolves.toBeUndefined();
+      await expect(service.assertCanCreateAnnualReport('anon-b', '10.0.1.2', true)).resolves.toBeUndefined();
+      await expect(service.assertCanCreateAnnualReport('anon-c', '10.0.1.2', true)).rejects.toThrow(
+        'Daily annual report quota exceeded.',
+      );
+    });
+
+    it('quota annual độc lập với quota explanations (user thường, key tách biệt)', async () => {
+      const service = makeService({
+        countChartSnapshotsSince: async () => 0,
+        // DB báo explanations đã đầy, nhưng annual đếm qua counter store riêng → vẫn cho qua.
+        countExplanationRequestsSince: async () => 999,
+      });
+
+      await expect(service.assertCanCreateAnnualReport('user-iso', '10.0.1.3')).resolves.toBeUndefined();
+    });
+  });
 });

@@ -50,11 +50,12 @@ loadWorkspaceEnvFile();
 export const apiEnvSchema = z.object({
   API_PORT: z.coerce.number().int().positive().default(3000),
   API_SERVICE_NAME: z.string().min(1).default('ziweiai-api'),
+  // Mặc định chỉ gồm origin dev/preview của web SvelteKit hiện tại: Vite dev (:5173),
+  // Vite preview (:4173) và API tự gọi (:3000). Đã bỏ :8081/:19006 (Metro + Expo web của
+  // app cũ — không còn dùng sau khi migrate sang SvelteKit). Khớp với .env.example.
   API_CORS_ORIGINS: z
     .string()
-    .default(
-      'http://localhost:8081,http://localhost:19006,http://localhost:3000,http://localhost:5173,http://localhost:4173',
-    ),
+    .default('http://localhost:5173,http://localhost:4173,http://localhost:3000'),
   API_REQUESTS_PER_MINUTE_PER_IP: z.coerce.number().int().positive().default(60),
   API_REQUESTS_PER_MINUTE_PER_USER: z.coerce.number().int().positive().default(30),
   API_CHARTS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(20),

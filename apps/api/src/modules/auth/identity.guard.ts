@@ -27,8 +27,8 @@ export class EmailIdentityGuard implements CanActivate {
   }
 }
 
-export function assertEmailIdentityRequired(user: Pick<AuthenticatedUser, 'email'>): void {
-  if (!user.email) {
+export function assertEmailIdentityRequired(user: Pick<AuthenticatedUser, 'email'> | null | undefined): void {
+  if (!user?.email) {
     throwIdentityRequired();
   }
 }

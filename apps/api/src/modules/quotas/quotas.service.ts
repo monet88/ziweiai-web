@@ -74,6 +74,27 @@ export class QuotasService {
   }
 
   /**
+   * Quota cho lượt rút Tarot (US-017).
+   *
+   * Tarot proof deterministic KHÔNG ghi `explanation_request` row, nên không thể đếm qua
+   * `countExplanationRequestsSince` như đường /explanations (user có email sẽ không bao giờ chạm
+   * trần daily). Vì vậy đếm qua `QuotaCounterStore` — mỗi lượt draw tăng đếm cho CẢ user thường
+   * lẫn anon (anon đếm theo IP để chống reset phiên: xoá localStorage / incognito; cùng lý do
+   * `assertCanCreateExplanation`). Dùng chung trần `API_EXPLANATIONS_PER_DAY_PER_USER` (tarot là
+   * một dạng luận giải AI). Rate-limit per-minute per-IP/per-user vẫn áp như các đường khác.
+   */
+  async assertCanCreateTarotDraw(userId: string, ipAddress: string, isAnonymous = false): Promise<void> {
+    this.assertSlidingWindow(this.ipBuckets, `ip:${ipAddress}`, apiEnv.API_REQUESTS_PER_MINUTE_PER_IP, 60_000);
+    this.assertSlidingWindow(this.userBuckets, `user:${userId}`, apiEnv.API_REQUESTS_PER_MINUTE_PER_USER, 60_000);
+
+    const dayKey = utcDayKey(Date.now());
+    const counterKey = isAnonymous
+      ? `tarot-draw:ip:${ipAddress}:${dayKey}`
+      : `tarot-draw:user:${userId}:${dayKey}`;
+    await this.assertAnonDailyQuota(counterKey, apiEnv.API_EXPLANATIONS_PER_DAY_PER_USER, 'Daily explanation quota exceeded.');
+  }
+
+  /**
    * Quota riêng cho báo cáo năm (US-016): KHÔNG dùng chung quota explanations.
    *
    * Đường này tốn token LLM cao nên trần thấp (`API_ANNUAL_REPORTS_PER_DAY_PER_USER`,

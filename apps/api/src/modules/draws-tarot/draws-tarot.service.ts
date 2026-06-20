@@ -40,7 +40,9 @@ export class DrawsTarotService {
     // Gate AI (premium) TRƯỚC quota: nếu không free-for-all thì chặn 402 ngay, không để
     // user non-premium "tiêu" lần kiểm tra quota cho thao tác chắc chắn bị từ chối.
     this.assertPremiumEntitlement();
-    await this.quotasService.assertCanCreateExplanation(user.userId, ipAddress, user.email === null);
+    // email rỗng/null ⟺ phiên ẩn danh (decision 0009): anon JWT có thể mang email="" (không chỉ
+    // null), nên dùng !user.email để không bỏ lọt nhánh anon. Đồng bộ với assertEmailIdentityRequired.
+    await this.assertCanCreateTarotDraw(user.userId, ipAddress, !user.email);
 
     const count = spread === 'celtic-cross' ? 10 : 3;
     const cards = drawDeterministic(seed, count).map((card, index) => ({ ...card, position: index }));
@@ -66,6 +68,20 @@ export class DrawsTarotService {
       'PAYMENT_REQUIRED',
       'Tính năng luận giải AI yêu cầu gói trả phí. Vui lòng nâng cấp để tiếp tục.',
     );
+  }
+
+  // Bọc lỗi quota (raw Error từ QuotasService) thành 429 RATE_LIMITED cho đồng bộ với /charts và
+  // /explanations; nếu không bọc, raw Error sẽ rơi xuống ApiErrorFilter và trả 500 INTERNAL_ERROR.
+  private async assertCanCreateTarotDraw(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
+    try {
+      await this.quotasService.assertCanCreateTarotDraw(userId, ipAddress, isAnonymous);
+    } catch (error) {
+      throw new ApiErrorHttpException(
+        HttpStatus.TOO_MANY_REQUESTS,
+        'RATE_LIMITED',
+        error instanceof Error ? error.message : 'Đã vượt hạn mức rút Tarot.',
+      );
+    }
   }
 
   private generateDeterministicNarrative(

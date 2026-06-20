@@ -73,6 +73,11 @@ export const TAROT_DECK: TarotDeckCard[] = [
 ];
 
 function hashSeed(seed: string): number {
+  // Type guard phòng thủ: dù chữ ký là string, chặn null/undefined lọt vào ở runtime
+  // (tránh seed.charCodeAt ném TypeError) — trả 0 để drawDeterministic rơi về FALLBACK_XORSHIFT_STATE.
+  if (typeof seed !== 'string') {
+    return 0;
+  }
   let hash = 2166136261;
   for (let index = 0; index < seed.length; index += 1) {
     hash ^= seed.charCodeAt(index);
@@ -90,7 +95,11 @@ function nextRandom(state: number): { value: number; state: number } {
 }
 
 export function drawDeterministic(seed: string | undefined, count: number): TarotCardDraw[] {
-  const effectiveSeed = seed ?? `${Date.now()}`;
+  // Seed rỗng/chỉ khoảng trắng được coi như không có seed → sinh seed ngẫu nhiên thay vì rút cùng
+  // một bộ lá cố định. Fallback ghép Date.now()+Math.random() để hai request trong cùng mili-giây
+  // (high concurrency) không nhận kết quả trùng.
+  const trimmedSeed = typeof seed === 'string' ? seed.trim() : undefined;
+  const effectiveSeed = trimmedSeed ? trimmedSeed : `${Date.now()}-${Math.random()}`;
   let state = hashSeed(effectiveSeed) || FALLBACK_XORSHIFT_STATE;
   const deck = [...TAROT_DECK];
   const result: TarotCardDraw[] = [];

@@ -41,6 +41,11 @@ async function createZiweiChart(page: Page, birth: BirthData): Promise<string> {
 }
 
 test('US-016: section Vận hạn — card vận ngày/tháng render + nút báo cáo năm', async ({ page }) => {
+  // Báo cáo năm gọi LLM thật (tổng hợp lưu niên + 12 lưu nguyệt) — backend cho phép tới
+  // AI_ANNUAL_REPORT_TIMEOUT_MS (mặc định 60s, decision 0014). Nới per-test timeout để nhánh
+  // modal sinh hợp lệ không bị Playwright cắt trước backend.
+  test.setTimeout(150_000);
+
   await signInViaUi(page);
 
   await createZiweiChart(page, {
@@ -79,8 +84,10 @@ test('US-016: section Vận hạn — card vận ngày/tháng render + nút báo
   await expect(annualButton).toBeVisible();
   await annualButton.click();
 
-  // Chờ một trong hai nhánh: dialog báo cáo năm, hoặc CTA nâng cấp (paywall 402).
+  // Chờ một trong hai nhánh: dialog báo cáo năm, hoặc CTA nâng cấp (paywall 402). Nhánh modal
+  // gọi LLM thật sinh ~600-1200 từ → backend cho tới AI_ANNUAL_REPORT_TIMEOUT_MS (60s, decision
+  // 0014); chờ 70s để generation hợp lệ chậm không bị cắt trước backend (paywall thì trả tức thì).
   const modal = page.getByRole('dialog', { name: /Báo cáo năm/ });
   const paywallCta = page.getByRole('button', { name: 'Nâng cấp để tạo báo cáo năm' });
-  await expect(modal.or(paywallCta).first()).toBeVisible({ timeout: 30_000 });
+  await expect(modal.or(paywallCta).first()).toBeVisible({ timeout: 70_000 });
 });

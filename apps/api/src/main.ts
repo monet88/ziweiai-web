@@ -9,12 +9,16 @@ async function bootstrap() {
   app.useGlobalFilters(new ApiErrorFilter());
   app.enableCors({
     origin: (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+      // Origin lạ → callback(null, false): cors middleware bỏ qua header Access-Control-Allow-Origin
+      // và request đi tiếp bình thường (browser tự chặn JS đọc response). KHÔNG ném Error — ném ở đây
+      // khiến cors gọi next(err) → ApiErrorFilter bắt thành 500 cho MỌI request mang origin lạ
+      // (kể cả /health public), thay vì hành vi CORS chuẩn là "lặng lẽ không cho phép".
       if (!origin || allowedCorsOrigins.includes(origin)) {
         callback(null, true);
         return;
       }
 
-      callback(new Error('Origin is not allowed by CORS'));
+      callback(null, false);
     },
     credentials: false,
   });

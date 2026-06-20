@@ -13,6 +13,9 @@
     fieldId: string;
     value: string;
     options: readonly SelectOption[];
+    /** Nhãn placeholder hiển thị khi chưa chọn (value=''). Render thành <option> rỗng
+     * disabled ở đầu danh sách để bắt người dùng chọn thật, không nhận giá trị mặc định. */
+    placeholder?: string | null;
     helperText?: string | null;
     errorText?: string | null;
     disabled?: boolean;
@@ -26,6 +29,7 @@
     fieldId,
     value = $bindable(''),
     options,
+    placeholder = null,
     helperText = null,
     errorText = null,
     disabled = false,
@@ -44,6 +48,9 @@
       aria-describedby={describedById}
       onchange={(event) => onValueChange?.(event.currentTarget.value)}
     >
+      {#if placeholder}
+        <option value="" disabled>{placeholder}</option>
+      {/if}
       {#each options as option (option.value)}
         <option value={option.value}>{option.label}</option>
       {/each}

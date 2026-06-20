@@ -8,6 +8,7 @@ import {
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { assertAnnualReportEnabled, assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
+import { apiEnv } from '../../../config/env';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import { buildAnnualReportPrompt } from '../../../providers/ai/build-annual-report-prompt';
 import { ExplanationProviderRouter } from '../../../providers/ai/explanation-provider-router';
@@ -64,6 +65,9 @@ export class AnnualReportService {
         explanationKind: 'annual-report',
         explanationContext: this.buildExplanationContext(snapshot),
         promptOverride: prompt,
+        // Báo cáo năm dài (~600-1200 từ) sinh lâu hơn explanation thường — đo deepseek ~18s, vượt
+        // AI_PROVIDER_TIMEOUT_MS mặc định 15s → 504. Dùng timeout riêng để không khóa tính năng.
+        timeoutMsOverride: apiEnv.AI_ANNUAL_REPORT_TIMEOUT_MS,
       });
     } catch (error) {
       if (error instanceof ProviderTimeoutError) {

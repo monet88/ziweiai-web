@@ -60,6 +60,10 @@ export const apiEnvSchema = z.object({
   API_CHARTS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(20),
   API_EXPLANATIONS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(50),
   AI_PROVIDER_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
+  // US-016: timeout riêng cho đường báo cáo năm. Báo cáo năm tổng hợp lưu niên + 12 lưu nguyệt
+  // (~600-1200 từ) nên thời gian sinh thực tế của LLM thường vượt 15s mặc định (đo deepseek ~18s) →
+  // 504 PROVIDER_TIMEOUT, tính năng gần như không dùng được. Cho phép phanh độc lập, mặc định 60s.
+  AI_ANNUAL_REPORT_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
   SUPABASE_URL: z.url().default('http://127.0.0.1:54321'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).default('test-service-role-key'),
   SUPABASE_JWT_SECRET: z.string().min(1).default('test-jwt-secret'),

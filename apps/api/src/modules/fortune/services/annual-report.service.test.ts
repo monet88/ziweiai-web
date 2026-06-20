@@ -98,6 +98,18 @@ describe('AnnualReportService', () => {
     expect(res.markdown.length).toBeGreaterThan(0);
   });
 
+  it('truyền timeout riêng AI_ANNUAL_REPORT_TIMEOUT_MS cho provider (báo cáo năm sinh lâu, tránh 504 ở 15s)', async () => {
+    (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = true;
+    (apiEnv as any).AI_ANNUAL_REPORT_ENABLED = true;
+    const { service, providerRouter } = makeService();
+
+    await service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026);
+    expect(providerRouter.generate).toHaveBeenCalledWith(
+      'auto',
+      expect.objectContaining({ timeoutMsOverride: apiEnv.AI_ANNUAL_REPORT_TIMEOUT_MS }),
+    );
+  });
+
   it('quota annual vượt hạn → 429 RATE_LIMITED', async () => {
     (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = true;
     (apiEnv as any).AI_ANNUAL_REPORT_ENABLED = true;

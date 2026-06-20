@@ -1,4 +1,4 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { apiErrorSchema } from '@ziweiai/contracts';
 import type { Response } from 'express';
 import { ZodError } from 'zod';
@@ -6,6 +6,8 @@ import type { RequestWithRequestId } from '../request-id.middleware';
 
 @Catch()
 export class ApiErrorFilter implements ExceptionFilter {
+  private readonly logger = new Logger(ApiErrorFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost) {
     const context = host.switchToHttp();
     const request = context.getRequest<RequestWithRequestId>();
@@ -51,6 +53,12 @@ export class ApiErrorFilter implements ExceptionFilter {
         message: 'Đã xảy ra lỗi máy chủ ngoài dự kiến.',
         requestId,
       }),
+    );
+    // Nhánh fallback (non-HttpException/non-Zod): lỗi ngoài dự kiến phải để lại stack trace,
+    // không nuốt im lặng. requestId giúp truy vết theo header x-request-id.
+    this.logger.error(
+      `Lỗi máy chủ ngoài dự kiến (requestId=${requestId ?? 'null'})`,
+      exception instanceof Error ? exception.stack : String(exception),
     );
   }
 }

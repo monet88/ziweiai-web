@@ -88,6 +88,18 @@ export const apiEnvSchema = z.object({
   // KHÔNG dùng z.coerce.boolean() — nó chạy Boolean(string) nên mọi chuỗi non-empty
   // (kể cả "false") đều thành true, khiến AI_EXPLANATION_FREE_FOR_ALL=false vô hiệu ở prod.
   AI_EXPLANATION_FREE_FOR_ALL: z.stringbool().default(true),
+
+  // US-017: 6 feature flags for extended divination systems (default false = disabled)
+  EXTENDED_SYSTEM_HEPAN_ENABLED: z.stringbool().default(false),
+  EXTENDED_SYSTEM_MANGPAI_ENABLED: z.stringbool().default(false),
+  EXTENDED_SYSTEM_TAROT_ENABLED: z.stringbool().default(false),
+  EXTENDED_SYSTEM_MBTI_ENABLED: z.stringbool().default(false),
+  EXTENDED_SYSTEM_FACE_ENABLED: z.stringbool().default(false),
+  EXTENDED_SYSTEM_PALM_ENABLED: z.stringbool().default(false),
+
+  // Separate daily quota for vision (face/palm) — vision is much more expensive
+  API_VISION_REQUESTS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(5),
+
   // US-016: cờ riêng cho đường báo cáo năm (LLM tổng hợp lưu niên + 12 lưu nguyệt) — tốn token
   // gấp ~3-5 lần một explanation nên cần phanh độc lập với AI_EXPLANATION_FREE_FOR_ALL. Mặc định
   // `false` (fail-closed): bật lên mới sinh báo cáo mới được. Dùng z.stringbool cùng lý do ở trên

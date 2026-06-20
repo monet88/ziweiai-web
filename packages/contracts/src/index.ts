@@ -7,6 +7,9 @@ export * from './chart/chart-metadata';
 export * from './chart/chart-system';
 export * from './chart/chart-input-profile';
 export * from './chart/chart-snapshot';
+export * from './chart/pairing-snapshot';
+export * from './chart/tarot-draw';
+export * from './chart/vision-analysis';
 export {
   meihuaTrigramKeys,
   meihuaElementKeys,
@@ -37,3 +40,4 @@ export * from './api/backend-api';
 export * from './explanations/explanation-context';
 export * from './health';
 export * from './persistence/persistence-records';
+export * from './quizzes/mbti-result';

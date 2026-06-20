@@ -20,4 +20,10 @@ describe('chart detail view state', () => {
     expect(getChartDetailState('da-liu-ren', 0)).toBe('daliuren');
     expect(getChartDetailState('qi-men-dun-jia', 0)).toBe('qimen');
   });
+
+  it('keeps US-017 framework-only systems on unsupported renderer fallback', () => {
+    for (const system of ['hepan', 'mangpai', 'tarot', 'mbti', 'face', 'palm'] as const) {
+      expect(getChartDetailState(system, 0)).toBe('unsupported');
+    }
+  });
 });

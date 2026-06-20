@@ -9,6 +9,12 @@ const renderModeBySystem: Record<ChartSystem, ChartDetailRenderMode> = {
   'liu-yao': 'liuyao',
   'da-liu-ren': 'daliuren',
   'qi-men-dun-jia': 'qimen',
+  hepan: 'unsupported',
+  mangpai: 'unsupported',
+  tarot: 'unsupported',
+  mbti: 'unsupported',
+  face: 'unsupported',
+  palm: 'unsupported',
 };
 
 export function getChartDetailRenderMode(chartSystem: ChartSystem): ChartDetailRenderMode {

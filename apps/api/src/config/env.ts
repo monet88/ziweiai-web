@@ -70,10 +70,10 @@ export const apiEnvSchema = z.object({
   DEEPSEEK_API_KEY: z.string().default(''),
   DEEPSEEK_MODEL: z.string().min(1).default('deepseek-v4-pro'),
   OPENAI_COMPAT_API_KEY: z.string().default(''),
-  OPENAI_COMPAT_BASE_URL: z.string().url().default('https://api.openai.com'),
+  OPENAI_COMPAT_BASE_URL: z.url().default('https://api.openai.com'),
   OPENAI_COMPAT_MODEL: z.string().min(1).default('gpt-4o-mini'),
   GEMINI_API_KEY: z.string().default(''),
-  GEMINI_SDK_BASE_URL: z.preprocess((value) => value ?? process.env.GEMINI_API_BASE_URL, z.string().url().optional()),
+  GEMINI_SDK_BASE_URL: z.preprocess((value) => value ?? process.env.GEMINI_API_BASE_URL, z.url().optional()),
   GEMINI_MODEL: z.string().min(1).default('gemini-3.5-flash'),
   AI_DEFAULT_PROVIDER: z.enum(['auto', 'deepseek', 'openai-compat', 'gemini']).default('auto'),
   // z.stringbool (zod v4): "false"/"0"/"no" → false, "true"/"1"/"yes" → true.
@@ -94,7 +94,7 @@ export const apiEnvSchema = z.object({
   // cho driver thật ở resolve-time (factory) để default `memory` không cần env mới.
   QUOTA_STORE_DRIVER: z.enum(['memory', 'redis', 'upstash']).default('memory'),
   QUOTA_REDIS_URL: z.string().optional(),
-  QUOTA_UPSTASH_REST_URL: z.string().url().optional(),
+  QUOTA_UPSTASH_REST_URL: z.url().optional(),
   QUOTA_UPSTASH_REST_TOKEN: z.string().optional(),
   // Khi store ngoài mất kết nối: open = cho qua + log warn (mặc định, ưu tiên ổn định —
   // quota là chống lạm dụng, không phải hàng rào bảo mật); closed = chặn (ném quota error).

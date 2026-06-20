@@ -36,6 +36,15 @@ describe('EmailIdentityGuard', () => {
     }
   });
 
+  it('assertEmailIdentityRequired chặn email rỗng (edge case anon JWT email="")', () => {
+    try {
+      assertEmailIdentityRequired({ email: '' });
+      throw new Error('expected identity guard to throw');
+    } catch (error) {
+      expectIdentityRequired(error);
+    }
+  });
+
   it('canActivate chặn khi request chưa có authenticatedUser', () => {
     const guard = new EmailIdentityGuard();
 

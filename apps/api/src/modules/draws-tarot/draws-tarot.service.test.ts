@@ -44,7 +44,7 @@ describe('DrawsTarotService', () => {
       await service.drawTarot(user, '127.0.0.1', 'Tôi nên tập trung điều gì?', 'three-card', 'seed-1');
       throw new Error('expected tarot flag gate to throw');
     } catch (error) {
-      expectApiError(error, HttpStatus.NOT_FOUND, 'FEATURE_DISABLED');
+      expectApiError(error, HttpStatus.FORBIDDEN, 'FEATURE_DISABLED');
     }
 
     expect(quotasService.assertCanCreateExplanation).not.toHaveBeenCalled();

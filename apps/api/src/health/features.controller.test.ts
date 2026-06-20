@@ -72,7 +72,7 @@ describe('FeaturesController', () => {
   });
 
   it('ApiErrorHttpException vẫn parse được mã lỗi FEATURE_DISABLED cho feature flag', () => {
-    const error = new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'FEATURE_DISABLED', 'Tính năng chưa bật.');
+    const error = new ApiErrorHttpException(HttpStatus.FORBIDDEN, 'FEATURE_DISABLED', 'Tính năng chưa bật.');
     const response = error.getResponse() as { code: string };
 
     expect(response.code).toBe('FEATURE_DISABLED');

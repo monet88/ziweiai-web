@@ -7,8 +7,16 @@ export const mbtiAxisSchema = z.object({
   label: z.string().min(1), // ví dụ "Hướng ngoại (E)"
 });
 
+// 16 loại MBTI hợp lệ — chặn chuỗi 4 ký tự bất kỳ ("AAAA"/"1234") lọt qua schema.
+export const mbtiTypes = [
+  'ISTJ', 'ISFJ', 'INFJ', 'INTJ',
+  'ISTP', 'ISFP', 'INFP', 'INTP',
+  'ESTP', 'ESFP', 'ENFP', 'ENTP',
+  'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ',
+] as const;
+
 export const mbtiResultSchema = z.object({
-  type: z.string().min(4).max(4), // ví dụ "ENTP"
+  type: z.enum(mbtiTypes), // ví dụ "ENTP"
   axes: z.array(mbtiAxisSchema).length(4),
   narrative: z.string().min(1), // diễn giải ngắn (Việt)
 });

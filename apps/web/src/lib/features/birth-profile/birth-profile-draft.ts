@@ -1,8 +1,10 @@
-import type { ChartSystem, CreateChartRequest } from '@ziweiai/contracts';
+import type { ImplementedChartSystem, CreateChartRequest } from '@ziweiai/contracts';
 import { viCopy } from '$lib/i18n/vi';
 
 export type BirthFormDraft = {
-  chartSystem: ChartSystem;
+  // Web chỉ tạo lá số cho hệ đã có adapter (ImplementedChartSystem = 6 hệ), khớp ràng buộc
+  // createChartRequestSchema. ChartSystemPicker cũng chỉ render danh sách này.
+  chartSystem: ImplementedChartSystem;
   birthDay: string;
   birthMonth: string;
   birthYear: string;
@@ -36,7 +38,7 @@ export type BirthFormFieldErrors = Partial<{
  * chartSystem nhận từ wrapper hệ (US-007) qua initialChartSystem; mặc định Tử Vi.
  * Toạ độ/múi giờ để trống — người dùng nhập tay (chưa có tìm kiếm địa điểm, xem warnings).
  */
-export function createBirthFormDraft(initialChartSystem: ChartSystem = 'zi-wei-dou-shu'): BirthFormDraft {
+export function createBirthFormDraft(initialChartSystem: ImplementedChartSystem = 'zi-wei-dou-shu'): BirthFormDraft {
   return {
     chartSystem: initialChartSystem,
     birthDay: '',

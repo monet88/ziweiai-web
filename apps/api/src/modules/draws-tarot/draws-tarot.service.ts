@@ -19,8 +19,10 @@ export class DrawsTarotService {
     seed?: string,
   ): Promise<TarotDraw> {
     if (!apiEnv.EXTENDED_SYSTEM_TAROT_ENABLED) {
+      // Cờ tắt = từ chối có chủ đích (feature tồn tại nhưng chưa bật) → 403 FORBIDDEN,
+      // KHÔNG dùng 404 (lệch nghĩa "không có resource") cho đồng bộ với IDENTITY_REQUIRED.
       throw new ApiErrorHttpException(
-        HttpStatus.NOT_FOUND,
+        HttpStatus.FORBIDDEN,
         'FEATURE_DISABLED',
         'Tính năng Tarot hiện chưa được bật.',
       );
@@ -35,8 +37,10 @@ export class DrawsTarotService {
       );
     }
 
-    await this.quotasService.assertCanCreateExplanation(user.userId, ipAddress, user.email === null);
+    // Gate AI (premium) TRƯỚC quota: nếu không free-for-all thì chặn 402 ngay, không để
+    // user non-premium "tiêu" lần kiểm tra quota cho thao tác chắc chắn bị từ chối.
     this.assertPremiumEntitlement();
+    await this.quotasService.assertCanCreateExplanation(user.userId, ipAddress, user.email === null);
 
     const count = spread === 'celtic-cross' ? 10 : 3;
     const cards = drawDeterministic(seed, count).map((card, index) => ({ ...card, position: index }));

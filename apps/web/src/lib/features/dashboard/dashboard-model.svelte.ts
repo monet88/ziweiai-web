@@ -12,7 +12,7 @@
 import { createMutation, type QueryClient } from '@tanstack/svelte-query';
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
-import type { ChartSystem, CreateChartResponse } from '@ziweiai/contracts';
+import type { ImplementedChartSystem, CreateChartResponse } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
 import { ApiError, createChart } from '$lib/api-client';
 import {
@@ -32,7 +32,7 @@ export interface DashboardModelOptions {
    * lại lịch sử trong 30s sẽ không thấy lá số vừa tạo (bug lộ khi tạo liên tiếp nhiều hệ).
    */
   queryClient: QueryClient;
-  initialChartSystem?: ChartSystem;
+  initialChartSystem?: ImplementedChartSystem;
 }
 
 export function createDashboardModel(options: DashboardModelOptions) {

@@ -85,7 +85,6 @@ export const viCopy = {
     relationBusiness: 'Hợp tác',
     relationFamily: 'Gia đình',
     submitButton: 'Xem mức tương hợp',
-    loading: 'Đang tính tương hợp…',
     resultTitle: 'Mức tương hợp tổng quan',
     dimensionsTitle: 'Các chiều tương hợp',
     retakeButton: 'Ghép lại',

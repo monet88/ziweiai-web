@@ -140,3 +140,17 @@ Sau khi spec duoc duyet -> PLAN (thu tu ky thuat + checkpoint) -> TASKS (chia nh
 
 - apps/api/package.json da co @supabase/supabase-js ^2.84.0 (bao gom storage). Khong them @supabase/storage-js rieng.
 - Provider router hien chi text; vision can sua interface ExplanationPromptPayload + openai-compat provider (nhom "Ask first" da duoc duyet o quyet dinh #1).
+
+---
+
+## Correction (2026-06-21): Vision provider - CA 3 provider deu doc duoc anh
+
+Sua lai Resolved Decision #1 (truoc do ghi "chi mo rong provider openai-compat" — KHONG dung).
+
+Router explanation-provider-router.ts chay chain 3 provider voi FAILOVER: deepseek + openai-compat (OpenAI-style /v1/chat/completions) + gemini (:generateContent). Ca 3 deu ho tro doc anh, nhung KHAC SHAPE request:
+- deepseek + openai-compat: user message la mang content part, anh = {type:'image_url', image_url:{url: <data URL base64>}}.
+- gemini: contents[].parts[] voi inlineData {mimeType, data: <base64>}.
+
+=> US-017e (buoc C0 vision): them field optional imageInput {base64, mimeType} vao ExplanationPromptPayload, roi MOI trong 3 provider build shape rieng khi co anh. Neu chi sua 1 provider, failover sang provider con lai se am tham bo anh -> ket qua vision sai (hoac LLM "ao" mo ta anh khong ton tai). Test vision phai phu ca 3 provider (it nhat unit test build-request cho moi shape).
+
+Anh huong: tang do phuc tap C0 (3 provider thay vi 1) nhung van nam trong PR US-017e; khong doi thu tu epic. Khong co dependency moi (fetch san co).

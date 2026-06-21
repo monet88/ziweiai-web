@@ -17,9 +17,12 @@ export interface ExplanationProviderResult {
 }
 
 export interface ExplanationPromptPayload {
-  chartSnapshot: ChartSnapshot;
+  // US-017e: vision (face/palm) không có lá số → chartSnapshot/explanationContext optional. Chúng chỉ
+  // được dùng khi KHÔNG có promptOverride (provider gọi buildExplanationPrompt). Đường vision luôn set
+  // promptOverride nên hai field này vắng mặt là hợp lệ; buildExplanationPrompt sẽ tự guard.
+  chartSnapshot?: ChartSnapshot;
   explanationKind: string;
-  explanationContext: ExplanationContext;
+  explanationContext?: ExplanationContext;
   // Khi có và lá số là Tử Vi, prompt sinh riêng cho cung/vận hạn đó (14 mục).
   palaceScope?: PalaceScope;
   // Cho phép caller override model cụ thể của provider. Field nội bộ, hiện chưa có
@@ -35,11 +38,22 @@ export interface ExplanationPromptPayload {
   // thường — đường annual truyền AI_ANNUAL_REPORT_TIMEOUT_MS để không bị 504 ở 15s. Khi không set,
   // provider dùng AI_PROVIDER_TIMEOUT_MS như cũ.
   timeoutMsOverride?: number;
+  // US-017e: ảnh đầu vào cho luận giải vision (Xem Tướng/Xem Tay). Khi set, MỖI provider tự dựng
+  // shape riêng (deepseek/openai-compat: content part image_url dạng data URL; gemini: inlineData).
+  // Router chỉ chọn provider+model thật sự đọc được ảnh (isVisionCapable) để tránh gửi ảnh cho model
+  // text-only rồi bị bỏ thầm lặng → "LLM ảo".
+  imageInput?: {
+    base64: string;
+    mimeType: string;
+  };
 }
 
 export interface AiExplanationProvider {
   readonly providerName: string;
   isAvailable(): boolean;
+  // US-017e: provider+model hiện hành có đọc được ảnh không (chain vision lọc theo cờ này). modelOverride
+  // cho phép kiểm tra theo model được ép riêng cho đường vision thay vì model ENV mặc định.
+  isVisionCapable(modelOverride?: string): boolean;
   generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult>;
 }
 
@@ -161,6 +175,12 @@ function formatHoroscopeItem(item: {
 }
 
 export function buildExplanationPrompt(payload: ExplanationPromptPayload): string {
+  // US-017e: chartSnapshot/explanationContext giờ optional (đường vision không có lá số). Hàm này
+  // CHỈ được gọi khi không có promptOverride; mọi đường text đều kèm đủ hai field. Guard để type-sound
+  // + fail rõ nếu có caller mới quên truyền snapshot mà cũng không set promptOverride.
+  if (!payload.chartSnapshot || !payload.explanationContext) {
+    throw new Error('buildExplanationPrompt yêu cầu chartSnapshot + explanationContext; đường vision phải dùng promptOverride.');
+  }
   if (payload.chartSnapshot.chartSystem === 'ba-zi') {
     return buildBaziExplanationPrompt(payload.chartSnapshot, payload.explanationKind);
   }

@@ -126,3 +126,64 @@ export async function fetchJson<T>(
 
   return parsed.data;
 }
+
+/**
+ * Gọi backend với multipart/form-data (US-017e/f: upload ảnh vision). Tách khỏi fetchJson vì:
+ * - body là FormData, KHÔNG set Content-Type thủ công (browser tự thêm boundary).
+ * - vẫn tái dùng map lỗi → UI + parse schema giống fetchJson (không trust raw response).
+ */
+export async function fetchMultipart<T>(
+  path: string,
+  schema: ZodType<T>,
+  form: FormData,
+  token?: string,
+): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${env.apiBaseUrl}${path}`, { method: 'POST', headers, body: form });
+  } catch {
+    throw new ApiError('network', 'Không kết nối được máy chủ. Thử lại sau.');
+  }
+
+  if (!response.ok) {
+    const kind = mapStatusToKind(response.status);
+    let message = `Yêu cầu thất bại (${response.status}).`;
+    try {
+      const errorBody: unknown = await response.json();
+      if (
+        errorBody !== null &&
+        typeof errorBody === 'object' &&
+        'message' in errorBody &&
+        typeof (errorBody as { message: unknown }).message === 'string' &&
+        (errorBody as { message: string }).message.length > 0
+      ) {
+        message = (errorBody as { message: string }).message;
+      }
+    } catch {
+      // Body không phải JSON → giữ message generic.
+    }
+    throw new ApiError(kind, message, response.status);
+  }
+
+  let raw: unknown;
+  try {
+    raw = await response.json();
+  } catch {
+    throw new ApiError('parse', 'Phản hồi máy chủ không hợp lệ.');
+  }
+
+  const parsed = schema.safeParse(raw);
+  if (!parsed.success) {
+    if (import.meta.env.DEV) {
+      console.error('[api] Zod parse error:', parsed.error.issues);
+    }
+    throw new ApiError('parse', 'Lỗi tích hợp dữ liệu. Vui lòng thử lại.');
+  }
+
+  return parsed.data;
+}

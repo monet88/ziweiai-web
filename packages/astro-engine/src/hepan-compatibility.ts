@@ -97,7 +97,10 @@ function toLunar(input: BirthInput) {
   const hour = input.time.hour ?? 0;
   const minute = input.time.minute ?? 0;
   if (input.calendar === 'lunar') {
-    return Lunar.fromYmdHms(input.date.year, input.date.month, input.date.day, hour, minute, 0);
+    // lunar-javascript quy ước tháng nhuận bằng số tháng ÂM (vd tháng 6 nhuận = -6). Bỏ cờ
+    // isLeapMonth sẽ tính nhầm sang tháng thường → sai can-chi nguyệt trụ (vd 丙午 vs 丁未).
+    const lunarMonth = input.date.isLeapMonth ? -input.date.month : input.date.month;
+    return Lunar.fromYmdHms(input.date.year, lunarMonth, input.date.day, hour, minute, 0);
   }
   return Solar.fromYmdHms(input.date.year, input.date.month, input.date.day, hour, minute, 0).getLunar();
 }
@@ -166,13 +169,14 @@ function buildBranchDimension(
   name: string,
   branch1: BaziEarthlyBranchKey,
   branch2: BaziEarthlyBranchKey,
+  liuheScore: number,
   liuheText: string,
   chongScore: number,
   chongText: string,
   neutralText: string,
 ): Dimension {
   if (BRANCH_LIUHE[branch1] === branch2) {
-    return { name, score: 90, description: liuheText };
+    return { name, score: liuheScore, description: liuheText };
   }
   if (BRANCH_CHONG[branch1] === branch2) {
     return { name, score: chongScore, description: chongText };
@@ -266,6 +270,7 @@ export function analyzeHepanCompatibility(
       'Duyên nhật trụ',
       pillars1.day.branchKey,
       pillars2.day.branchKey,
+      90,
       'Nhật chi lục hợp, duyên hợp trời định.',
       40,
       'Nhật chi tương xung, dễ phát sinh va chạm trong sinh hoạt.',
@@ -275,6 +280,7 @@ export function analyzeHepanCompatibility(
       'Tương hợp gia đình',
       pillars1.year.branchKey,
       pillars2.year.branchKey,
+      85,
       'Niên chi lục hợp, bối cảnh gia đình hợp nhau.',
       50,
       'Niên chi tương xung, quan niệm gia đình có khác biệt.',

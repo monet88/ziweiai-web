@@ -14,6 +14,9 @@ async function fillPerson(
   await page.locator(`#${prefix}-birth-day`).selectOption(birth.day);
   await page.locator(`#${prefix}-birth-month`).selectOption(birth.month);
   await page.locator(`#${prefix}-birth-year`).selectOption(birth.year);
+  // Chọn giới tính thật (mặc định draft là 'unknown' → lá số ziwei bị blocked); đặt để e2e
+  // đi đúng luồng lá số hợp lệ, không phải nhánh blocked.
+  await page.locator(`#${prefix}-birth-gender`).selectOption('female');
   await page.locator(`#${prefix}-birth-hour`).fill(birth.hour);
   await page.locator(`#${prefix}-birth-minute`).fill(birth.minute);
 }

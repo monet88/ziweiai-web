@@ -74,4 +74,31 @@ describe('analyzeHepanCompatibility (US-017c)', () => {
             : 'Cần lưu ý';
     expect(result.level).toBe(expectedLevel);
   });
+
+  it('niên chi lục hợp chấm đúng 85 (không phải 90 của nhật trụ) — chốt giá trị theo nguồn taibu', () => {
+    // 1980 + 1989: hai niên chi lục hợp (Thân/Tỵ). Chiều "Tương hợp gia đình" (niên trụ) phải
+    // ra 85 theo nguồn hepan.ts; nhật trụ lục hợp mới là 90. Test này bắt regression nếu gộp nhầm.
+    const result = analyzeHepanCompatibility(birth(1980, 6, 15, 12), birth(1989, 6, 15, 12), 'love');
+    const family = result.dimensions.find((d) => d.name === 'Tương hợp gia đình');
+    expect(family?.score).toBe(85);
+  });
+
+  it('tháng âm nhuận cho kết quả khác tháng âm thường (giữ cờ isLeapMonth)', () => {
+    // Cùng ngày âm 6/1 nhưng nhuận vs thường → nguyệt trụ khác → kết quả tương hợp khác.
+    // Nếu bỏ cờ isLeapMonth, hai kết quả sẽ trùng (bug cubic P1).
+    const lunarNormal: BirthInput = {
+      calendar: 'lunar',
+      date: { year: 2017, month: 6, day: 1, isLeapMonth: false },
+      time: { hour: 12, minute: 0, isUnknown: false },
+      sexOrGenderForChart: 'male',
+      place: { label: 'x', manual: { latitude: 10.8231, longitude: 106.6297, timezone: 'Asia/Ho_Chi_Minh' } },
+      locale: 'vi-VN',
+      source: 'test-fixture',
+    };
+    const lunarLeap: BirthInput = { ...lunarNormal, date: { ...lunarNormal.date, isLeapMonth: true } };
+
+    const resultNormal = analyzeHepanCompatibility(lunarNormal, personB, 'love');
+    const resultLeap = analyzeHepanCompatibility(lunarLeap, personB, 'love');
+    expect(resultNormal).not.toEqual(resultLeap);
+  });
 });

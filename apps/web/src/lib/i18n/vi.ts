@@ -323,6 +323,7 @@ export const viCopy = {
     createChartFailed: 'Đã xảy ra lỗi khi lập lá số. Vui lòng thử lại sau.',
     createChartRequiresSignIn: 'Bạn cần đăng nhập trước khi lập lá số.',
     missingChartContext: 'Thiếu ngữ cảnh lá số đã đăng nhập.',
+    sessionRequired: 'Bạn cần đăng nhập để sử dụng tính năng này.',
     signInFailed: 'Đăng nhập không thành công.',
     signOutFailed: 'Đăng xuất không thành công.',
     signUpFailed: 'Tạo tài khoản không thành công.',

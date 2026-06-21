@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { apiEnv } from '../../config/env';
 import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 import { QUOTA_COUNTER_STORE, type QuotaCounterStore } from './counter-stores/quota-counter-store';
+import { DailyQuotaExceededError, RateLimitWindowError } from './quota-errors';
 
 interface SlidingWindowBucket {
   readonly hits: number[];
@@ -49,7 +50,7 @@ export class QuotasService {
     const sinceIso = new Date(Date.now() - ONE_DAY_MS).toISOString();
     const chartsCreated = await this.persistenceGateway.countChartSnapshotsSince(userId, sinceIso);
     if (chartsCreated >= apiEnv.API_CHARTS_PER_DAY_PER_USER) {
-      throw new Error('Daily chart quota exceeded.');
+      throw new DailyQuotaExceededError('Daily chart quota exceeded.');
     }
   }
 
@@ -69,7 +70,7 @@ export class QuotasService {
     const sinceIso = new Date(Date.now() - ONE_DAY_MS).toISOString();
     const explanationsCreated = await this.persistenceGateway.countExplanationRequestsSince(userId, sinceIso);
     if (explanationsCreated >= apiEnv.API_EXPLANATIONS_PER_DAY_PER_USER) {
-      throw new Error('Daily explanation quota exceeded.');
+      throw new DailyQuotaExceededError('Daily explanation quota exceeded.');
     }
   }
 
@@ -172,7 +173,7 @@ export class QuotasService {
   private async assertAnonDailyQuota(key: string, limit: number, message: string): Promise<void> {
     const { allowed } = await this.counterStore.incrementAndCheck(key, limit, ONE_DAY_SECONDS);
     if (!allowed) {
-      throw new Error(message);
+      throw new DailyQuotaExceededError(message);
     }
   }
 
@@ -189,7 +190,7 @@ export class QuotasService {
 
     if (freshHits.length >= limit) {
       store.set(key, { hits: freshHits });
-      throw new Error(message);
+      throw new RateLimitWindowError(message);
     }
 
     freshHits.push(now);

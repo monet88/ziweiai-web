@@ -13,7 +13,8 @@ import { baziBranchElementByKey, baziStemElementByKey, toBaziStemBranchKeyPair }
 // vào source. Tính bằng bazi (ngũ hành + địa chi) qua lunar-javascript, deterministic theo input.
 
 type Pillar = { stemKey: ReturnType<typeof toBaziStemBranchKeyPair>['heavenlyStemKey']; branchKey: BaziEarthlyBranchKey };
-type FourPillars = { year: Pillar; month: Pillar; day: Pillar; hour: Pillar };
+// hour có thể null khi giờ sinh không xác định (time.isUnknown) — KHÔNG bịa thời trụ 00:00.
+type FourPillars = { year: Pillar; month: Pillar; day: Pillar; hour: Pillar | null };
 
 // Ngũ hành tương sinh (sinh ra): mộc→hỏa→thổ→kim→thủy→mộc.
 const ELEMENT_SHENG: Record<BaziFiveElementKey, BaziFiveElementKey> = {
@@ -116,13 +117,18 @@ function computeFourPillars(input: BirthInput): FourPillars {
     year: toPillar(`${eightChar.getYearGan()}${eightChar.getYearZhi()}`),
     month: toPillar(`${eightChar.getMonthGan()}${eightChar.getMonthZhi()}`),
     day: toPillar(`${eightChar.getDayGan()}${eightChar.getDayZhi()}`),
-    hour: toPillar(`${eightChar.getTimeGan()}${eightChar.getTimeZhi()}`),
+    // Giờ sinh không xác định → KHÔNG dựng thời trụ (tránh bịa 00:00 rồi chấm điểm như giờ thật).
+    hour: input.time.isUnknown ? null : toPillar(`${eightChar.getTimeGan()}${eightChar.getTimeZhi()}`),
   };
 }
 
 function dominantElement(pillars: FourPillars): BaziFiveElementKey {
   const counts: Record<BaziFiveElementKey, number> = { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 };
-  for (const pillar of [pillars.year, pillars.month, pillars.day, pillars.hour]) {
+  // Bỏ qua thời trụ khi giờ sinh không xác định để không lệch hành chủ đạo.
+  const known = [pillars.year, pillars.month, pillars.day, pillars.hour].filter(
+    (pillar): pillar is Pillar => pillar !== null,
+  );
+  for (const pillar of known) {
     counts[baziStemElementByKey[pillar.stemKey]] += 1;
     counts[baziBranchElementByKey[pillar.branchKey]] += 1;
   }
@@ -187,6 +193,15 @@ function buildBranchDimension(
 // Chiều theo loại quan hệ: love→nguyệt trụ, business→thời trụ, family→nguyệt trụ (giống nguồn).
 function buildTypeDimension(pillars1: FourPillars, pillars2: FourPillars, type: PairingRelationType): Dimension {
   if (type === 'business') {
+    // Chiều sự nghiệp dựa vào thời trụ; nếu một trong hai người không rõ giờ sinh thì KHÔNG
+    // chấm điểm thời trụ bịa được — trả chiều suy giảm, trung tính để tránh điểm giả chính xác.
+    if (pillars1.hour === null || pillars2.hour === null) {
+      return {
+        name: 'Bổ trợ sự nghiệp',
+        score: 60,
+        description: 'Thiếu giờ sinh của ít nhất một người nên chưa thể luận thời trụ — chiều sự nghiệp chỉ mang tính tham khảo.',
+      };
+    }
     return buildPairPillarDimension('Bổ trợ sự nghiệp', pillars1.hour, pillars2.hour, {
       liuhe: 'Thời chi lục hợp, mục tiêu sự nghiệp đồng điệu.',
       chong: 'Thời chi tương xung, quan điểm sự nghiệp có phần khác biệt.',

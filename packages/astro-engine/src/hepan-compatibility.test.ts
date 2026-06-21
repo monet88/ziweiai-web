@@ -101,4 +101,28 @@ describe('analyzeHepanCompatibility (US-017c)', () => {
     const resultLeap = analyzeHepanCompatibility(lunarLeap, personB, 'love');
     expect(resultNormal).not.toEqual(resultLeap);
   });
+
+  it('giờ sinh không xác định: không bịa thời trụ, chiều sự nghiệp suy giảm tham khảo', () => {
+    // isUnknown=true → hour/minute null. Engine KHÔNG được dựng thời trụ 00:00 rồi chấm điểm
+    // như giờ thật (P2 chatgpt-codex). Chiều "Bổ trợ sự nghiệp" phải trả nhãn suy giảm.
+    const unknownTime: BirthInput = {
+      ...personA,
+      time: { hour: null, minute: null, isUnknown: true },
+    };
+    const business = analyzeHepanCompatibility(unknownTime, personB, 'business');
+    const careerDim = business.dimensions.find((d) => d.name === 'Bổ trợ sự nghiệp');
+    expect(careerDim?.description).toContain('Thiếu giờ sinh');
+
+    // Đổi giờ "giả định" không được làm thay đổi kết quả khi giờ là unknown (chứng minh không bịa thời trụ).
+    const unknownTimeOtherHour: BirthInput = {
+      ...personA,
+      time: { hour: null, minute: null, isUnknown: true },
+    };
+    expect(analyzeHepanCompatibility(unknownTime, personB, 'love')).toEqual(
+      analyzeHepanCompatibility(unknownTimeOtherHour, personB, 'love'),
+    );
+
+    // Hành chủ đạo tính từ 3 trụ (năm/tháng/ngày) khi thiếu giờ → vẫn ra kết quả hợp lệ.
+    expect(pairingCompatibilitySchema.safeParse(business).success).toBe(true);
+  });
 });

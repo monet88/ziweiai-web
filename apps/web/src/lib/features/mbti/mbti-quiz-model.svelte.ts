@@ -5,7 +5,7 @@
  * snapshot); result dẫn xuất từ mutation.data; KHÔNG $effect ghi ngược state. Bộ câu hỏi lấy
  * từ @ziweiai/contracts (MBTI_QUESTIONS) — web chỉ import contracts (boundary 0007).
  */
-import { createMutation, type QueryClient } from '@tanstack/svelte-query';
+import { createMutation } from '@tanstack/svelte-query';
 import { MBTI_QUESTIONS, type MbtiAnswer, type MbtiResult } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
 import { ApiError, createMbtiQuiz } from '$lib/api-client';
@@ -13,7 +13,6 @@ import { viCopy } from '$lib/i18n/vi';
 
 export interface MbtiQuizModelOptions {
   auth: AuthStore;
-  queryClient: QueryClient;
 }
 
 export function createMbtiQuizModel(options: MbtiQuizModelOptions) {

@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { mbtiResultSchema, type AuthenticatedUser, type MbtiAnswer, type MbtiResult } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
+import { assertCanUseAiExplanation } from '../../common/entitlement/ai-entitlement.guard';
 import { apiEnv } from '../../config/env';
 import { QuotasService } from '../quotas/quotas.service';
 import { scoreMbti } from './mbti-scoring';
@@ -23,7 +24,9 @@ export class QuizzesMbtiService {
 
     // Gate AI (premium) TRƯỚC quota: không free-for-all thì chặn 402 ngay, không để user
     // non-premium "tiêu" lượt kiểm tra quota cho thao tác chắc chắn bị từ chối (giống Tarot).
-    this.assertPremiumEntitlement();
+    // Dùng guard entitlement DÙNG CHUNG (decision 0010) thay vì tự viết — một nguồn chính sách
+    // cho mọi đường AI text, tránh lệch hành vi/thông điệp giữa các endpoint (review PR #24).
+    assertCanUseAiExplanation(this.logger);
     // email rỗng/null ⟺ phiên ẩn danh (decision 0009): anon JWT có thể mang email="" nên dùng
     // !user.email để không bỏ lọt nhánh anon. Đồng bộ với assertEmailIdentityRequired.
     await this.assertCanCreateMbtiQuiz(user.userId, ipAddress, !user.email);
@@ -32,19 +35,6 @@ export class QuizzesMbtiService {
     const narrative = this.generateDeterministicNarrative(scored);
 
     return mbtiResultSchema.parse({ ...scored, narrative });
-  }
-
-  private assertPremiumEntitlement(): void {
-    if (apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
-      this.logger.warn('AI_EXPLANATION_FREE_FOR_ALL=true — MBTI AI gate bypassed (free for all). Set false in production.');
-      return;
-    }
-
-    throw new ApiErrorHttpException(
-      HttpStatus.PAYMENT_REQUIRED,
-      'PAYMENT_REQUIRED',
-      'Tính năng luận giải AI yêu cầu gói trả phí. Vui lòng nâng cấp để tiếp tục.',
-    );
   }
 
   // Bọc lỗi quota (raw Error từ QuotasService) thành 429 RATE_LIMITED cho đồng bộ với /charts,

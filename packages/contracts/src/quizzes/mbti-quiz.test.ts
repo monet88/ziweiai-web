@@ -31,6 +31,18 @@ describe('US-017b MBTI quiz schemas', () => {
     expect(mbtiQuizRequestSchema.safeParse(bad).success).toBe(false);
   });
 
+  it('mbtiQuizRequestSchema từ chối questionId trùng lặp', () => {
+    const dup = {
+      answers: [
+        { questionId: 'q1', choice: 1 },
+        { questionId: 'q1', choice: 7 },
+        { questionId: 'q3', choice: 4 },
+        { questionId: 'q4', choice: 5 },
+      ],
+    };
+    expect(mbtiQuizRequestSchema.safeParse(dup).success).toBe(false);
+  });
+
   it('mbtiQuestionSchema parse câu hỏi hợp lệ và từ chối dimension lạ', () => {
     const ok = {
       id: 'q1',

@@ -1,7 +1,6 @@
 <script lang="ts">
   // MbtiQuizScreen (US-017b): trắc nghiệm MBTI từng câu một + màn kết quả. Bộ câu hỏi lấy từ
   // contracts (MBTI_QUESTIONS) qua model; submit gọi POST /quizzes/mbti. Nhãn toàn tiếng Việt.
-  import { useQueryClient } from '@tanstack/svelte-query';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
@@ -11,8 +10,7 @@
 
   const copy = viCopy.mbti;
   const auth = getAuthStore();
-  const queryClient = useQueryClient();
-  const model = createMbtiQuizModel({ auth, queryClient });
+  const model = createMbtiQuizModel({ auth });
 
   // Thang Likert 7 mức: 1..3 nghiêng vế A, 4 trung lập, 5..7 nghiêng vế B.
   const likertValues = [1, 2, 3, 4, 5, 6, 7];

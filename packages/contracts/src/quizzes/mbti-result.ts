@@ -40,9 +40,25 @@ export const mbtiQuestionSchema = z.object({
 });
 
 // Body POST /quizzes/mbti: mảng câu trả lời Likert. Tối thiểu 4 câu (đủ phủ 4 trục) để
-// scoring có nghĩa; backend vẫn là nguồn kiểm tra cuối.
+// scoring có nghĩa; backend vẫn là nguồn kiểm tra cuối. questionId phải duy nhất — một câu
+// trả lời trùng id sẽ bị cộng điểm nhiều lần ở scoring, làm lệch kết quả; chặn ngay tại schema.
 export const mbtiQuizRequestSchema = z.object({
-  answers: z.array(mbtiAnswerSchema).min(4),
+  answers: z
+    .array(mbtiAnswerSchema)
+    .min(4)
+    .superRefine((answers, ctx) => {
+      const seen = new Set<string>();
+      answers.forEach((answer, index) => {
+        if (seen.has(answer.questionId)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [index, 'questionId'],
+            message: 'Mỗi questionId chỉ được trả lời một lần.',
+          });
+        }
+        seen.add(answer.questionId);
+      });
+    }),
 });
 
 export type MbtiResult = z.infer<typeof mbtiResultSchema>;

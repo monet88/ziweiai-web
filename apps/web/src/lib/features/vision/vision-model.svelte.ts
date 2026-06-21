@@ -16,9 +16,10 @@ const SUPPORTED_MIME_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'i
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 
 // Hình dạng copy chung cho cả Xem Tướng (face) và Xem Tay (palm). Route/màn hình truyền copy tương
-// ứng (viCopy.face / viCopy.palm) để model dùng chung không cần biết trước hệ nào — tránh lookup
-// theo kind (sẽ buộc cả hai khối i18n phải tồn tại cùng lúc).
-export type VisionCopy = typeof viCopy.face;
+// ứng (viCopy.face / viCopy.palm) để model dùng chung không cần biết trước hệ nào. Dùng kiểu CẤU
+// TRÚC (string) thay vì `typeof viCopy.face` (literal hẹp) để cả hai khối copy đều gán được —
+// `typeof viCopy.face` khiến heroEyebrow là literal "XEM TƯỚNG", palm gán vào sẽ lỗi kiểu.
+export type VisionCopy = { readonly [K in keyof typeof viCopy.face]: string };
 
 export interface VisionModelOptions {
   kind: VisionKind;

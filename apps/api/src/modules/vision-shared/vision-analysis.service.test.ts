@@ -133,4 +133,19 @@ describe('VisionAnalysisService', () => {
       apiEnv.EXTENDED_SYSTEM_PALM_ENABLED = originalPalm;
     }
   });
+
+  it('palm happy-path: dùng prompt Xem Tay + kind=palm khi cờ PALM bật (US-017f)', async () => {
+    const originalPalm = apiEnv.EXTENDED_SYSTEM_PALM_ENABLED;
+    apiEnv.EXTENDED_SYSTEM_PALM_ENABLED = true;
+    try {
+      const result = await service.analyze(baseInput({ kind: 'palm' }));
+      expect(result.kind).toBe('palm');
+      const generateMock = providerRouter.generate as ReturnType<typeof vi.fn>;
+      const payload = generateMock.mock.calls[0]?.[1] as { promptOverride?: string };
+      // Prompt Xem Tay (palm) khác Xem Tướng (face): nhắc "lòng bàn tay" + "đường sinh đạo".
+      expect(payload.promptOverride).toContain('lòng bàn tay');
+    } finally {
+      apiEnv.EXTENDED_SYSTEM_PALM_ENABLED = originalPalm;
+    }
+  });
 });

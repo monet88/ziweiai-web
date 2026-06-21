@@ -1,9 +1,10 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import {
   DaliurenAdapter,
   IztroChartAdapter,
   LiuyaoAdapter,
   LunarJavascriptBaziAdapter,
+  MangpaiAdapter,
   MeiHuaAdapter,
   QimenAdapter,
   computeZiweiHoroscope,
@@ -12,6 +13,8 @@ import {
 import { buildChartSnapshotDedupeKey } from '../../../database/idempotency';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
+import { assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
+import { apiEnv } from '../../../config/env';
 import { QuotasService } from '../../quotas/quotas.service';
 import {
   createChartResponseSchema,
@@ -25,6 +28,7 @@ import {
 
 @Injectable()
 export class ChartsService {
+  private readonly logger = new Logger(ChartsService.name);
   private readonly adapters: Record<string, AstrologyChartAdapter> = {
     'zi-wei-dou-shu': new IztroChartAdapter(),
     'ba-zi': new LunarJavascriptBaziAdapter(),
@@ -32,6 +36,8 @@ export class ChartsService {
     'liu-yao': new LiuyaoAdapter(),
     'da-liu-ren': new DaliurenAdapter(),
     'qi-men-dun-jia': new QimenAdapter(),
+    // US-017d: Mạnh Phái dùng chung flow POST /charts (bazi mở rộng), không endpoint mới.
+    mangpai: new MangpaiAdapter(),
   };
 
   constructor(
@@ -40,6 +46,15 @@ export class ChartsService {
   ) {}
 
   async createChart(userId: string, ipAddress: string, input: CreateChartRequest, isAnonymous = false): Promise<CreateChartResponse> {
+    // US-017d: Mạnh Phái được phân loại là hệ luận giải AI mở rộng (decision 0012) — narrative
+    // deterministic ở giai đoạn proof, LLM thật là bước sau — nên có hàng rào riêng TRƯỚC quota,
+    // đúng trật tự gate của draws-tarot/pairings: cờ tính năng (403) → entitlement AI (402) → rồi
+    // mới tiêu quota (429). 6 hệ cũ giữ nguyên: chỉ qua quota như trước.
+    if (input.chartSystem === 'mangpai') {
+      this.assertMangpaiEnabled();
+      assertCanUseAiExplanation(this.logger);
+    }
+
     await this.assertCanCreateChart(userId, ipAddress, isAnonymous);
 
     const adapter = this.getAdapter(input.chartSystem);
@@ -171,6 +186,18 @@ export class ChartsService {
       await this.quotasService.assertCanCreateChart(userId, ipAddress, isAnonymous);
     } catch (error) {
       throw new ApiErrorHttpException(HttpStatus.TOO_MANY_REQUESTS, 'RATE_LIMITED', error instanceof Error ? error.message : 'Đã vượt hạn mức lập lá số.');
+    }
+  }
+
+  // Cờ tắt = từ chối có chủ đích (feature tồn tại nhưng chưa bật) → 403 FEATURE_DISABLED,
+  // đồng bộ với draws-tarot/pairings (fail-closed). Mặc định cờ false ở mọi môi trường.
+  private assertMangpaiEnabled(): void {
+    if (!apiEnv.EXTENDED_SYSTEM_MANGPAI_ENABLED) {
+      throw new ApiErrorHttpException(
+        HttpStatus.FORBIDDEN,
+        'FEATURE_DISABLED',
+        'Tính năng Mạnh Phái hiện chưa được bật.',
+      );
     }
   }
 }

@@ -14,6 +14,7 @@
   import { createDashboardModel } from '$lib/features/dashboard/dashboard-model.svelte';
   import BirthForm from '$lib/features/dashboard/BirthForm.svelte';
   import DashboardSidebar from '$lib/features/dashboard/DashboardSidebar.svelte';
+  import ExtendedSystemNav from '$lib/features/dashboard/ExtendedSystemNav.svelte';
 
   const auth = getAuthStore();
   const queryClient = useQueryClient();
@@ -86,6 +87,7 @@
           </a>
         {/each}
       </div>
+      <ExtendedSystemNav />
       <a class="nav-history" href={resolve('/history')}>
         {viCopy.dashboard.viewHistory}
       </a>

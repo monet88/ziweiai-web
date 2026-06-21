@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { pairingSnapshotSchema } from './pairing-snapshot';
 import { tarotDrawSchema } from './tarot-draw';
 import { visionAnalysisSchema } from './vision-analysis';
+import { mangpaiChartSchema } from './chart-snapshot';
 import { mbtiResultSchema, mbtiAnswerSchema } from '../quizzes/mbti-result';
 
 describe('US-017 new schemas parse/reject', () => {
@@ -113,5 +114,23 @@ describe('US-017 new schemas parse/reject', () => {
 
     const ans = { questionId: 'q1', choice: 4 };
     expect(mbtiAnswerSchema.safeParse(ans).success).toBe(true);
+  });
+
+  it('mangpaiChartSchema parse + reject empty insights/CJK-free keys', () => {
+    const ok = {
+      dayPillarHeavenlyStemKey: 'jiaHeavenly',
+      dayPillarEarthlyBranchKey: 'ziEarthly',
+      dayMasterElementKey: 'wood',
+      monthCommandElementKey: 'water',
+      title: 'Nhật chủ Giáp Mộc tọa Tý',
+      narrative: 'Nhật chủ Giáp Mộc sinh tháng Thủy vượng, được sinh phù nên thân vượng.',
+      insights: [{ heading: 'Nhật chủ', detail: 'Giáp Mộc chủ về khí sinh phát, vươn lên.' }],
+    };
+    expect(mangpaiChartSchema.safeParse(ok).success).toBe(true);
+
+    // insights rỗng → reject (luận giải Mạnh Phái phải có ít nhất một mục).
+    expect(mangpaiChartSchema.safeParse({ ...ok, insights: [] }).success).toBe(false);
+    // key sai bộ enum Bát Tự → reject (chống lệch dữ liệu nhật trụ).
+    expect(mangpaiChartSchema.safeParse({ ...ok, dayMasterElementKey: 'plasma' }).success).toBe(false);
   });
 });

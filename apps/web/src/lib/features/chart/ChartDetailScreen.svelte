@@ -18,6 +18,7 @@
   import ZiweiHoroscopePanel from '$lib/features/chart/ZiweiHoroscopePanel.svelte';
   import { createHoroscopePanelModel } from '$lib/features/chart/horoscope-panel-model.svelte';
   import BaziDetailCard from '$lib/features/chart/BaziDetailCard.svelte';
+  import MangpaiDetailCard from '$lib/features/chart/MangpaiDetailCard.svelte';
   import MeihuaDetailCard from '$lib/features/chart/MeihuaDetailCard.svelte';
   import LiuyaoDetailCard from '$lib/features/chart/LiuyaoDetailCard.svelte';
   import DaliurenDetailCard from '$lib/features/chart/DaliurenDetailCard.svelte';
@@ -134,6 +135,8 @@
       />
     {:else if detailState === 'pillars'}
       <BaziDetailCard snapshot={detail.snapshot} />
+    {:else if detailState === 'mangpai'}
+      <MangpaiDetailCard snapshot={detail.snapshot} />
     {:else if detailState === 'hexagram'}
       <MeihuaDetailCard snapshot={detail.snapshot} />
     {:else if detailState === 'liuyao'}

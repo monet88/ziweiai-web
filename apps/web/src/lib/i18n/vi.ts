@@ -90,6 +90,14 @@ export const viCopy = {
     retakeButton: 'Ghép lại',
     returnToDashboard: 'Quay về trang chính',
   },
+  mangpai: {
+    heroEyebrow: 'MẠNH PHÁI',
+    heroTitle: 'Luận giải Mạnh Phái',
+    heroSubtitle:
+      'Dùng cùng luồng nhập dữ liệu sinh để lập Bát Tự, sau đó luận theo phép Mạnh Phái lấy nhật chủ làm trọng và xem diễn giải tiếng Việt.',
+    returnToDashboard: 'Quay về trang chính',
+    navOpen: 'Mở màn hình Mạnh Phái',
+  },
   chart: {
     birthNormalization: 'Chuẩn hoá dữ liệu sinh',
     chartNotAvailableFallback: 'Không tải được chi tiết lá số.',
@@ -148,7 +156,7 @@ export const viCopy = {
     'qi-men-dun-jia': 'Kỳ Môn Độn Giáp',
     'zi-wei-dou-shu': 'Tử Vi Đẩu Số',
     hepan: 'Hợp Hôn',
-    mangpai: 'Manh Phái',
+    mangpai: 'Mạnh Phái',
     tarot: 'Tarot',
     mbti: 'MBTI',
     face: 'Xem Tướng',

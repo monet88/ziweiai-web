@@ -1,6 +1,7 @@
 import type { ChartSnapshot, ExplanationContext, PalaceScope } from '@ziweiai/contracts';
 import * as ziweiCore from '@ziweiai/core';
 import { buildBaziExplanationPrompt } from './build-bazi-explanation-prompt';
+import { buildMangpaiExplanationPrompt } from './build-mangpai-explanation-prompt';
 import { buildMeihuaExplanationPrompt } from './build-meihua-explanation-prompt';
 import { buildLiuyaoExplanationPrompt } from './build-liuyao-explanation-prompt';
 import { buildDaliurenExplanationPrompt } from './build-daliuren-explanation-prompt';
@@ -162,6 +163,12 @@ function formatHoroscopeItem(item: {
 export function buildExplanationPrompt(payload: ExplanationPromptPayload): string {
   if (payload.chartSnapshot.chartSystem === 'ba-zi') {
     return buildBaziExplanationPrompt(payload.chartSnapshot, payload.explanationKind);
+  }
+
+  // US-017d: Mạnh Phái dựng trên Bát Tự nhưng có lớp luận riêng (snapshot.mangpai). Phải route
+  // TRƯỚC nhánh fallback overview, nếu không khối mangpai bị bỏ qua (P2 review PR #27).
+  if (payload.chartSnapshot.chartSystem === 'mangpai') {
+    return buildMangpaiExplanationPrompt(payload.chartSnapshot, payload.explanationKind);
   }
 
   if (payload.chartSnapshot.chartSystem === 'mei-hua-yi-shu') {

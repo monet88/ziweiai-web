@@ -194,6 +194,26 @@ export const baziChartSchema = z.object({
   shenGong: baziStemBranchSchema.extend({ naYin: z.string().min(1) }),
 });
 
+// Mạnh Phái (US-017d, decision 0012): lớp luận giải đặt trên Bát Tự, "trọng nhật chủ" —
+// lấy nhật trụ làm trục chính rồi đối chiếu nhật chủ với hành lệnh tháng. Toàn bộ nhãn/diễn
+// giải là tiếng Việt (bất biến 0 chữ Hán); các *Key dùng lại bộ key Bát Tự đã chuẩn hóa.
+export const mangpaiInsightSchema = z.object({
+  heading: z.string().min(1),
+  detail: z.string().min(1),
+});
+
+export const mangpaiChartSchema = z.object({
+  dayPillarHeavenlyStemKey: baziHeavenlyStemKeySchema,
+  dayPillarEarthlyBranchKey: baziEarthlyBranchKeySchema,
+  // Nhật chủ (thiên can ngày) và hành của lệnh tháng — hai yếu tố quyết định vượng/nhược.
+  dayMasterElementKey: baziFiveElementKeySchema,
+  monthCommandElementKey: baziFiveElementKeySchema,
+  // Danh xưng nhật trụ + diễn giải cốt lõi, tiếng Việt (đã dịch, không mang khẩu quyết Hán).
+  title: z.string().min(1),
+  narrative: z.string().min(1),
+  insights: z.array(mangpaiInsightSchema).min(1),
+});
+
 export const meihuaLineSchema = z.object({
   position: z.number().int().min(1).max(6),
   value: meihuaLineValueSchema,
@@ -499,6 +519,7 @@ const canonicalChartSnapshotSchema = z.object({
   pillars: z.array(pillarSchema),
   summary: summarySchema,
   bazi: baziChartSchema.optional(),
+  mangpai: mangpaiChartSchema.optional(),
   meihua: meihuaChartSchema.optional(),
   liuyao: liuyaoChartSchema.optional(),
   daliuren: daliurenChartSchema.optional(),
@@ -525,6 +546,8 @@ export type BaziStemBranch = z.infer<typeof baziStemBranchSchema>;
 export type BaziHiddenStem = z.infer<typeof baziHiddenStemSchema>;
 export type BaziPillarDetail = z.infer<typeof baziPillarDetailSchema>;
 export type BaziChart = z.infer<typeof baziChartSchema>;
+export type MangpaiInsight = z.infer<typeof mangpaiInsightSchema>;
+export type MangpaiChart = z.infer<typeof mangpaiChartSchema>;
 export type MeihuaTrigramKey = z.infer<typeof meihuaTrigramKeySchema>;
 export type MeihuaElementKey = z.infer<typeof meihuaElementKeySchema>;
 export type MeihuaLineValue = z.infer<typeof meihuaLineValueSchema>;

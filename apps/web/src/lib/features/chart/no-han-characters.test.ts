@@ -16,6 +16,9 @@ import { viCopy } from '$lib/i18n/vi';
 import {
   formatBaziPillarRows,
   formatBaziMetaItems,
+  formatMangpaiInsightItems,
+  formatMangpaiNarrative,
+  formatMangpaiTitle,
   formatMeihuaMetaItems,
   formatMeihuaHexagramItems,
   formatLiuyaoHexagramItems,
@@ -187,6 +190,28 @@ describe('no chữ Hán — output toàn hệ (US-007)', () => {
 
   it('Bát Tự: tứ trụ + mệnh bàn không rò Hán', () => {
     assertNoCjk([...collectItems(formatBaziPillarRows(baziSnapshot)), ...collectItems(formatBaziMetaItems(baziSnapshot))]);
+  });
+
+  it('Mạnh Phái: tiêu đề + diễn giải + insight không rò Hán', () => {
+    const mangpaiSnapshot = asSnapshot({
+      mangpai: {
+        dayPillarHeavenlyStemKey: 'jiaHeavenly',
+        dayPillarEarthlyBranchKey: 'ziEarthly',
+        dayMasterElementKey: 'wood',
+        monthCommandElementKey: 'water',
+        title: 'Nhật chủ Giáp Mộc tọa chi Tý',
+        narrative: 'Theo phép Mạnh Phái lấy nhật chủ làm trọng, lá số luận quanh Giáp Mộc.',
+        insights: [
+          { heading: 'Nhật chủ', detail: 'Giáp Mộc chủ về khí sinh phát, vươn lên.' },
+          { heading: 'Cường nhược: thân vượng', detail: 'Được nguyệt lệnh sinh phù nên thân vượng.' },
+        ],
+      },
+    });
+    assertNoCjk([
+      formatMangpaiTitle(mangpaiSnapshot),
+      formatMangpaiNarrative(mangpaiSnapshot),
+      ...collectItems(formatMangpaiInsightItems(mangpaiSnapshot)),
+    ]);
   });
 
   it('Mai Hoa: meta + quẻ tượng không rò Hán', () => {

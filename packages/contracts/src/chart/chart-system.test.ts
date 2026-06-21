@@ -10,7 +10,10 @@ const legacyImplemented = [
   'qi-men-dun-jia',
 ] as const;
 
-const extendedFrameworkOnly = ['hepan', 'mangpai', 'tarot', 'mbti', 'face', 'palm'] as const;
+// US-017d: Mạnh Phái đã có adapter (dùng chung POST /charts) → rời nhóm framework-only,
+// vào implementedChartSystems. 5 hệ còn lại vẫn framework-only cho tới khi epic con merge.
+const extendedFrameworkOnly = ['hepan', 'tarot', 'mbti', 'face', 'palm'] as const;
+const implementedAfterMangpai = [...legacyImplemented, 'mangpai'] as const;
 
 describe('chartSystemSchema (US-017)', () => {
   it('parses all 12 values', () => {
@@ -32,7 +35,7 @@ describe('chartSystemSchema (US-017)', () => {
   });
 
   it('keeps create-chart implemented list limited to systems with adapters', () => {
-    expect(implementedChartSystems).toEqual(legacyImplemented);
+    expect(implementedChartSystems).toEqual(implementedAfterMangpai);
     for (const system of extendedFrameworkOnly) {
       expect(implementedChartSystems).not.toContain(system);
     }

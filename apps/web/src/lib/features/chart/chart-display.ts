@@ -331,6 +331,28 @@ export function formatBaziMetaItems(snapshot: ChartDetailResponse['snapshot']): 
   ];
 }
 
+// Mạnh Phái (US-017d): luận giải đặt trên Bát Tự. Tiêu đề + danh xưng nhật trụ, mỗi insight là
+// một dòng tóm tắt. Chuỗi do engine sinh đã là tiếng Việt deterministic; vẫn bọc guardFreeText
+// để chốt bất biến 0 chữ Hán nếu dữ liệu cũ lọt vào.
+export function formatMangpaiInsightItems(snapshot: ChartDetailResponse['snapshot']): SummaryItem[] {
+  if (!snapshot.mangpai) {
+    return [];
+  }
+
+  return snapshot.mangpai.insights.map((insight) => ({
+    label: guardFreeText(insight.heading),
+    value: guardFreeText(insight.detail),
+  }));
+}
+
+export function formatMangpaiTitle(snapshot: ChartDetailResponse['snapshot']): string {
+  return snapshot.mangpai ? guardFreeText(snapshot.mangpai.title) : '';
+}
+
+export function formatMangpaiNarrative(snapshot: ChartDetailResponse['snapshot']): string {
+  return snapshot.mangpai ? guardFreeText(snapshot.mangpai.narrative) : '';
+}
+
 export function formatMeihuaMetaItems(snapshot: ChartDetailResponse['snapshot']): SummaryItem[] {
   if (!snapshot.meihua) {
     return [];

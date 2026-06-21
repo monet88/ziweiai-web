@@ -38,7 +38,7 @@ export function createVisionModel(options: VisionModelOptions) {
     mutationFn: async () => {
       const token = auth.getAccessToken();
       if (!token) {
-        throw new ApiError('unauthorized', viCopy.errors.missingChartContext);
+        throw new ApiError('unauthorized', viCopy.errors.sessionRequired);
       }
       if (!imageFile) {
         throw new ApiError('validation', copy.missingImage);

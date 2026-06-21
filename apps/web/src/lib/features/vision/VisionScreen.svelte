@@ -26,6 +26,15 @@
 
   let fileInput = $state<HTMLInputElement | null>(null);
 
+  // Khi model.reset()/setImage(null) đưa imageFile về null, xoá luôn giá trị DOM của <input file>.
+  // Nếu không, input vẫn giữ tên tệp cũ → người dùng chọn LẠI đúng tệp đó sẽ không kích hoạt onchange
+  // (giá trị không đổi) → không upload lại được (review PR #28).
+  $effect(() => {
+    if (!model.imageFile && fileInput) {
+      fileInput.value = '';
+    }
+  });
+
   function onFileChange(event: Event): void {
     const input = event.currentTarget as HTMLInputElement;
     model.setImage(input.files?.[0] ?? null);

@@ -7,6 +7,7 @@ import {
   Req,
   UploadedFile,
   UseInterceptors,
+  UseFilters,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { AuthenticatedUser } from '@ziweiai/contracts';
@@ -15,6 +16,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
 import { SUPPORTED_VISION_MIME_TYPES } from '../../providers/ai/vision-prompt';
 import { VisionAnalysisService } from '../vision-shared/vision-analysis.service';
+import { MulterExceptionFilter } from '../vision-shared/multer-error.filter';
 
 // Giới hạn kích thước ảnh (decision 0012: 1 ảnh ≤ 4MB). multer reject sớm khi vượt (LIMIT_FILE_SIZE).
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
@@ -40,6 +42,7 @@ export class VisionFaceController {
 
   @Post()
   @HttpCode(200)
+  @UseFilters(MulterExceptionFilter)
   @UseInterceptors(FileInterceptor('image', { limits: { fileSize: MAX_IMAGE_BYTES } }))
   async analyze(
     @CurrentUser() currentUser: AuthenticatedUser,

@@ -17,6 +17,8 @@ import {
   annualReportResponseSchema,
   dailyFortuneResponseSchema,
   monthlyFortuneResponseSchema,
+  mbtiResultSchema,
+  featuresResponseSchema,
   type AnnualReportResponse,
   type ChartDetailResponse,
   type CreateChartRequest,
@@ -29,6 +31,9 @@ import {
   type HoroscopeResponse,
   type HoroscopeScope,
   type MonthlyFortuneResponse,
+  type MbtiAnswer,
+  type MbtiResult,
+  type FeaturesResponse,
 } from '@ziweiai/contracts';
 import { fetchJson } from './fetch-json';
 
@@ -49,6 +54,11 @@ export const HOROSCOPE_QUERY_GC_MS = 24 * 60 * 60 * 1000;
 /** GET /health — public, không cần token. */
 export function fetchHealth(): Promise<HealthResponse> {
   return fetchJson('/health', healthResponseSchema);
+}
+
+/** GET /features — public (US-017). Trạng thái 6 cờ hệ mở rộng để web ẩn/hiện lối vào. */
+export function fetchFeatures(): Promise<FeaturesResponse> {
+  return fetchJson('/features', featuresResponseSchema);
 }
 
 /** GET /history?limit=N — Bearer. Token đọc tươi từ auth store ngay trước khi gọi. */
@@ -108,6 +118,15 @@ export function createExplanation(
     method: 'POST',
     token,
     body: request,
+  });
+}
+
+/** US-017b: POST /quizzes/mbti — Bearer. Gửi mảng câu trả lời Likert, nhận kết quả MBTI. */
+export function createMbtiQuiz(token: string, answers: MbtiAnswer[]): Promise<MbtiResult> {
+  return fetchJson('/quizzes/mbti', mbtiResultSchema, {
+    method: 'POST',
+    token,
+    body: { answers },
   });
 }
 

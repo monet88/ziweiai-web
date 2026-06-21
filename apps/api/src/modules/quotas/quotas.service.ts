@@ -151,6 +151,24 @@ export class QuotasService {
     await this.assertAnonDailyQuota(counterKey, apiEnv.API_ANNUAL_REPORTS_PER_DAY_PER_USER, 'Daily annual report quota exceeded.');
   }
 
+  /**
+   * Quota riêng cho luận giải vision (Xem Tướng/Xem Tay — US-017e/f).
+   *
+   * Vision đắt token gấp 5-10× text nên KHÔNG dùng chung `API_EXPLANATIONS_PER_DAY_PER_USER`; trần
+   * riêng `API_VISION_REQUESTS_PER_DAY_PER_USER` (mặc định 5/ngày/user). face/palm chặn anon ở tầng
+   * trên (assertEmailIdentityRequired) nên ở đây chỉ đếm theo userId (không có nhánh anon-by-IP).
+   * Đếm chung cho cả face + palm: bảo vệ chi phí ở cấp người dùng, không tách theo loại ảnh. Đếm qua
+   * `QuotaCounterStore` (bền qua restart sau US-013) với cửa sổ ngày UTC. Rate-limit per-minute vẫn áp.
+   */
+  async assertCanCreateVisionAnalysis(userId: string, ipAddress: string): Promise<void> {
+    this.assertSlidingWindow(this.ipBuckets, `ip:${ipAddress}`, apiEnv.API_REQUESTS_PER_MINUTE_PER_IP, 60_000);
+    this.assertSlidingWindow(this.userBuckets, `user:${userId}`, apiEnv.API_REQUESTS_PER_MINUTE_PER_USER, 60_000);
+
+    const dayKey = utcDayKey(Date.now());
+    const counterKey = `vision-analysis:user:${userId}:${dayKey}`;
+    await this.assertAnonDailyQuota(counterKey, apiEnv.API_VISION_REQUESTS_PER_DAY_PER_USER, 'Daily vision quota exceeded.');
+  }
+
   private async assertAnonDailyQuota(key: string, limit: number, message: string): Promise<void> {
     const { allowed } = await this.counterStore.incrementAndCheck(key, limit, ONE_DAY_SECONDS);
     if (!allowed) {

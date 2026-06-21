@@ -5,6 +5,11 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 const config = {
   preprocess: vitePreprocess(),
   kit: {
+    // env.dir tro ve workspace root: $env/static/public doc PUBLIC_* tu root .env (file .env duy
+    // nhat). SvelteKit dung kit.env.dir RIENG, khong theo Vite envDir — phai khai bao ca hai.
+    env: {
+      dir: '../..',
+    },
     // SPA tĩnh: không SSR, fallback về index.html cho mọi route client-side.
     adapter: adapter({
       fallback: 'index.html',

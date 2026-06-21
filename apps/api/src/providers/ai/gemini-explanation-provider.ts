@@ -56,6 +56,13 @@ function buildGeminiSdkRequest(payload: ExplanationPromptPayload): RequestInit {
         'x-goog-api-key': apiEnv.GEMINI_API_KEY,
       };
 
+  // US-017e: Gemini dùng shape RIÊNG cho ảnh — KHÔNG phải image_url như OpenAI-style. Ảnh là một part
+  // inlineData {mimeType, data:<base64>} nằm cùng mảng parts với text. Khi có imageInput, thêm part này.
+  const textPart = { text: payload.promptOverride ?? buildExplanationPrompt(payload) };
+  const parts = payload.imageInput
+    ? [textPart, { inlineData: { mimeType: payload.imageInput.mimeType, data: payload.imageInput.base64 } }]
+    : [textPart];
+
   return {
     method: 'POST',
     headers,
@@ -65,7 +72,7 @@ function buildGeminiSdkRequest(payload: ExplanationPromptPayload): RequestInit {
       },
       contents: [
         {
-          parts: [{ text: payload.promptOverride ?? buildExplanationPrompt(payload) }],
+          parts,
         },
       ],
     }),
@@ -80,6 +87,12 @@ export class GeminiExplanationProvider implements AiExplanationProvider {
 
   isAvailable(): boolean {
     return apiEnv.GEMINI_API_KEY.length > 0;
+  }
+
+  // US-017e: model Gemini (gemini-3.5-flash mặc định) hỗ trợ đa thể thức (đọc ảnh). Coi như đọc được
+  // ảnh khi key có sẵn.
+  isVisionCapable(): boolean {
+    return this.isAvailable();
   }
 
   async generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {

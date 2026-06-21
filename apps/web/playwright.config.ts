@@ -53,6 +53,8 @@ export default defineConfig({
         EXTENDED_SYSTEM_HEPAN_ENABLED: 'true',
         // US-017d: bật cờ Mạnh Phái cho e2e (mặc định false ở mọi nơi khác → fail-closed).
         EXTENDED_SYSTEM_MANGPAI_ENABLED: 'true',
+        // US-017e: bật cờ Xem Tướng cho e2e (mặc định false ở mọi nơi khác → fail-closed).
+        EXTENDED_SYSTEM_FACE_ENABLED: 'true',
       },
     },
     {

@@ -108,4 +108,30 @@ describe('QuotasService', () => {
       await expect(service.assertCanCreateAnnualReport('user-iso', '10.0.1.3')).resolves.toBeUndefined();
     });
   });
+
+  describe('assertCanCreateVisionAnalysis (US-017e/f)', () => {
+    it('cho qua khi dưới trần vision (mặc định 5/ngày) rồi chặn ở lần thứ 6 theo userId', async () => {
+      const service = makeService({
+        countChartSnapshotsSince: async () => 0,
+        countExplanationRequestsSince: async () => 0,
+      });
+
+      for (let i = 0; i < 5; i += 1) {
+        await expect(service.assertCanCreateVisionAnalysis('user-vision', '10.0.2.1')).resolves.toBeUndefined();
+      }
+      await expect(service.assertCanCreateVisionAnalysis('user-vision', '10.0.2.1')).rejects.toThrow(
+        'Daily vision quota exceeded.',
+      );
+    });
+
+    it('quota vision độc lập với quota explanations (key tách biệt)', async () => {
+      const service = makeService({
+        countChartSnapshotsSince: async () => 0,
+        // DB báo explanations đã đầy, nhưng vision đếm qua counter store riêng → vẫn cho qua.
+        countExplanationRequestsSince: async () => 999,
+      });
+
+      await expect(service.assertCanCreateVisionAnalysis('user-vision-iso', '10.0.2.2')).resolves.toBeUndefined();
+    });
+  });
 });

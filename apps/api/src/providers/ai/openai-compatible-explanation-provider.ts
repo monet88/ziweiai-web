@@ -9,12 +9,18 @@ import {
 } from './ai-explanation-provider';
 import { EXPLANATION_SYSTEM_PROMPT } from './ai-explanation-provider';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
+import { buildImageDataUrl } from './vision-prompt';
 
 type OpenAiCompatibleResponse = {
   choices?: Array<{ message?: { content?: string } }>;
   usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
   error?: { message?: string };
 };
+
+// US-017e: user message OpenAI-style là string hoặc mảng content part (text + image_url).
+type OpenAiStyleContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
 
 // Chuẩn hóa base URL về dạng không có dấu `/` cuối và không có hậu tố `/v1`,
 // rồi nối `/v1/chat/completions`. Tránh lặp `/v1/v1/...` khi operator cấu hình base
@@ -33,6 +39,13 @@ export class OpenAiCompatibleExplanationProvider implements AiExplanationProvide
     return apiEnv.OPENAI_COMPAT_API_KEY.length > 0;
   }
 
+  // US-017e: endpoint OpenAI-compatible do operator cấu hình (OPENAI_COMPAT_MODEL). Coi như đọc được
+  // ảnh khi key có sẵn — không hard-code allowlist model vì model do operator chọn (gpt-4o, llava...).
+  // Nếu model cấu hình không đọc ảnh, lỗi/ bỏ ảnh sẽ lộ qua failover sang gemini trong chain vision.
+  isVisionCapable(): boolean {
+    return this.isAvailable();
+  }
+
   async generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {
     if (!this.isAvailable()) {
       throw new ProviderUnavailableError('Chưa cấu hình nhà cung cấp OpenAI-compatible.');
@@ -41,6 +54,13 @@ export class OpenAiCompatibleExplanationProvider implements AiExplanationProvide
     try {
       const model = payload.modelOverride ?? apiEnv.OPENAI_COMPAT_MODEL;
       const timeoutMs = payload.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
+      const userText = payload.promptOverride ?? buildExplanationPrompt(payload);
+      const userContent: string | OpenAiStyleContentPart[] = payload.imageInput
+        ? [
+            { type: 'text', text: userText },
+            { type: 'image_url', image_url: { url: buildImageDataUrl(payload.imageInput.mimeType, payload.imageInput.base64) } },
+          ]
+        : userText;
       const response = await fetch(buildChatCompletionsEndpoint(), {
         method: 'POST',
         headers: {
@@ -51,7 +71,7 @@ export class OpenAiCompatibleExplanationProvider implements AiExplanationProvide
           model,
           messages: [
             { role: 'system', content: EXPLANATION_SYSTEM_PROMPT },
-            { role: 'user', content: payload.promptOverride ?? buildExplanationPrompt(payload) },
+            { role: 'user', content: userContent },
           ],
           stream: false,
           temperature: 0.7,

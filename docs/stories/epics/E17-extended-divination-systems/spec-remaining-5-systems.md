@@ -169,3 +169,23 @@ Bo sung Correction vision o tren. DeepSeek provider dung apiEnv.DEEPSEEK_MODEL (
 Tranh truong hop gui anh cho deepseek-v4-flash -> loi hoac anh bi bo am tham -> LLM "ao" mo ta anh khong doc duoc.
 
 Khuyen nghi: them allowlist vision-capable model (vi du config VISION_CAPABLE_MODELS hoac hard-code danh sach toi thieu) + isVisionCapable() tren moi provider. Chain vision chi gom provider+model that su doc duoc anh.
+
+---
+
+## Correction (2026-06-21): DeepSeek API thuc te CHUA ho tro vision (dinh chinh Correction tren)
+
+Kiem chung truc tiep tren `api.deepseek.com` (key hop le) + doc tai lieu chinh thuc api-docs.deepseek.com:
+- Goi `/v1/chat/completions` voi content part `image_url` (data URL base64) cho CA `deepseek-v4-pro`
+  LAN `deepseek-v4-flash` deu tra HTTP 400: "Failed to deserialize ... unknown variant `image_url`,
+  expected `text`". Thu ca hai thu tu (text-first, image-first) deu 400.
+- Tai lieu chinh thuc (API Guides) KHONG co trang vision/multimodal nao. Bai "DeepSeek V4 Vision" la
+  blog ben thu ba (mindstudio.ai), KHONG phai docs chinh thuc.
+
+=> Correction "deepseek-v4-pro doc duoc anh" o tren la SAI thuc te. Da sua:
+`DEEPSEEK_VISION_CAPABLE_MODELS` = RONG → `isVisionCapable()` cua DeepSeek luon false → router loai
+DeepSeek khoi chain vision (khong ton mot cu goi 400 thua moi request roi moi failover). Co che
+isVisionCapable/allowlist GIU NGUYEN: khi DeepSeek mo vision chi can them model id vao set la du.
+
+Thuc te chay (live, anh that): chain vision chay qua `openai-compat` (endpoint OpenAI-style cau hinh
+qua OPENAI_COMPAT_*) — provider duy nhat doc duoc anh trong moi truong nay (GEMINI_API_KEY trong nen
+gemini native bi skip). Ket qua face/palm: 200, tieng Viet, 0 chu Han, mo ta dung anh.

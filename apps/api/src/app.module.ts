@@ -10,9 +10,10 @@ import { HistoryModule } from './modules/history/history.module';
 import { QuotasModule } from './modules/quotas/quotas.module';
 import { QuizzesMbtiModule } from './modules/quizzes-mbti/quizzes-mbti.module';
 import { PairingsModule } from './modules/pairings/pairings.module';
+import { VisionFaceModule } from './modules/vision-face/vision-face.module';
 
 @Module({
-  imports: [AuthModule, ChartsModule, DrawsTarotModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule],
+  imports: [AuthModule, ChartsModule, DrawsTarotModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionFaceModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

@@ -35,21 +35,16 @@ export class PairingsService {
     await this.assertCanCreatePairing(user.userId, ipAddress, !user.email);
 
     // Hai lá số ziwei độc lập (không viewYear). Tương hợp tính deterministic bằng bazi ở engine.
-    // Bọc try/catch: ngày sinh không hợp lệ (vd 31/2, năm ngoài phạm vi lịch pháp) khiến
-    // iztro/lunar-javascript ném lỗi — map về 400 INVALID_INPUT thay vì 500 INTERNAL_ERROR.
+    // Bọc try/catch CHỈ quanh bước tính lệ thuộc input người dùng: ngày sinh không hợp lệ (vd 31/2,
+    // năm ngoài phạm vi lịch pháp) khiến iztro/lunar-javascript ném lỗi — map về 400 INVALID_INPUT.
+    let snapshotInput: unknown;
     try {
       const [primary, partner] = await Promise.all([
         this.ziweiAdapter.calculateChart(input.primary),
         this.ziweiAdapter.calculateChart(input.partner),
       ]);
       const compatibility = analyzeHepanCompatibility(input.primary, input.partner, input.relationType);
-
-      return pairingSnapshotSchema.parse({
-        primary,
-        partner,
-        relationType: input.relationType,
-        compatibility,
-      });
+      snapshotInput = { primary, partner, relationType: input.relationType, compatibility };
     } catch (error) {
       this.logger.error(`Lỗi tính Hợp Hôn: ${error instanceof Error ? error.message : String(error)}`);
       throw new ApiErrorHttpException(
@@ -58,6 +53,10 @@ export class PairingsService {
         'Không thể lập lá số hoặc tính tương hợp cho ngày sinh đã chọn.',
       );
     }
+
+    // Parse output NGOÀI try: nếu engine trả cấu trúc lệch contract thì đó là lỗi máy chủ — để
+    // ZodError rơi xuống ApiErrorFilter → 500 INTERNAL_ERROR, KHÔNG đổ lỗi 400 cho người dùng.
+    return pairingSnapshotSchema.parse(snapshotInput);
   }
 
   // Bọc lỗi quota (raw Error từ QuotasService) thành 429 RATE_LIMITED cho đồng bộ với các đường khác.

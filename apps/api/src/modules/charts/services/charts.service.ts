@@ -46,8 +46,9 @@ export class ChartsService {
   ) {}
 
   async createChart(userId: string, ipAddress: string, input: CreateChartRequest, isAnonymous = false): Promise<CreateChartResponse> {
-    // US-017d: Mạnh Phái là hệ luận giải AI mở rộng nên có hàng rào riêng TRƯỚC quota, đúng
-    // trật tự gate của draws-tarot/pairings: cờ tính năng (403) → entitlement AI (402) → rồi
+    // US-017d: Mạnh Phái được phân loại là hệ luận giải AI mở rộng (decision 0012) — narrative
+    // deterministic ở giai đoạn proof, LLM thật là bước sau — nên có hàng rào riêng TRƯỚC quota,
+    // đúng trật tự gate của draws-tarot/pairings: cờ tính năng (403) → entitlement AI (402) → rồi
     // mới tiêu quota (429). 6 hệ cũ giữ nguyên: chỉ qua quota như trước.
     if (input.chartSystem === 'mangpai') {
       this.assertMangpaiEnabled();

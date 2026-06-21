@@ -17,10 +17,19 @@ export class MangpaiAdapter implements AstrologyChartAdapter {
 
   async calculateChart(input: BirthInput, options?: ChartCalculationOptions): Promise<ChartSnapshot> {
     const baziSnapshot = await this.baziAdapter.calculateChart(input, options);
+    // snapshotId Bát Tự có dạng `ba-zi-<hash>`; đổi prefix sang `mangpai-`. Nếu format đổi mà
+    // prefix không còn khớp, replace im lặng sẽ giữ nguyên id `ba-zi-…` cho hệ mangpai — lệch
+    // ngữ nghĩa. Throw sớm để lộ ngay thay vì trôi xuống tầng lưu trữ.
+    if (!baziSnapshot.snapshotId.startsWith('ba-zi-')) {
+      throw new Error(`MangpaiAdapter mong đợi snapshotId Bát Tự dạng "ba-zi-…", nhận được: "${baziSnapshot.snapshotId}"`);
+    }
     const snapshot: ChartSnapshot = {
       ...baziSnapshot,
       chartSystem: 'mangpai',
       snapshotId: baziSnapshot.snapshotId.replace(/^ba-zi-/, 'mangpai-'),
+      // Giữ provenance lunar-javascript của Bát Tự (Mạnh Phái thật sự dựng trên engine này), chỉ
+      // đổi `system`. Có chủ đích — KHÔNG dùng sourcePriority 'manual-canonical-fixture' mà helper
+      // sinh cho system='mangpai', vì nguồn tính can-chi vẫn là lunar-javascript.
       ruleSource: { ...baziSnapshot.ruleSource, system: 'mangpai' },
     };
 

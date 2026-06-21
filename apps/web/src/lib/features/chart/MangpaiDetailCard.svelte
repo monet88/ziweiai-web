@@ -35,7 +35,9 @@
   {#if insightItems.length > 0}
     <SummaryCard title="Luận giải Mạnh Phái" items={insightItems} />
   {/if}
-  <SummaryCard title="Tứ trụ" items={pillarRows} />
+  {#if pillarRows.length > 0}
+    <SummaryCard title="Tứ trụ" items={pillarRows} />
+  {/if}
   {#if metaItems.length > 0}
     <SummaryCard title="Mệnh bàn" items={metaItems} />
   {/if}

@@ -4,6 +4,8 @@ import { visionAnalysisSchema, type AuthenticatedUser } from '@ziweiai/contracts
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
 import type { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
+import { ProviderUnavailableError } from '../../providers/ai/provider-errors';
+import { RateLimitWindowError } from '../quotas/quota-errors';
 import type { QuotasService } from '../quotas/quotas.service';
 import { VisionAnalysisService } from './vision-analysis.service';
 import type { VisionStorageGateway } from './vision-storage.gateway';
@@ -101,6 +103,29 @@ describe('VisionAnalysisService', () => {
     } catch (error) {
       expectApiError(error, HttpStatus.TOO_MANY_REQUESTS, 'VISION_QUOTA_EXCEEDED');
     }
+    expect(storageGateway.uploadVisionImage).not.toHaveBeenCalled();
+  });
+
+  it('rate-limit per-phút (RateLimitWindowError) map thành 429 RATE_LIMITED, KHÔNG phải VISION_QUOTA_EXCEEDED', async () => {
+    quotasService.assertCanCreateVisionAnalysis = vi.fn().mockRejectedValue(new RateLimitWindowError());
+    try {
+      await service.analyze(baseInput());
+      throw new Error('expected rate-limit to throw');
+    } catch (error) {
+      expectApiError(error, HttpStatus.TOO_MANY_REQUESTS, 'RATE_LIMITED');
+    }
+    expect(storageGateway.uploadVisionImage).not.toHaveBeenCalled();
+  });
+
+  it('LLM lỗi → KHÔNG upload ảnh (tránh để lại ảnh sinh trắc mồ côi trong Storage)', async () => {
+    providerRouter.generate = vi.fn().mockRejectedValue(new ProviderUnavailableError('Chưa cấu hình nhà cung cấp AI có khả năng đọc ảnh.'));
+    try {
+      await service.analyze(baseInput());
+      throw new Error('expected provider failure to throw');
+    } catch (error) {
+      expectApiError(error, HttpStatus.BAD_GATEWAY, 'PROVIDER_UNAVAILABLE');
+    }
+    // Đảo thứ tự (LLM trước, upload sau): provider lỗi → upload KHÔNG được gọi.
     expect(storageGateway.uploadVisionImage).not.toHaveBeenCalled();
   });
 

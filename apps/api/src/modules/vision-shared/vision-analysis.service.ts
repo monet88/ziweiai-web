@@ -7,6 +7,7 @@ import { apiEnv } from '../../config/env';
 import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
 import { QuotasService } from '../quotas/quotas.service';
+import { RateLimitWindowError } from '../quotas/quota-errors';
 import { buildVisionUserPrompt } from './vision-prompts';
 import { VisionStorageGateway } from './vision-storage.gateway';
 
@@ -27,7 +28,8 @@ export interface VisionAnalysisInput {
  *   2. assertEmailIdentityRequired(user) → 403 IDENTITY_REQUIRED (chặn anon: PII + chi phí vision).
  *   3. assertCanUseAiExplanation() → 402 PAYMENT_REQUIRED (gate AI dùng chung decision 0010, TRƯỚC quota).
  *   4. assertCanCreateVisionAnalysis() → 429 VISION_QUOTA_EXCEEDED (quota vision riêng, đắt token).
- *   5. upload ảnh vào vision-uploads → vision LLM (provider chain đọc ảnh) → visionAnalysisSchema.parse.
+ *   5. vision LLM (provider chain đọc ảnh) → upload ảnh vào vision-uploads → visionAnalysisSchema.parse.
+ *      (Gọi LLM trước rồi mới upload: nếu LLM lỗi thì KHÔNG để lại ảnh sinh trắc mồ côi trong Storage.)
  *
  * Vision LLM tái dùng ExplanationProviderRouter qua imageInput (router lọc chain chỉ provider+model
  * đọc được ảnh) + promptOverride (persona/nhiệm vụ tiếng Việt); system prompt EXPLANATION_SYSTEM_PROMPT
@@ -68,14 +70,18 @@ export class VisionAnalysisService {
     // GATE 4: quota vision riêng (đắt token gấp 5-10× text). Bọc raw Error → 429 VISION_QUOTA_EXCEEDED.
     await this.assertVisionQuota(user.userId, ipAddress);
 
-    // GATE 5: upload ảnh (RLS owner-only, cron xoá 7 ngày) rồi gọi vision LLM với ảnh đính kèm.
+    // GATE 5: gọi vision LLM TRƯỚC, upload ảnh SAU khi có kết quả. Ảnh chân dung/lòng bàn tay là dữ
+    // liệu sinh trắc — nếu upload trước rồi LLM lỗi (chưa cấu hình provider đọc ảnh, timeout/5xx, CJK
+    // guard từ chối) thì ảnh đã ghi vào Storage mà người dùng không nhận được kết quả, chỉ bị cron xoá
+    // sau 7 ngày (review PR #28). Provider chỉ cần imageBytes/mimeType (không cần imagePath) nên đảo
+    // thứ tự an toàn: LLM lỗi → ném sớm, KHÔNG ghi ảnh mồ côi.
+    const narrative = await this.generateVisionNarrative(kind, mimeType, imageBytes, question);
+
     const { imagePath } = await this.storageGateway.uploadVisionImage({
       ownerUserId: user.userId,
       imageBytes,
       mimeType,
     });
-
-    const narrative = await this.generateVisionNarrative(kind, mimeType, imageBytes, question);
 
     return visionAnalysisSchema.parse({ kind, imagePath, narrative });
   }
@@ -88,10 +94,21 @@ export class VisionAnalysisService {
     try {
       await this.quotasService.assertCanCreateVisionAnalysis(userId, ipAddress);
     } catch (error) {
+      // Phân biệt hai loại "quá nhiều request" để client không nhầm rate-limit tạm thời thành hết
+      // hạn mức ngày (review PR #28/#31): dùng typed error (instanceof) thay vì so khớp chuỗi message
+      // (fragile khi đổi text/bản địa hoá). Cửa sổ per-phút → RATE_LIMITED; trần daily vision →
+      // VISION_QUOTA_EXCEEDED. Message luôn Việt hoá ở đây (QuotasService giữ message tiếng Anh thô).
+      if (error instanceof RateLimitWindowError) {
+        throw new ApiErrorHttpException(
+          HttpStatus.TOO_MANY_REQUESTS,
+          'RATE_LIMITED',
+          'Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.',
+        );
+      }
       throw new ApiErrorHttpException(
         HttpStatus.TOO_MANY_REQUESTS,
         'VISION_QUOTA_EXCEEDED',
-        error instanceof Error ? error.message : 'Đã vượt hạn mức luận giải bằng hình ảnh trong ngày.',
+        'Đã vượt hạn mức luận giải bằng hình ảnh trong ngày.',
       );
     }
   }

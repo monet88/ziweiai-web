@@ -12,6 +12,7 @@
   // Route literal + cờ tương ứng + nhãn. Giữ route as const để qua kiểm tra kiểu route SvelteKit.
   const EXTENDED_LINKS = [
     { route: '/mangpai', flag: 'mangpai', label: viCopy.mangpai.navOpen },
+    { route: '/face', flag: 'face', label: viCopy.face.navOpen },
   ] as const satisfies ReadonlyArray<{ route: string; flag: keyof FeaturesResponse; label: string }>;
 
   // staleTime dài: trạng thái cờ ít đổi trong một phiên. enabled mặc định (không cần token —

@@ -10,6 +10,13 @@ import {
 } from './ai-explanation-provider';
 import { EXPLANATION_SYSTEM_PROMPT } from './ai-explanation-provider';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
+import { buildImageDataUrl, isDeepseekModelVisionCapable } from './vision-prompt';
+
+// US-017e: user message của OpenAI-style là string (text) HOẶC mảng content part (text + ảnh). Khi có
+// imageInput, gửi mảng [{type:text}, {type:image_url, image_url:{url:<data URL>}}].
+type OpenAiStyleContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
 
 @Injectable()
 export class DeepseekExplanationProvider implements AiExplanationProvider {
@@ -20,6 +27,13 @@ export class DeepseekExplanationProvider implements AiExplanationProvider {
     return apiEnv.DEEPSEEK_API_KEY.length > 0;
   }
 
+  // US-017e: DeepSeek API hiện CHƯA hỗ trợ vision (docs chính thức + probe 400 trên cả v4-pro lẫn
+  // v4-flash). Allowlist DEEPSEEK_VISION_CAPABLE_MODELS rỗng nên hàm này luôn trả false → router loại
+  // DeepSeek khỏi chain vision. Khi DeepSeek mở vision, thêm model vào allowlist là đủ (không sửa đây).
+  isVisionCapable(modelOverride?: string): boolean {
+    return this.isAvailable() && isDeepseekModelVisionCapable(modelOverride ?? apiEnv.DEEPSEEK_MODEL);
+  }
+
   async generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {
     if (!this.isAvailable()) {
       throw new ProviderUnavailableError('Chưa cấu hình DeepSeek.');
@@ -28,6 +42,15 @@ export class DeepseekExplanationProvider implements AiExplanationProvider {
     try {
       const model = payload.modelOverride ?? apiEnv.DEEPSEEK_MODEL;
       const timeoutMs = payload.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
+      const userText = payload.promptOverride ?? buildExplanationPrompt(payload);
+      // Khi có ảnh: dựng mảng content part (text + image_url). DeepSeek đi qua /v1/chat/completions
+      // theo chuẩn OpenAI nên dùng cùng shape image_url với openai-compat.
+      const userContent: string | OpenAiStyleContentPart[] = payload.imageInput
+        ? [
+            { type: 'text', text: userText },
+            { type: 'image_url', image_url: { url: buildImageDataUrl(payload.imageInput.mimeType, payload.imageInput.base64) } },
+          ]
+        : userText;
       const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -38,7 +61,7 @@ export class DeepseekExplanationProvider implements AiExplanationProvider {
           model,
           messages: [
             { role: 'system', content: EXPLANATION_SYSTEM_PROMPT },
-            { role: 'user', content: payload.promptOverride ?? buildExplanationPrompt(payload) },
+            { role: 'user', content: userContent },
           ],
           stream: false,
           temperature: 0.7,

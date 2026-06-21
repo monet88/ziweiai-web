@@ -20,6 +20,7 @@ import {
   mbtiResultSchema,
   featuresResponseSchema,
   pairingSnapshotSchema,
+  visionAnalysisSchema,
   type AnnualReportResponse,
   type ChartDetailResponse,
   type CreateChartRequest,
@@ -37,8 +38,10 @@ import {
   type FeaturesResponse,
   type PairingRequest,
   type PairingSnapshot,
+  type VisionAnalysis,
+  type VisionKind,
 } from '@ziweiai/contracts';
-import { fetchJson } from './fetch-json';
+import { fetchJson, fetchMultipart } from './fetch-json';
 
 export { ApiError } from './fetch-json';
 export type { ApiErrorKind } from './fetch-json';
@@ -140,6 +143,26 @@ export function createPairing(token: string, request: PairingRequest): Promise<P
     token,
     body: request,
   });
+}
+
+/**
+ * US-017e/f: POST /vision/{face,palm} — Bearer, multipart/form-data.
+ *
+ * Tải 1 ảnh (≤ 4MB) + câu hỏi tuỳ chọn lên endpoint vision. KHÔNG đi qua fetchJson (chỉ JSON);
+ * dùng fetchMultipart để gửi FormData (browser tự set Content-Type + boundary). Response vẫn parse
+ * qua visionAnalysisSchema — sai shape → throw, không trust raw.
+ */
+export function createVisionAnalysis(
+  token: string,
+  kind: VisionKind,
+  params: { image: File; question?: string },
+): Promise<VisionAnalysis> {
+  const form = new FormData();
+  form.append('image', params.image);
+  if (params.question && params.question.trim().length > 0) {
+    form.append('question', params.question.trim());
+  }
+  return fetchMultipart(`/vision/${kind}`, visionAnalysisSchema, form, token);
 }
 
 /** US-016: vận hạn deterministic theo (chartId, asOf) → cache TanStack dài. */

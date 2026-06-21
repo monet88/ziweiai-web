@@ -27,8 +27,9 @@ export class DeepseekExplanationProvider implements AiExplanationProvider {
     return apiEnv.DEEPSEEK_API_KEY.length > 0;
   }
 
-  // US-017e: chỉ một số model DeepSeek đọc được ảnh (deepseek-v4-pro có, deepseek-v4-flash KHÔNG).
-  // Kiểm cả khả dụng key lẫn model resolved nằm trong allowlist vision.
+  // US-017e: DeepSeek API hiện CHƯA hỗ trợ vision (docs chính thức + probe 400 trên cả v4-pro lẫn
+  // v4-flash). Allowlist DEEPSEEK_VISION_CAPABLE_MODELS rỗng nên hàm này luôn trả false → router loại
+  // DeepSeek khỏi chain vision. Khi DeepSeek mở vision, thêm model vào allowlist là đủ (không sửa đây).
   isVisionCapable(modelOverride?: string): boolean {
     return this.isAvailable() && isDeepseekModelVisionCapable(modelOverride ?? apiEnv.DEEPSEEK_MODEL);
   }

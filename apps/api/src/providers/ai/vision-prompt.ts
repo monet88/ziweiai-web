@@ -2,10 +2,12 @@
  * US-017e: tiện ích dùng chung cho luận giải vision (Xem Tướng/Xem Tay).
  *
  * - `SUPPORTED_VISION_MIME_TYPES`: định dạng ảnh được phép gửi cho LLM vision.
- * - `DEEPSEEK_VISION_CAPABLE_MODELS`: allowlist model DeepSeek thật sự đọc được ảnh. DeepSeek mặc
- *   định `deepseek-v4-pro` (đọc ảnh) nhưng `deepseek-v4-flash` KHÔNG. Gửi ảnh cho model text-only sẽ
- *   bị bỏ thầm lặng → "LLM ảo" mô tả ảnh không đọc được, nên chain vision chỉ chọn model trong danh
- *   sách này (xem Correction trong spec US-017e).
+ * - `DEEPSEEK_VISION_CAPABLE_MODELS`: allowlist model DeepSeek thật sự đọc được ảnh. HIỆN TẠI RỖNG:
+ *   theo tài liệu chính thức (api-docs.deepseek.com) DeepSeek API CHƯA hỗ trợ vision — kiểm thử trực
+ *   tiếp cả `deepseek-v4-pro` lẫn `deepseek-v4-flash` đều trả 400 "unknown variant `image_url`"
+ *   (đính chính Correction trong spec US-017e: pro KHÔNG đọc ảnh như từng giả định). Nhờ allowlist
+ *   rỗng, router loại DeepSeek khỏi chain vision → không tốn một cú gọi 400 thừa mỗi request rồi mới
+ *   failover. Khi DeepSeek bổ sung vision, chỉ cần thêm model id vào set này.
  * - `buildImageDataUrl`: dựng data URL base64 cho content part image_url (deepseek + openai-compat).
  */
 
@@ -16,8 +18,9 @@ export const SUPPORTED_VISION_MIME_TYPES = new Set<string>([
   'image/webp',
 ]);
 
-// Allowlist model DeepSeek đọc được ảnh. Mở rộng tại đây khi DeepSeek thêm model vision-capable.
-export const DEEPSEEK_VISION_CAPABLE_MODELS = new Set<string>(['deepseek-v4-pro']);
+// Allowlist model DeepSeek đọc được ảnh. RỖNG vì DeepSeek API hiện chưa hỗ trợ vision (xác nhận qua
+// docs chính thức + probe 400 trên cả pro/flash). Thêm model id vào đây khi DeepSeek mở vision.
+export const DEEPSEEK_VISION_CAPABLE_MODELS = new Set<string>();
 
 export function isDeepseekModelVisionCapable(model: string): boolean {
   return DEEPSEEK_VISION_CAPABLE_MODELS.has(model);

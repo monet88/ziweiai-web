@@ -5,6 +5,7 @@ import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
 import type { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderUnavailableError } from '../../providers/ai/provider-errors';
+import { RateLimitWindowError } from '../quotas/quota-errors';
 import type { QuotasService } from '../quotas/quotas.service';
 import { VisionAnalysisService } from './vision-analysis.service';
 import type { VisionStorageGateway } from './vision-storage.gateway';
@@ -105,10 +106,8 @@ describe('VisionAnalysisService', () => {
     expect(storageGateway.uploadVisionImage).not.toHaveBeenCalled();
   });
 
-  it('rate-limit per-phút (time window) map thành 429 RATE_LIMITED, KHÔNG phải VISION_QUOTA_EXCEEDED', async () => {
-    quotasService.assertCanCreateVisionAnalysis = vi
-      .fn()
-      .mockRejectedValue(new Error('Too many requests in the current time window.'));
+  it('rate-limit per-phút (RateLimitWindowError) map thành 429 RATE_LIMITED, KHÔNG phải VISION_QUOTA_EXCEEDED', async () => {
+    quotasService.assertCanCreateVisionAnalysis = vi.fn().mockRejectedValue(new RateLimitWindowError());
     try {
       await service.analyze(baseInput());
       throw new Error('expected rate-limit to throw');

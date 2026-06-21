@@ -7,6 +7,7 @@ import { apiEnv } from '../../config/env';
 import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
 import { QuotasService } from '../quotas/quotas.service';
+import { RateLimitWindowError } from '../quotas/quota-errors';
 import { buildVisionUserPrompt } from './vision-prompts';
 import { VisionStorageGateway } from './vision-storage.gateway';
 
@@ -94,10 +95,10 @@ export class VisionAnalysisService {
       await this.quotasService.assertCanCreateVisionAnalysis(userId, ipAddress);
     } catch (error) {
       // Phân biệt hai loại "quá nhiều request" để client không nhầm rate-limit tạm thời thành hết
-      // hạn mức ngày (review PR #28): cửa sổ per-phút → RATE_LIMITED; trần daily vision →
-      // VISION_QUOTA_EXCEEDED. Việt hoá message (QuotasService ném message tiếng Anh thô).
-      const raw = error instanceof Error ? error.message : '';
-      if (raw.includes('time window')) {
+      // hạn mức ngày (review PR #28/#31): dùng typed error (instanceof) thay vì so khớp chuỗi message
+      // (fragile khi đổi text/bản địa hoá). Cửa sổ per-phút → RATE_LIMITED; trần daily vision →
+      // VISION_QUOTA_EXCEEDED. Message luôn Việt hoá ở đây (QuotasService giữ message tiếng Anh thô).
+      if (error instanceof RateLimitWindowError) {
         throw new ApiErrorHttpException(
           HttpStatus.TOO_MANY_REQUESTS,
           'RATE_LIMITED',

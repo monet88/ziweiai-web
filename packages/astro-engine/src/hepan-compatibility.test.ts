@@ -1,0 +1,77 @@
+import { describe, expect, it } from 'vitest';
+import { pairingCompatibilitySchema, type BirthInput } from '@ziweiai/contracts';
+import { analyzeHepanCompatibility } from './hepan-compatibility';
+
+// Đồng bộ guard CJK runtime: bộ tương hợp đã dịch tiếng Việt nên KHÔNG được rò ký tự CJK.
+const CJK_TEXT_PATTERN =
+  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Bopomofo}\u3000-\u303F\uFF00-\uFFEF]/u;
+
+function birth(year: number, month: number, day: number, hour: number): BirthInput {
+  return {
+    calendar: 'gregorian',
+    date: { year, month, day, isLeapMonth: null },
+    time: { hour, minute: 0, isUnknown: false },
+    sexOrGenderForChart: 'male',
+    place: {
+      label: 'Ho Chi Minh City',
+      manual: { latitude: 10.8231, longitude: 106.6297, timezone: 'Asia/Ho_Chi_Minh' },
+    },
+    locale: 'vi-VN',
+    source: 'test-fixture',
+  };
+}
+
+const personA = birth(1990, 6, 15, 12);
+const personB = birth(1992, 3, 8, 9);
+
+describe('analyzeHepanCompatibility (US-017c)', () => {
+  it('trả kết quả hợp lệ theo pairingCompatibilitySchema', () => {
+    const result = analyzeHepanCompatibility(personA, personB, 'love');
+    expect(pairingCompatibilitySchema.safeParse(result).success).toBe(true);
+    expect(result.dimensions.length).toBeGreaterThanOrEqual(1);
+    expect(result.overallScore).toBeGreaterThanOrEqual(0);
+    expect(result.overallScore).toBeLessThanOrEqual(100);
+  });
+
+  it('deterministic: cùng input → cùng kết quả', () => {
+    const a = analyzeHepanCompatibility(personA, personB, 'love');
+    const b = analyzeHepanCompatibility(personA, personB, 'love');
+    expect(a).toEqual(b);
+  });
+
+  it('loại quan hệ khác cho ra chiều đặc thù khác nhau', () => {
+    const love = analyzeHepanCompatibility(personA, personB, 'love');
+    const business = analyzeHepanCompatibility(personA, personB, 'business');
+    const family = analyzeHepanCompatibility(personA, personB, 'family');
+    expect(love.dimensions.at(-1)?.name).toBe('Duyên tình cảm');
+    expect(business.dimensions.at(-1)?.name).toBe('Bổ trợ sự nghiệp');
+    expect(family.dimensions.at(-1)?.name).toBe('Giao tiếp gia đình');
+  });
+
+  it('không rò chữ Hán/CJK trong toàn bộ output', () => {
+    for (const relationType of ['love', 'business', 'family'] as const) {
+      const result = analyzeHepanCompatibility(personA, personB, relationType);
+      const texts = [result.level, result.narrative, ...result.dimensions.flatMap((d) => [d.name, d.description])];
+      for (const text of texts) {
+        expect(CJK_TEXT_PATTERN.test(text), `output "${text}" không được chứa CJK`).toBe(false);
+      }
+    }
+  });
+
+  it('mọi chiều điểm nằm trong 0..100 và level khớp ngưỡng', () => {
+    const result = analyzeHepanCompatibility(personA, personB, 'love');
+    for (const dimension of result.dimensions) {
+      expect(dimension.score).toBeGreaterThanOrEqual(0);
+      expect(dimension.score).toBeLessThanOrEqual(100);
+    }
+    const expectedLevel =
+      result.overallScore >= 80
+        ? 'Rất hợp'
+        : result.overallScore >= 65
+          ? 'Tốt'
+          : result.overallScore >= 50
+            ? 'Bình thường'
+            : 'Cần lưu ý';
+    expect(result.level).toBe(expectedLevel);
+  });
+});

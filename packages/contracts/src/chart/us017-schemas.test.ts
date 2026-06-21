@@ -82,7 +82,17 @@ describe('US-017 new schemas parse/reject', () => {
       createdAt: '2026-06-03T00:00:00.000Z',
     };
 
-    const minimal = { primary: base, partner: base };
+    const minimal = {
+      primary: base,
+      partner: base,
+      relationType: 'love',
+      compatibility: {
+        overallScore: 72,
+        level: 'Khá hợp',
+        dimensions: [{ name: 'Ngũ hành phối hợp', score: 80, description: 'Quan hệ tương sinh, hỗ trợ nhau.' }],
+        narrative: 'Hai người có nền tảng tương hợp tốt.',
+      },
+    };
     const r = pairingSnapshotSchema.safeParse(minimal);
     expect(r.success).toBe(true);
   });

@@ -19,6 +19,7 @@ import {
   monthlyFortuneResponseSchema,
   mbtiResultSchema,
   featuresResponseSchema,
+  pairingSnapshotSchema,
   type AnnualReportResponse,
   type ChartDetailResponse,
   type CreateChartRequest,
@@ -34,6 +35,8 @@ import {
   type MbtiAnswer,
   type MbtiResult,
   type FeaturesResponse,
+  type PairingRequest,
+  type PairingSnapshot,
 } from '@ziweiai/contracts';
 import { fetchJson } from './fetch-json';
 
@@ -127,6 +130,15 @@ export function createMbtiQuiz(token: string, answers: MbtiAnswer[]): Promise<Mb
     method: 'POST',
     token,
     body: { answers },
+  });
+}
+
+/** US-017c: POST /pairings — Bearer. Ghép 2 lá số ziwei + loại quan hệ, nhận tóm tắt tương hợp. */
+export function createPairing(token: string, request: PairingRequest): Promise<PairingSnapshot> {
+  return fetchJson('/pairings', pairingSnapshotSchema, {
+    method: 'POST',
+    token,
+    body: request,
   });
 }
 

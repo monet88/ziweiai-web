@@ -220,21 +220,14 @@
     }
   }
 
-  /* US-015: bàn 12 cung + panel vận hạn. Mobile (mặc định): panel xếp dưới bàn, cuộn dọc.
-     Desktop (>768px): split 2 cột — bàn co giãn (3fr), panel cố định bên phải (2fr) cuộn
-     dọc nội bộ khi 4 vùng vượt chiều cao. */
+  /* US-015: bàn 12 cung + panel vận hạn xếp dọc 1 cột ở MỌI bề rộng. Bàn Tử Vi là bàn vuông
+     4x4 (min-width 560px) nên khi ép vào cột hẹp của split 2 cột nó tràn ra và bị panel đè
+     lên các cung bên phải. Cho bàn chiếm trọn bề ngang ở trên, panel vận hạn nằm dưới —
+     bàn có đủ chỗ vẽ, panel dàn chip (đại vận/lưu niên) ngang thoải mái. */
   .board-layout {
     display: flex;
     flex-direction: column;
     gap: var(--space-lg);
-  }
-
-  @media (min-width: 769px) {
-    .board-layout {
-      display: grid;
-      grid-template-columns: 3fr 2fr;
-      align-items: start;
-    }
   }
 
   .center-title {

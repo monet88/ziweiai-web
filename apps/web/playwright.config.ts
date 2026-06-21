@@ -49,6 +49,8 @@ export default defineConfig({
         API_CORS_ORIGINS: `${WEB_ORIGIN},${API_ORIGIN}`,
         // US-017b: bật cờ MBTI cho e2e (mặc định false ở mọi nơi khác → fail-closed).
         EXTENDED_SYSTEM_MBTI_ENABLED: 'true',
+        // US-017c: bật cờ Hợp Hôn cho e2e (mặc định false ở mọi nơi khác → fail-closed).
+        EXTENDED_SYSTEM_HEPAN_ENABLED: 'true',
       },
     },
     {

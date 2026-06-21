@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { tryTranslateZiweiKey } from '../../../../apps/app/src/i18n/ziwei-terms-vi';
+import { tryTranslateZiweiKey } from '../../../../apps/web/src/lib/i18n/ziwei-terms-vi';
 import { iztroEmittedLocaleKeys } from './iztro-key-maps';
 
 describe('iztro locale key coverage', () => {

@@ -154,3 +154,18 @@ Router explanation-provider-router.ts chay chain 3 provider voi FAILOVER: deepse
 => US-017e (buoc C0 vision): them field optional imageInput {base64, mimeType} vao ExplanationPromptPayload, roi MOI trong 3 provider build shape rieng khi co anh. Neu chi sua 1 provider, failover sang provider con lai se am tham bo anh -> ket qua vision sai (hoac LLM "ao" mo ta anh khong ton tai). Test vision phai phu ca 3 provider (it nhat unit test build-request cho moi shape).
 
 Anh huong: tang do phuc tap C0 (3 provider thay vi 1) nhung van nam trong PR US-017e; khong doi thu tu epic. Khong co dependency moi (fetch san co).
+
+---
+
+## Correction (2026-06-21): DeepSeek - chi deepseek-v4-pro doc duoc anh
+
+Bo sung Correction vision o tren. DeepSeek provider dung apiEnv.DEEPSEEK_MODEL (mac dinh deepseek-v4-pro) hoac payload.modelOverride. KHONG phai moi model deepseek doc duoc anh:
+- deepseek-v4-pro: doc duoc anh (vision OK).
+- deepseek-v4-flash: KHONG doc duoc anh.
+
+=> US-017e (C0 vision): khi co imageInput, provider deepseek phai kiem NANG LUC MODEL (model resolved co thuoc allowlist vision khong), KHONG chi kiem provider.isAvailable(). Neu model hien tai khong ho tro vision:
+- bo qua deepseek trong chain vision (de failover sang gemini/openai-compat ho tro anh), HOAC
+- ep modelOverride sang model vision-capable (vd deepseek-v4-pro) cho rieng duong vision.
+Tranh truong hop gui anh cho deepseek-v4-flash -> loi hoac anh bi bo am tham -> LLM "ao" mo ta anh khong doc duoc.
+
+Khuyen nghi: them allowlist vision-capable model (vi du config VISION_CAPABLE_MODELS hoac hard-code danh sach toi thieu) + isVisionCapable() tren moi provider. Chain vision chi gom provider+model that su doc duoc anh.

@@ -21,15 +21,12 @@ interface BirthData {
 }
 
 async function createZiweiChart(page: Page, birth: BirthData): Promise<string> {
-  await page.locator('#birth-day').fill(birth.day);
-  await page.locator('#birth-month').fill(birth.month);
-  await page.locator('#birth-year').fill(birth.year);
+  await page.locator('#birth-day').selectOption(birth.day);
+  await page.locator('#birth-month').selectOption(birth.month);
+  await page.locator('#birth-year').selectOption(birth.year);
   await page.locator('#birth-gender').selectOption(birth.gender);
   await page.locator('#birth-hour').fill(birth.hour);
   await page.locator('#birth-minute').fill(birth.minute);
-  await page.locator('#birth-latitude').fill('10.762622');
-  await page.locator('#birth-longitude').fill('106.660172');
-  await page.locator('#birth-timezone').fill('Asia/Ho_Chi_Minh');
 
   await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
 
@@ -73,10 +70,12 @@ test('US-012: brightness color token + mutagen color token + tooltip + malefic c
     expect(mStyle, 'li có mutagen phải có --star-mutagen-color').toMatch(/--star-mutagen-color/);
   }
 
-  // 3) Tooltip (title): hover một sao có brightness hoặc mutagen → title có tiếng Việt
-  // Ưu tiên sao có brightness (luôn có ở snapshot chuẩn)
-  const firstStarWithMeta = board.locator('li.star').filter({ has: board.locator('.star-meta') }).first();
-  await firstStarWithMeta.hover();
+  // 3) Tooltip (title): sao có brightness/mutagen phải mang title tiếng Việt.
+  // `title` là thuộc tính HTML tĩnh (native tooltip) → đọc trực tiếp bằng getAttribute,
+  // KHÔNG hover. Bỏ hover loại bỏ nguồn flaky cũ (scroll-into-view/animation/overlap timeout).
+  // Selector dùng CSS `li.star:has(.star-meta)` cho gọn và tường minh.
+  const firstStarWithMeta = board.locator('li.star:has(.star-meta)').first();
+  await expect(firstStarWithMeta).toBeVisible();
   const title = await firstStarWithMeta.getAttribute('title');
   expect(title && title.length > 0, 'title tooltip phải có nội dung').toBeTruthy();
   // Nội dung tooltip là tiếng Việt (không Hán) — kiểm bằng pattern đơn giản

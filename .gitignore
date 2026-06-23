@@ -43,6 +43,7 @@ playwright-report/
 
 # Temp tooling output.
 whyzod.txt
+.tmp-review/
 
 # HTML UI preview reference (không phải nguồn build) + báo cáo review nội bộ.
 templates/ui-reference/

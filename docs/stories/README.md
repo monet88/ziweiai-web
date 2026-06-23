@@ -19,6 +19,8 @@ Trạng thái proof sống: `scripts/bin/harness-cli query matrix`.
 | E08-ziwei-visual-board | `US-008-ziwei-visual-board` | planned |
 | E09-anonymous-access | `US-009-anonymous-access` | planned |
 | E10-premium-ai-gating | `US-010-premium-ai-gating` | planned |
+| E20-supabase-cloud | `US-019-supabase-cloud-migration` | implemented |
+| E21-e2e-stabilization | `US-020-e2e-ziwei-flow-stabilization` | implemented |
 
 ## Normal Story
 

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const migrationPath = resolve(
   __dirname,
-  '../../supabase/migrations/000001_user-owned-astrology-records.up.sql',
+  '../../supabase/migrations/000001_user-owned-astrology-records.sql',
 );
 const migration = readFileSync(migrationPath, 'utf8');
 

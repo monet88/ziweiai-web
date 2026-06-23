@@ -29,17 +29,14 @@ interface BirthData {
 // Điền form sinh hợp lệ (Tử Vi mặc định) rồi submit. Toạ độ/múi giờ nhập tay (chưa geocoding).
 // Trả về chartId từ URL /charts/<id> sau khi điều hướng thành công.
 async function createZiweiChart(page: Page, birth: BirthData): Promise<string> {
-  await page.locator('#birth-day').fill(birth.day);
-  await page.locator('#birth-month').fill(birth.month);
-  await page.locator('#birth-year').fill(birth.year);
+  await page.locator('#birth-day').selectOption(birth.day);
+  await page.locator('#birth-month').selectOption(birth.month);
+  await page.locator('#birth-year').selectOption(birth.year);
   // Tử Vi Đẩu Số bắt buộc giới tính nam/nữ để an 12 cung (engine chặn 'unknown' → snapshot
   // blocked, palaces rỗng). Form mặc định 'Chưa rõ' → phải chọn 'Nam'/'Nữ' trước khi tạo.
   await page.locator('#birth-gender').selectOption(birth.gender);
   await page.locator('#birth-hour').fill(birth.hour);
   await page.locator('#birth-minute').fill(birth.minute);
-  await page.locator('#birth-latitude').fill('10.762622');
-  await page.locator('#birth-longitude').fill('106.660172');
-  await page.locator('#birth-timezone').fill('Asia/Ho_Chi_Minh');
 
   // Nút submit BirthForm nằm trong <main>; sidebar (lịch sử rỗng) cũng có nút "Lập lá số"
   // → scope về main để tránh strict-mode resolve 2 phần tử.

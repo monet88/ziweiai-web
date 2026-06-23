@@ -21,7 +21,7 @@ function requireEnv(name: string, value: string | undefined): string {
   if (value === undefined || value.trim() === '') {
     throw new Error(
       `[env] Thiếu biến môi trường bắt buộc: ${name}. ` +
-        `Khai báo trong apps/web/.env (chỉ dùng PUBLIC_* cho client).`,
+        `Khai báo trong .env ở thư mục gốc workspace (chỉ dùng PUBLIC_* cho client).`,
     );
   }
   return value;

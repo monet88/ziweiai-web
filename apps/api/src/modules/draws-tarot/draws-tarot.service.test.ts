@@ -138,6 +138,16 @@ describe('DrawsTarotService', () => {
     expect(result.narrative).toContain('trải bài ba lá');
   });
 
+  it('ném tiếp lỗi không phải provider (không nuốt thành fallback)', async () => {
+    // Chỉ ProviderUnavailableError/ProviderTimeoutError mới rơi về template. Lỗi bất ngờ khác phải
+    // propagate để không che giấu sự cố thật (vd bug lập trình) dưới một bài đọc template.
+    providerRouter.generate = vi.fn().mockRejectedValue(new Error('unexpected boom'));
+
+    await expect(
+      service.drawTarot(user, '127.0.0.1', 'Một câu hỏi', 'three-card', 'seed-8'),
+    ).rejects.toThrow('unexpected boom');
+  });
+
   it('trim câu hỏi và chặn câu hỏi chỉ chứa khoảng trắng ở service path', async () => {
     const trimmed = await service.drawTarot(user, '127.0.0.1', '  Tôi nên làm gì?  ', 'three-card', 'seed-4');
     expect(trimmed.question).toBe('Tôi nên làm gì?');

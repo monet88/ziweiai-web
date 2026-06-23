@@ -42,9 +42,10 @@ describe('buildTarotReadingPrompt', () => {
   });
 
   it('celtic-cross dùng nhãn 10 vị trí và yêu cầu quan hệ giữa các lá', () => {
-    const ten = Array.from({ length: 10 }, (_, index) =>
-      card(`swords_${index}`, `Kiếm ${index}`, false, index),
-    );
+    // Dùng id hợp lệ trong TAROT_DECK (10 lá đầu của chất Kiếm: ace..ten) để fixture phản ánh đúng
+    // dạng id thật, tránh gây hiểu nhầm cho người đọc sau này.
+    const swordRanks = ['ace', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+    const ten = swordRanks.map((rank, index) => card(`swords_${rank}`, `Kiếm ${rank}`, false, index));
     const prompt = buildTarotReadingPrompt('Tình huống phức tạp', 'celtic-cross', ten);
     expect(prompt).toContain('trải bài Celtic Cross (10 lá)');
     expect(prompt).toContain('[Cốt lõi vấn đề]');

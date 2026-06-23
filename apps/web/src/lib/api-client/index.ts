@@ -170,8 +170,9 @@ export function createVisionAnalysis(
 
 /**
  * US-017h: POST /draws/tarot — Bearer (anon được phép, theo backend). Gửi câu hỏi + kiểu trải bài
- * (+ seed tuỳ chọn để rút lại đúng bộ lá). Rút lá là deterministic server-side; diễn giải do LLM
- * sinh. Response parse qua tarotDrawSchema — sai shape → throw, không trust raw.
+ * (+ seed tuỳ chọn). Rút lá là deterministic server-side theo seed; diễn giải do LLM sinh. Web hiện
+ * KHÔNG gửi seed (mỗi lần rút là một quẻ mới); tham số seed để dành cho luồng cần tái lập về sau.
+ * Response parse qua tarotDrawSchema — sai shape → throw, không trust raw.
  */
 export function drawTarot(
   token: string,

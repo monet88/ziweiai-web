@@ -19,26 +19,27 @@
 
 <div class="screen">
   <div class="container" class:has-sidebar={Boolean(sidebar)}>
-    <div class="main-column">
-      <header class="hero">
-        <div class="hero-text">
-          {#if eyebrow}
-            <p class="eyebrow">{eyebrow}</p>
-          {/if}
-          <h1 class="title">{title}</h1>
-          {#if subtitle}
-            <p class="subtitle">{subtitle}</p>
-          {/if}
-        </div>
-        {#if action}
-          <div class="hero-action">{@render action()}</div>
+    <header class="hero">
+      <div class="hero-text">
+        {#if eyebrow}
+          <p class="eyebrow">{eyebrow}</p>
         {/if}
-      </header>
+        <h1 class="title">{title}</h1>
+        {#if subtitle}
+          <p class="subtitle">{subtitle}</p>
+        {/if}
+      </div>
+      {#if action}
+        <div class="hero-action">{@render action()}</div>
+      {/if}
+    </header>
+
+    <div class="body-layout">
       <main class="content">{@render children()}</main>
+      {#if sidebar}
+        <aside class="sidebar">{@render sidebar()}</aside>
+      {/if}
     </div>
-    {#if sidebar}
-      <aside class="sidebar">{@render sidebar()}</aside>
-    {/if}
   </div>
 </div>
 
@@ -60,7 +61,7 @@
     gap: var(--space-lg);
   }
 
-  .main-column {
+  .body-layout {
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -130,25 +131,28 @@
 
   /* >=1024px: 2 cột main + sidebar (thay đo width bằng JS của RN). */
   @media (min-width: 1024px) {
-    .container.has-sidebar {
-      flex-direction: row;
-      align-items: flex-start;
+    .container {
+      max-width: 1024px;
     }
 
-    .container.has-sidebar .main-column {
+    .container:not(.has-sidebar) {
+      max-width: 640px;
+    }
+
+    .container.has-sidebar .body-layout {
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .container.has-sidebar .content {
       flex: 1;
-      max-width: 760px;
+      max-width: 560px;
     }
 
     .container.has-sidebar .sidebar {
       width: 360px;
       flex-shrink: 0;
-    }
-
-    /* Khi KHÔNG CÓ sidebar (trang chi tiết): đẩy vào giữa màn hình */
-    .container:not(.has-sidebar) .main-column {
-      max-width: 760px;
-      margin: 0 auto;
     }
   }
 </style>

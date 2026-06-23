@@ -115,45 +115,43 @@
     />
   </div>
 
-  <div class="grid-2">
-    <SelectField
-      label={copy.calendar}
-      fieldId="birth-calendar"
-      value={model.draft.calendar}
-      options={calendarOptions}
-      disabled={model.isSubmitting}
-      onValueChange={(value) => model.setField('calendar', value as 'gregorian' | 'lunar')}
-    />
-    <SelectField
-      label={copy.genderForChart}
-      fieldId="birth-gender"
-      value={model.draft.gender}
-      options={genderOptions}
-      disabled={model.isSubmitting}
-      onValueChange={(value) => model.setField('gender', value as 'male' | 'female' | 'unknown')}
-    />
-  </div>
+  <SelectField
+    label={copy.calendar}
+    fieldId="birth-calendar"
+    value={model.draft.calendar}
+    options={calendarOptions}
+    disabled={model.isSubmitting}
+    onValueChange={(value) => model.setField('calendar', value as 'gregorian' | 'lunar')}
+  />
 
-  <div class="grid-2">
+  {#if model.draft.calendar === 'lunar'}
     <SelectField
-      label={copy.birthTimeCertainty}
-      fieldId="birth-time-certainty"
-      value={model.draft.isUnknownTime ? 'unknown' : 'known'}
-      options={timeOptions}
+      label={copy.lunarMonthKind}
+      fieldId="birth-leap-month"
+      value={model.draft.isLeapMonth ? 'leap' : 'regular'}
+      options={leapOptions}
       disabled={model.isSubmitting}
-      onValueChange={(value) => model.setField('isUnknownTime', value === 'unknown')}
+      onValueChange={(value) => model.setField('isLeapMonth', value === 'leap')}
     />
-    {#if model.draft.calendar === 'lunar'}
-      <SelectField
-        label={copy.lunarMonthKind}
-        fieldId="birth-leap-month"
-        value={model.draft.isLeapMonth ? 'leap' : 'regular'}
-        options={leapOptions}
-        disabled={model.isSubmitting}
-        onValueChange={(value) => model.setField('isLeapMonth', value === 'leap')}
-      />
-    {/if}
-  </div>
+  {/if}
+
+  <SelectField
+    label={copy.genderForChart}
+    fieldId="birth-gender"
+    value={model.draft.gender}
+    options={genderOptions}
+    disabled={model.isSubmitting}
+    onValueChange={(value) => model.setField('gender', value as 'male' | 'female' | 'unknown')}
+  />
+
+  <SelectField
+    label={copy.birthTimeCertainty}
+    fieldId="birth-time-certainty"
+    value={model.draft.isUnknownTime ? 'unknown' : 'known'}
+    options={timeOptions}
+    disabled={model.isSubmitting}
+    onValueChange={(value) => model.setField('isUnknownTime', value === 'unknown')}
+  />
 
   {#if model.draft.isUnknownTime}
     <NoticeBanner message={viCopy.warnings.unknownBirthTime} tone="warning" />

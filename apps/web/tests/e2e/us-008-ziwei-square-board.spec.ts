@@ -22,15 +22,12 @@ interface BirthData {
 }
 
 async function createZiweiChart(page: Page, birth: BirthData): Promise<string> {
-  await page.locator('#birth-day').fill(birth.day);
-  await page.locator('#birth-month').fill(birth.month);
-  await page.locator('#birth-year').fill(birth.year);
+  await page.locator('#birth-day').selectOption(birth.day);
+  await page.locator('#birth-month').selectOption(birth.month);
+  await page.locator('#birth-year').selectOption(birth.year);
   await page.locator('#birth-gender').selectOption(birth.gender);
   await page.locator('#birth-hour').fill(birth.hour);
   await page.locator('#birth-minute').fill(birth.minute);
-  await page.locator('#birth-latitude').fill('10.762622');
-  await page.locator('#birth-longitude').fill('106.660172');
-  await page.locator('#birth-timezone').fill('Asia/Ho_Chi_Minh');
 
   await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
 

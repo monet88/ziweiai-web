@@ -65,6 +65,9 @@ export const apiEnvSchema = z.object({
   // (~600-1200 từ) nên thời gian sinh thực tế của LLM thường vượt 15s mặc định (đo deepseek ~18s) →
   // 504 PROVIDER_TIMEOUT, tính năng gần như không dùng được. Cho phép phanh độc lập, mặc định 60s.
   AI_ANNUAL_REPORT_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
+  // Defaults Supabase CHỈ phục vụ unit test / local holdout (supabase start). Cloud là môi
+  // trường primary (decision 0016): phải đặt giá trị thật trong .env root, nếu thiếu backend
+  // sẽ boot êm vào endpoint local không tồn tại → lỗi runtime khó hiểu thay vì fail rõ.
   SUPABASE_URL: z.url().default('http://127.0.0.1:54321'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).default('test-service-role-key'),
   SUPABASE_JWT_SECRET: z.string().min(1).default('test-jwt-secret'),

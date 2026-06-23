@@ -38,14 +38,11 @@ const SYSTEM_CASES: readonly SystemCase[] = [
 
 // Điền form sinh trên màn hình hệ (đã đặt mặc định chartSystem) rồi submit. Trả chartId từ URL.
 async function createChartForSystem(page: Page, birth: SystemCase): Promise<string> {
-  await page.locator('#birth-day').fill(birth.day);
-  await page.locator('#birth-month').fill(birth.month);
-  await page.locator('#birth-year').fill(birth.year);
+  await page.locator('#birth-day').selectOption(birth.day);
+  await page.locator('#birth-month').selectOption(birth.month);
+  await page.locator('#birth-year').selectOption(birth.year);
   await page.locator('#birth-hour').fill(birth.hour);
   await page.locator('#birth-minute').fill(birth.minute);
-  await page.locator('#birth-latitude').fill('10.762622');
-  await page.locator('#birth-longitude').fill('106.660172');
-  await page.locator('#birth-timezone').fill('Asia/Ho_Chi_Minh');
 
   await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
 
@@ -90,8 +87,9 @@ test('US-007: 5 hệ thuật số khác → tạo → chi tiết VN không Hán 
     await page.waitForURL(/\/history$/, { timeout: 15_000 });
 
     // History thấy item lá số hệ vừa tạo (nhãn hệ tiếng Việt). Mở lại đúng route chi tiết.
+    // Mỗi item lịch sử là <a href="/charts/:id"> (role=link), KHÔNG phải button.
     const historyItem = page
-      .getByRole('button')
+      .getByRole('link')
       .filter({ hasText: birth.systemLabel })
       .first();
     await expect(historyItem, `Lịch sử phải có lá số ${birth.systemLabel} vừa tạo`).toBeVisible({

@@ -39,13 +39,17 @@
 
 <style>
   .nav-links {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
+    grid-auto-rows: 1fr;
     gap: var(--space-xs);
   }
 
   .nav-link {
-    display: block;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 100%;
     width: 100%;
     padding: var(--space-sm) var(--space-md);
     border: 1px solid var(--color-border-hairline);

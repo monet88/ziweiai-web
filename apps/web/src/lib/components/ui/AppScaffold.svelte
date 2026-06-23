@@ -50,6 +50,7 @@
   }
 
   .container {
+    box-sizing: border-box;
     width: 100%;
     max-width: 1180px;
     margin: 0 auto;
@@ -60,6 +61,7 @@
   }
 
   .main-column {
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: var(--space-lg);
@@ -110,6 +112,7 @@
   }
 
   .sidebar {
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     gap: var(--space-lg);

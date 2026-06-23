@@ -96,7 +96,7 @@ export const viCopy = {
     heroSubtitle:
       'Dùng cùng luồng nhập dữ liệu sinh để lập Bát Tự, sau đó luận theo phép Mạnh Phái lấy nhật chủ làm trọng và xem diễn giải tiếng Việt.',
     returnToDashboard: 'Quay về trang chính',
-    navOpen: 'Mở màn hình Mạnh Phái',
+    navOpen: 'Xem Mạnh Phái',
   },
   face: {
     heroEyebrow: 'XEM TƯỚNG',
@@ -113,7 +113,7 @@ export const viCopy = {
     resultTitle: 'Kết quả luận giải',
     retakeButton: 'Xem ảnh khác',
     returnToDashboard: 'Quay về trang chính',
-    navOpen: 'Mở màn hình Xem Tướng',
+    navOpen: 'Xem Tướng',
     privacyNotice:
       'Ảnh chỉ dùng để luận giải, lưu riêng tư và tự động xoá sau 7 ngày. Vui lòng chỉ tải ảnh của chính bạn.',
     identityRequired: 'Tính năng Xem Tướng yêu cầu đăng nhập bằng email; tài khoản khách không sử dụng được.',
@@ -136,7 +136,7 @@ export const viCopy = {
     resultTitle: 'Kết quả luận giải',
     retakeButton: 'Xem ảnh khác',
     returnToDashboard: 'Quay về trang chính',
-    navOpen: 'Mở màn hình Xem Tay',
+    navOpen: 'Xem Tay',
     privacyNotice:
       'Ảnh chỉ dùng để luận giải, lưu riêng tư và tự động xoá sau 7 ngày. Vui lòng chỉ tải ảnh của chính bạn.',
     identityRequired: 'Tính năng Xem Tay yêu cầu đăng nhập bằng email; tài khoản khách không sử dụng được.',
@@ -255,11 +255,11 @@ export const viCopy = {
     unknown: 'Chưa rõ',
     unknownTime: 'Không rõ giờ sinh',
     unknownUser: 'Chưa rõ tài khoản',
-    openBazi: 'Mở màn hình Bát Tự',
-    openMeihua: 'Mở màn hình Mai Hoa',
-    openLiuyao: 'Mở màn hình Lục Hào',
-    openDaliuren: 'Mở màn hình Đại Lục Nhâm',
-    openQimen: 'Mở màn hình Kỳ Môn',
+    openBazi: 'Xem Bát Tự',
+    openMeihua: 'Xem Mai Hoa',
+    openLiuyao: 'Xem Lục Hào',
+    openDaliuren: 'Xem Đại Lục Nhâm',
+    openQimen: 'Xem Kỳ Môn',
     viewHistory: 'Xem toàn bộ lịch sử',
     year: 'Năm',
     ziWeiOption: 'Tử Vi Đẩu Số',

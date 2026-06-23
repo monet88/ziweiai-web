@@ -155,4 +155,23 @@
       flex-shrink: 0;
     }
   }
+
+  /* >=1440px: Mở rộng trên màn hình Ultrawide để tránh bị "chìm" và "kì cục" */
+  @media (min-width: 1440px) {
+    .container {
+      max-width: 1360px;
+    }
+
+    .container:not(.has-sidebar) {
+      max-width: 800px;
+    }
+
+    .container.has-sidebar .content {
+      max-width: 760px;
+    }
+
+    .container.has-sidebar .sidebar {
+      width: 420px;
+    }
+  }
 </style>

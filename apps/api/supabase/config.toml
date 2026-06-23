@@ -149,6 +149,12 @@ max_indexes = 5
 
 [auth]
 enabled = true
+# LƯU Ý (decision 0016): khi chạy Supabase Cloud, các giá trị site_url / additional_redirect_urls
+# và section [auth.rate_limit] bên dưới KHÔNG được áp tự động từ file này — chúng chỉ có hiệu lực
+# với `supabase start` local + `supabase db` cho schema. Trên cloud phải set qua Dashboard hoặc
+# Management API (/v1/projects/<ref>/config/auth). Giữ file đồng bộ để tránh drift; nếu chạy
+# `supabase config push` thì giá trị ở đây sẽ ghi đè cloud (vd anonymous_users 30 sẽ reset trần
+# e2e đã nâng — xem US-020).
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
 site_url = "http://localhost:5173"
@@ -178,6 +184,9 @@ minimum_password_length = 6
 password_requirements = ""
 
 [auth.rate_limit]
+# CLOUD: các trần dưới đây phải set qua Dashboard/Management API, không tự áp từ toml (xem note ở
+# [auth]). E2E full-suite cần anonymous_users cao hơn 30 (đã nâng 1000 trên project dev qua
+# Management API — US-020); con số 30 ở đây là mặc định local, đừng `config push` đè lên cloud.
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
 email_sent = 2
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.

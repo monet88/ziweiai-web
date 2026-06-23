@@ -71,11 +71,9 @@ test('US-012: brightness color token + mutagen color token + tooltip + malefic c
   }
 
   // 3) Tooltip (title): sao có brightness/mutagen phải mang title tiếng Việt.
-  // `title` là thuộc tính HTML tĩnh (native tooltip) → đọc trực tiếp, KHÔNG hover.
-  // Dùng CSS `:has(.star-meta)` (đánh giá tương đối theo từng <li>) thay cho
-  // `.filter({ has: board.locator('.star-meta') })` — filter với locator re-root ở board
-  // không khớp như has-predicate nên trả 0 phần tử (đây chính là nguyên nhân hover/visible
-  // trước đó không tìm thấy phần tử, không phải do overlay đường nối).
+  // `title` là thuộc tính HTML tĩnh (native tooltip) → đọc trực tiếp bằng getAttribute,
+  // KHÔNG hover. Bỏ hover loại bỏ nguồn flaky cũ (scroll-into-view/animation/overlap timeout).
+  // Selector dùng CSS `li.star:has(.star-meta)` cho gọn và tường minh.
   const firstStarWithMeta = board.locator('li.star:has(.star-meta)').first();
   await expect(firstStarWithMeta).toBeVisible();
   const title = await firstStarWithMeta.getAttribute('title');

@@ -11,6 +11,9 @@
 
   // Route literal + cờ tương ứng + nhãn. Giữ route as const để qua kiểm tra kiểu route SvelteKit.
   const EXTENDED_LINKS = [
+    { route: '/tarot', flag: 'tarot', label: viCopy.tarot.navOpen },
+    { route: '/mbti', flag: 'mbti', label: viCopy.mbti.navOpen },
+    { route: '/hepan', flag: 'hepan', label: viCopy.hepan.navOpen },
     { route: '/mangpai', flag: 'mangpai', label: viCopy.mangpai.navOpen },
     { route: '/face', flag: 'face', label: viCopy.face.navOpen },
     { route: '/palm', flag: 'palm', label: viCopy.palm.navOpen },

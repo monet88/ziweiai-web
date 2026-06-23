@@ -5,7 +5,6 @@
   // hero copy riêng; luồng tạo lá số → điều hướng /charts/[id] giữ nguyên (id thật từ API).
   import type { ImplementedChartSystem } from '@ziweiai/contracts';
   import { useQueryClient } from '@tanstack/svelte-query';
-  import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
   import { AppScaffold } from '$lib/components/ui';

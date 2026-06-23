@@ -115,43 +115,45 @@
     />
   </div>
 
-  <SelectField
-    label={copy.calendar}
-    fieldId="birth-calendar"
-    value={model.draft.calendar}
-    options={calendarOptions}
-    disabled={model.isSubmitting}
-    onValueChange={(value) => model.setField('calendar', value as 'gregorian' | 'lunar')}
-  />
-
-  {#if model.draft.calendar === 'lunar'}
+  <div class="grid-2">
     <SelectField
-      label={copy.lunarMonthKind}
-      fieldId="birth-leap-month"
-      value={model.draft.isLeapMonth ? 'leap' : 'regular'}
-      options={leapOptions}
+      label={copy.calendar}
+      fieldId="birth-calendar"
+      value={model.draft.calendar}
+      options={calendarOptions}
       disabled={model.isSubmitting}
-      onValueChange={(value) => model.setField('isLeapMonth', value === 'leap')}
+      onValueChange={(value) => model.setField('calendar', value as 'gregorian' | 'lunar')}
     />
-  {/if}
+    <SelectField
+      label={copy.genderForChart}
+      fieldId="birth-gender"
+      value={model.draft.gender}
+      options={genderOptions}
+      disabled={model.isSubmitting}
+      onValueChange={(value) => model.setField('gender', value as 'male' | 'female' | 'unknown')}
+    />
+  </div>
 
-  <SelectField
-    label={copy.genderForChart}
-    fieldId="birth-gender"
-    value={model.draft.gender}
-    options={genderOptions}
-    disabled={model.isSubmitting}
-    onValueChange={(value) => model.setField('gender', value as 'male' | 'female' | 'unknown')}
-  />
-
-  <SelectField
-    label={copy.birthTimeCertainty}
-    fieldId="birth-time-certainty"
-    value={model.draft.isUnknownTime ? 'unknown' : 'known'}
-    options={timeOptions}
-    disabled={model.isSubmitting}
-    onValueChange={(value) => model.setField('isUnknownTime', value === 'unknown')}
-  />
+  <div class="grid-2">
+    <SelectField
+      label={copy.birthTimeCertainty}
+      fieldId="birth-time-certainty"
+      value={model.draft.isUnknownTime ? 'unknown' : 'known'}
+      options={timeOptions}
+      disabled={model.isSubmitting}
+      onValueChange={(value) => model.setField('isUnknownTime', value === 'unknown')}
+    />
+    {#if model.draft.calendar === 'lunar'}
+      <SelectField
+        label={copy.lunarMonthKind}
+        fieldId="birth-leap-month"
+        value={model.draft.isLeapMonth ? 'leap' : 'regular'}
+        options={leapOptions}
+        disabled={model.isSubmitting}
+        onValueChange={(value) => model.setField('isLeapMonth', value === 'leap')}
+      />
+    {/if}
+  </div>
 
   {#if model.draft.isUnknownTime}
     <NoticeBanner message={viCopy.warnings.unknownBirthTime} tone="warning" />

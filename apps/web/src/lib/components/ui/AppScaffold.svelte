@@ -130,17 +130,14 @@
 
   /* >=1024px: 2 cột main + sidebar (thay đo width bằng JS của RN). */
   @media (min-width: 1024px) {
-    /* Khi có sidebar: căn giữa 2 cột, giới hạn độ rộng để form không bị bẹp ngang */
     .container.has-sidebar {
       flex-direction: row;
       align-items: flex-start;
-      justify-content: center;
-      gap: 100px;
     }
 
     .container.has-sidebar .main-column {
-      flex: 0 1 560px;
-      max-width: 560px;
+      flex: 1;
+      max-width: 760px;
     }
 
     .container.has-sidebar .sidebar {
@@ -148,9 +145,9 @@
       flex-shrink: 0;
     }
 
-    /* Khi KHÔNG CÓ sidebar (trang chi tiết): thu nhỏ form và đẩy vào giữa màn hình */
+    /* Khi KHÔNG CÓ sidebar (trang chi tiết): đẩy vào giữa màn hình */
     .container:not(.has-sidebar) .main-column {
-      max-width: 640px;
+      max-width: 760px;
       margin: 0 auto;
     }
   }

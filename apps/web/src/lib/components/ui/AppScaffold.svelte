@@ -3,7 +3,7 @@
 
   // AppScaffold: khung layout nền cho các màn hình US-006..008. Header (eyebrow/title/
   // subtitle + slot action) + <main> semantic + container responsive. Bố cục 2 cột
-  // (main + sidebar) bật ở >=1024px qua CSS media query — KHÔNG đo width bằng JS
+  // (main + sidebar) bật ở >=1080px qua CSS media query — KHÔNG đo width bằng JS
   // (useWindowDimensions của RN → media query).
   interface Props {
     eyebrow?: string;
@@ -129,10 +129,10 @@
     }
   }
 
-  /* >=1024px: 2 cột main + sidebar (thay đo width bằng JS của RN). */
-  @media (min-width: 1024px) {
+  /* >=1080px (DESIGN.md desktop): 2 cột main + sidebar (thay đo width bằng JS của RN). */
+  @media (min-width: 1080px) {
     .container {
-      max-width: 1024px;
+      max-width: 1080px;
     }
 
     .container:not(.has-sidebar) {

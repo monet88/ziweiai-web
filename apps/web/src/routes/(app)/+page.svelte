@@ -1,7 +1,7 @@
 <script lang="ts">
   // Dashboard — màn chính sau đăng nhập (US-005). Bố cục 2 cột qua AppScaffold:
   // main = BirthForm (tạo lá số), sidebar = DashboardSidebar (lịch sử gần đây limit 8).
-  // <1024px sidebar xếp xuống dưới (AppScaffold media query); <768px form gom 1 cột (CSS).
+  // <1080px sidebar xếp xuống dưới (AppScaffold media query); <768px form gom 1 cột (CSS).
   //
   // Model dashboard khởi tạo một lần ở đây (factory runes) rồi truyền xuống BirthForm.
   // Đăng xuất: clear cache query để không rò dữ liệu user cũ (bất biến token tươi §3).

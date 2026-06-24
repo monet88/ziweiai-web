@@ -46,8 +46,8 @@
   .back-link {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
     border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-full);
     background: transparent;
@@ -55,7 +55,10 @@
     font-size: 13px;
     font-weight: 500;
     text-decoration: none;
-    transition: all 0.2s ease;
+    transition:
+      color 150ms ease,
+      border-color 150ms ease,
+      background-color 150ms ease;
   }
 
   .back-link:hover {

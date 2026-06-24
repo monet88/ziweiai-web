@@ -34,6 +34,7 @@ managed with `@tanstack/svelte-query`.
   `@ziweiai/contracts`. Do not fetch the API ad hoc from components.
 - Wrap server state in `@tanstack/svelte-query`; keep components thin and push
   data logic into `src/lib/features/<domain>`.
+- Use `PrimaryButton`'s `loading` prop bound to mutation/query pending states to handle form submissions and organically prevent double-submits.
 - Add a new product system as a `routes/(app)/<system>` folder plus a matching
   `lib/features/<system>` module, and register it via `system-registry`.
 - Svelte 5 runes only (`$state`, `$derived`, `$props`, `$effect`). Follow the

@@ -21,6 +21,12 @@
   $effect(() => auth.init());
 </script>
 
+<svelte:head>
+  <!-- Tiêu đề mặc định toàn app (WCAG 2.4.2): mọi route đều có <title>. Trang con có thể
+       override bằng <svelte:head><title> riêng. -->
+  <title>Tử Vi - Lập lá số và luận giải</title>
+</svelte:head>
+
 <QueryClientProvider client={data.queryClient}>
   {@render children()}
 </QueryClientProvider>

@@ -9,7 +9,7 @@
   import { resolve } from '$app/paths';
   import { fetchHistory, HISTORY_SCREEN_LIMIT } from '$lib/api-client';
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { NoticeBanner, EmptyStateCard, Spinner } from '$lib/components/ui';
+  import { NoticeBanner, EmptyStateCard, Spinner, PrimaryButton } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { formatHistoryViewedAt } from '$lib/features/chart/chart-display';
   import { dedupeHistoryChartEntries } from '$lib/features/dashboard/dashboard-history';
@@ -52,7 +52,17 @@
     <p class="state-text">{viCopy.history.loadingMessage}</p>
   </div>
 {:else if history.isError}
-  <NoticeBanner tone="danger" message={viCopy.history.errorMessage} />
+  <NoticeBanner tone="danger">
+    <div class="error-content">
+      <p class="error-text">{viCopy.history.errorMessage}</p>
+      <PrimaryButton
+        variant="utility"
+        label={viCopy.history.retryButton}
+        loading={history.isFetching}
+        onclick={() => void history.refetch()}
+      />
+    </div>
+  </NoticeBanner>
 {:else if chartItems.length === 0}
   <EmptyStateCard
     title={viCopy.history.emptyTitle}
@@ -87,6 +97,20 @@
     margin: 0;
     color: var(--color-text-muted);
     font-size: 14px;
+  }
+
+  .error-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    align-items: flex-start;
+  }
+
+  .error-text {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    line-height: 1.5;
   }
 
   .list {

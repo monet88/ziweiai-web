@@ -76,7 +76,7 @@
     box-sizing: border-box;
     padding: var(--space-md) calc(var(--space-md) + 18px) var(--space-md) var(--space-md);
     border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-xs);
     background: var(--color-bg-surface);
     color: var(--color-text-primary);
     font-size: 16px;

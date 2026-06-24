@@ -78,8 +78,16 @@
     width: min(720px, 100%);
     max-height: 85vh;
     border-radius: var(--radius-lg);
-    background: var(--color-surface);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    background: var(--color-bg-surface);
+    /* Elevation level-2 (DESIGN.md): bóng nhiều lớp gần-trong-suốt thay vì một cú đổ bóng
+       nặng — bề mặt nâng nhẹ khỏi giấy, không kịch tính. */
+    box-shadow:
+      0 0.7px 2.2px rgba(0, 0, 0, 0.011),
+      0 1.7px 5.3px rgba(0, 0, 0, 0.016),
+      0 3.1px 10px rgba(0, 0, 0, 0.02),
+      0 5.6px 17.9px rgba(0, 0, 0, 0.024),
+      0 10.4px 33.4px rgba(0, 0, 0, 0.029),
+      0 23px 52px rgba(0, 0, 0, 0.05);
   }
 
   .modal-head {
@@ -88,7 +96,7 @@
     justify-content: space-between;
     gap: var(--space-sm);
     padding: var(--space-lg);
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border-hairline);
   }
 
   .modal-title {

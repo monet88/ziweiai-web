@@ -217,7 +217,7 @@
     margin-bottom: var(--space-md);
   }
 
-  @media (min-width: 769px) {
+  @media (min-width: 768px) {
     .fortune-grid {
       grid-template-columns: 1fr 1fr;
     }

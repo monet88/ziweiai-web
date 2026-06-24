@@ -22,6 +22,11 @@
   --color-accent-primary-soft: #cfe4fa;
   --color-text-on-primary: #ffffff;
 
+  /* Màu CHỮ link trên nền sáng: dùng sắc xanh đậm hơn (= pressed) để đạt AA body
+     (>= 4.5:1) trên canvas/elevated, nơi accent-primary #0075de chỉ đạt ~4.19.
+     Tách vai trò: accent-primary cho viền/focus/nền nút; link cho chữ-liên-kết. */
+  --color-link: var(--color-accent-primary-pressed);
+
   /* Nhấn AI/premium (tím) + lỗi (đỏ) — token đơn cho từng vai trò ngữ nghĩa. */
   --color-accent-ai: #6d28d9;
   --color-accent-danger: #c0392b;

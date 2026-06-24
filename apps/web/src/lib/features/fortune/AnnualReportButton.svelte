@@ -65,7 +65,7 @@
 
   {#if isPaymentRequired}
     <p class="annual__hint">{paywallMessage}</p>
-  <PrimaryButton label={copy.paywallCta} variant="primary" onclick={() => goto(resolve('/pricing'))} />
+    <PrimaryButton label={copy.paywallCta} variant="primary" onclick={() => goto(resolve('/pricing'))} />
     <p class="annual__hint">{copy.paywallHint}</p>
   {:else}
     <PrimaryButton label={copy.generateCta} loading={mutation.isPending} onclick={() => mutation.mutate()} />

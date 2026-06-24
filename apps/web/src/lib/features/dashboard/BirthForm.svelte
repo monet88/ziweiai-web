@@ -3,10 +3,10 @@
   // qua model.setField (state bất biến ở model), submit qua model.submit. Lỗi field chỉ
   // hiện sau khi đã thử submit (model.submitAttempted) để không nhuộm đỏ form lúc trống.
   //
-  // Lịch lunar mới hiện loại tháng nhuận; biết giờ mới hiện giờ/phút (khớp ràng buộc
-  // birthInputSchema). Người dùng chỉ nhập DƯƠNG LỊCH: backend tự quy đổi sang âm lịch
-  // (snapshot mang sẵn lunarDate) nên form không còn ô chọn lịch / tháng nhuận. Biết giờ
-  // mới hiện giờ/phút. Địa điểm (toạ độ + múi giờ) KHÔNG nhập tay nữa: mặc định Việt Nam,
+  // Người dùng chỉ nhập DƯƠNG LỊCH: backend tự quy đổi sang âm lịch (snapshot mang sẵn
+  // lunarDate) nên form không còn ô chọn lịch / tháng nhuận, và buildCreateChartRequest
+  // ghim cứng calendar='gregorian' tại biên (xem decision 0018). Biết giờ mới hiện giờ/phút
+  // (khớp ràng buộc birthInputSchema). Địa điểm (toạ độ + múi giờ) KHÔNG nhập tay nữa: mặc định Việt Nam,
   // điền sẵn trong createBirthFormDraft (xem decision 0015). Ngày/tháng/năm dùng dropdown
   // cho dễ chọn trên mobile.
   import {

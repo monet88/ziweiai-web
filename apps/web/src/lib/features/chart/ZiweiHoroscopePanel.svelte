@@ -137,6 +137,6 @@
   }
 
   .panel__error {
-    color: var(--color-danger, #c0564a);
+    color: var(--color-accent-danger);
   }
 </style>

@@ -4,11 +4,11 @@
   // A11y: role="status" + nhãn ẩn tiếng Việt để screen reader thông báo trạng thái tải.
   interface Props {
     size?: 'sm' | 'lg';
-    tone?: 'gold' | 'dark';
+    tone?: 'primary' | 'dark';
     label?: string;
   }
 
-  let { size = 'sm', tone = 'gold', label = 'Đang tải' }: Props = $props();
+  let { size = 'sm', tone = 'primary', label = 'Đang tải' }: Props = $props();
 </script>
 
 <span class="spinner" class:lg={size === 'lg'} class:dark={tone === 'dark'} role="status">
@@ -20,8 +20,8 @@
     display: inline-block;
     width: 20px;
     height: 20px;
-    border: 2px solid color-mix(in srgb, var(--color-accent-gold) 30%, transparent);
-    border-top-color: var(--color-accent-gold);
+    border: 2px solid color-mix(in srgb, var(--color-accent-primary) 30%, transparent);
+    border-top-color: var(--color-accent-primary);
     border-radius: var(--radius-pill);
     animation: spin 0.7s linear infinite;
   }
@@ -33,8 +33,8 @@
   }
 
   .spinner.dark {
-    border-color: color-mix(in srgb, #15120a 30%, transparent);
-    border-top-color: #15120a;
+    border-color: color-mix(in srgb, var(--color-text-on-primary) 45%, transparent);
+    border-top-color: var(--color-text-on-primary);
   }
 
   .visually-hidden {

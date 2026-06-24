@@ -167,7 +167,7 @@
       {#if explanation.isPaymentRequired}
         <PrimaryButton
           label={viCopy.explanation.premiumCta}
-          variant="gold"
+              variant="primary"
           onclick={() => goto(resolve('/pricing'))}
         />
         <p class="hint">{viCopy.explanation.premiumHint}</p>
@@ -235,7 +235,7 @@
 
   .center-title {
     margin: 0 0 var(--space-sm);
-    color: var(--color-accent-gold-soft);
+    color: var(--color-text-primary);
     font-size: 14px;
     font-weight: 600;
   }

@@ -114,21 +114,21 @@
 
   .session-cta {
     padding: var(--space-xs) var(--space-md);
-    border: 1px solid var(--color-border-gold);
+    border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-md);
     background: var(--color-bg-surface);
-    color: var(--color-accent-gold-soft);
+    color: var(--color-accent-primary);
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
   }
 
   .session-cta:hover {
-    background: var(--color-border-gold);
+    background: var(--color-bg-elevated);
   }
 
   .session-cta:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 1px;
   }
 
@@ -172,18 +172,18 @@
 
   .nav-history {
     margin-top: var(--space-xs);
-    color: var(--color-accent-gold-soft);
+    color: var(--color-accent-primary);
     font-weight: 600;
   }
 
   .nav-link:hover,
   .nav-history:hover {
-    border-color: var(--color-border-gold);
+    border-color: var(--color-accent-primary);
   }
 
   .nav-link:focus-visible,
   .nav-history:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 1px;
   }
 </style>

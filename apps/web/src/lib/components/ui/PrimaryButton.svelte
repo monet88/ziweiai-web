@@ -6,7 +6,7 @@
   // click (disabled) và đổi con trỏ. Chỉ animate transform/opacity (compositor-friendly).
   interface Props {
     label?: string;
-    variant?: 'primary' | 'surface';
+    variant?: 'primary' | 'surface' | 'utility';
     type?: 'button' | 'submit' | 'reset';
     loading?: boolean;
     disabled?: boolean;
@@ -32,12 +32,13 @@
   {type}
   class="button"
   class:surface={variant === 'surface'}
+  class:utility={variant === 'utility'}
   disabled={isDisabled}
   aria-busy={loading}
   {onclick}
 >
   {#if loading}
-    <Spinner tone={variant === 'surface' ? 'primary' : 'dark'} />
+    <Spinner tone={variant === 'primary' ? 'dark' : 'primary'} />
   {:else if children}
     {@render children()}
   {:else}
@@ -66,6 +67,24 @@
     background: var(--color-bg-surface);
     border-color: var(--color-border-hairline);
     color: var(--color-text-primary);
+  }
+
+  /* utility (DESIGN.md button-utility): nút phụ vuông hơn (md 8px, KHÔNG pill),
+     nền surface + viền hairline, gọn hơn nút chính. Dùng cho retry / hành động phụ
+     không phải CTA. */
+  .button.utility {
+    min-height: 36px;
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    border-color: var(--color-border-hairline);
+    color: var(--color-text-primary);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .button.utility:hover:not(:disabled) {
+    border-color: var(--color-accent-primary);
   }
 
   .button:disabled {

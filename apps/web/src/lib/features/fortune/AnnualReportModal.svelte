@@ -78,7 +78,7 @@
     width: min(720px, 100%);
     max-height: 85vh;
     border-radius: var(--radius-lg);
-    background: var(--color-surface);
+    background: var(--color-bg-surface);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
   }
 
@@ -88,7 +88,7 @@
     justify-content: space-between;
     gap: var(--space-sm);
     padding: var(--space-lg);
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border-hairline);
   }
 
   .modal-title {

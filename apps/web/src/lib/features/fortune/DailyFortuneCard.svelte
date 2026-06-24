@@ -63,9 +63,9 @@
     flex-direction: column;
     gap: var(--space-sm);
     padding: var(--space-lg);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-lg);
-    background: var(--color-surface);
+    background: var(--color-bg-surface);
   }
 
   .fortune-card__head {

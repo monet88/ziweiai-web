@@ -66,7 +66,9 @@
         <span class="session-email">{viCopy.dashboard.anonymousSession}</span>
         <a class="session-cta" href={resolve('/sign-in')}>{viCopy.dashboard.signInOrSignUp}</a>
       {:else}
-        <span class="session-email">{auth.user?.email ?? viCopy.dashboard.unknownUser}</span>
+        <span class="session-email" title={auth.user?.email ?? undefined}
+          >{auth.user?.email ?? viCopy.dashboard.unknownUser}</span
+        >
         <PrimaryButton
           label={viCopy.dashboard.signOut}
           variant="surface"
@@ -108,8 +110,12 @@
   }
 
   .session-email {
+    max-width: 220px;
+    overflow: hidden;
     color: var(--color-text-muted);
     font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .session-cta {

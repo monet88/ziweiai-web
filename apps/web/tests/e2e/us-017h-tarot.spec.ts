@@ -43,8 +43,8 @@ test('US-017h: trải bài Celtic Cross → rút 10 lá', async ({ page }) => {
   await page.goto('/tarot');
   await page.locator('#tarot-question').fill('Tôi đang mắc kẹt trong một quyết định lớn, nên nhìn nhận ra sao?');
 
-  // Chọn Celtic Cross qua radiogroup.
-  await page.getByRole('radio', { name: /Celtic Cross/ }).click();
+  // Chọn Celtic Cross qua radiogroup bằng value để tránh phụ thuộc vào bản dịch UI.
+  await page.locator('button[value="celtic-cross"]').click();
   await page.getByRole('button', { name: 'Rút bài', exact: true }).click();
 
   await expect(page.getByText('Kết quả rút bài', { exact: true })).toBeVisible({ timeout: 30_000 });

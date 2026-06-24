@@ -97,6 +97,8 @@
               class:selected={model.spread === option.value}
               role="radio"
               aria-checked={model.spread === option.value}
+              tabindex={model.spread === option.value ? 0 : -1}
+              value={option.value}
               disabled={model.isSubmitting}
               onclick={() => model.setSpread(option.value)}
             >

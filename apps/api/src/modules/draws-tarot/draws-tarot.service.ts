@@ -104,6 +104,12 @@ export class DrawsTarotService {
         explanationKind: 'tarot-reading',
         promptOverride: buildTarotReadingPrompt(question, spread, cards),
       });
+      // Chốt sớm payload provider: nếu null/thiếu renderedMarkdown hợp lệ → ném
+      // ProviderUnavailableError để rơi về template tiếng Việt, tránh trả narrative
+      // rỗng/undefined xuống tarotDrawSchema.parse (sẽ 500 khó truy nguyên).
+      if (!providerResult || typeof providerResult.renderedMarkdown !== 'string') {
+        throw new ProviderUnavailableError('LLM provider returned an empty or invalid narrative response.');
+      }
       this.logger.log(
         `[tarot] outcome=generated provider=${providerResult.providerMetadata.provider ?? 'unknown'} cards=${cards.length} spread=${spread}`,
       );

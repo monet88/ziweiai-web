@@ -132,10 +132,12 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
         );
       }
 
-      const renderedMarkdown = body.choices?.[0]?.message?.content?.trim();
-      if (!renderedMarkdown) {
-        throw new ProviderUnavailableError('Nhà cung cấp OpenAI-compatible không trả về nội dung luận giải.');
-      }
+    const renderedMarkdown = body.choices?.[0]?.message?.content?.trim();
+    if (!renderedMarkdown) {
+      // Use the caller-supplied message so the conversation flow surfaces "không trả về nội dung hội
+      // thoại" instead of the explanation text. Both callers pass `emptyMessage`.
+      throw new ProviderUnavailableError(params.emptyMessage);
+    }
 
       if (containsCjkText(renderedMarkdown)) {
         this.logger.warn('Nhà cung cấp OpenAI-compatible trả về nội dung chứa chữ Hán, từ chối.');

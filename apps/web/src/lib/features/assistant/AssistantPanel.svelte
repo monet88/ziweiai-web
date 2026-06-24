@@ -28,6 +28,16 @@
   // The Svelte 5 heuristic warns on initial capture; behavior is intentional (getter below reads live state).
   let localConversationId = $state<string | null>(initialConversationId);
 
+  // Keep local state in sync when the PARENT switches to a different conversation/chart. Guard against
+  // clobbering an id the model just created: the parent does not feed that id back through the prop, so
+  // only adopt a non-null prop change (parent explicitly selected another conversation). A null prop is
+  // ignored to preserve a model-created id.
+  $effect(() => {
+    if (initialConversationId !== null && initialConversationId !== localConversationId) {
+      localConversationId = initialConversationId;
+    }
+  });
+
   const assistant = createAssistantModel({
     auth,
     queryClient,
@@ -45,7 +55,11 @@
     const text = inputValue.trim();
     if (!text) return;
     inputValue = '';
-    await assistant.sendText(text);
+    const ok = await assistant.sendText(text);
+    if (!ok) {
+      // Restore the draft so a failed send (network/quota/provider) does not make the user retype it.
+      inputValue = text;
+    }
   }
 
   async function handleQuickPrompt(key: QuickPromptKey) {

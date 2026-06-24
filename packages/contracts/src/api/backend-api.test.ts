@@ -187,6 +187,14 @@ describe('backend API contracts', () => {
     expect(done.type).toBe('done');
   });
 
+  it('accepts whitespace-only chunk deltas but rejects empty ones', () => {
+    // Regression: SSE chunking splits on whitespace and emits space deltas between words. Trimming the
+    // delta here would reject those and abort the stream (P1). Whitespace is meaningful; empty is not.
+    expect(conversationStreamEventSchema.parse({ type: 'chunk', delta: ' ' }).type).toBe('chunk');
+    expect(conversationStreamEventSchema.parse({ type: 'chunk', delta: '\n' }).type).toBe('chunk');
+    expect(() => conversationStreamEventSchema.parse({ type: 'chunk', delta: '' })).toThrow();
+  });
+
   it('accepts conversation detail envelopes', () => {
     const payload = conversationDetailResponseSchema.parse({
       conversation: {

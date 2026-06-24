@@ -10,6 +10,7 @@ import { z } from 'zod';
 import type { Response } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
+import { ApiErrorHttpException } from '../../common/http/api-error';
 import { ConversationsService } from './services/conversations.service';
 
 @Controller('conversations')
@@ -49,13 +50,16 @@ export class ConversationsController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Param('conversationId') conversationId: string,
     @Body() body: unknown,
+    @Req() request: AuthenticatedRequest,
   ) {
     const parsedId = z.uuid().parse(conversationId);
     const input = createConversationMessageRequestSchema.parse(body);
     // Non-streaming path: persist user + generate assistant, return full assistant message via detail.
+    // Pass the real client IP so per-IP daily quota / rate-limit applies (anon abuse control); the
+    // streaming path already does this. A hardcoded value would collapse all anon callers into one key.
     await this.conversationsService.appendMessageAndGenerate(
       currentUser,
-      'unknown',
+      request.ip ?? 'unknown',
       parsedId,
       input,
     );
@@ -73,12 +77,6 @@ export class ConversationsController {
     const parsedId = z.uuid().parse(conversationId);
     const input = createConversationMessageRequestSchema.parse(body);
 
-    // Set SSE headers
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache, no-transform');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders?.();
-
     const send = (event: unknown) => {
       const validated = conversationStreamEventSchema.parse(event);
       res.write(`data: ${JSON.stringify(validated)}\n\n`);
@@ -94,6 +92,14 @@ export class ConversationsController {
         input,
       );
 
+      // Flush SSE headers ONLY after generation succeeds. Flushing earlier sends a 200 status, so a
+      // later failure can no longer set the real HTTP status (ERR_HTTP_HEADERS_SENT). With this order,
+      // a pre-stream failure returns a clean JSON error with the correct status (catch branch below).
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders?.();
+
       // Naive chunking to satisfy stream contract (word-by-word-ish). Real streaming can replace this later.
       const words = fullText.split(/(\s+)/);
       for (const w of words) {
@@ -105,18 +111,38 @@ export class ConversationsController {
 
       send({ type: 'done', message: assistantMessage });
     } catch (error) {
-      const status = (error as { status?: number }).status ?? HttpStatus.BAD_GATEWAY;
-      const code =
-        (error as { response?: { code?: string } }).response?.code ??
-        ((error as { message?: string }).message?.includes('FEATURE_DISABLED') ? 'FEATURE_DISABLED' : 'PROVIDER_UNAVAILABLE');
-      const message = (error as Error).message ?? 'Generation failed';
-      send({
-        type: 'error',
-        error: { code, message, requestId: (request as { requestId?: string }).requestId ?? null },
-      });
-      res.status(status);
+      // Known failures arrive as ApiErrorHttpException (typed code + status) from the service: quota
+      // (429 RATE_LIMITED), feature flag (403 FEATURE_DISABLED), provider timeout/unavailable, etc.
+      // Use those instead of fragile message string-matching.
+      const requestId = request.requestId ?? null;
+      const { status, code, message } = this.resolveStreamError(error);
+
+      if (!res.headersSent) {
+        // Stream never started — respond with a normal JSON error the client already understands.
+        res.status(status).json({ code, message, requestId });
+      } else {
+        // Stream already open — the status is locked; surface the error as an SSE error frame.
+        send({ type: 'error', error: { code, message, requestId } });
+      }
     } finally {
       res.end();
     }
+  }
+
+  private resolveStreamError(error: unknown): { status: number; code: string; message: string } {
+    if (error instanceof ApiErrorHttpException) {
+      const payload = error.getResponse();
+      const shaped = typeof payload === 'object' && payload !== null ? (payload as { code?: string; message?: string }) : {};
+      return {
+        status: error.getStatus(),
+        code: shaped.code ?? 'PROVIDER_UNAVAILABLE',
+        message: shaped.message ?? 'Generation failed',
+      };
+    }
+    return {
+      status: HttpStatus.BAD_GATEWAY,
+      code: 'PROVIDER_UNAVAILABLE',
+      message: error instanceof Error ? error.message : 'Generation failed',
+    };
   }
 }

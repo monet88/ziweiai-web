@@ -89,6 +89,18 @@ describe('buildConversationPrompt', () => {
     expect(messages).toHaveLength(14);
   });
 
+  it('drops dangling user turns that have no following assistant reply', () => {
+    // A user message with no assistant after it means a prior generation failed (user row is durable,
+    // assistant row never written). Feeding it back would replay an unanswered question as context.
+    const answeredUser = { ...message(1), role: 'user' as const, content: 'Đã được trả lời' };
+    const assistantReply = { ...message(2), role: 'assistant' as const, content: 'Câu trả lời' };
+    const danglingUser = { ...message(3), role: 'user' as const, content: 'Chưa được trả lời' };
+
+    const selected = selectConversationPromptMessages([answeredUser, assistantReply, danglingUser], 12);
+
+    expect(selected.map((m) => m.content)).toEqual(['Đã được trả lời', 'Câu trả lời']);
+  });
+
   it('includes the language invariant and current user message', () => {
     const prompt = buildConversationPrompt({
       chartSnapshot,

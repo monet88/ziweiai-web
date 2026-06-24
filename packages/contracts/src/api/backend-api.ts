@@ -43,8 +43,6 @@ export const explanationKindSchema = z.enum(['overview', 'love', 'career', 'heal
 export const providerPreferenceSchema = z.enum(['auto', 'deepseek', 'openai-compat', 'gemini']);
 export const quickPromptKeySchema = z.enum(['overview', 'love', 'career', 'health', 'timing']);
 
-const trimmedNonEmptyStringSchema = z.string().trim().min(1);
-
 export const createConversationRequestSchema = z.object({
   chartSnapshotId: z.uuid(),
   title: z.string().trim().min(1).max(120).optional(),
@@ -89,7 +87,10 @@ export const apiErrorSchema = z.object({
 });
 
 export const conversationStreamEventSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('chunk'), delta: trimmedNonEmptyStringSchema }),
+  // delta carries raw streaming text. Whitespace between words is meaningful (the client
+  // concatenates deltas), so allow any non-empty string — do NOT trim. Empty strings are still
+  // rejected to catch real bugs. Trimming here would drop inter-word spaces and abort the stream.
+  z.object({ type: z.literal('chunk'), delta: z.string().min(1) }),
   z.object({ type: z.literal('done'), message: conversationMessageRecordSchema }),
   z.object({ type: z.literal('error'), error: apiErrorSchema }),
 ]);

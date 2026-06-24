@@ -225,45 +225,52 @@ export async function* streamConversationMessage(
   }
 
   const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
+  // try/finally so an early abort (caller breaks out of `for await`, or navigates away) still releases
+  // the reader lock and cancels the underlying stream — otherwise the connection can hang/leak.
+  try {
+    const decoder = new TextDecoder();
+    let buffer = '';
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
 
-    let idx: number;
-    // SSE frames are separated by double newlines; each data: line carries JSON
-    while ((idx = buffer.indexOf('\n\n')) !== -1) {
-      const frame = buffer.slice(0, idx);
-      buffer = buffer.slice(idx + 2);
+      let idx: number;
+      // SSE frames are separated by double newlines; each data: line carries JSON
+      while ((idx = buffer.indexOf('\n\n')) !== -1) {
+        const frame = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
 
-      // Extract data: lines (support multi-line data by concatenation)
-      const dataLines = frame
-        .split('\n')
-        .filter((l) => l.startsWith('data:'))
-        .map((l) => l.replace(/^data:\s?/, ''));
+        // Extract data: lines (support multi-line data by concatenation)
+        const dataLines = frame
+          .split('\n')
+          .filter((l) => l.startsWith('data:'))
+          .map((l) => l.replace(/^data:\s?/, ''));
 
-      if (dataLines.length === 0) continue;
+        if (dataLines.length === 0) continue;
 
-      const payload = dataLines.join('\n');
-      let raw: unknown;
-      try {
-        raw = JSON.parse(payload);
-      } catch {
-        continue;
-      }
-
-      const parsed = conversationStreamEventSchema.safeParse(raw);
-      if (!parsed.success) {
-        if (import.meta.env.DEV) {
-          console.error('[api] stream event parse error:', parsed.error.issues);
+        const payload = dataLines.join('\n');
+        let raw: unknown;
+        try {
+          raw = JSON.parse(payload);
+        } catch {
+          continue;
         }
-        continue;
+
+        const parsed = conversationStreamEventSchema.safeParse(raw);
+        if (!parsed.success) {
+          if (import.meta.env.DEV) {
+            console.error('[api] stream event parse error:', parsed.error.issues);
+          }
+          continue;
+        }
+        yield parsed.data;
       }
-      yield parsed.data;
     }
+  } finally {
+    reader.cancel().catch(() => {});
+    reader.releaseLock();
   }
 }
 

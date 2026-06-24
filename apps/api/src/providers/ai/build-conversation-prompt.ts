@@ -16,7 +16,22 @@ export function selectConversationPromptMessages(
   messages: readonly ConversationMessageRecord[],
   limit: number,
 ): ConversationMessageRecord[] {
-  return messages.slice(Math.max(0, messages.length - Math.max(0, limit)));
+  // Drop "dangling" user turns — a user message with no following assistant reply. These occur when
+  // a previous generation failed after the user row was persisted (the user row is durable, the
+  // assistant row never gets written). Feeding them back would replay an unanswered question as
+  // historical context and skew the prompt. Keep all assistant turns and only the answered user turns.
+  const completed: ConversationMessageRecord[] = [];
+  for (let i = 0; i < messages.length; i += 1) {
+    const message = messages[i];
+    if (message.role === 'user') {
+      if (messages[i + 1]?.role === 'assistant') {
+        completed.push(message);
+      }
+      continue;
+    }
+    completed.push(message);
+  }
+  return completed.slice(Math.max(0, completed.length - Math.max(0, limit)));
 }
 
 export function buildConversationPrompt(payload: ConversationPromptPayload, historyLimit = 12): string {

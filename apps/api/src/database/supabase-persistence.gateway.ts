@@ -503,11 +503,17 @@ export class SupabasePersistenceGateway {
     return records.reverse();
   }
 
-  async countConversationMessagesSince(ownerUserId: string, sinceIso: string): Promise<number> {
+  /**
+   * Đếm số LƯỢT hỏi (user turn) kể từ `sinceIso` cho quota hội thoại signed-in. Mỗi lượt thành công
+   * ghi 2 row (user + assistant); chỉ đếm role='user' để khớp điểm enforce per-turn — nếu đếm cả hai,
+   * trần 30 sẽ chặn signed-in sau 15 lượt trong khi anon (đếm 1 lần/request) được 30 lượt.
+   */
+  async countConversationUserMessagesSince(ownerUserId: string, sinceIso: string): Promise<number> {
     const { count, error } = await this.client
       .from('conversation_messages')
       .select('*', { count: 'exact', head: true })
       .eq('owner_user_id', ownerUserId)
+      .eq('role', 'user')
       .gte('created_at', sinceIso);
     this.throwIfError(error);
     return count ?? 0;

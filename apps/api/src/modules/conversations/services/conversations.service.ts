@@ -15,6 +15,7 @@ import { apiEnv } from '../../../config/env';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import { ConversationProviderRouter } from '../../../providers/ai/conversation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../../providers/ai/provider-errors';
+import { DailyQuotaExceededError, RateLimitWindowError } from '../../quotas/quota-errors';
 import { resolveQuickPrompt } from '../../../providers/ai/quick-prompts';
 import { QuotasService } from '../../quotas/quotas.service';
 
@@ -177,11 +178,25 @@ export class ConversationsService {
     try {
       await this.quotasService.assertCanCreateConversationMessage(userId, ipAddress, isAnonymous);
     } catch (error) {
-      throw new ApiErrorHttpException(
-        HttpStatus.TOO_MANY_REQUESTS,
-        'RATE_LIMITED',
-        error instanceof Error ? error.message : 'Đã vượt hạn mức hội thoại.',
-      );
+      // Only typed quota/rate-limit errors map to 429. Anything else (e.g. a quota-store outage or
+      // a persistence failure) must NOT be disguised as RATE_LIMITED — that masks real backend
+      // problems and tells the client to "retry later" when the issue is server-side. Rethrow so the
+      // global filter surfaces the true status (mirrors vision-analysis.service quota handling).
+      if (error instanceof RateLimitWindowError) {
+        throw new ApiErrorHttpException(
+          HttpStatus.TOO_MANY_REQUESTS,
+          'RATE_LIMITED',
+          'Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.',
+        );
+      }
+      if (error instanceof DailyQuotaExceededError) {
+        throw new ApiErrorHttpException(
+          HttpStatus.TOO_MANY_REQUESTS,
+          'RATE_LIMITED',
+          'Đã vượt hạn mức hội thoại trong ngày.',
+        );
+      }
+      throw error;
     }
   }
 

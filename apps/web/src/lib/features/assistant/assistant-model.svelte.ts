@@ -77,8 +77,8 @@ export function createAssistantModel(options: AssistantModelOptions) {
     return id;
   }
 
-  async function appendUserAndStream(request: CreateConversationMessageRequest): Promise<void> {
-    if (isGenerating) return;
+  async function appendUserAndStream(request: CreateConversationMessageRequest): Promise<boolean> {
+    if (isGenerating) return false;
     isGenerating = true;
     lastError = null;
 
@@ -137,29 +137,36 @@ export function createAssistantModel(options: AssistantModelOptions) {
         }
       }
 
-      // Invalidate detail queries so other views (future list) sync
-      await queryClient.invalidateQueries({ queryKey: ['conversation-detail', conversationId] });
+        // Invalidate detail queries so other views (future list) sync
+        await queryClient.invalidateQueries({ queryKey: ['conversation-detail', conversationId] });
+        return true;
     } catch (err) {
-      // Remove the placeholder assistant on error
-      if (messages.length > 0 && messages[messages.length - 1]?.role === 'assistant') {
+      // Remove the placeholder assistant ONLY if it is still streaming. If the stream already emitted
+      // `done` (placeholder replaced by the real message, isStreaming=false) a late error — e.g. a
+      // network close after completion — must not discard the completed answer.
+      const last = messages[messages.length - 1];
+      if (last?.role === 'assistant' && last.isStreaming) {
         messages = messages.slice(0, -1);
       }
       lastError = err instanceof Error ? err.message : viCopy.explanation.statusFailed;
-      throw err;
+      // Do NOT rethrow: callers are UI event handlers, and an unawaited rejection would surface as an
+      // unhandled promise rejection. The error is already captured in `lastError` for display; return
+      // false so callers can react (e.g. restore the composer input).
+      return false;
     } finally {
       isGenerating = false;
     }
   }
 
-  async function sendText(content: string): Promise<void> {
-    await appendUserAndStream({
+  async function sendText(content: string): Promise<boolean> {
+    return appendUserAndStream({
       content,
       providerPreference: 'auto',
     });
   }
 
-  async function sendQuickPrompt(quickPromptKey: QuickPromptKey): Promise<void> {
-    await appendUserAndStream({
+  async function sendQuickPrompt(quickPromptKey: QuickPromptKey): Promise<boolean> {
+    return appendUserAndStream({
       quickPromptKey,
       providerPreference: 'auto',
     });

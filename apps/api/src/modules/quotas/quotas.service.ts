@@ -193,8 +193,10 @@ export class QuotasService {
     }
 
     const sinceIso = new Date(Date.now() - ONE_DAY_MS).toISOString();
-    const messagesCreated = await this.persistenceGateway.countConversationMessagesSince(userId, sinceIso);
-    if (messagesCreated >= apiEnv.API_CONVERSATION_MESSAGES_PER_DAY_PER_USER) {
+    // Count only user turns (each successful turn writes a user + assistant row). Counting both would
+    // halve the effective signed-in limit vs anon (which increments the counter once per request).
+    const turnsCreated = await this.persistenceGateway.countConversationUserMessagesSince(userId, sinceIso);
+    if (turnsCreated >= apiEnv.API_CONVERSATION_MESSAGES_PER_DAY_PER_USER) {
       throw new DailyQuotaExceededError('Daily conversation quota exceeded.');
     }
   }

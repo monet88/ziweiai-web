@@ -27,14 +27,20 @@
 </section>
 
 <style>
+  /* ex-empty-state-card (DESIGN.md): khung điềm tĩnh, canh giữa, bo góc rộng.
+     DESIGN.md gọi nền canvas-soft (#f6f5f4) — nhưng trang ở app này đã là #f6f5f4,
+     nên vai trò "khung tách nhẹ khỏi nền trang" tương đương là --color-bg-elevated
+     (#efedea, nền nhấn dịu), không phải bg-primary (sẽ tàng hình trên trang). */
   .card {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: var(--space-sm);
-    padding: var(--space-lg);
-    background: var(--color-bg-surface);
+    padding: var(--space-xxl) var(--space-lg);
+    text-align: center;
+    background: var(--color-bg-elevated);
     border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
   }
 
   .title {
@@ -46,9 +52,10 @@
 
   .description {
     margin: 0;
+    max-width: 42ch;
     color: var(--color-text-secondary);
-    font-size: 14px;
-    line-height: 21px;
+    font-size: 15px;
+    line-height: 1.5;
   }
 
   .action {

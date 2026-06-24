@@ -7,6 +7,10 @@
 Web app SvelteKit cho người dùng đã đăng nhập: tạo và xem **lá số Tử Vi** (và 5 hệ thuật
 số khác: BaZi, Mai Hoa, Lục Hào, Đại Lục Nhâm, Kỳ Môn) kèm **luận giải AI** theo cung/khía cạnh.
 
+Bàn 12 cung Tử Vi còn phản ánh **lát cắt thời gian = hôm nay**: mỗi ô tự tô màu + chip
+flow-info cho 4 tầng vận hạn (đại vận / lưu niên / lưu nguyệt / lưu nhật), tính server-side
+qua `POST /charts/:id/horoscope` (decision `0011`). Web chỉ hiển thị, không tự tính.
+
 Là client thay thế cho app Expo/RN cũ. Backend (NestJS) + engine tính lá số nằm cùng monorepo
 nhưng tách biệt: web không bao giờ chạy logic tính toán, chỉ gọi API và hiển thị.
 

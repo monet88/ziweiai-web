@@ -11,10 +11,13 @@ import {
   conversationRecordSchema,
   conversationMessageRecordSchema,
 } from '../persistence/persistence-records';
-import { chartSystemSchema } from '../chart/chart-system';
+import { implementedChartSystems } from '../chart/chart-system';
 
-// Re-export chartSystemSchema as createChartSystemSchema for backward compatibility
-export { chartSystemSchema as createChartSystemSchema };
+// POST /charts chỉ chấp nhận 6 hệ đã có adapter (implementedChartSystems), KHÔNG phải toàn
+// bộ 12 hệ contract (chartSystemSchema). Nếu dùng chartSystemSchema, payload {chartSystem:'tarot'}
+// qua được Zod rồi mới vỡ ở tầng adapter lookup với mã NOT_FOUND lệch nghĩa — invariant
+// "POST /charts giới hạn ở implementedChartSystems" phải được chặn ngay tại schema.
+export const createChartSystemSchema = z.enum(implementedChartSystems);
 export const apiErrorCodeSchema = z.enum([
   'UNAUTHORIZED',
   'FORBIDDEN',
@@ -25,7 +28,10 @@ export const apiErrorCodeSchema = z.enum([
   'PROVIDER_UNAVAILABLE',
   'INTERNAL_ERROR',
   'PAYMENT_REQUIRED',
-  'FEATURE_DISABLED',
+  // US-017: new error codes for extended systems
+  'IDENTITY_REQUIRED',      // anon user hit face/palm (requires email identity)
+  'FEATURE_DISABLED',       // feature flag off for a system
+  'VISION_QUOTA_EXCEEDED',  // separate vision quota exceeded
 ]);
 
 export const authenticatedUserSchema = z.object({
@@ -90,7 +96,7 @@ export const conversationStreamEventSchema = z.discriminatedUnion('type', [
 
 export const createChartRequestSchema = z.object({
   birthInput: birthInputSchema,
-  chartSystem: chartSystemSchema,
+  chartSystem: createChartSystemSchema,
   makeActiveBirthProfile: z.boolean().default(true),
   viewYear: z.int().min(1900).max(2200).optional(),
 });

@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { CreateChartRequest, CreateChartResponse } from '@ziweiai/contracts';
+import type { ChartSystem, CreateChartRequest, CreateChartResponse } from '@ziweiai/contracts';
 import { buildChartSnapshotDedupeKey } from '../../../database/idempotency';
+import { ApiErrorHttpException } from '../../../common/http/api-error';
+import { apiEnv } from '../../../config/env';
 import { ChartsService } from './charts.service';
 
 afterEach(() => {
@@ -601,6 +603,228 @@ describe('ChartsService', () => {
     ).rejects.toThrow(/chưa được bật ở backend/);
 
     expect(persistenceGateway.createChartSnapshot).not.toHaveBeenCalled();
+  });
+});
+
+function buildChartRecord(snapshot: CreateChartResponse['snapshot']) {
+  return {
+    id: '33333333-3333-3333-8333-333333333333',
+    ownerUserId: '22222222-2222-2222-8222-222222222222',
+    birthProfileId: '11111111-1111-1111-8111-111111111111',
+    chartSystem: snapshot.chartSystem,
+    snapshotDedupeKey: '0123456789abcdef',
+    snapshot,
+    inputHashDigest: snapshot.inputHash.digest,
+    confidenceLevel: snapshot.calculationConfidence.level,
+    createdAt: snapshot.createdAt,
+  };
+}
+
+const HOROSCOPE_USER = '22222222-2222-2222-8222-222222222222';
+const HOROSCOPE_CHART = '33333333-3333-3333-8333-333333333333';
+
+describe('ChartsService.computeHoroscope', () => {
+  it('trả frame hợp lệ cho lá số Tử Vi đã sở hữu (engine thật)', async () => {
+    const snapshot = buildSnapshot();
+    const persistenceGateway = {
+      findChartSnapshotById: vi.fn(async () => buildChartRecord(snapshot)),
+    };
+    const quotasService = { assertCanCreateChart: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+
+    const result = await service.computeHoroscope(
+      HOROSCOPE_USER,
+      '127.0.0.1',
+      HOROSCOPE_CHART,
+      '2026-06-17',
+      ['decadal', 'yearly', 'monthly', 'daily'],
+    );
+
+    expect(result.chartId).toBe(HOROSCOPE_CHART);
+    expect(result.asOf).toBe('2026-06-17');
+    expect(result.frame.decadal.index).toBeGreaterThanOrEqual(0);
+    expect(result.frame.yearly.index).toBeGreaterThanOrEqual(0);
+    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
+  });
+
+  it('404 khi lá số không tồn tại / không sở hữu', async () => {
+    const persistenceGateway = { findChartSnapshotById: vi.fn(async () => null) };
+    const quotasService = { assertCanCreateChart: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+
+    await expect(
+      service.computeHoroscope(HOROSCOPE_USER, '127.0.0.1', HOROSCOPE_CHART, '2026-06-17', ['decadal']),
+    ).rejects.toThrow(/Không tìm thấy lá số/);
+    // Quota check chạy TRƯỚC khi query DB (defense-in-depth + phản hồi đồng nhất);
+    // user hết hạn mức không kích hoạt được DB read.
+    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
+  });
+
+  it('400 khi chart không phải zi-wei-dou-shu', async () => {
+    const snapshot = buildSnapshot({ chartSystem: 'ba-zi' });
+    const persistenceGateway = { findChartSnapshotById: vi.fn(async () => buildChartRecord(snapshot)) };
+    const quotasService = { assertCanCreateChart: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+
+    await expect(
+      service.computeHoroscope(HOROSCOPE_USER, '127.0.0.1', HOROSCOPE_CHART, '2026-06-17', ['decadal']),
+    ).rejects.toThrow(/chỉ áp dụng cho lá số Tử Vi/);
+    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
+  });
+
+  it('429 khi quota assertCanCreateChart vượt', async () => {
+    const snapshot = buildSnapshot();
+    const persistenceGateway = { findChartSnapshotById: vi.fn(async () => buildChartRecord(snapshot)) };
+    const quotasService = {
+      assertCanCreateChart: vi.fn(async () => {
+        throw new Error('Đã vượt hạn mức lập lá số.');
+      }),
+    };
+    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+
+    await expect(
+      service.computeHoroscope(HOROSCOPE_USER, '127.0.0.1', HOROSCOPE_CHART, '2026-06-17', ['decadal']),
+    ).rejects.toMatchObject({ getStatus: expect.any(Function) });
+  });
+});
+
+function expectApiError(error: unknown, status: number, code: string): void {
+  expect(error).toBeInstanceOf(ApiErrorHttpException);
+  const apiError = error as ApiErrorHttpException;
+  const response = apiError.getResponse() as { code: string };
+  expect(apiError.getStatus()).toBe(status);
+  expect(response.code).toBe(code);
+}
+
+describe('ChartsService — gate Mạnh Phái (US-017d)', () => {
+  const originalMangpaiEnabled = apiEnv.EXTENDED_SYSTEM_MANGPAI_ENABLED;
+  const originalFreeForAll = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
+  const MANGPAI_USER = '22222222-2222-2222-8222-222222222222';
+
+  afterEach(() => {
+    apiEnv.EXTENDED_SYSTEM_MANGPAI_ENABLED = originalMangpaiEnabled;
+    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = originalFreeForAll;
+    vi.restoreAllMocks();
+  });
+
+  function buildService(quotaOverride?: () => Promise<void>) {
+    const snapshot = buildSnapshot({ chartSystem: 'mangpai' });
+    const adapterCalculateChart = vi.fn(async () => snapshot);
+    const persistenceGateway = {
+      findLatestBirthProfileByInputHash: vi.fn(async () => null),
+      createBirthProfile: vi.fn(async () => ({
+        id: '11111111-1111-1111-8111-111111111111',
+        ownerUserId: MANGPAI_USER,
+        isActive: true,
+        rawBirthInput: snapshot.birth.originalInput,
+        normalizedBirth: snapshot.birth,
+        inputHashDigest: snapshot.inputHash.digest,
+        retentionMode: 'persistent',
+        deletedAt: null,
+      })),
+      findChartSnapshotByDedupeKey: vi.fn(async () => null),
+      createChartSnapshot: vi.fn(async () => buildChartRecord(snapshot)),
+    };
+    const quotasService = {
+      assertCanCreateChart: vi.fn(quotaOverride ?? (async () => undefined)),
+    };
+    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    (service as unknown as { adapters: Record<string, { calculateChart: typeof adapterCalculateChart; usesViewYear: boolean }> }).adapters.mangpai = {
+      calculateChart: adapterCalculateChart,
+      usesViewYear: false,
+    };
+    return { service, persistenceGateway, quotasService, adapterCalculateChart, snapshot };
+  }
+
+  const mangpaiInput: CreateChartRequest = {
+    birthInput: buildSnapshot().birth.originalInput,
+    chartSystem: 'mangpai',
+    makeActiveBirthProfile: true,
+  };
+
+  it('403 FEATURE_DISABLED khi cờ Mạnh Phái tắt — không chạm quota/adapter', async () => {
+    apiEnv.EXTENDED_SYSTEM_MANGPAI_ENABLED = false;
+    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
+    const { service, quotasService, adapterCalculateChart } = buildService();
+
+    await service.createChart(MANGPAI_USER, '127.0.0.1', mangpaiInput).then(
+      () => expect.fail('phải ném FEATURE_DISABLED'),
+      (error) => expectApiError(error, 403, 'FEATURE_DISABLED'),
+    );
+    expect(quotasService.assertCanCreateChart).not.toHaveBeenCalled();
+    expect(adapterCalculateChart).not.toHaveBeenCalled();
+  });
+
+  it('402 PAYMENT_REQUIRED khi cờ bật nhưng AI không free-for-all — gate AI TRƯỚC quota', async () => {
+    apiEnv.EXTENDED_SYSTEM_MANGPAI_ENABLED = true;
+    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
+    const { service, quotasService } = buildService();
+
+    await service.createChart(MANGPAI_USER, '127.0.0.1', mangpaiInput).then(
+      () => expect.fail('phải ném PAYMENT_REQUIRED'),
+      (error) => expectApiError(error, 402, 'PAYMENT_REQUIRED'),
+    );
+    // Gate AI chặn trước nên quota chưa bị tiêu.
+    expect(quotasService.assertCanCreateChart).not.toHaveBeenCalled();
+  });
+
+  it('429 RATE_LIMITED khi vượt quota (cờ bật + AI free)', async () => {
+    apiEnv.EXTENDED_SYSTEM_MANGPAI_ENABLED = true;
+    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
+    const { service } = buildService(async () => {
+      throw new Error('Daily chart quota exceeded.');
+    });
+
+    await service.createChart(MANGPAI_USER, '127.0.0.1', mangpaiInput).then(
+      () => expect.fail('phải ném RATE_LIMITED'),
+      (error) => expectApiError(error, 429, 'RATE_LIMITED'),
+    );
+  });
+
+  it('happy-path: cờ bật + AI free + quota ok → lập được lá số mangpai', async () => {
+    apiEnv.EXTENDED_SYSTEM_MANGPAI_ENABLED = true;
+    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
+    const { service, adapterCalculateChart, snapshot } = buildService();
+
+    const result = await service.createChart(MANGPAI_USER, '127.0.0.1', mangpaiInput);
+    expect(adapterCalculateChart).toHaveBeenCalledTimes(1);
+    expect(result.snapshot.chartSystem).toBe('mangpai');
+    expect(result.snapshot).toStrictEqual(snapshot);
+  });
+
+  it('hệ cũ (zi-wei-dou-shu) KHÔNG bị gate Mạnh Phái dù cờ tắt + AI khoá', async () => {
+    apiEnv.EXTENDED_SYSTEM_MANGPAI_ENABLED = false;
+    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
+    const snapshot = buildSnapshot();
+    const persistenceGateway = {
+      findLatestBirthProfileByInputHash: vi.fn(async () => null),
+      createBirthProfile: vi.fn(async () => ({
+        id: '11111111-1111-1111-8111-111111111111',
+        ownerUserId: MANGPAI_USER,
+        isActive: true,
+        rawBirthInput: snapshot.birth.originalInput,
+        normalizedBirth: snapshot.birth,
+        inputHashDigest: snapshot.inputHash.digest,
+        retentionMode: 'persistent',
+        deletedAt: null,
+      })),
+      findChartSnapshotByDedupeKey: vi.fn(async () => null),
+      createChartSnapshot: vi.fn(async () => buildChartRecord(snapshot)),
+    };
+    const quotasService = { assertCanCreateChart: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    (service as unknown as { adapters: Record<string, { calculateChart: () => Promise<typeof snapshot>; usesViewYear: boolean }> }).adapters['zi-wei-dou-shu'] = {
+      calculateChart: async () => snapshot,
+      usesViewYear: true,
+    };
+
+    const result = await service.createChart(MANGPAI_USER, '127.0.0.1', {
+      birthInput: snapshot.birth.originalInput,
+      chartSystem: 'zi-wei-dou-shu',
+      makeActiveBirthProfile: true,
+    });
+    expect(result.snapshot.chartSystem).toBe('zi-wei-dou-shu');
+    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
   });
 });
 

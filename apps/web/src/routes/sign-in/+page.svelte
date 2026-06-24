@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
+  import { NoticeBanner } from '$lib/components/ui';
 
   // Nhãn tiếng Việt hardcode tạm — i18n tập trung là US-003 (bất biến ngôn ngữ: không chữ Hán).
   const auth = getAuthStore();
@@ -62,10 +63,10 @@
     <p class="subtitle">Luận giải Tử Vi và chiêm tinh cá nhân hoá.</p>
 
     {#if errorMessage}
-      <p class="banner danger" role="alert">{errorMessage}</p>
+      <NoticeBanner tone="danger" message={errorMessage} />
     {/if}
     {#if noticeMessage}
-      <p class="banner info">{noticeMessage}</p>
+      <NoticeBanner tone="info" message={noticeMessage} />
     {/if}
 
     <label class="field">
@@ -110,59 +111,84 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    padding: 1.5rem;
-    font-family: system-ui, sans-serif;
+    padding: var(--space-lg);
+    background: var(--color-bg-primary);
   }
 
   .card {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-md);
     width: 100%;
-    max-width: 30rem;
+    max-width: 420px;
+    padding: var(--space-xl);
+    border: 1px solid var(--color-border-hairline);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
   }
 
   .eyebrow {
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    color: #b8860b;
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.125px;
+    color: var(--color-text-muted);
   }
 
   .title {
-    font-size: 1.875rem;
-    font-weight: 600;
     margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.625px;
+    color: var(--color-text-primary);
   }
 
   .subtitle {
-    color: #6b7280;
-    margin: 0 0 0.5rem;
+    margin: 0 0 var(--space-xs);
+    color: var(--color-text-muted);
+    font-size: 15px;
   }
 
   .field {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    font-size: 0.875rem;
+    gap: var(--space-xxs);
+    font-size: 14px;
+    color: var(--color-text-secondary);
   }
 
   .field input {
-    padding: 0.65rem 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 0.5rem;
-    font-size: 1rem;
+    padding: var(--space-xs) var(--space-sm);
+    border: 1px solid var(--color-border-hairline);
+    border-radius: var(--radius-xs);
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    font-size: 16px;
+  }
+
+  .field input:focus-visible {
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: 1px;
   }
 
   .primary {
-    padding: 0.7rem 1rem;
+    padding: var(--space-sm) var(--space-md);
     border: none;
-    border-radius: 0.5rem;
-    background: #111827;
-    color: #fff;
-    font-size: 1rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-accent-primary);
+    color: var(--color-text-on-primary);
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
+  }
+
+  .primary:hover:not(:disabled) {
+    background: var(--color-accent-primary-pressed);
+  }
+
+  .primary:focus-visible {
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: 2px;
   }
 
   .primary:disabled {
@@ -171,27 +197,25 @@
   }
 
   .switch {
+    align-self: flex-start;
+    padding: var(--space-xs) 0;
     background: none;
     border: none;
-    color: #b8860b;
-    font-size: 0.875rem;
+    color: var(--color-link);
+    font-size: 14px;
     cursor: pointer;
   }
 
-  .banner {
-    padding: 0.6rem 0.75rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    margin: 0;
+  .switch:focus-visible {
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: 2px;
   }
 
-  .banner.danger {
-    background: #fee2e2;
-    color: #b91c1c;
-  }
-
-  .banner.info {
-    background: #dbeafe;
-    color: #1e40af;
+  /* Touch: nút chuyển đăng nhập/đăng ký là chữ trần (~18px cao) — nâng lên 44px khi con trỏ
+     thô; 44px là ngưỡng AAA (WCAG 2.5.5), vượt mức AA 24px (2.5.8). */
+  @media (pointer: coarse) {
+    .switch {
+      min-height: 44px;
+    }
   }
 </style>

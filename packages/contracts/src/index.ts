@@ -7,6 +7,9 @@ export * from './chart/chart-metadata';
 export * from './chart/chart-system';
 export * from './chart/chart-input-profile';
 export * from './chart/chart-snapshot';
+export * from './chart/pairing-snapshot';
+export * from './chart/tarot-draw';
+export * from './chart/vision-analysis';
 export {
   meihuaTrigramKeys,
   meihuaElementKeys,
@@ -30,7 +33,13 @@ export {
   getMeihuaRelationKey,
 } from './chart/meihua-terms';
 export type { MeihuaLineValueKey, MeihuaMethodKey } from './chart/meihua-terms';
+export * from './horoscope/horoscope-frame';
+export * from './horoscope/horoscope-request';
+export * from './horoscope/horoscope-response';
 export * from './api/backend-api';
+export * from './api/features';
 export * from './explanations/explanation-context';
 export * from './health';
 export * from './persistence/persistence-records';
+export * from './quizzes/mbti-result';
+export * from './quizzes/mbti-questions';

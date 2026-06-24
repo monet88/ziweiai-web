@@ -24,15 +24,12 @@ interface BirthData {
 // Điền form sinh Tử Vi hợp lệ rồi submit; trả chartId từ URL. (Trùng helper us-006: mỗi spec
 // tự chứa theo quy ước hiện tại — không export chéo giữa các spec.)
 async function createZiweiChart(page: Page, birth: BirthData): Promise<string> {
-  await page.locator('#birth-day').fill(birth.day);
-  await page.locator('#birth-month').fill(birth.month);
-  await page.locator('#birth-year').fill(birth.year);
+  await page.locator('#birth-day').selectOption(birth.day);
+  await page.locator('#birth-month').selectOption(birth.month);
+  await page.locator('#birth-year').selectOption(birth.year);
   await page.locator('#birth-gender').selectOption(birth.gender);
   await page.locator('#birth-hour').fill(birth.hour);
   await page.locator('#birth-minute').fill(birth.minute);
-  await page.locator('#birth-latitude').fill('10.762622');
-  await page.locator('#birth-longitude').fill('106.660172');
-  await page.locator('#birth-timezone').fill('Asia/Ho_Chi_Minh');
 
   await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
 
@@ -61,6 +58,12 @@ test('US-011: đường nối hiển thị sẵn (auto-Mệnh) → hover dim cun
   });
   const board = page.getByRole('group', { name: 'Bàn 12 cung' });
   await expect(board).toBeVisible();
+
+  // Sau khi submit + điều hướng sang trang chi tiết, con trỏ Playwright vẫn ghim ở vị trí click
+  // nút "Lập lá số"; nếu bàn render ngay dưới con trỏ thì một pointerenter có thể tự kích hoạt
+  // hover (≠ người dùng thật). Đưa chuột về góc trung tính để khẳng định đúng trạng thái MẶC ĐỊNH
+  // (chưa hover) trước khi đếm ô dim.
+  await page.mouse.move(0, 0);
 
   // ---- (1) Mặc định: đường nối auto-Mệnh vẽ sẵn, không dim ô nào ----
   // Tam phương tứ chính = 4 cung; loại chính cung → 3 đoạn nối từ cung Mệnh.

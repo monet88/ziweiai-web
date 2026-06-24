@@ -1,6 +1,7 @@
 import type { ChartSnapshot, ConversationMessageRecord, ExplanationContext, PalaceScope, QuickPromptKey } from '@ziweiai/contracts';
 import * as ziweiCore from '@ziweiai/core';
 import { buildBaziExplanationPrompt } from './build-bazi-explanation-prompt';
+import { buildMangpaiExplanationPrompt } from './build-mangpai-explanation-prompt';
 import { buildMeihuaExplanationPrompt } from './build-meihua-explanation-prompt';
 import { buildLiuyaoExplanationPrompt } from './build-liuyao-explanation-prompt';
 import { buildDaliurenExplanationPrompt } from './build-daliuren-explanation-prompt';
@@ -16,20 +17,43 @@ export interface ExplanationProviderResult {
 }
 
 export interface ExplanationPromptPayload {
-  chartSnapshot: ChartSnapshot;
+  // US-017e: vision (face/palm) không có lá số → chartSnapshot/explanationContext optional. Chúng chỉ
+  // được dùng khi KHÔNG có promptOverride (provider gọi buildExplanationPrompt). Đường vision luôn set
+  // promptOverride nên hai field này vắng mặt là hợp lệ; buildExplanationPrompt sẽ tự guard.
+  chartSnapshot?: ChartSnapshot;
   explanationKind: string;
-  explanationContext: ExplanationContext;
+  explanationContext?: ExplanationContext;
   // Khi có và lá số là Tử Vi, prompt sinh riêng cho cung/vận hạn đó (14 mục).
   palaceScope?: PalaceScope;
   // Cho phép caller override model cụ thể của provider. Field nội bộ, hiện chưa có
   // nguồn public nào set (luôn undefined) — provider fallback về ENV model mặc định.
   // Khi expose qua public input sau này phải kèm allowlist + đưa model vào idempotency key.
   modelOverride?: string;
+  // US-016: prompt user dựng sẵn (vd báo cáo năm) để tái dùng provider chain (timeout + CJK
+  // guard + failover) thay vì viết provider riêng. Khi set, provider dùng chuỗi này làm user
+  // message thay cho `buildExplanationPrompt(payload)`. System prompt vẫn là EXPLANATION_SYSTEM_PROMPT.
+  promptOverride?: string;
+  // US-016: override timeout (ms) cho call provider này, thay cho AI_PROVIDER_TIMEOUT_MS mặc định.
+  // Báo cáo năm tổng hợp lưu niên + 12 lưu nguyệt (~600-1200 từ) nên sinh lâu hơn explanation
+  // thường — đường annual truyền AI_ANNUAL_REPORT_TIMEOUT_MS để không bị 504 ở 15s. Khi không set,
+  // provider dùng AI_PROVIDER_TIMEOUT_MS như cũ.
+  timeoutMsOverride?: number;
+  // US-017e: ảnh đầu vào cho luận giải vision (Xem Tướng/Xem Tay). Khi set, MỖI provider tự dựng
+  // shape riêng (deepseek/openai-compat: content part image_url dạng data URL; gemini: inlineData).
+  // Router chỉ chọn provider+model thật sự đọc được ảnh (isVisionCapable) để tránh gửi ảnh cho model
+  // text-only rồi bị bỏ thầm lặng → "LLM ảo".
+  imageInput?: {
+    base64: string;
+    mimeType: string;
+  };
 }
 
 export interface AiExplanationProvider {
   readonly providerName: string;
   isAvailable(): boolean;
+  // US-017e: provider+model hiện hành có đọc được ảnh không (chain vision lọc theo cờ này). modelOverride
+  // cho phép kiểm tra theo model được ép riêng cho đường vision thay vì model ENV mặc định.
+  isVisionCapable(modelOverride?: string): boolean;
   generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult>;
 }
 
@@ -169,8 +193,20 @@ function formatHoroscopeItem(item: {
 }
 
 export function buildExplanationPrompt(payload: ExplanationPromptPayload): string {
+  // US-017e: chartSnapshot/explanationContext giờ optional (đường vision không có lá số). Hàm này
+  // CHỈ được gọi khi không có promptOverride; mọi đường text đều kèm đủ hai field. Guard để type-sound
+  // + fail rõ nếu có caller mới quên truyền snapshot mà cũng không set promptOverride.
+  if (!payload.chartSnapshot || !payload.explanationContext) {
+    throw new Error('buildExplanationPrompt yêu cầu chartSnapshot + explanationContext; đường vision phải dùng promptOverride.');
+  }
   if (payload.chartSnapshot.chartSystem === 'ba-zi') {
     return buildBaziExplanationPrompt(payload.chartSnapshot, payload.explanationKind);
+  }
+
+  // US-017d: Mạnh Phái dựng trên Bát Tự nhưng có lớp luận riêng (snapshot.mangpai). Phải route
+  // TRƯỚC nhánh fallback overview, nếu không khối mangpai bị bỏ qua (P2 review PR #27).
+  if (payload.chartSnapshot.chartSystem === 'mangpai') {
+    return buildMangpaiExplanationPrompt(payload.chartSnapshot, payload.explanationKind);
   }
 
   if (payload.chartSnapshot.chartSystem === 'mei-hua-yi-shu') {

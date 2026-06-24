@@ -6,7 +6,7 @@
   // click (disabled) và đổi con trỏ. Chỉ animate transform/opacity (compositor-friendly).
   interface Props {
     label?: string;
-    variant?: 'gold' | 'surface';
+    variant?: 'primary' | 'surface' | 'utility';
     type?: 'button' | 'submit' | 'reset';
     loading?: boolean;
     disabled?: boolean;
@@ -16,7 +16,7 @@
 
   let {
     label,
-    variant = 'gold',
+    variant = 'primary',
     type = 'button',
     loading = false,
     disabled = false,
@@ -32,12 +32,13 @@
   {type}
   class="button"
   class:surface={variant === 'surface'}
+  class:utility={variant === 'utility'}
   disabled={isDisabled}
   aria-busy={loading}
   {onclick}
 >
   {#if loading}
-    <Spinner tone={variant === 'surface' ? 'gold' : 'dark'} />
+    <Spinner tone={variant === 'primary' ? 'dark' : 'primary'} />
   {:else if children}
     {@render children()}
   {:else}
@@ -54,8 +55,8 @@
     padding: var(--space-sm) var(--space-lg);
     border: 1px solid transparent;
     border-radius: var(--radius-pill);
-    background: var(--color-accent-gold);
-    color: #15120a;
+    background: var(--color-accent-primary);
+    color: var(--color-text-on-primary);
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
@@ -68,13 +69,39 @@
     color: var(--color-text-primary);
   }
 
+  /* utility (DESIGN.md button-utility): nút phụ vuông hơn (md 8px, KHÔNG pill),
+     nền surface + viền hairline, gọn hơn nút chính. Dùng cho retry / hành động phụ
+     không phải CTA. */
+  .button.utility {
+    min-height: 36px;
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    border-color: var(--color-border-hairline);
+    color: var(--color-text-primary);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .button.utility:hover:not(:disabled) {
+    border-color: var(--color-accent-primary);
+  }
+
+  /* Touch: nút phụ giữ 36px gọn trên desktop (pointer mịn), nhưng nâng lên 44px khi
+     con trỏ thô (cảm ứng) — 44px là ngưỡng AAA (WCAG 2.5.5), vượt mức AA 24px (2.5.8). */
+  @media (pointer: coarse) {
+    .button.utility {
+      min-height: 44px;
+    }
+  }
+
   .button:disabled {
     opacity: 0.7;
     cursor: progress;
   }
 
   .button:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 2px;
   }
 </style>

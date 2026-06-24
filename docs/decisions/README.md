@@ -17,6 +17,7 @@ were made.
 | `0008-contracts-dual-esm-cjs` | Contracts dual ESM/CJS build | Accepted |
 | `0009-anonymous-auth-strategy` | Anonymous auth strategy (planned) | Accepted |
 | `0010-premium-ai-entitlement-flag` | Premium AI entitlement flag (planned) | Accepted |
+| `0016-supabase-cloud-environment` | Chuyển Supabase local sang Supabase Cloud | Accepted |
 
 Use `docs/templates/decision.md` when adding a new decision.
 

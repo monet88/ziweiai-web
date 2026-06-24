@@ -61,8 +61,9 @@
     <section class="demo">
       <h2>Nút</h2>
       <div class="row">
-        <PrimaryButton label="Gold" onclick={() => {}} />
+        <PrimaryButton label="Chính" onclick={() => {}} />
         <PrimaryButton label="Surface" variant="surface" onclick={() => {}} />
+        <PrimaryButton label="Phụ" variant="utility" onclick={() => {}} />
         <PrimaryButton label="Tải" loading={loadingDemo} onclick={toggleLoading} />
         <PrimaryButton label="Khoá" disabled onclick={() => {}} />
       </div>

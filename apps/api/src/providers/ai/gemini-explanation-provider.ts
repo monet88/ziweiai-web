@@ -48,7 +48,11 @@ function buildGeminiSdkEndpoint(model: string): string {
   return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 }
 
-function buildGeminiSdkRequest(params: { prompt: string }): RequestInit {
+function buildGeminiSdkRequest(params: {
+  prompt: string;
+  imageInput?: { base64: string; mimeType: string };
+  timeoutMsOverride?: number;
+}): RequestInit {
   const headers: Record<string, string> = apiEnv.GEMINI_SDK_BASE_URL
     ? {
         Authorization: `Bearer ${apiEnv.GEMINI_API_KEY}`,
@@ -59,6 +63,13 @@ function buildGeminiSdkRequest(params: { prompt: string }): RequestInit {
         'x-goog-api-key': apiEnv.GEMINI_API_KEY,
       };
 
+  // US-017e: Gemini dùng shape RIÊNG cho ảnh — KHÔNG phải image_url như OpenAI-style. Ảnh là một part
+  // inlineData {mimeType, data:<base64>} nằm cùng mảng parts với text. Khi có imageInput, thêm part này.
+  const textPart = { text: params.prompt };
+  const parts = params.imageInput
+    ? [textPart, { inlineData: { mimeType: params.imageInput.mimeType, data: params.imageInput.base64 } }]
+    : [textPart];
+
   return {
     method: 'POST',
     headers,
@@ -68,11 +79,11 @@ function buildGeminiSdkRequest(params: { prompt: string }): RequestInit {
       },
       contents: [
         {
-          parts: [{ text: params.prompt }],
+          parts,
         },
       ],
     }),
-    signal: AbortSignal.timeout(apiEnv.AI_PROVIDER_TIMEOUT_MS),
+    signal: AbortSignal.timeout(params.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS),
   };
 }
 
@@ -94,12 +105,20 @@ export class GeminiExplanationProvider implements AiConversationProvider {
     });
   }
 
+  // US-017e: model Gemini (gemini-3.5-flash mặc định) hỗ trợ đa thể thức (đọc ảnh). Coi như đọc được
+  // ảnh khi key có sẵn.
+  isVisionCapable(): boolean {
+    return this.isAvailable();
+  }
+
   async generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {
     return this.generateContent({
-      prompt: buildExplanationPrompt(payload),
+      prompt: payload.promptOverride ?? buildExplanationPrompt(payload),
       emptyMessage: 'Gemini không trả về nội dung luận giải.',
       metadataKind: 'explanation',
       modelOverride: payload.modelOverride,
+      imageInput: payload.imageInput,
+      timeoutMsOverride: payload.timeoutMsOverride,
     });
   }
 
@@ -108,6 +127,8 @@ export class GeminiExplanationProvider implements AiConversationProvider {
     emptyMessage: string;
     metadataKind: 'explanation' | 'conversation';
     modelOverride?: string;
+    imageInput?: { base64: string; mimeType: string };
+    timeoutMsOverride?: number;
   }): Promise<ExplanationProviderResult> {
     if (!this.isAvailable()) {
       throw new ProviderUnavailableError('Chưa cấu hình Gemini.');
@@ -115,7 +136,14 @@ export class GeminiExplanationProvider implements AiConversationProvider {
 
     try {
       const model = params.modelOverride ?? apiEnv.GEMINI_MODEL;
-      const response = await fetch(buildGeminiSdkEndpoint(model), buildGeminiSdkRequest({ prompt: params.prompt }));
+      const response = await fetch(
+        buildGeminiSdkEndpoint(model),
+        buildGeminiSdkRequest({
+          prompt: params.prompt,
+          imageInput: params.imageInput,
+          timeoutMsOverride: params.timeoutMsOverride,
+        }),
+      );
 
       const body = await readGeminiResponseBody(response);
 

@@ -31,7 +31,9 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    color: #6b7280;
-    font-family: system-ui, sans-serif;
+    padding: var(--space-lg);
+    background: var(--color-bg-primary);
+    color: var(--color-text-muted);
+    font-size: 15px;
   }
 </style>

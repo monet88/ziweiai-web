@@ -3,12 +3,16 @@
   // qua model.setField (state bất biến ở model), submit qua model.submit. Lỗi field chỉ
   // hiện sau khi đã thử submit (model.submitAttempted) để không nhuộm đỏ form lúc trống.
   //
-  // Lịch lunar mới hiện loại tháng nhuận; biết giờ mới hiện giờ/phút (khớp ràng buộc
-  // birthInputSchema). Toạ độ + múi giờ nhập tay (chưa có geocoding — xem warnings).
+  // Người dùng chỉ nhập DƯƠNG LỊCH: backend tự quy đổi sang âm lịch (snapshot mang sẵn
+  // lunarDate) nên form không còn ô chọn lịch / tháng nhuận, và buildCreateChartRequest
+  // ghim cứng calendar='gregorian' tại biên (xem decision 0018). Biết giờ mới hiện giờ/phút
+  // (khớp ràng buộc birthInputSchema). Địa điểm (toạ độ + múi giờ) KHÔNG nhập tay nữa: mặc định Việt Nam,
+  // điền sẵn trong createBirthFormDraft (xem decision 0015). Ngày/tháng/năm dùng dropdown
+  // cho dễ chọn trên mobile.
   import {
     PrimaryButton,
-    TextInputField,
     SelectField,
+    TextInputField,
     NoticeBanner,
   } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
@@ -23,15 +27,23 @@
 
   const copy = viCopy.dashboard;
 
-  const calendarOptions = [
-    { label: copy.gregorianCalendar, value: 'gregorian' },
-    { label: copy.lunarCalendar, value: 'lunar' },
-  ];
-
-  const leapOptions = [
-    { label: copy.regularMonth, value: 'regular' },
-    { label: copy.leapMonth, value: 'leap' },
-  ];
+  // Options dropdown ngày sinh. Ngày 1–31, tháng 1–12 (validate chéo ngày-tháng-năm thực tế
+  // do backend birthInputSchema + iztro lo); năm 1900→năm hiện tại, xếp giảm dần để năm gần
+  // đây ở đầu. Lấy năm hiện tại tại runtime (SPA chạy ở browser) để dropdown không stale.
+  const CURRENT_YEAR = new Date().getFullYear();
+  const EARLIEST_YEAR = 1900;
+  const dayOptions = Array.from({ length: 31 }, (_, index) => {
+    const value = String(index + 1);
+    return { label: value, value };
+  });
+  const monthOptions = Array.from({ length: 12 }, (_, index) => {
+    const value = String(index + 1);
+    return { label: value, value };
+  });
+  const yearOptions = Array.from({ length: CURRENT_YEAR - EARLIEST_YEAR + 1 }, (_, index) => {
+    const value = String(CURRENT_YEAR - index);
+    return { label: value, value };
+  });
 
   const genderOptions = [
     { label: copy.male, value: 'male' },
@@ -63,72 +75,59 @@
   />
 
   <div class="grid-3">
-    <TextInputField
+    <SelectField
       label={copy.day}
       fieldId="birth-day"
-      type="number"
       value={model.draft.birthDay}
+      options={dayOptions}
+      placeholder={copy.dayPlaceholder}
       onValueChange={(value) => model.setField('birthDay', value)}
       errorText={errorFor('birthDay')}
       disabled={model.isSubmitting}
     />
-    <TextInputField
+    <SelectField
       label={copy.month}
       fieldId="birth-month"
-      type="number"
       value={model.draft.birthMonth}
+      options={monthOptions}
+      placeholder={copy.monthPlaceholder}
       onValueChange={(value) => model.setField('birthMonth', value)}
       errorText={errorFor('birthMonth')}
       disabled={model.isSubmitting}
     />
-    <TextInputField
+    <SelectField
       label={copy.year}
       fieldId="birth-year"
-      type="number"
       value={model.draft.birthYear}
+      options={yearOptions}
+      placeholder={copy.yearPlaceholder}
       onValueChange={(value) => model.setField('birthYear', value)}
       errorText={errorFor('birthYear')}
       disabled={model.isSubmitting}
     />
   </div>
 
-  <SelectField
-    label={copy.calendar}
-    fieldId="birth-calendar"
-    value={model.draft.calendar}
-    options={calendarOptions}
-    disabled={model.isSubmitting}
-    onValueChange={(value) => model.setField('calendar', value as 'gregorian' | 'lunar')}
-  />
+  <p class="solar-hint">{copy.solarDateHint}</p>
 
-  {#if model.draft.calendar === 'lunar'}
+  <div class="flex-wrap-group">
     <SelectField
-      label={copy.lunarMonthKind}
-      fieldId="birth-leap-month"
-      value={model.draft.isLeapMonth ? 'leap' : 'regular'}
-      options={leapOptions}
+      label={copy.genderForChart}
+      fieldId="birth-gender"
+      value={model.draft.gender}
+      options={genderOptions}
       disabled={model.isSubmitting}
-      onValueChange={(value) => model.setField('isLeapMonth', value === 'leap')}
+      onValueChange={(value) => model.setField('gender', value as 'male' | 'female' | 'unknown')}
     />
-  {/if}
 
-  <SelectField
-    label={copy.genderForChart}
-    fieldId="birth-gender"
-    value={model.draft.gender}
-    options={genderOptions}
-    disabled={model.isSubmitting}
-    onValueChange={(value) => model.setField('gender', value as 'male' | 'female' | 'unknown')}
-  />
-
-  <SelectField
-    label={copy.birthTimeCertainty}
-    fieldId="birth-time-certainty"
-    value={model.draft.isUnknownTime ? 'unknown' : 'known'}
-    options={timeOptions}
-    disabled={model.isSubmitting}
-    onValueChange={(value) => model.setField('isUnknownTime', value === 'unknown')}
-  />
+    <SelectField
+      label={copy.birthTimeCertainty}
+      fieldId="birth-time-certainty"
+      value={model.draft.isUnknownTime ? 'unknown' : 'known'}
+      options={timeOptions}
+      disabled={model.isSubmitting}
+      onValueChange={(value) => model.setField('isUnknownTime', value === 'unknown')}
+    />
+  </div>
 
   {#if model.draft.isUnknownTime}
     <NoticeBanner message={viCopy.warnings.unknownBirthTime} tone="warning" />
@@ -154,48 +153,6 @@
       />
     </div>
   {/if}
-
-  <TextInputField
-    label={copy.placeLabel}
-    fieldId="birth-place"
-    value={model.draft.placeLabel}
-    placeholder={copy.locationPlaceholder}
-    onValueChange={(value) => model.setField('placeLabel', value)}
-    disabled={model.isSubmitting}
-  />
-
-  <div class="grid-2">
-    <TextInputField
-      label={copy.latitude}
-      fieldId="birth-latitude"
-      type="number"
-      value={model.draft.latitude}
-      onValueChange={(value) => model.setField('latitude', value)}
-      errorText={errorFor('latitude')}
-      disabled={model.isSubmitting}
-    />
-    <TextInputField
-      label={copy.longitude}
-      fieldId="birth-longitude"
-      type="number"
-      value={model.draft.longitude}
-      onValueChange={(value) => model.setField('longitude', value)}
-      errorText={errorFor('longitude')}
-      disabled={model.isSubmitting}
-    />
-  </div>
-
-  <TextInputField
-    label={copy.timezone}
-    fieldId="birth-timezone"
-    value={model.draft.timezone}
-    placeholder={copy.timezonePlaceholder}
-    onValueChange={(value) => model.setField('timezone', value)}
-    errorText={errorFor('timezone')}
-    disabled={model.isSubmitting}
-  />
-
-  <NoticeBanner message={viCopy.warnings.manualLocation} tone="info" />
 
   {#if model.submitAttempted && !model.isValid}
     <NoticeBanner message={viCopy.dashboardValidation.formInvalid} tone="danger" />
@@ -233,11 +190,32 @@
     grid-template-columns: 1fr 1fr 1fr;
   }
 
+  /* Chú thích dương lịch: gắn liền cụm ngày/tháng/năm (kéo sát lên trên), chữ phụ dịu. */
+  .solar-hint {
+    margin: calc(var(--space-md) * -1 + var(--space-xs)) 0 0;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
   /* Màn hẹp (<480px): gom lưới về 1 cột để ô nhập không bị bóp hẹp/vỡ giao diện. */
   @media (max-width: 480px) {
     .grid-2,
     .grid-3 {
       grid-template-columns: 1fr;
     }
+  }
+
+  .flex-wrap-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+  }
+
+  /* Kĩ thuật Auto-fill Grid: Các select field sẽ luôn lấp đầy khoảng trống.
+     Nếu lẻ 1 ô (do ko có tháng nhuận), ô cuối sẽ tự động dãn ra 100% chiều ngang! */
+  :global(.flex-wrap-group > *) {
+    flex: 1 1 calc(50% - var(--space-lg));
+    min-width: 240px;
   }
 </style>

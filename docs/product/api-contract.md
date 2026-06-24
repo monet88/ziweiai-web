@@ -11,6 +11,10 @@
 | `GET /health` | Public | — | `healthResponseSchema` |
 | `POST /charts` | Bearer | `createChartRequestSchema` | `createChartResponseSchema` |
 | `GET /charts/:id` | Bearer | param `z.uuid()` | `chartDetailResponseSchema` |
+| `POST /charts/:id/horoscope` | Bearer | param `z.uuid()` + `horoscopeRequestSchema` (`asOf` `YYYY-MM-DD`, `scopes` subset không rỗng) | `horoscopeResponseSchema` (`{ chartId, asOf, frame }`) |
+| `GET /charts/:id/daily?asOf=YYYY-MM-DD` | Bearer | param `z.uuid()` + `dailyFortuneRequestSchema` (`asOf` `YYYY-MM-DD`) | `dailyFortuneResponseSchema` (`{ chartId, asOf, frame, summary }`) |
+| `GET /charts/:id/monthly?asOf=YYYY-MM` | Bearer | param `z.uuid()` + `monthlyFortuneRequestSchema` (`asOf` `YYYY-MM`) | `monthlyFortuneResponseSchema` (`{ chartId, asOf, frame, summary }`) |
+| `POST /charts/:id/annual-report?year=YYYY` | Bearer | param `z.uuid()` + `annualReportRequestSchema` (`year` int 1900–2100, coerce từ query) | `annualReportResponseSchema` (`{ chartId, year, frame, markdown }`) |
 | `POST /explanations` | Bearer | `createExplanationRequestSchema` | `createExplanationResponseSchema` |
 | `GET /history?limit=N` | Bearer | limit int 1–50, default 20 | `historyListResponseSchema` |
 
@@ -28,9 +32,11 @@ Expo app dùng hàm phẳng, KHÔNG dùng object lồng `apiClient.charts.listHi
 - `fetchHealth()`
 - `createChart(...)`
 - `fetchChartDetail(id)`
+- `fetchChartHoroscope(token, chartId, asOf, scopes)` — US-014: vận hạn theo `asOf`
 - `createExplanation(...)`
 - `fetchHistory(limit)`
 - hằng `DASHBOARD_HISTORY_LIMIT`, `HISTORY_SCREEN_LIMIT`, helper `createHeaders`
+- hằng `DEFAULT_HOROSCOPE_SCOPES`, `HOROSCOPE_QUERY_STALE_MS`, `HOROSCOPE_QUERY_GC_MS` (US-014)
 
 ## Error envelope (xác nhận từ code)
 

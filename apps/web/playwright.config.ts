@@ -47,6 +47,28 @@ export default defineConfig({
       stderr: 'pipe',
       env: {
         API_CORS_ORIGINS: `${WEB_ORIGIN},${API_ORIGIN}`,
+        // E2E chạy nhiều spec tuần tự dưới MỘT user test dùng chung + store quota in-memory
+        // (per-process), nên trần chống-lạm-dụng mặc định (charts 20/ngày, 30 req/phút...) bị
+        // cộng dồn và chặn các spec cuối (US-009/US-015...). Nâng cao cho riêng tiến trình api
+        // e2e — KHÔNG nới lỏng sản phẩm: hành vi quota được kiểm riêng ở US-013.
+        API_REQUESTS_PER_MINUTE_PER_IP: '100000',
+        API_REQUESTS_PER_MINUTE_PER_USER: '100000',
+        API_CHARTS_PER_DAY_PER_USER: '100000',
+        API_EXPLANATIONS_PER_DAY_PER_USER: '100000',
+        API_VISION_REQUESTS_PER_DAY_PER_USER: '100000',
+        API_ANNUAL_REPORTS_PER_DAY_PER_USER: '100000',
+        // US-017b: bật cờ MBTI cho e2e (mặc định false ở mọi nơi khác → fail-closed).
+        EXTENDED_SYSTEM_MBTI_ENABLED: 'true',
+        // US-017c: bật cờ Hợp Hôn cho e2e (mặc định false ở mọi nơi khác → fail-closed).
+        EXTENDED_SYSTEM_HEPAN_ENABLED: 'true',
+        // US-017d: bật cờ Mạnh Phái cho e2e (mặc định false ở mọi nơi khác → fail-closed).
+        EXTENDED_SYSTEM_MANGPAI_ENABLED: 'true',
+        // US-017e: bật cờ Xem Tướng cho e2e (mặc định false ở mọi nơi khác → fail-closed).
+        EXTENDED_SYSTEM_FACE_ENABLED: 'true',
+        // US-017f: bật cờ Xem Tay cho e2e (mặc định false ở mọi nơi khác → fail-closed).
+        EXTENDED_SYSTEM_PALM_ENABLED: 'true',
+        // US-017h: bật cờ Tarot cho e2e (mặc định false ở mọi nơi khác → fail-closed).
+        EXTENDED_SYSTEM_TAROT_ENABLED: 'true',
       },
     },
     {

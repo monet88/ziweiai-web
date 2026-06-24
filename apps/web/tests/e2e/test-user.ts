@@ -1,12 +1,27 @@
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 
-// Thông tin user test cho E2E. Tạo bằng anon signUp (KHÔNG service role) trên Supabase
-// local — enable_confirmations=false nên signUp trả session ngay, đăng nhập được liền.
-// URL + anon key là giá trị demo CỐ ĐỊNH của `supabase start` (công khai theo thiết kế
-// Supabase, không phải secret). Khớp apps/web/.env (PUBLIC_*).
-export const SUPABASE_URL = 'http://127.0.0.1:54321';
-export const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+// Thông tin user test cho E2E. Tạo bằng email signUp (KHÔNG service role): mailer_autoconfirm
+// bật trên project nên signUp trả session ngay, đăng nhập được liền.
+// URL + anon/publishable key đọc từ .env root (PUBLIC_*) — đúng môi trường mà api+web đang
+// trỏ tới (Supabase Cloud, decision 0016). KHÔNG hardcode endpoint local nữa.
+// anon/publishable key là client-safe theo thiết kế Supabase (không phải secret).
+const rootEnvPath = fileURLToPath(new URL('../../../../.env', import.meta.url));
+if (existsSync(rootEnvPath) && typeof process.loadEnvFile === 'function') {
+  process.loadEnvFile(rootEnvPath);
+}
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value || value.trim() === '') {
+    throw new Error(`[e2e] Thiếu biến môi trường ${name} trong .env root (cần cho user test E2E).`);
+  }
+  return value;
+}
+
+export const SUPABASE_URL = requireEnv('PUBLIC_SUPABASE_URL');
+export const SUPABASE_ANON_KEY = requireEnv('PUBLIC_SUPABASE_ANON_KEY');
 
 // User cố định cho toàn bộ lần chạy. Email KHÔNG dùng Date.now(): globalSetup và test
 // worker là hai process tách biệt (giá trị timestamp sẽ lệch → email không khớp). Email

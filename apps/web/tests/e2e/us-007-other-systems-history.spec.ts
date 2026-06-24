@@ -29,23 +29,20 @@ interface SystemCase {
 }
 
 const SYSTEM_CASES: readonly SystemCase[] = [
-  { route: '/bazi', navLabel: 'Mở màn hình Bát Tự', systemLabel: 'Bát Tự', day: '15', month: '8', year: '1990', hour: '10', minute: '30' },
-  { route: '/meihua', navLabel: 'Mở màn hình Mai Hoa', systemLabel: 'Mai Hoa Dịch Số', day: '3', month: '2', year: '1985', hour: '14', minute: '45' },
-  { route: '/liuyao', navLabel: 'Mở màn hình Lục Hào', systemLabel: 'Lục Hào', day: '21', month: '11', year: '1978', hour: '8', minute: '15' },
-  { route: '/daliuren', navLabel: 'Mở màn hình Đại Lục Nhâm', systemLabel: 'Đại Lục Nhâm', day: '7', month: '5', year: '2001', hour: '20', minute: '5' },
-  { route: '/qimen', navLabel: 'Mở màn hình Kỳ Môn', systemLabel: 'Kỳ Môn Độn Giáp', day: '29', month: '9', year: '1995', hour: '6', minute: '50' },
+  { route: '/bazi', navLabel: 'Xem Bát Tự', systemLabel: 'Bát Tự', day: '15', month: '8', year: '1990', hour: '10', minute: '30' },
+  { route: '/meihua', navLabel: 'Xem Mai Hoa', systemLabel: 'Mai Hoa Dịch Số', day: '3', month: '2', year: '1985', hour: '14', minute: '45' },
+  { route: '/liuyao', navLabel: 'Xem Lục Hào', systemLabel: 'Lục Hào', day: '21', month: '11', year: '1978', hour: '8', minute: '15' },
+  { route: '/daliuren', navLabel: 'Xem Đại Lục Nhâm', systemLabel: 'Đại Lục Nhâm', day: '7', month: '5', year: '2001', hour: '20', minute: '5' },
+  { route: '/qimen', navLabel: 'Xem Kỳ Môn', systemLabel: 'Kỳ Môn Độn Giáp', day: '29', month: '9', year: '1995', hour: '6', minute: '50' },
 ];
 
 // Điền form sinh trên màn hình hệ (đã đặt mặc định chartSystem) rồi submit. Trả chartId từ URL.
 async function createChartForSystem(page: Page, birth: SystemCase): Promise<string> {
-  await page.locator('#birth-day').fill(birth.day);
-  await page.locator('#birth-month').fill(birth.month);
-  await page.locator('#birth-year').fill(birth.year);
+  await page.locator('#birth-day').selectOption(birth.day);
+  await page.locator('#birth-month').selectOption(birth.month);
+  await page.locator('#birth-year').selectOption(birth.year);
   await page.locator('#birth-hour').fill(birth.hour);
   await page.locator('#birth-minute').fill(birth.minute);
-  await page.locator('#birth-latitude').fill('10.762622');
-  await page.locator('#birth-longitude').fill('106.660172');
-  await page.locator('#birth-timezone').fill('Asia/Ho_Chi_Minh');
 
   await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
 
@@ -90,8 +87,9 @@ test('US-007: 5 hệ thuật số khác → tạo → chi tiết VN không Hán 
     await page.waitForURL(/\/history$/, { timeout: 15_000 });
 
     // History thấy item lá số hệ vừa tạo (nhãn hệ tiếng Việt). Mở lại đúng route chi tiết.
+    // Mỗi item lịch sử là <a href="/charts/:id"> (role=link), KHÔNG phải button.
     const historyItem = page
-      .getByRole('button')
+      .getByRole('link')
       .filter({ hasText: birth.systemLabel })
       .first();
     await expect(historyItem, `Lịch sử phải có lá số ${birth.systemLabel} vừa tạo`).toBeVisible({

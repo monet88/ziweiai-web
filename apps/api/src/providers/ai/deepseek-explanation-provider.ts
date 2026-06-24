@@ -13,6 +13,13 @@ import {
 import { buildConversationPrompt } from './build-conversation-prompt';
 import { EXPLANATION_SYSTEM_PROMPT } from './ai-explanation-provider';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
+import { buildImageDataUrl, isDeepseekModelVisionCapable } from './vision-prompt';
+
+// US-017e: user message của OpenAI-style là string (text) HOẶC mảng content part (text + ảnh). Khi có
+// imageInput, gửi mảng [{type:text}, {type:image_url, image_url:{url:<data URL>}}].
+type OpenAiStyleContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
 
 @Injectable()
 export class DeepseekExplanationProvider implements AiConversationProvider {
@@ -33,12 +40,21 @@ export class DeepseekExplanationProvider implements AiConversationProvider {
     return result;
   }
 
+  // US-017e: DeepSeek API hiện CHƯA hỗ trợ vision (docs chính thức + probe 400 trên cả v4-pro lẫn
+  // v4-flash). Allowlist DEEPSEEK_VISION_CAPABLE_MODELS rỗng nên hàm này luôn trả false → router loại
+  // DeepSeek khỏi chain vision. Khi DeepSeek mở vision, thêm model vào allowlist là đủ (không sửa đây).
+  isVisionCapable(modelOverride?: string): boolean {
+    return this.isAvailable() && isDeepseekModelVisionCapable(modelOverride ?? apiEnv.DEEPSEEK_MODEL);
+  }
+
   async generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {
     return this.generateChatCompletion({
-      prompt: buildExplanationPrompt(payload),
+      prompt: payload.promptOverride ?? buildExplanationPrompt(payload),
       emptyMessage: 'DeepSeek không trả về nội dung luận giải.',
       metadataKind: 'explanation',
       modelOverride: payload.modelOverride,
+      imageInput: payload.imageInput,
+      timeoutMsOverride: payload.timeoutMsOverride,
     });
   }
 
@@ -47,6 +63,8 @@ export class DeepseekExplanationProvider implements AiConversationProvider {
     emptyMessage: string;
     metadataKind: 'explanation' | 'conversation';
     modelOverride?: string;
+    imageInput?: { base64: string; mimeType: string };
+    timeoutMsOverride?: number;
   }): Promise<ExplanationProviderResult> {
     if (!this.isAvailable()) {
       throw new ProviderUnavailableError('Chưa cấu hình DeepSeek.');
@@ -54,6 +72,15 @@ export class DeepseekExplanationProvider implements AiConversationProvider {
 
     try {
       const model = params.modelOverride ?? apiEnv.DEEPSEEK_MODEL;
+      const timeoutMs = params.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
+      // Khi có ảnh: dựng mảng content part (text + image_url). DeepSeek đi qua /v1/chat/completions
+      // theo chuẩn OpenAI nên dùng cùng shape image_url với openai-compat.
+      const userContent: string | OpenAiStyleContentPart[] = params.imageInput
+        ? [
+            { type: 'text', text: params.prompt },
+            { type: 'image_url', image_url: { url: buildImageDataUrl(params.imageInput.mimeType, params.imageInput.base64) } },
+          ]
+        : params.prompt;
       const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -64,14 +91,14 @@ export class DeepseekExplanationProvider implements AiConversationProvider {
           model,
           messages: [
             { role: 'system', content: EXPLANATION_SYSTEM_PROMPT },
-            { role: 'user', content: params.prompt },
+            { role: 'user', content: userContent },
           ],
           stream: false,
           temperature: 0.7,
           max_tokens: 2048,
           thinking: { type: 'disabled' },
         }),
-        signal: AbortSignal.timeout(apiEnv.AI_PROVIDER_TIMEOUT_MS),
+        signal: AbortSignal.timeout(timeoutMs),
       });
 
       const body = (await response.json()) as {

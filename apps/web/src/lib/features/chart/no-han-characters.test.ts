@@ -16,6 +16,9 @@ import { viCopy } from '$lib/i18n/vi';
 import {
   formatBaziPillarRows,
   formatBaziMetaItems,
+  formatMangpaiInsightItems,
+  formatMangpaiNarrative,
+  formatMangpaiTitle,
   formatMeihuaMetaItems,
   formatMeihuaHexagramItems,
   formatLiuyaoHexagramItems,
@@ -165,16 +168,50 @@ const qimenSnapshot = asSnapshot({
 });
 
 describe('no chữ Hán — output toàn hệ (US-007)', () => {
-  it('nhãn 6 hệ thuật số đều tiếng Việt, 0 ký tự CJK', () => {
-    const labels = (['ba-zi', 'mei-hua-yi-shu', 'liu-yao', 'da-liu-ren', 'qi-men-dun-jia', 'zi-wei-dou-shu'] as const).map(
-      (system) => formatChartSystemLabel(system),
-    );
+  it('nhãn 12 hệ thuật số đều tiếng Việt, 0 ký tự CJK', () => {
+    const labels = ([
+      'ba-zi',
+      'mei-hua-yi-shu',
+      'liu-yao',
+      'da-liu-ren',
+      'qi-men-dun-jia',
+      'zi-wei-dou-shu',
+      'hepan',
+      'mangpai',
+      'tarot',
+      'mbti',
+      'face',
+      'palm',
+    ] as const).map((system) => formatChartSystemLabel(system));
     expect(labels).toContain(viCopy.chartSystem['ba-zi']);
+    expect(labels).toContain(viCopy.chartSystem.tarot);
     assertNoCjk(labels);
   });
 
   it('Bát Tự: tứ trụ + mệnh bàn không rò Hán', () => {
     assertNoCjk([...collectItems(formatBaziPillarRows(baziSnapshot)), ...collectItems(formatBaziMetaItems(baziSnapshot))]);
+  });
+
+  it('Mạnh Phái: tiêu đề + diễn giải + insight không rò Hán', () => {
+    const mangpaiSnapshot = asSnapshot({
+      mangpai: {
+        dayPillarHeavenlyStemKey: 'jiaHeavenly',
+        dayPillarEarthlyBranchKey: 'ziEarthly',
+        dayMasterElementKey: 'wood',
+        monthCommandElementKey: 'water',
+        title: 'Nhật chủ Giáp Mộc tọa chi Tý',
+        narrative: 'Theo phép Mạnh Phái lấy nhật chủ làm trọng, lá số luận quanh Giáp Mộc.',
+        insights: [
+          { heading: 'Nhật chủ', detail: 'Giáp Mộc chủ về khí sinh phát, vươn lên.' },
+          { heading: 'Cường nhược: thân vượng', detail: 'Được nguyệt lệnh sinh phù nên thân vượng.' },
+        ],
+      },
+    });
+    assertNoCjk([
+      formatMangpaiTitle(mangpaiSnapshot),
+      formatMangpaiNarrative(mangpaiSnapshot),
+      ...collectItems(formatMangpaiInsightItems(mangpaiSnapshot)),
+    ]);
   });
 
   it('Mai Hoa: meta + quẻ tượng không rò Hán', () => {

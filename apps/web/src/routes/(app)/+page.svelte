@@ -1,7 +1,7 @@
 <script lang="ts">
   // Dashboard — màn chính sau đăng nhập (US-005). Bố cục 2 cột qua AppScaffold:
   // main = BirthForm (tạo lá số), sidebar = DashboardSidebar (lịch sử gần đây limit 8).
-  // <1024px sidebar xếp xuống dưới (AppScaffold media query); <768px form gom 1 cột (CSS).
+  // <1080px sidebar xếp xuống dưới (AppScaffold media query); <768px form gom 1 cột (CSS).
   //
   // Model dashboard khởi tạo một lần ở đây (factory runes) rồi truyền xuống BirthForm.
   // Đăng xuất: clear cache query để không rò dữ liệu user cũ (bất biến token tươi §3).
@@ -14,6 +14,7 @@
   import { createDashboardModel } from '$lib/features/dashboard/dashboard-model.svelte';
   import BirthForm from '$lib/features/dashboard/BirthForm.svelte';
   import DashboardSidebar from '$lib/features/dashboard/DashboardSidebar.svelte';
+  import ExtendedSystemNav from '$lib/features/dashboard/ExtendedSystemNav.svelte';
 
   const auth = getAuthStore();
   const queryClient = useQueryClient();
@@ -65,7 +66,9 @@
         <span class="session-email">{viCopy.dashboard.anonymousSession}</span>
         <a class="session-cta" href={resolve('/sign-in')}>{viCopy.dashboard.signInOrSignUp}</a>
       {:else}
-        <span class="session-email">{auth.user?.email ?? viCopy.dashboard.unknownUser}</span>
+        <span class="session-email" title={auth.user?.email ?? undefined}
+          >{auth.user?.email ?? viCopy.dashboard.unknownUser}</span
+        >
         <PrimaryButton
           label={viCopy.dashboard.signOut}
           variant="surface"
@@ -86,6 +89,7 @@
           </a>
         {/each}
       </div>
+      <ExtendedSystemNav />
       <a class="nav-history" href={resolve('/history')}>
         {viCopy.dashboard.viewHistory}
       </a>
@@ -106,28 +110,41 @@
   }
 
   .session-email {
+    max-width: 220px;
+    overflow: hidden;
     color: var(--color-text-muted);
     font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .session-cta {
+    display: inline-flex;
+    align-items: center;
     padding: var(--space-xs) var(--space-md);
-    border: 1px solid var(--color-border-gold);
+    border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-md);
     background: var(--color-bg-surface);
-    color: var(--color-accent-gold-soft);
+    color: var(--color-link);
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
   }
 
   .session-cta:hover {
-    background: var(--color-border-gold);
+    background: var(--color-bg-elevated);
   }
 
   .session-cta:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 1px;
+  }
+
+  /* Touch: link phụ ở header lên 44px khi con trỏ thô — ngưỡng AAA (WCAG 2.5.5), vượt AA 24px. */
+  @media (pointer: coarse) {
+    .session-cta {
+      min-height: 44px;
+    }
   }
 
   .system-nav {
@@ -144,14 +161,18 @@
   }
 
   .nav-links {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
+    grid-auto-rows: 1fr;
     gap: var(--space-xs);
   }
 
   .nav-link,
   .nav-history {
-    display: block;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 100%;
     width: 100%;
     padding: var(--space-sm) var(--space-md);
     border: 1px solid var(--color-border-hairline);
@@ -166,18 +187,18 @@
 
   .nav-history {
     margin-top: var(--space-xs);
-    color: var(--color-accent-gold-soft);
+    color: var(--color-link);
     font-weight: 600;
   }
 
   .nav-link:hover,
   .nav-history:hover {
-    border-color: var(--color-border-gold);
+    border-color: var(--color-accent-primary);
   }
 
   .nav-link:focus-visible,
   .nav-history:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 1px;
   }
 </style>

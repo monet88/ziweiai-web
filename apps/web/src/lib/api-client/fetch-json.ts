@@ -65,28 +65,11 @@ export function createHeaders(token?: string, hasBody = false): HeadersInit {
 }
 
 /**
- * Gọi backend và parse response bằng schema từ @ziweiai/contracts.
- * Mọi response UI dùng đều phải đi qua đây — không trust raw JSON.
+ * Xử lý CHUNG cho mọi response backend: map lỗi HTTP → ApiError (ưu tiên message tiếng Việt từ
+ * apiErrorSchema), rồi parse JSON qua schema contracts (không trust raw). fetchJson và fetchMultipart
+ * cùng gọi hàm này để mọi sửa đổi (thêm mã lỗi, đổi cách trích message...) chỉ nằm một chỗ.
  */
-export async function fetchJson<T>(
-  path: string,
-  schema: ZodType<T>,
-  options: FetchJsonOptions = {},
-): Promise<T> {
-  const method = options.method ?? 'GET';
-  const hasBody = options.body !== undefined;
-
-  let response: Response;
-  try {
-    response = await fetch(`${env.apiBaseUrl}${path}`, {
-      method,
-      headers: createHeaders(options.token, hasBody),
-      body: hasBody ? JSON.stringify(options.body) : undefined,
-    });
-  } catch {
-    throw new ApiError('network', 'Không kết nối được máy chủ. Thử lại sau.');
-  }
-
+async function parseResponseOrThrow<T>(response: Response, schema: ZodType<T>): Promise<T> {
   if (!response.ok) {
     const kind = mapStatusToKind(response.status);
     // Ưu tiên message tiếng Việt từ backend (apiErrorSchema: { code, message, requestId }).
@@ -125,4 +108,56 @@ export async function fetchJson<T>(
   }
 
   return parsed.data;
+}
+
+/**
+ * Gọi backend và parse response bằng schema từ @ziweiai/contracts.
+ * Mọi response UI dùng đều phải đi qua đây — không trust raw JSON.
+ */
+export async function fetchJson<T>(
+  path: string,
+  schema: ZodType<T>,
+  options: FetchJsonOptions = {},
+): Promise<T> {
+  const method = options.method ?? 'GET';
+  const hasBody = options.body !== undefined;
+
+  let response: Response;
+  try {
+    response = await fetch(`${env.apiBaseUrl}${path}`, {
+      method,
+      headers: createHeaders(options.token, hasBody),
+      body: hasBody ? JSON.stringify(options.body) : undefined,
+    });
+  } catch {
+    throw new ApiError('network', 'Không kết nối được máy chủ. Thử lại sau.');
+  }
+
+  return parseResponseOrThrow(response, schema);
+}
+
+/**
+ * Gọi backend với multipart/form-data (US-017e/f: upload ảnh vision). Tách khỏi fetchJson vì:
+ * - body là FormData, KHÔNG set Content-Type thủ công (browser tự thêm boundary).
+ * - dùng chung parseResponseOrThrow (map lỗi → UI + parse schema) với fetchJson, không nhân đôi logic.
+ */
+export async function fetchMultipart<T>(
+  path: string,
+  schema: ZodType<T>,
+  form: FormData,
+  token?: string,
+): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${env.apiBaseUrl}${path}`, { method: 'POST', headers, body: form });
+  } catch {
+    throw new ApiError('network', 'Không kết nối được máy chủ. Thử lại sau.');
+  }
+
+  return parseResponseOrThrow(response, schema);
 }

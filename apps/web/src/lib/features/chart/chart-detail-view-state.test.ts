@@ -15,9 +15,18 @@ describe('chart detail view state', () => {
 
   it('dispatches non-ziwei systems to the right renderer mode', () => {
     expect(getChartDetailState('ba-zi', 0)).toBe('pillars');
+    // US-017d: Mạnh Phái luận trên Bát Tự nhưng có chế độ render riêng (khối luận giải Mạnh Phái).
+    expect(getChartDetailState('mangpai', 0)).toBe('mangpai');
     expect(getChartDetailState('mei-hua-yi-shu', 0)).toBe('hexagram');
     expect(getChartDetailState('liu-yao', 0)).toBe('liuyao');
     expect(getChartDetailState('da-liu-ren', 0)).toBe('daliuren');
     expect(getChartDetailState('qi-men-dun-jia', 0)).toBe('qimen');
+  });
+
+  it('keeps US-017 framework-only systems on unsupported renderer fallback', () => {
+    // US-017d: 'mangpai' đã có chế độ render riêng → rời danh sách unsupported.
+    for (const system of ['hepan', 'tarot', 'mbti', 'face', 'palm'] as const) {
+      expect(getChartDetailState(system, 0)).toBe('unsupported');
+    }
   });
 });

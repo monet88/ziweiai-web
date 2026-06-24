@@ -1,6 +1,22 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ExplanationProviderRouter } from './explanation-provider-router';
 
+// US-017e: helper dựng provider mock có đủ isVisionCapable (interface mới). visionCapable mặc định
+// true để không phá các test cũ; test vision đặt false cho provider text-only.
+function mockProvider(opts: {
+  name: string;
+  available?: boolean;
+  visionCapable?: boolean;
+  text?: string;
+}) {
+  return {
+    providerName: opts.name,
+    isAvailable: () => opts.available ?? true,
+    isVisionCapable: () => opts.visionCapable ?? true,
+    generateExplanation: async () => ({ renderedMarkdown: opts.text ?? opts.name, providerMetadata: { provider: opts.name } }),
+  } as never;
+}
+
 describe('ExplanationProviderRouter', () => {
   it('prefers the first available auto provider', () => {
     const router = new ExplanationProviderRouter(
@@ -116,5 +132,39 @@ describe('ExplanationProviderRouter', () => {
       }
       vi.resetModules();
     }
+  });
+
+  // US-017e: chain vision chỉ giữ provider+model đọc được ảnh. deepseek-v4-flash (visionCapable=false)
+  // bị loại để ảnh không bị gửi cho model text-only rồi bỏ thầm lặng.
+  it('skips non-vision-capable providers when imageInput is present', async () => {
+    const router = new ExplanationProviderRouter(
+      mockProvider({ name: 'deepseek', visionCapable: false, text: 'deepseek' }),
+      mockProvider({ name: 'openai-compat', visionCapable: false, text: 'openai-compat' }),
+      mockProvider({ name: 'gemini', visionCapable: true, text: 'gemini' }),
+    );
+
+    const result = await router.generate('auto', {
+      explanationKind: 'vision-face',
+      promptOverride: 'phân tích ảnh',
+      imageInput: { base64: 'YWJj', mimeType: 'image/png' },
+    });
+
+    expect(result.renderedMarkdown).toBe('gemini');
+  });
+
+  it('throws PROVIDER_UNAVAILABLE when no provider can read images', async () => {
+    const router = new ExplanationProviderRouter(
+      mockProvider({ name: 'deepseek', visionCapable: false }),
+      mockProvider({ name: 'openai-compat', visionCapable: false }),
+      mockProvider({ name: 'gemini', visionCapable: false }),
+    );
+
+    await expect(
+      router.generate('auto', {
+        explanationKind: 'vision-face',
+        promptOverride: 'phân tích ảnh',
+        imageInput: { base64: 'YWJj', mimeType: 'image/png' },
+      }),
+    ).rejects.toThrow('đọc ảnh');
   });
 });

@@ -1,8 +1,10 @@
-import type { ChartSystem, CreateChartRequest } from '@ziweiai/contracts';
+import type { ImplementedChartSystem, CreateChartRequest } from '@ziweiai/contracts';
 import { viCopy } from '$lib/i18n/vi';
 
 export type BirthFormDraft = {
-  chartSystem: ChartSystem;
+  // Web chỉ tạo lá số cho hệ đã có adapter (ImplementedChartSystem = 6 hệ), khớp ràng buộc
+  // createChartRequestSchema. ChartSystemPicker cũng chỉ render danh sách này.
+  chartSystem: ImplementedChartSystem;
   birthDay: string;
   birthMonth: string;
   birthYear: string;
@@ -26,17 +28,26 @@ export type BirthFormFieldErrors = Partial<{
   birthDay: string;
   hour: string;
   minute: string;
-  latitude: string;
-  longitude: string;
-  timezone: string;
 }>;
+
+/**
+ * Mặc định địa điểm cho bản Việt Nam. Toạ độ + múi giờ không còn nhập tay trên form
+ * (xem decision 0015): engine chỉ dùng `timezone` để quy giờ sinh sang UTC, còn vĩ/kinh độ
+ * hiện CHƯA tham gia phép tính lá số (true solar time đang `deferred`). Vẫn phải gửi
+ * `place.manual` đầy đủ để snapshot không rơi vào trạng thái `blocked` (PLACE_UNRESOLVED).
+ * Toạ độ là trung tâm TP.HCM — giá trị mồi, không ảnh hưởng kết quả khi true solar time tắt.
+ */
+const VN_DEFAULT_TIMEZONE = 'Asia/Ho_Chi_Minh';
+const VN_DEFAULT_LATITUDE = '10.8231';
+const VN_DEFAULT_LONGITUDE = '106.6297';
+const VN_DEFAULT_PLACE_LABEL = 'Việt Nam';
 
 /**
  * Draft mặc định cho form (port từ Expo defaultBirthFormState).
  * chartSystem nhận từ wrapper hệ (US-007) qua initialChartSystem; mặc định Tử Vi.
- * Toạ độ/múi giờ để trống — người dùng nhập tay (chưa có tìm kiếm địa điểm, xem warnings).
+ * Địa điểm điền sẵn mặc định Việt Nam — form không hiển thị các trường này nữa.
  */
-export function createBirthFormDraft(initialChartSystem: ChartSystem = 'zi-wei-dou-shu'): BirthFormDraft {
+export function createBirthFormDraft(initialChartSystem: ImplementedChartSystem = 'zi-wei-dou-shu'): BirthFormDraft {
   return {
     chartSystem: initialChartSystem,
     birthDay: '',
@@ -48,11 +59,11 @@ export function createBirthFormDraft(initialChartSystem: ChartSystem = 'zi-wei-d
     gender: 'unknown',
     hour: '',
     isUnknownTime: false,
-    latitude: '',
-    longitude: '',
+    latitude: VN_DEFAULT_LATITUDE,
+    longitude: VN_DEFAULT_LONGITUDE,
     minute: '',
-    placeLabel: '',
-    timezone: '',
+    placeLabel: VN_DEFAULT_PLACE_LABEL,
+    timezone: VN_DEFAULT_TIMEZONE,
   };
 }
 
@@ -73,18 +84,6 @@ function isIntInRange(value: string, min: number, max: number): boolean {
   return parsed >= min && parsed <= max;
 }
 
-function isNumberInRange(value: string, min: number, max: number): boolean {
-  if (typeof value !== 'string') {
-    return false;
-  }
-  const trimmed = value.trim();
-  if (trimmed === '') {
-    return false;
-  }
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) && parsed >= min && parsed <= max;
-}
-
 /**
  * Xác thực thuần draft → lỗi từng trường tiếng Việt. Logic này phản chiếu ràng buộc
  * birthInputSchema (@ziweiai/contracts) ở phía client để chặn submit sớm + báo lỗi
@@ -92,8 +91,9 @@ function isNumberInRange(value: string, min: number, max: number): boolean {
  * dùng làm $derived trong dashboard-model.
  *
  * Quy ước theo bất biến (parseNumericField): trống/khoảng trắng = không hợp lệ,
- * không mặc định 0. Giờ/phút bỏ qua khi isUnknownTime. Vĩ/kinh độ bắt buộc vì luồng
- * MVP nhập tay (chưa có geocoding).
+ * không mặc định 0. Giờ/phút bỏ qua khi isUnknownTime. Toạ độ + múi giờ KHÔNG còn
+ * validate ở đây vì form không hiển thị chúng nữa — luôn điền sẵn mặc định VN
+ * (xem createBirthFormDraft + decision 0014).
  */
 export function validateBirthFormDraft(draft: BirthFormDraft): BirthFormFieldErrors {
   const errors: BirthFormFieldErrors = {};
@@ -118,16 +118,6 @@ export function validateBirthFormDraft(draft: BirthFormDraft): BirthFormFieldErr
     }
   }
 
-  if (!isNumberInRange(draft.latitude, -90, 90)) {
-    errors.latitude = copy.latitudeInvalid;
-  }
-  if (!isNumberInRange(draft.longitude, -180, 180)) {
-    errors.longitude = copy.longitudeInvalid;
-  }
-  if (!draft.timezone || draft.timezone.trim() === '') {
-    errors.timezone = copy.timezoneRequired;
-  }
-
   return errors;
 }
 
@@ -149,12 +139,18 @@ export function buildCreateChartRequest(draft: BirthFormDraft): CreateChartReque
 
   return {
     birthInput: {
-      calendar: draft.calendar,
+      // Form web chỉ nhập DƯƠNG LỊCH (đã bỏ ô chọn lịch + tháng nhuận, xem decision 0018);
+      // backend tự quy đổi sang âm lịch (chart-snapshot.lunarDate). Đây là consumer DUY NHẤT
+      // của builder (cả Tử Vi lẫn Hợp Hôn), nên ghim cứng calendar='gregorian'/isLeapMonth=null
+      // tại biên: dù draft bị hydrate/khởi tạo lệch mang calendar='lunar' thì request vẫn không
+      // nhãn sai lịch (chặn hỏng dữ liệu thầm lặng). draft.calendar/isLeapMonth giữ lại để
+      // BirthFormDraft + @ziweiai/contracts không đổi, nhưng builder không còn đọc chúng.
+      calendar: 'gregorian',
       date: {
         year: parseNumericField(draft.birthYear),
         month: parseNumericField(draft.birthMonth),
         day: parseNumericField(draft.birthDay),
-        isLeapMonth: draft.calendar === 'lunar' ? draft.isLeapMonth : null,
+        isLeapMonth: null,
       },
       time: {
         hour: draft.isUnknownTime ? null : parseNumericField(draft.hour),

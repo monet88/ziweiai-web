@@ -12,12 +12,18 @@ import {
 import { buildConversationPrompt } from './build-conversation-prompt';
 import { EXPLANATION_SYSTEM_PROMPT } from './ai-explanation-provider';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
+import { buildImageDataUrl } from './vision-prompt';
 
 type OpenAiCompatibleResponse = {
   choices?: Array<{ message?: { content?: string } }>;
   usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
   error?: { message?: string };
 };
+
+// US-017e: user message OpenAI-style là string hoặc mảng content part (text + image_url).
+type OpenAiStyleContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
 
 // Chuẩn hóa base URL về dạng không có dấu `/` cuối và không có hậu tố `/v1`,
 // rồi nối `/v1/chat/completions`. Tránh lặp `/v1/v1/...` khi operator cấu hình base
@@ -45,12 +51,21 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
     });
   }
 
+  // US-017e: endpoint OpenAI-compatible do operator cấu hình (OPENAI_COMPAT_MODEL). Coi như đọc được
+  // ảnh khi key có sẵn — không hard-code allowlist model vì model do operator chọn (gpt-4o, llava...).
+  // Nếu model cấu hình không đọc ảnh, lỗi/ bỏ ảnh sẽ lộ qua failover sang gemini trong chain vision.
+  isVisionCapable(): boolean {
+    return this.isAvailable();
+  }
+
   async generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {
     return this.generateChatCompletion({
-      prompt: buildExplanationPrompt(payload),
+      prompt: payload.promptOverride ?? buildExplanationPrompt(payload),
       emptyMessage: 'Nhà cung cấp OpenAI-compatible không trả về nội dung luận giải.',
       metadataKind: 'explanation',
       modelOverride: payload.modelOverride,
+      imageInput: payload.imageInput,
+      timeoutMsOverride: payload.timeoutMsOverride,
     });
   }
 
@@ -59,6 +74,8 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
     emptyMessage: string;
     metadataKind: 'explanation' | 'conversation';
     modelOverride?: string;
+    imageInput?: { base64: string; mimeType: string };
+    timeoutMsOverride?: number;
   }): Promise<ExplanationProviderResult> {
     if (!this.isAvailable()) {
       throw new ProviderUnavailableError('Chưa cấu hình nhà cung cấp OpenAI-compatible.');
@@ -66,6 +83,13 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
 
     try {
       const model = params.modelOverride ?? apiEnv.OPENAI_COMPAT_MODEL;
+      const timeoutMs = params.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
+      const userContent: string | OpenAiStyleContentPart[] = params.imageInput
+        ? [
+            { type: 'text', text: params.prompt },
+            { type: 'image_url', image_url: { url: buildImageDataUrl(params.imageInput.mimeType, params.imageInput.base64) } },
+          ]
+        : params.prompt;
       const response = await fetch(buildChatCompletionsEndpoint(), {
         method: 'POST',
         headers: {
@@ -76,13 +100,13 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
           model,
           messages: [
             { role: 'system', content: EXPLANATION_SYSTEM_PROMPT },
-            { role: 'user', content: params.prompt },
+            { role: 'user', content: userContent },
           ],
           stream: false,
           temperature: 0.7,
           max_tokens: 2048,
         }),
-        signal: AbortSignal.timeout(apiEnv.AI_PROVIDER_TIMEOUT_MS),
+        signal: AbortSignal.timeout(timeoutMs),
       });
 
       // Đọc raw text trước rồi mới thử parse JSON: upstream có thể trả non-JSON

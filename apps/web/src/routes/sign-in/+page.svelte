@@ -196,6 +196,8 @@
   }
 
   .switch {
+    align-self: flex-start;
+    padding: var(--space-xs) 0;
     background: none;
     border: none;
     color: var(--color-link);
@@ -206,6 +208,14 @@
   .switch:focus-visible {
     outline: 2px solid var(--color-accent-primary);
     outline-offset: 2px;
+  }
+
+  /* Touch: nút chuyển đăng nhập/đăng ký là chữ trần (~18px cao) — nâng vùng chạm 44px
+     khi con trỏ thô để đạt WCAG 2.5.8. */
+  @media (pointer: coarse) {
+    .switch {
+      min-height: 44px;
+    }
   }
 
   .banner {

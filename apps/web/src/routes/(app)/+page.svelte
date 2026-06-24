@@ -140,7 +140,7 @@
     outline-offset: 1px;
   }
 
-  /* Touch: link phụ ở header đạt vùng chạm 44px khi con trỏ thô (WCAG 2.5.8). */
+  /* Touch: link phụ ở header lên 44px khi con trỏ thô — ngưỡng AAA (WCAG 2.5.5), vượt AA 24px. */
   @media (pointer: coarse) {
     .session-cta {
       min-height: 44px;

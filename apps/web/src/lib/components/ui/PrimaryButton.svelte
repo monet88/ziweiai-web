@@ -88,7 +88,7 @@
   }
 
   /* Touch: nút phụ giữ 36px gọn trên desktop (pointer mịn), nhưng nâng lên 44px khi
-     con trỏ thô (cảm ứng) để đạt vùng chạm khuyến nghị (WCAG 2.5.8 target size). */
+     con trỏ thô (cảm ứng) — 44px là ngưỡng AAA (WCAG 2.5.5), vượt mức AA 24px (2.5.8). */
   @media (pointer: coarse) {
     .button.utility {
       min-height: 44px;

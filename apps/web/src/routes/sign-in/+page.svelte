@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
+  import { NoticeBanner } from '$lib/components/ui';
 
   // Nhãn tiếng Việt hardcode tạm — i18n tập trung là US-003 (bất biến ngôn ngữ: không chữ Hán).
   const auth = getAuthStore();
@@ -62,10 +63,10 @@
     <p class="subtitle">Luận giải Tử Vi và chiêm tinh cá nhân hoá.</p>
 
     {#if errorMessage}
-      <p class="banner danger" role="alert">{errorMessage}</p>
+      <NoticeBanner tone="danger" message={errorMessage} />
     {/if}
     {#if noticeMessage}
-      <p class="banner info">{noticeMessage}</p>
+      <NoticeBanner tone="info" message={noticeMessage} />
     {/if}
 
     <label class="field">
@@ -210,30 +211,11 @@
     outline-offset: 2px;
   }
 
-  /* Touch: nút chuyển đăng nhập/đăng ký là chữ trần (~18px cao) — nâng vùng chạm 44px
-     khi con trỏ thô để đạt WCAG 2.5.8. */
+  /* Touch: nút chuyển đăng nhập/đăng ký là chữ trần (~18px cao) — nâng lên 44px khi con trỏ
+     thô; 44px là ngưỡng AAA (WCAG 2.5.5), vượt mức AA 24px (2.5.8). */
   @media (pointer: coarse) {
     .switch {
       min-height: 44px;
     }
-  }
-
-  .banner {
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--radius-md);
-    font-size: 14px;
-    margin: 0;
-  }
-
-  .banner.danger {
-    border: 1px solid var(--color-accent-danger);
-    background: var(--color-bg-surface);
-    color: var(--color-accent-danger);
-  }
-
-  .banner.info {
-    border: 1px solid var(--color-accent-primary);
-    background: var(--color-bg-surface);
-    color: var(--color-accent-primary-pressed);
   }
 </style>

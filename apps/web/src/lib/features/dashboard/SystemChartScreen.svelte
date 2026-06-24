@@ -72,7 +72,7 @@
     outline-offset: 2px;
   }
 
-  /* Touch: nâng back-link lên vùng chạm 44px khi con trỏ thô (WCAG 2.5.8). */
+  /* Touch: nâng back-link lên 44px khi con trỏ thô — ngưỡng AAA (WCAG 2.5.5), vượt AA 24px. */
   @media (pointer: coarse) {
     .back-link {
       min-height: 44px;

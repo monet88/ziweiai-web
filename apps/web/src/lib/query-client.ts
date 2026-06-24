@@ -8,21 +8,30 @@
  * nên 401 chỉ xảy ra khi token hết hạn VÀ refresh thất bại (không còn phiên hợp lệ); lúc đó
  * /sign-in là nơi AuthStore.init() tái lập phiên (anon hoặc đăng nhập lại). Gắn ở tầng cache
  * để mọi query + mutation đều được phủ, không phải vá từng màn. Bỏ qua khi đã ở /sign-in
- * (tránh vòng lặp) và khi retry chưa cạn (retry: 1 nuốt 401 thoáng qua lúc đang refresh).
+ * (tránh vòng lặp). Query có retry: 1 nên nuốt được 401 thoáng qua lúc đang refresh; mutation
+ * KHÔNG retry (tránh double-POST tạo lá số/luận giải trùng) — nhưng getAccessToken đọc token
+ * tươi ngay trước mỗi request (invariants §3) nên 401 thoáng qua trên mutation rất khó xảy ra.
  */
 import { QueryClient, QueryCache, MutationCache } from '@tanstack/svelte-query';
 import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
+import { base, resolve } from '$app/paths';
 import { ApiError } from '$lib/api-client';
 
-function redirectOnExpiredSession(error: unknown): void {
+const SIGN_IN_PATH = '/sign-in';
+
+export function redirectOnExpiredSession(error: unknown): void {
   if (!(error instanceof ApiError) || error.kind !== 'unauthorized') {
     return;
   }
-  if (typeof window === 'undefined' || window.location.pathname.startsWith('/sign-in')) {
+  if (typeof window === 'undefined') {
     return;
   }
-  void goto(resolve('/sign-in'), { replaceState: true });
+  // So khớp base-path-aware: pathname thật gồm cả base (`${base}/sign-in`), nên dùng base
+  // để guard khớp với resolve() ở dòng dưới (tránh vòng lặp kể cả khi cấu hình paths.base).
+  if (window.location.pathname.startsWith(`${base}${SIGN_IN_PATH}`)) {
+    return;
+  }
+  void goto(resolve(SIGN_IN_PATH), { replaceState: true });
 }
 
 export function createAppQueryClient(): QueryClient {

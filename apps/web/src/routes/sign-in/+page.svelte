@@ -198,7 +198,7 @@
   .switch {
     background: none;
     border: none;
-    color: var(--color-accent-primary);
+    color: var(--color-link);
     font-size: 14px;
     cursor: pointer;
   }

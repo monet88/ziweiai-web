@@ -123,7 +123,7 @@
     border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-md);
     background: var(--color-bg-surface);
-    color: var(--color-accent-primary);
+    color: var(--color-link);
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
@@ -178,7 +178,7 @@
 
   .nav-history {
     margin-top: var(--space-xs);
-    color: var(--color-accent-primary);
+    color: var(--color-link);
     font-weight: 600;
   }
 

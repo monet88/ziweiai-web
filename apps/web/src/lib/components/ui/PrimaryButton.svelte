@@ -87,6 +87,14 @@
     border-color: var(--color-accent-primary);
   }
 
+  /* Touch: nút phụ giữ 36px gọn trên desktop (pointer mịn), nhưng nâng lên 44px khi
+     con trỏ thô (cảm ứng) để đạt vùng chạm khuyến nghị (WCAG 2.5.8 target size). */
+  @media (pointer: coarse) {
+    .button.utility {
+      min-height: 44px;
+    }
+  }
+
   .button:disabled {
     opacity: 0.7;
     cursor: progress;

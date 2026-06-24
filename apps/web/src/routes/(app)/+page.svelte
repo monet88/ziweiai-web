@@ -119,6 +119,8 @@
   }
 
   .session-cta {
+    display: inline-flex;
+    align-items: center;
     padding: var(--space-xs) var(--space-md);
     border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-md);
@@ -136,6 +138,13 @@
   .session-cta:focus-visible {
     outline: 2px solid var(--color-accent-primary);
     outline-offset: 1px;
+  }
+
+  /* Touch: link phụ ở header đạt vùng chạm 44px khi con trỏ thô (WCAG 2.5.8). */
+  @media (pointer: coarse) {
+    .session-cta {
+      min-height: 44px;
+    }
   }
 
   .system-nav {

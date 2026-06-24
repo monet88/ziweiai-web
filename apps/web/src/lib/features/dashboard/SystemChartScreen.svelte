@@ -71,4 +71,12 @@
     outline: 2px solid var(--color-accent-primary);
     outline-offset: 2px;
   }
+
+  /* Touch: nâng back-link lên vùng chạm 44px khi con trỏ thô (WCAG 2.5.8). */
+  @media (pointer: coarse) {
+    .back-link {
+      min-height: 44px;
+      padding: var(--space-sm) var(--space-md);
+    }
+  }
 </style>

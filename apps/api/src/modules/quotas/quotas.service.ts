@@ -182,14 +182,20 @@ export class QuotasService {
     this.assertSlidingWindow(this.userBuckets, `user:${userId}`, apiEnv.API_REQUESTS_PER_MINUTE_PER_USER, 60_000);
 
     if (isAnonymous) {
-      this.assertSlidingWindow(this.anonDailyIpBuckets, `anon-conversation:${ipAddress}`, apiEnv.API_CONVERSATION_MESSAGES_PER_DAY_PER_USER, ONE_DAY_MS, 'Daily conversation quota exceeded.');
+      // US-013: anon daily quota dùng QuotaCounterStore bền qua restart (thay Map in-memory cũ),
+      // đếm theo IP + ngày UTC để chống reset phiên (xoá localStorage / incognito).
+      await this.assertAnonDailyQuota(
+        `anon-conversation:${ipAddress}:${utcDayKey(Date.now())}`,
+        apiEnv.API_CONVERSATION_MESSAGES_PER_DAY_PER_USER,
+        'Daily conversation quota exceeded.',
+      );
       return;
     }
 
     const sinceIso = new Date(Date.now() - ONE_DAY_MS).toISOString();
     const messagesCreated = await this.persistenceGateway.countConversationMessagesSince(userId, sinceIso);
     if (messagesCreated >= apiEnv.API_CONVERSATION_MESSAGES_PER_DAY_PER_USER) {
-      throw new Error('Daily conversation quota exceeded.');
+      throw new DailyQuotaExceededError('Daily conversation quota exceeded.');
     }
   }
 

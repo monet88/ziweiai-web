@@ -75,4 +75,16 @@
   --color-horoscope-yearly: var(--color-flow-yearly);
   --color-horoscope-monthly: var(--color-flow-monthly);
   --color-horoscope-daily: var(--color-flow-daily);
+
+  /* US-017h: Tarot. Tông emerald cho dải hero + tím-thẫm cho lưng bài là màu trang trí
+     riêng của màn Tarot (không tái dùng nơi khác) nên gom thành token feature-scoped thay
+     vì hardcode lặp. Các sắc gold/tím-AI/chữ ở dạng alpha vẫn dẫn xuất từ --color-accent-*
+     / --color-text-* qua color-mix (xem TarotScreen/TarotCardBack). */
+  --color-tarot-band-top: #0d3b2e;
+  --color-tarot-band-mid: #145c44;
+  --color-tarot-band-bottom: #0c2b22;
+  --color-tarot-glow: #285a46;
+  --color-tarot-back-top: #1c1736;
+  --color-tarot-back-mid: #14122a;
+  --color-tarot-back-bottom: #0f0d20;
 }

@@ -7,8 +7,9 @@
   import { untrack } from 'svelte';
   import type { TarotSpread } from '@ziweiai/contracts';
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { AppScaffold, PrimaryButton, NoticeBanner } from '$lib/components/ui';
+  import { PrimaryButton, NoticeBanner } from '$lib/components/ui';
   import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
+  import TarotCardBack from './TarotCardBack.svelte';
   import { createTarotModel, type TarotCopy } from './tarot-model.svelte';
 
   interface Props {
@@ -41,96 +42,245 @@
   }
 </script>
 
-<AppScaffold eyebrow={copy.heroEyebrow} title={copy.heroTitle} subtitle={copy.heroSubtitle}>
-  {#snippet action()}
-    <PrimaryButton label={copy.returnToDashboard} variant="surface" onclick={goToDashboard} />
-  {/snippet}
+<div class="tarot-screen">
+  <div class="shell">
+    <header class="band">
+      <button
+        type="button"
+        class="band-back"
+        aria-label={copy.returnToDashboard}
+        onclick={goToDashboard}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M14 6l-6 6 6 6"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <p class="band-eyebrow">{copy.heroEyebrow}</p>
+      <h1 class="band-title">{copy.heroTitle}</h1>
+      <p class="band-sub">{copy.heroSubtitle}</p>
+    </header>
 
-  {#if model.result}
-    {@const draw = model.result}
-    <section class="result" aria-live="polite">
-      <p class="result-eyebrow">{copy.resultTitle}</p>
-      <ul class="card-grid">
-        {#each draw.cards as card (card.position)}
-          <li class="card">
-            <img
-              class="card-image"
-              class:reversed={card.reversed}
-              src={cardImageSrc(card.id)}
-              alt={card.name}
-              loading="lazy"
-            />
-            <p class="card-name">{card.name}</p>
-            {#if card.reversed}
-              <p class="card-orientation">{copy.reversedLabel}</p>
-            {/if}
-          </li>
-        {/each}
-      </ul>
-      <MarkdownView markdown={draw.narrative} />
-      <PrimaryButton label={copy.retakeButton} variant="surface" onclick={() => model.reset()} />
-    </section>
-  {:else}
-    <section class="form">
-      <NoticeBanner message={copy.safetyNotice} tone="info" />
+    <main class="content">
+      {#if model.result}
+        {@const draw = model.result}
+        <section class="result" aria-live="polite">
+          <p class="result-eyebrow">{copy.resultTitle}</p>
+          <ul class="card-grid">
+            {#each draw.cards as card (card.position)}
+              <li class="card">
+                <div class="card-frame">
+                  <img
+                    class="card-image"
+                    class:reversed={card.reversed}
+                    src={cardImageSrc(card.id)}
+                    alt={card.name}
+                    loading="lazy"
+                  />
+                </div>
+                <p class="card-name">{card.name}</p>
+                <span class="orient" class:is-reversed={card.reversed}>
+                  {card.reversed ? copy.orientationReversed : copy.orientationUpright}
+                </span>
+              </li>
+            {/each}
+          </ul>
 
-      <div class="field">
-        <label class="field-label" for="tarot-question">{copy.questionLabel}</label>
-        <textarea
-          id="tarot-question"
-          class="question-input"
-          rows="3"
-          placeholder={copy.questionPlaceholder}
-          value={model.question}
-          disabled={model.isSubmitting}
-          oninput={(event) => model.setQuestion((event.currentTarget as HTMLTextAreaElement).value)}
-        ></textarea>
-      </div>
+          <div class="reading">
+            <p class="reading-title">{copy.readingTitle}</p>
+            <MarkdownView markdown={draw.narrative} />
+          </div>
 
-      <div class="field">
-        <span class="field-label">{copy.spreadLabel}</span>
-        <div class="spread-options" role="radiogroup" aria-label={copy.spreadLabel}>
-          {#each spreadOptions as option (option.value)}
+          <NoticeBanner message={copy.safetyNotice} tone="info" />
+          <PrimaryButton label={copy.retakeButton} variant="surface" onclick={() => model.reset()} />
+        </section>
+      {:else}
+        <section class="form">
+          <div class="field">
+            <label class="field-label" for="tarot-question">{copy.questionLabel}</label>
+            <textarea
+              id="tarot-question"
+              class="question-input"
+              rows="3"
+              placeholder={copy.questionPlaceholder}
+              value={model.question}
+              disabled={model.isSubmitting}
+              oninput={(event) =>
+                model.setQuestion((event.currentTarget as HTMLTextAreaElement).value)}
+            ></textarea>
+          </div>
+
+          <div class="field">
+            <span class="field-label">{copy.spreadLabel}</span>
+            <div class="spread-options" role="radiogroup" aria-label={copy.spreadLabel}>
+              {#each spreadOptions as option (option.value)}
+                <button
+                  type="button"
+                  class="spread-option"
+                  class:selected={model.spread === option.value}
+                  role="radio"
+                  aria-checked={model.spread === option.value}
+                  tabindex={model.spread === option.value ? 0 : -1}
+                  value={option.value}
+                  disabled={model.isSubmitting}
+                  onclick={() => model.setSpread(option.value)}
+                >
+                  {option.label}
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          {#if model.validationMessage}
+            <NoticeBanner message={model.validationMessage} tone="danger" />
+          {/if}
+          {#if model.isError && model.errorMessage}
+            <NoticeBanner message={model.errorMessage} tone="danger" />
+          {/if}
+
+          <div class="deck">
+            <span class="fan fan-left" aria-hidden="true"><TarotCardBack /></span>
+            <span class="fan fan-right" aria-hidden="true"><TarotCardBack /></span>
             <button
               type="button"
-              class="spread-option"
-              class:selected={model.spread === option.value}
-              role="radio"
-              aria-checked={model.spread === option.value}
-              tabindex={model.spread === option.value ? 0 : -1}
-              value={option.value}
+              class="deck-draw"
+              aria-label={copy.submitButton}
+              aria-busy={model.isSubmitting}
               disabled={model.isSubmitting}
-              onclick={() => model.setSpread(option.value)}
+              onclick={() => model.submit()}
             >
-              {option.label}
+              <TarotCardBack>
+                {#if model.isSubmitting}
+                  <span class="spinner" aria-hidden="true"></span>
+                {:else}
+                  <span class="draw-cta">{copy.tapToDraw}</span>
+                  <span class="draw-hint">{copy.tapToDrawHint}</span>
+                {/if}
+              </TarotCardBack>
             </button>
-          {/each}
-        </div>
-      </div>
+          </div>
 
-      {#if model.validationMessage}
-        <NoticeBanner message={model.validationMessage} tone="danger" />
+          <p class="breathe">{copy.breatheLine}</p>
+          <NoticeBanner message={copy.safetyNotice} tone="info" />
+        </section>
       {/if}
-      {#if model.isError && model.errorMessage}
-        <NoticeBanner message={model.errorMessage} tone="danger" />
-      {/if}
-
-      <PrimaryButton
-        label={copy.submitButton}
-        loading={model.isSubmitting}
-        onclick={() => model.submit()}
-      />
-    </section>
-  {/if}
-</AppScaffold>
+    </main>
+  </div>
+</div>
 
 <style>
+  .tarot-screen {
+    min-height: 100dvh;
+    overflow-x: hidden;
+    background:
+      radial-gradient(
+        120% 60% at 50% -10%,
+        color-mix(in srgb, var(--color-tarot-glow) 18%, transparent),
+        transparent 55%
+      ),
+      var(--color-bg-primary);
+    color: var(--color-text-primary);
+  }
+
+  .shell {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 var(--space-lg) var(--space-xxl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  .band {
+    position: relative;
+    margin-top: var(--space-lg);
+    padding: var(--space-xl) var(--space-lg) var(--space-lg);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    background: linear-gradient(
+      160deg,
+      var(--color-tarot-band-top) 0%,
+      var(--color-tarot-band-mid) 48%,
+      var(--color-tarot-band-bottom) 100%
+    );
+    border: 1px solid color-mix(in srgb, var(--color-accent-gold) 22%, transparent);
+    box-shadow: 0 0 36px color-mix(in srgb, var(--color-tarot-glow) 28%, transparent);
+  }
+
+  .band-back {
+    position: absolute;
+    top: var(--space-md);
+    left: var(--space-md);
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-text-primary);
+    cursor: pointer;
+  }
+
+  .band-back svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .band-back:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .band-back:focus-visible {
+    outline: 2px solid var(--color-accent-gold-soft);
+    outline-offset: 2px;
+  }
+
+  .band-eyebrow {
+    margin: 0;
+    color: var(--color-accent-gold-soft);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+
+  .band-title {
+    margin: 6px 0 0;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--color-text-primary);
+  }
+
+  .band-sub {
+    margin: var(--space-sm) auto 0;
+    max-width: 460px;
+    color: color-mix(in srgb, var(--color-text-primary) 78%, transparent);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
   .form,
   .result {
     display: flex;
     flex-direction: column;
     gap: var(--space-lg);
-    max-width: 640px;
   }
 
   .field {
@@ -185,6 +335,8 @@
   .spread-option.selected {
     border-color: var(--color-border-gold);
     background: var(--color-accent-gold-soft);
+    color: var(--color-bg-primary);
+    font-weight: 600;
   }
 
   .spread-option:focus-visible {
@@ -192,13 +344,122 @@
     outline-offset: 1px;
   }
 
+  .deck {
+    position: relative;
+    width: 240px;
+    max-width: 70%;
+    margin: var(--space-sm) auto 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  .fan {
+    position: absolute;
+    top: 8px;
+    width: 86%;
+    opacity: 0.45;
+    filter: saturate(0.8);
+    pointer-events: none;
+  }
+
+  .fan-left {
+    left: -16%;
+    transform: rotate(-9deg);
+    transform-origin: bottom center;
+  }
+
+  .fan-right {
+    right: -16%;
+    transform: rotate(9deg);
+    transform-origin: bottom center;
+  }
+
+  .deck-draw {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    cursor: pointer;
+    transition:
+      transform 140ms ease,
+      filter 140ms ease;
+  }
+
+  .deck-draw:hover:not(:disabled) {
+    transform: translateY(-4px);
+    filter: drop-shadow(0 12px 24px color-mix(in srgb, var(--color-tarot-glow) 35%, transparent));
+  }
+
+  .deck-draw:focus-visible {
+    outline: 2px solid var(--color-accent-gold-soft);
+    outline-offset: 4px;
+    border-radius: var(--radius-lg);
+  }
+
+  .deck-draw:disabled {
+    opacity: 0.7;
+    cursor: progress;
+  }
+
+  .draw-cta {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--color-accent-gold-soft);
+    text-transform: uppercase;
+  }
+
+  .draw-hint {
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
+    text-transform: uppercase;
+  }
+
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-pill);
+    border: 3px solid color-mix(in srgb, var(--color-accent-gold-soft) 35%, transparent);
+    border-top-color: var(--color-accent-gold-soft);
+    animation: spin 720ms linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation-duration: 0ms;
+    }
+    .deck-draw:hover:not(:disabled) {
+      transform: none;
+    }
+  }
+
+  .breathe {
+    margin: 0;
+    text-align: center;
+    color: var(--color-accent-gold-soft);
+    font-size: 14px;
+    font-style: italic;
+  }
+
   .card-grid {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: var(--space-md);
+    justify-items: center;
   }
 
   .card {
@@ -207,14 +468,27 @@
     align-items: center;
     gap: var(--space-xs);
     text-align: center;
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .card-frame {
+    width: 100%;
+    border-radius: var(--radius-md);
+    padding: 4px;
+    background: linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--color-accent-gold) 40%, transparent),
+      color-mix(in srgb, var(--color-accent-ai) 30%, transparent)
+    );
   }
 
   .card-image {
+    display: block;
     width: 100%;
     aspect-ratio: 100 / 171;
     object-fit: cover;
-    border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-md);
+    border-radius: calc(var(--radius-md) - 4px);
     background: var(--color-bg-surface);
   }
 
@@ -224,20 +498,52 @@
 
   .card-name {
     margin: 0;
-    font-size: 13px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 15px;
+    font-weight: 600;
     line-height: 1.3;
+    color: var(--color-accent-gold-soft);
   }
 
-  .card-orientation {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: 12px;
+  .orient {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-border-gold);
+    color: var(--color-accent-gold-soft);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .orient.is-reversed {
+    border-color: var(--color-accent-danger);
+    color: var(--color-accent-danger);
   }
 
   .result-eyebrow {
     margin: 0;
+    text-align: center;
     color: var(--color-text-muted);
     font-size: 14px;
     text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  .reading {
+    padding: var(--space-lg);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-hairline);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .reading-title {
+    margin: 0;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-accent-gold-soft);
   }
 </style>

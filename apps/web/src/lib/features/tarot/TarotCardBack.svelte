@@ -86,10 +86,19 @@
     border-radius: var(--radius-lg);
     overflow: hidden;
     background:
-      radial-gradient(120% 80% at 50% 0%, rgba(110, 95, 166, 0.28), transparent 60%),
-      linear-gradient(180deg, #1c1736, #14122a 60%, #0f0d20);
+      radial-gradient(
+        120% 80% at 50% 0%,
+        color-mix(in srgb, var(--color-accent-ai) 28%, transparent),
+        transparent 60%
+      ),
+      linear-gradient(
+        180deg,
+        var(--color-tarot-back-top),
+        var(--color-tarot-back-mid) 60%,
+        var(--color-tarot-back-bottom)
+      );
     border: 1px solid var(--color-border-gold);
-    box-shadow: 0 0 0 1px rgba(200, 183, 128, 0.12) inset;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent-gold) 12%, transparent) inset;
   }
 
   .art {

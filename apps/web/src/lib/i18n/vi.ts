@@ -158,7 +158,6 @@ export const viCopy = {
     spreadCelticCross: 'Celtic Cross (mười lá, tình huống phức tạp)',
     submitButton: 'Rút bài',
     resultTitle: 'Kết quả rút bài',
-    reversedLabel: 'Lá ngược',
     orientationUpright: 'Xuôi',
     orientationReversed: 'Ngược',
     tapToDraw: 'Bấm để rút',

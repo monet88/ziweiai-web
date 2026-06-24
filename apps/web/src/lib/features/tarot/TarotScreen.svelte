@@ -97,7 +97,7 @@
             <MarkdownView markdown={draw.narrative} />
           </div>
 
-          <p class="safety">{copy.safetyNotice}</p>
+          <NoticeBanner message={copy.safetyNotice} tone="info" />
           <PrimaryButton label={copy.retakeButton} variant="surface" onclick={() => model.reset()} />
         </section>
       {:else}
@@ -150,7 +150,6 @@
             <button
               type="button"
               class="deck-draw"
-              class:is-loading={model.isSubmitting}
               aria-label={copy.submitButton}
               aria-busy={model.isSubmitting}
               disabled={model.isSubmitting}
@@ -168,7 +167,7 @@
           </div>
 
           <p class="breathe">{copy.breatheLine}</p>
-          <p class="safety">{copy.safetyNotice}</p>
+          <NoticeBanner message={copy.safetyNotice} tone="info" />
         </section>
       {/if}
     </main>
@@ -177,10 +176,14 @@
 
 <style>
   .tarot-screen {
-    min-height: 100vh;
+    min-height: 100dvh;
     overflow-x: hidden;
     background:
-      radial-gradient(120% 60% at 50% -10%, rgba(40, 90, 70, 0.18), transparent 55%),
+      radial-gradient(
+        120% 60% at 50% -10%,
+        color-mix(in srgb, var(--color-tarot-glow) 18%, transparent),
+        transparent 55%
+      ),
       var(--color-bg-primary);
     color: var(--color-text-primary);
   }
@@ -202,9 +205,14 @@
     padding: var(--space-xl) var(--space-lg) var(--space-lg);
     border-radius: var(--radius-lg);
     text-align: center;
-    background: linear-gradient(160deg, #0d3b2e 0%, #145c44 48%, #0c2b22 100%);
-    border: 1px solid rgba(200, 183, 128, 0.22);
-    box-shadow: 0 0 36px rgba(20, 92, 68, 0.28);
+    background: linear-gradient(
+      160deg,
+      var(--color-tarot-band-top) 0%,
+      var(--color-tarot-band-mid) 48%,
+      var(--color-tarot-band-bottom) 100%
+    );
+    border: 1px solid color-mix(in srgb, var(--color-accent-gold) 22%, transparent);
+    box-shadow: 0 0 36px color-mix(in srgb, var(--color-tarot-glow) 28%, transparent);
   }
 
   .band-back {
@@ -257,7 +265,7 @@
   .band-sub {
     margin: var(--space-sm) auto 0;
     max-width: 460px;
-    color: rgba(243, 240, 231, 0.78);
+    color: color-mix(in srgb, var(--color-text-primary) 78%, transparent);
     font-size: 14px;
     line-height: 1.55;
   }
@@ -382,7 +390,7 @@
 
   .deck-draw:hover:not(:disabled) {
     transform: translateY(-4px);
-    filter: drop-shadow(0 12px 24px rgba(20, 92, 68, 0.35));
+    filter: drop-shadow(0 12px 24px color-mix(in srgb, var(--color-tarot-glow) 35%, transparent));
   }
 
   .deck-draw:focus-visible {
@@ -392,6 +400,7 @@
   }
 
   .deck-draw:disabled {
+    opacity: 0.7;
     cursor: progress;
   }
 
@@ -407,7 +416,7 @@
   .draw-hint {
     font-size: 12px;
     letter-spacing: 1px;
-    color: rgba(243, 240, 231, 0.7);
+    color: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
     text-transform: uppercase;
   }
 
@@ -415,7 +424,7 @@
     width: 28px;
     height: 28px;
     border-radius: var(--radius-pill);
-    border: 3px solid rgba(227, 210, 162, 0.35);
+    border: 3px solid color-mix(in srgb, var(--color-accent-gold-soft) 35%, transparent);
     border-top-color: var(--color-accent-gold-soft);
     animation: spin 720ms linear infinite;
   }
@@ -443,14 +452,6 @@
     font-style: italic;
   }
 
-  .safety {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: 12px;
-    line-height: 1.5;
-    text-align: center;
-  }
-
   .card-grid {
     list-style: none;
     margin: 0;
@@ -475,7 +476,11 @@
     width: 100%;
     border-radius: var(--radius-md);
     padding: 4px;
-    background: linear-gradient(150deg, rgba(200, 183, 128, 0.4), rgba(110, 95, 166, 0.3));
+    background: linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--color-accent-gold) 40%, transparent),
+      color-mix(in srgb, var(--color-accent-ai) 30%, transparent)
+    );
   }
 
   .card-image {

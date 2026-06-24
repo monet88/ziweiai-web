@@ -5,10 +5,9 @@
   // hero copy riêng; luồng tạo lá số → điều hướng /charts/[id] giữ nguyên (id thật từ API).
   import type { ImplementedChartSystem } from '@ziweiai/contracts';
   import { useQueryClient } from '@tanstack/svelte-query';
-  import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { AppScaffold, PrimaryButton } from '$lib/components/ui';
+  import { AppScaffold } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { createDashboardModel } from './dashboard-model.svelte';
   import BirthForm from './BirthForm.svelte';
@@ -35,12 +34,38 @@
 
 <AppScaffold {eyebrow} {title} {subtitle}>
   {#snippet action()}
-    <PrimaryButton
-      label={viCopy.bazi.returnToDashboard}
-      variant="surface"
-      onclick={() => goto(resolve('/'))}
-    />
+    <a href={resolve('/')} class="back-link">
+      &larr; {viCopy.bazi.returnToDashboard}
+    </a>
   {/snippet}
 
   <BirthForm {model} />
 </AppScaffold>
+
+<style>
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border: 1px solid var(--color-border-hairline);
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .back-link:hover {
+    color: var(--color-text-primary);
+    border-color: var(--color-text-muted);
+    background: var(--color-bg-surface);
+  }
+
+  .back-link:focus-visible {
+    outline: 2px solid var(--color-accent-gold-soft);
+    outline-offset: 2px;
+  }
+</style>

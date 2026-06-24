@@ -162,12 +162,12 @@
   }
 
   .scale-dot.selected {
-    border-color: var(--color-border-gold);
-    background: var(--color-accent-gold-soft);
+    border-color: var(--color-accent-primary);
+    background: var(--color-accent-primary-soft);
   }
 
   .scale-dot:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 1px;
   }
 
@@ -180,9 +180,9 @@
   .result-eyebrow {
     margin: 0;
     color: var(--color-text-muted);
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.125px;
   }
 
   .result-type {

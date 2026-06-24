@@ -130,7 +130,7 @@
   }
 
   .input:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 1px;
   }
 

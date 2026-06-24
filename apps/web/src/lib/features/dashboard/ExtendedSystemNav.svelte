@@ -66,11 +66,11 @@
   }
 
   .nav-link:hover {
-    border-color: var(--color-border-gold);
+    border-color: var(--color-accent-primary);
   }
 
   .nav-link:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 1px;
   }
 </style>

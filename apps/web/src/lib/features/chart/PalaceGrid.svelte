@@ -312,7 +312,7 @@
   }
 
   .aspect-overlay line {
-    stroke: var(--color-accent-gold-soft);
+    stroke: var(--color-accent-primary-soft);
     stroke-width: 0.5;
     stroke-opacity: 0.7;
     vector-effect: non-scaling-stroke;
@@ -328,7 +328,7 @@
     display: flex;
     flex-direction: column;
     padding: var(--space-md);
-    border: 1px solid var(--color-border-gold);
+    border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-md);
     background: var(--color-bg-elevated);
   }

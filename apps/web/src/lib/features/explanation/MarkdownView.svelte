@@ -100,7 +100,7 @@
   }
 
   .bullet {
-    color: var(--color-accent-gold);
+    color: var(--color-accent-primary);
     flex-shrink: 0;
   }
 

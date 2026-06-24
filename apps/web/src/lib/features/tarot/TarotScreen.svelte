@@ -178,13 +178,7 @@
   .tarot-screen {
     min-height: 100dvh;
     overflow-x: hidden;
-    background:
-      radial-gradient(
-        120% 60% at 50% -10%,
-        color-mix(in srgb, var(--color-tarot-glow) 18%, transparent),
-        transparent 55%
-      ),
-      var(--color-bg-primary);
+    background: var(--color-bg-primary);
     color: var(--color-text-primary);
   }
 
@@ -211,8 +205,7 @@
       var(--color-tarot-band-mid) 48%,
       var(--color-tarot-band-bottom) 100%
     );
-    border: 1px solid color-mix(in srgb, var(--color-accent-gold) 22%, transparent);
-    box-shadow: 0 0 36px color-mix(in srgb, var(--color-tarot-glow) 28%, transparent);
+    border: 1px solid var(--color-border-hairline);
   }
 
   .band-back {
@@ -237,35 +230,35 @@
   }
 
   .band-back:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--color-bg-elevated);
   }
 
   .band-back:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 2px;
   }
 
   .band-eyebrow {
     margin: 0;
-    color: var(--color-accent-gold-soft);
+    color: var(--color-text-muted);
     font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2px;
+    font-weight: 600;
+    letter-spacing: 0.125px;
   }
 
   .band-title {
     margin: 6px 0 0;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 30px;
-    font-weight: 600;
-    line-height: 1.2;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.23;
+    letter-spacing: -0.625px;
     color: var(--color-text-primary);
   }
 
   .band-sub {
     margin: var(--space-sm) auto 0;
     max-width: 460px;
-    color: color-mix(in srgb, var(--color-text-primary) 78%, transparent);
+    color: var(--color-text-muted);
     font-size: 14px;
     line-height: 1.55;
   }
@@ -306,7 +299,7 @@
   }
 
   .question-input:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 1px;
   }
 
@@ -329,18 +322,18 @@
   }
 
   .spread-option:hover {
-    border-color: var(--color-border-gold);
+    border-color: var(--color-accent-primary);
   }
 
   .spread-option.selected {
-    border-color: var(--color-border-gold);
-    background: var(--color-accent-gold-soft);
-    color: var(--color-bg-primary);
+    border-color: var(--color-accent-primary);
+    background: var(--color-accent-primary-soft);
+    color: var(--color-text-primary);
     font-weight: 600;
   }
 
   .spread-option:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 1px;
   }
 
@@ -390,11 +383,11 @@
 
   .deck-draw:hover:not(:disabled) {
     transform: translateY(-4px);
-    filter: drop-shadow(0 12px 24px color-mix(in srgb, var(--color-tarot-glow) 35%, transparent));
+    filter: drop-shadow(0 8px 18px color-mix(in srgb, var(--color-text-primary) 18%, transparent));
   }
 
   .deck-draw:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 4px;
     border-radius: var(--radius-lg);
   }
@@ -405,27 +398,24 @@
   }
 
   .draw-cta {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
-    letter-spacing: 1.5px;
-    color: var(--color-accent-gold-soft);
-    text-transform: uppercase;
+    letter-spacing: 0;
+    color: var(--color-text-primary);
   }
 
   .draw-hint {
     font-size: 12px;
-    letter-spacing: 1px;
-    color: color-mix(in srgb, var(--color-text-primary) 70%, transparent);
-    text-transform: uppercase;
+    letter-spacing: 0.125px;
+    color: var(--color-text-muted);
   }
 
   .spinner {
     width: 28px;
     height: 28px;
     border-radius: var(--radius-pill);
-    border: 3px solid color-mix(in srgb, var(--color-accent-gold-soft) 35%, transparent);
-    border-top-color: var(--color-accent-gold-soft);
+    border: 3px solid color-mix(in srgb, var(--color-accent-primary) 30%, transparent);
+    border-top-color: var(--color-accent-primary);
     animation: spin 720ms linear infinite;
   }
 
@@ -447,7 +437,7 @@
   .breathe {
     margin: 0;
     text-align: center;
-    color: var(--color-accent-gold-soft);
+    color: var(--color-text-muted);
     font-size: 14px;
     font-style: italic;
   }
@@ -476,11 +466,8 @@
     width: 100%;
     border-radius: var(--radius-md);
     padding: 4px;
-    background: linear-gradient(
-      150deg,
-      color-mix(in srgb, var(--color-accent-gold) 40%, transparent),
-      color-mix(in srgb, var(--color-accent-ai) 30%, transparent)
-    );
+    background: var(--color-tarot-glow);
+    border: 1px solid var(--color-border-hairline);
   }
 
   .card-image {
@@ -488,7 +475,7 @@
     width: 100%;
     aspect-ratio: 100 / 171;
     object-fit: cover;
-    border-radius: calc(var(--radius-md) - 4px);
+    border-radius: var(--radius-xs);
     background: var(--color-bg-surface);
   }
 
@@ -498,19 +485,18 @@
 
   .card-name {
     margin: 0;
-    font-family: Georgia, 'Times New Roman', serif;
     font-size: 15px;
     font-weight: 600;
     line-height: 1.3;
-    color: var(--color-accent-gold-soft);
+    color: var(--color-text-primary);
   }
 
   .orient {
     display: inline-block;
     padding: 2px 10px;
     border-radius: var(--radius-pill);
-    border: 1px solid var(--color-border-gold);
-    color: var(--color-accent-gold-soft);
+    border: 1px solid var(--color-accent-purple-deep);
+    color: var(--color-accent-purple-deep);
     font-size: 11px;
     font-weight: 600;
   }
@@ -524,9 +510,9 @@
     margin: 0;
     text-align: center;
     color: var(--color-text-muted);
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.125px;
   }
 
   .reading {
@@ -541,9 +527,8 @@
 
   .reading-title {
     margin: 0;
-    font-family: Georgia, 'Times New Roman', serif;
     font-size: 18px;
     font-weight: 600;
-    color: var(--color-accent-gold-soft);
+    color: var(--color-text-primary);
   }
 </style>

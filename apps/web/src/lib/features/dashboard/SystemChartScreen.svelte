@@ -65,7 +65,7 @@
   }
 
   .back-link:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 2px;
   }
 </style>

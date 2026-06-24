@@ -139,12 +139,18 @@ export function buildCreateChartRequest(draft: BirthFormDraft): CreateChartReque
 
   return {
     birthInput: {
-      calendar: draft.calendar,
+      // Form web chỉ nhập DƯƠNG LỊCH (đã bỏ ô chọn lịch + tháng nhuận, xem decision 0018);
+      // backend tự quy đổi sang âm lịch (chart-snapshot.lunarDate). Đây là consumer DUY NHẤT
+      // của builder (cả Tử Vi lẫn Hợp Hôn), nên ghim cứng calendar='gregorian'/isLeapMonth=null
+      // tại biên: dù draft bị hydrate/khởi tạo lệch mang calendar='lunar' thì request vẫn không
+      // nhãn sai lịch (chặn hỏng dữ liệu thầm lặng). draft.calendar/isLeapMonth giữ lại để
+      // BirthFormDraft + @ziweiai/contracts không đổi, nhưng builder không còn đọc chúng.
+      calendar: 'gregorian',
       date: {
         year: parseNumericField(draft.birthYear),
         month: parseNumericField(draft.birthMonth),
         day: parseNumericField(draft.birthDay),
-        isLeapMonth: draft.calendar === 'lunar' ? draft.isLeapMonth : null,
+        isLeapMonth: null,
       },
       time: {
         hour: draft.isUnknownTime ? null : parseNumericField(draft.hour),

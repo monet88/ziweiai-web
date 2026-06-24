@@ -35,7 +35,7 @@
   }
 
   .banner.warning {
-    border-color: var(--color-accent-gold-soft);
+    border-color: var(--color-accent-orange);
   }
 
   .banner.danger {

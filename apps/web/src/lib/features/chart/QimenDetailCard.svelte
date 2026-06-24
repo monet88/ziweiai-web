@@ -64,7 +64,7 @@
   }
 
   .cell.center {
-    border-color: var(--color-border-gold);
+    border-color: var(--color-accent-primary);
   }
 
   .cell-index {
@@ -79,7 +79,7 @@
   }
 
   .cell-line.star {
-    color: var(--color-accent-gold-soft);
+    color: var(--color-text-primary);
     font-weight: 600;
   }
 

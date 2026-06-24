@@ -97,8 +97,7 @@
         var(--color-tarot-back-mid) 60%,
         var(--color-tarot-back-bottom)
       );
-    border: 1px solid var(--color-border-gold);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent-gold) 12%, transparent) inset;
+    border: 1px solid var(--color-border-hairline);
   }
 
   .art {
@@ -106,19 +105,19 @@
     inset: 0;
     width: 100%;
     height: 100%;
-    color: var(--color-accent-gold);
+    color: var(--color-accent-purple-deep);
   }
 
   .frame {
     fill: none;
-    stroke: var(--color-accent-gold);
+    stroke: var(--color-accent-purple-deep);
     stroke-width: 1.4;
     opacity: 0.55;
   }
 
   .frame-soft {
     fill: none;
-    stroke: var(--color-accent-gold-soft);
+    stroke: var(--color-accent-purple-deep);
     stroke-width: 0.8;
     opacity: 0.3;
   }
@@ -139,12 +138,12 @@
   }
 
   .fill {
-    fill: var(--color-accent-gold-soft);
+    fill: var(--color-accent-purple-deep);
     opacity: 0.92;
   }
 
   .dot {
-    fill: var(--color-accent-gold-soft);
+    fill: var(--color-accent-purple-deep);
     opacity: 0.65;
   }
 

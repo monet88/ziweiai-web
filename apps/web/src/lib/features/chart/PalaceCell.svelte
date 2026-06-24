@@ -211,7 +211,7 @@
   }
 
   .cell:hover {
-    border-color: var(--color-border-gold);
+    border-color: var(--color-accent-primary);
   }
 
   /* Hover-preview (US-011): cung NGOÀI tam phương tứ chính của cung đang hover mờ đi để làm
@@ -231,18 +231,18 @@
   }
 
   .cell:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 1px;
   }
 
   /* Tam phương tứ chính: viền nhấn nhẹ, dưới mức cung đang chọn. */
   .cell.in-aspect {
-    border-color: var(--color-accent-gold-soft);
+    border-color: var(--color-accent-primary-soft);
     background: var(--color-bg-elevated);
   }
 
   .cell.selected {
-    border-color: var(--color-accent-gold);
+    border-color: var(--color-accent-primary);
     background: var(--color-bg-elevated);
   }
 
@@ -271,7 +271,7 @@
   .tag {
     padding: 1px 6px;
     border-radius: var(--radius-pill);
-    background: var(--color-border-gold);
+    background: var(--color-accent-primary-soft);
     color: var(--color-text-primary);
     font-size: 10px;
     font-weight: 600;
@@ -302,7 +302,7 @@
 
   /* Chủ tinh nổi bật tách khỏi phụ tinh / tạp diệu. */
   .star.major {
-    color: var(--color-accent-gold-soft);
+    color: var(--color-text-primary);
     font-weight: 600;
     font-size: 13px;
   }
@@ -333,7 +333,7 @@
   }
 
   .meta.changsheng {
-    color: var(--color-accent-gold-soft);
+    color: var(--color-text-muted);
   }
 
   /* US-014: thanh chỉ báo vận hạn ở mép trên ô — chia đều theo số tầng đang có,

@@ -29,7 +29,10 @@ function buildDraft(overrides?: Partial<BirthFormDraft>): BirthFormDraft {
 }
 
 describe('buildCreateChartRequest', () => {
-  it('keeps leap-month births when the draft uses lunar calendar', () => {
+  it('forces gregorian + null leap-month even if a stale draft still carries lunar values', () => {
+    // Form web đã bỏ ô chọn lịch (decision 0018) → builder ghim cứng dương lịch tại biên.
+    // Dù draft bị hydrate lệch mang calendar='lunar'/isLeapMonth=true thì request vẫn không
+    // bị nhãn sai lịch (chặn hỏng dữ liệu thầm lặng cho người nhập ngày dương).
     const request = buildCreateChartRequest(
       buildDraft({
         calendar: 'lunar',
@@ -37,7 +40,8 @@ describe('buildCreateChartRequest', () => {
       }),
     );
 
-    expect(request.birthInput.date.isLeapMonth).toBe(true);
+    expect(request.birthInput.calendar).toBe('gregorian');
+    expect(request.birthInput.date.isLeapMonth).toBeNull();
   });
 
   it('clears leap-month flag for gregorian input', () => {

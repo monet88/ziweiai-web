@@ -1,90 +1,141 @@
 /* Design tokens dưới dạng CSS custom properties (nguồn giá trị: theme/tokens.ts).
+   Ngôn ngữ thiết kế: Notion paper-calm (xem DESIGN.md + docs/decisions/0018).
    Mọi component web tham chiếu var(--*) thay vì hardcode palette/spacing/radius. */
 :root {
-  /* Nền */
-  --color-bg-primary: #0b0b0d;
-  --color-bg-elevated: #111214;
-  --color-bg-surface: #1a1b1e;
+  /* Phông chữ: Inter (self-host qua @fontsource-variable/inter, import ở root layout) */
+  --font-sans: 'Inter Variable', 'Inter', -apple-system, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif;
 
-  /* Chữ */
-  --color-text-primary: #f3f0e7;
-  --color-text-secondary: #d9d9df;
-  --color-text-muted: #8f8b80;
+  /* Nền: canvas giấy ấm cho trang, surface trắng cho thẻ, elevated là nền nhấn dịu */
+  --color-bg-primary: #f6f5f4;
+  --color-bg-elevated: #efedea;
+  --color-bg-surface: #ffffff;
 
-  /* Nhấn */
-  --color-accent-gold: #c8b780;
-  --color-accent-gold-soft: #e3d2a2;
-  --color-accent-ai: #6e5fa6;
-  --color-accent-danger: #d36a5b;
+  /* Chữ: gần-đen ấm, không dùng màu để tạo thứ bậc (dựa vào trọng lượng/kích cỡ) */
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #31302e;
+  --color-text-muted: #615d59;
 
-  /* Viền */
-  --color-border-hairline: #2c2924;
-  --color-border-gold: #6f6140;
+  /* Nhấn cấu trúc: một màu xanh Notion duy nhất cho hành động chính/liên kết/focus.
+     primary-soft là tint nhạt cho viền/nền phụ (vd cung tam hợp), không phải hành động. */
+  --color-accent-primary: #0075de;
+  --color-accent-primary-pressed: #005bab;
+  --color-accent-primary-soft: #cfe4fa;
+  --color-text-on-primary: #ffffff;
 
-  /* Khoảng cách */
+  /* Nhấn AI/premium (tím) + lỗi (đỏ) — token đơn cho từng vai trò ngữ nghĩa. */
+  --color-accent-ai: #6d28d9;
+  --color-accent-danger: #c0392b;
+
+  /* Viền hairline (Notion: 1px nhạt thay vì đổ bóng nặng) */
+  --color-border-hairline: #e6e6e6;
+
+  /* Sticker palette (trang trí thuần: illustration/icon tile/category dot).
+     KHÔNG tô CTA hay nền cấu trúc bằng các màu này. */
+  --color-accent-sky: #62aef0;
+  --color-accent-purple: #d6b6f6;
+  --color-accent-purple-deep: #391c57;
+  --color-accent-pink: #ff64c8;
+  --color-accent-orange: #dd5b00;
+  --color-accent-orange-deep: #793400;
+  --color-accent-teal: #2a9d99;
+  --color-accent-green: #1aae39;
+  --color-accent-brown: #523410;
+
+  /* Khoảng cách: base 8px theo DESIGN.md */
+  --space-xxs: 4px;
   --space-xs: 8px;
   --space-sm: 12px;
   --space-md: 16px;
-  --space-lg: 20px;
-  --space-xl: 24px;
+  --space-lg: 24px;
+  --space-xl: 28px;
   --space-xxl: 32px;
 
-  /* Bo góc */
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
-  --radius-pill: 999px;
+  /* Bo góc: thang Notion (input bám sát xs 4px, thẻ md/lg) */
+  --radius-xs: 4px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
 
   /* US-012: Star coloring tokens (brightness 7 levels + mutagen 4 levels + malefic) */
-  /* Brightness: mạnh → trung → yếu. Values tuned for WCAG AA on dark surface/elevated. */
-  --star-brightness-miao: #f4d35e;
-  --star-brightness-wang: #f0c36b;
-  --star-brightness-de: #e8b96a;
-  --star-brightness-li: #c9b38a;
-  --star-brightness-ping: #a8a39a;
-  --star-brightness-bu: #a39a8a;
-  --star-brightness-xian: #b89a9a;
+  /* Brightness: mạnh → trung → yếu. Đã cân lại cho nền sáng (AA trên surface trắng). */
+  --star-brightness-miao: #8a5300;
+  --star-brightness-wang: #8a5600;
+  --star-brightness-de: #7a5e00;
+  --star-brightness-li: #6f6552;
+  --star-brightness-ping: #5f6670;
+  --star-brightness-bu: #6d6862;
+  --star-brightness-xian: #a0453f;
 
-  /* Mutagen (Tứ hóa) */
-  --star-mutagen-lu: #d4af37;
-  --star-mutagen-quyen: #c9a06a;
-  --star-mutagen-khoa: #8fa1b8;
-  --star-mutagen-ky: #a88aa8;
+  /* Mutagen (Tứ hóa) — tách hue rõ, AA trên surface trắng */
+  --star-mutagen-lu: #047857;
+  --star-mutagen-quyen: #9a4708;
+  --star-mutagen-khoa: #3949c4;
+  --star-mutagen-ky: #b3261e;
 
-  /* Malefic (hung tinh phụ): đỏ-xám cảnh báo, tách biệt cát tinh phụ */
-  --star-malefic-name: #a67c7c;
-  --star-malefic-soft: #8b6a6a;
+  /* Malefic (hung tinh phụ): đỏ-nâu cảnh báo, tách biệt cát tinh phụ */
+  --star-malefic-name: #9a3a3a;
+  --star-malefic-soft: #a85149;
 
   /* US-014: màu 4 tầng vận hạn (thanh chỉ báo + chip flow-info). Mỗi tầng có
      bản solid (thanh + chữ chip) và soft (nền chip ~14% alpha). Tone tách rõ:
      đại vận tím, lưu niên xanh dương, lưu nguyệt xanh lá, lưu nhật cam.
-     Contrast solid vs --color-bg-surface giữ ≥ AA (đã cân với US-012). */
-  --color-flow-decadal: oklch(70% 0.15 300);
-  --color-flow-decadal-soft: oklch(70% 0.15 300 / 0.14);
-  --color-flow-yearly: oklch(72% 0.13 245);
-  --color-flow-yearly-soft: oklch(72% 0.13 245 / 0.14);
-  --color-flow-monthly: oklch(74% 0.13 150);
-  --color-flow-monthly-soft: oklch(74% 0.13 150 / 0.14);
-  --color-flow-daily: oklch(76% 0.15 65);
-  --color-flow-daily-soft: oklch(76% 0.15 65 / 0.14);
+     Đã hạ L xuống ~52% để solid đọc rõ trên surface trắng (AA). */
+  --color-flow-decadal: oklch(52% 0.18 300);
+  --color-flow-decadal-soft: oklch(52% 0.18 300 / 0.14);
+  --color-flow-yearly: oklch(53% 0.17 248);
+  --color-flow-yearly-soft: oklch(53% 0.17 248 / 0.14);
+  --color-flow-monthly: oklch(52% 0.14 150);
+  --color-flow-monthly-soft: oklch(52% 0.14 150 / 0.14);
+  --color-flow-daily: oklch(56% 0.15 60);
+  --color-flow-daily-soft: oklch(56% 0.15 60 / 0.14);
 
   /* US-015: outline highlight cung Mệnh vận trên bàn cho panel chọn mốc. Alias 4 tầng
      vận hạn của US-014 → outline đồng màu với thanh flow-bar/chip cùng tầng (nhất quán
-     trực quan, DRY, đã cân AA). Tách biệt --color-accent-gold* (lớp inAspect US-011). */
+     trực quan, DRY, đã cân AA). Tách biệt lớp inAspect US-011 (nay dùng primary-soft). */
   --color-horoscope-decadal: var(--color-flow-decadal);
   --color-horoscope-yearly: var(--color-flow-yearly);
   --color-horoscope-monthly: var(--color-flow-monthly);
   --color-horoscope-daily: var(--color-flow-daily);
 
-  /* US-017h: Tarot. Tông emerald cho dải hero + tím-thẫm cho lưng bài là màu trang trí
-     riêng của màn Tarot (không tái dùng nơi khác) nên gom thành token feature-scoped thay
-     vì hardcode lặp. Các sắc gold/tím-AI/chữ ở dạng alpha vẫn dẫn xuất từ --color-accent-*
-     / --color-text-* qua color-mix (xem TarotScreen/TarotCardBack). */
-  --color-tarot-band-top: #0d3b2e;
-  --color-tarot-band-mid: #145c44;
-  --color-tarot-band-bottom: #0c2b22;
-  --color-tarot-glow: #285a46;
-  --color-tarot-back-top: #1c1736;
-  --color-tarot-back-mid: #14122a;
-  --color-tarot-back-bottom: #0f0d20;
+  /* US-017h: Tarot. Theo decision 0018, Tarot quy về hệ điềm tĩnh: bỏ dải tối + glow.
+     Token band giờ là dải giấy sáng; lưng bài là tint tím nhạt, đường nét dùng
+     --color-accent-purple-deep (điểm nhấn trang trí riêng của Tarot, không glow). */
+  --color-tarot-band-top: #ffffff;
+  --color-tarot-band-mid: #f6f5f4;
+  --color-tarot-band-bottom: #f0eef3;
+  --color-tarot-glow: #e6daf2;
+  --color-tarot-back-top: #f3eefa;
+  --color-tarot-back-mid: #ece2f6;
+  --color-tarot-back-bottom: #e4d7f1;
+}
+
+/* Nền + phông toàn cục (tokens.css import ở root layout nên các selector phần tử
+   ở đây áp dụng toàn app; style scoped của component vẫn ghi đè được). */
+html {
+  font-family: var(--font-sans);
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'lnum' 1, 'locl' 1;
+}
+
+body {
+  margin: 0;
+}
+
+/* Tracking âm cho heading theo bảng DESIGN.md (Inter mặc định lỏng hơn NotionInter).
+   Component có thể đặt letter-spacing riêng để tinh chỉnh theo size cụ thể. */
+h1 {
+  letter-spacing: -1px;
+}
+
+h2 {
+  letter-spacing: -0.625px;
+}
+
+h3 {
+  letter-spacing: -0.25px;
 }

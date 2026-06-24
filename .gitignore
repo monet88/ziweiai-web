@@ -57,7 +57,11 @@ plans/reports/
 # Supabase local temp.
 apps/api/supabase/.temp/
 apps/api/supabase/.branches/
-docs/deploy/LightsailDefaultKey-bestprint.pem
+
+# Deploy SSH keys — never commit private keys.
+docs/deploy/*.pem
+docs/deploy/*.key
+docs/deploy/lightsail-ssh-key.txt
 
 # Root agent instruction files (local-only, not per-folder AGENTS.md).
 /CLAUDE.md

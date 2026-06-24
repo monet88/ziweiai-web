@@ -67,6 +67,8 @@ export default defineConfig({
         EXTENDED_SYSTEM_FACE_ENABLED: 'true',
         // US-017f: bật cờ Xem Tay cho e2e (mặc định false ở mọi nơi khác → fail-closed).
         EXTENDED_SYSTEM_PALM_ENABLED: 'true',
+        // US-017h: bật cờ Tarot cho e2e (mặc định false ở mọi nơi khác → fail-closed).
+        EXTENDED_SYSTEM_TAROT_ENABLED: 'true',
       },
     },
     {

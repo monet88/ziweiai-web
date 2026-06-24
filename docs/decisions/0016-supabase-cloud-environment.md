@@ -73,8 +73,8 @@ Tradeoffs:
 
 - Phụ thuộc kết nối mạng tới project cloud cho dev (không còn chạy hoàn toàn offline).
 - Phải quản lý secret thật trong `.env` local; tuyệt đối không commit.
-- Đổi naming migration kéo theo cập nhật `persistence-migration.test.ts` (đang đọc
-  path `000001_*.up.sql`).
+- Đổi naming migration kéo theo cập nhật `persistence-migration.test.ts` (trước đây
+  đọc path `000001_*.up.sql`, nay đã chuẩn hoá).
 - `script env:local-supabase` (đọc `supabase status -o env` của stack local) không
   còn là đường cấu hình chính; giữ lại cho ai vẫn muốn chạy local, đánh dấu rõ.
 

@@ -59,6 +59,12 @@ test('US-011: đường nối hiển thị sẵn (auto-Mệnh) → hover dim cun
   const board = page.getByRole('group', { name: 'Bàn 12 cung' });
   await expect(board).toBeVisible();
 
+  // Sau khi submit + điều hướng sang trang chi tiết, con trỏ Playwright vẫn ghim ở vị trí click
+  // nút "Lập lá số"; nếu bàn render ngay dưới con trỏ thì một pointerenter có thể tự kích hoạt
+  // hover (≠ người dùng thật). Đưa chuột về góc trung tính để khẳng định đúng trạng thái MẶC ĐỊNH
+  // (chưa hover) trước khi đếm ô dim.
+  await page.mouse.move(0, 0);
+
   // ---- (1) Mặc định: đường nối auto-Mệnh vẽ sẵn, không dim ô nào ----
   // Tam phương tứ chính = 4 cung; loại chính cung → 3 đoạn nối từ cung Mệnh.
   const aspectLines = board.locator('svg.aspect-overlay line');

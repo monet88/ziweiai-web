@@ -115,43 +115,45 @@
     />
   </div>
 
-  <SelectField
-    label={copy.calendar}
-    fieldId="birth-calendar"
-    value={model.draft.calendar}
-    options={calendarOptions}
-    disabled={model.isSubmitting}
-    onValueChange={(value) => model.setField('calendar', value as 'gregorian' | 'lunar')}
-  />
-
-  {#if model.draft.calendar === 'lunar'}
+  <div class="flex-wrap-group">
     <SelectField
-      label={copy.lunarMonthKind}
-      fieldId="birth-leap-month"
-      value={model.draft.isLeapMonth ? 'leap' : 'regular'}
-      options={leapOptions}
+      label={copy.calendar}
+      fieldId="birth-calendar"
+      value={model.draft.calendar}
+      options={calendarOptions}
       disabled={model.isSubmitting}
-      onValueChange={(value) => model.setField('isLeapMonth', value === 'leap')}
+      onValueChange={(value) => model.setField('calendar', value as 'gregorian' | 'lunar')}
     />
-  {/if}
 
-  <SelectField
-    label={copy.genderForChart}
-    fieldId="birth-gender"
-    value={model.draft.gender}
-    options={genderOptions}
-    disabled={model.isSubmitting}
-    onValueChange={(value) => model.setField('gender', value as 'male' | 'female' | 'unknown')}
-  />
+    {#if model.draft.calendar === 'lunar'}
+      <SelectField
+        label={copy.lunarMonthKind}
+        fieldId="birth-leap-month"
+        value={model.draft.isLeapMonth ? 'leap' : 'regular'}
+        options={leapOptions}
+        disabled={model.isSubmitting}
+        onValueChange={(value) => model.setField('isLeapMonth', value === 'leap')}
+      />
+    {/if}
 
-  <SelectField
-    label={copy.birthTimeCertainty}
-    fieldId="birth-time-certainty"
-    value={model.draft.isUnknownTime ? 'unknown' : 'known'}
-    options={timeOptions}
-    disabled={model.isSubmitting}
-    onValueChange={(value) => model.setField('isUnknownTime', value === 'unknown')}
-  />
+    <SelectField
+      label={copy.genderForChart}
+      fieldId="birth-gender"
+      value={model.draft.gender}
+      options={genderOptions}
+      disabled={model.isSubmitting}
+      onValueChange={(value) => model.setField('gender', value as 'male' | 'female' | 'unknown')}
+    />
+
+    <SelectField
+      label={copy.birthTimeCertainty}
+      fieldId="birth-time-certainty"
+      value={model.draft.isUnknownTime ? 'unknown' : 'known'}
+      options={timeOptions}
+      disabled={model.isSubmitting}
+      onValueChange={(value) => model.setField('isUnknownTime', value === 'unknown')}
+    />
+  </div>
 
   {#if model.draft.isUnknownTime}
     <NoticeBanner message={viCopy.warnings.unknownBirthTime} tone="warning" />
@@ -220,5 +222,18 @@
     .grid-3 {
       grid-template-columns: 1fr;
     }
+  }
+
+  .flex-wrap-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+  }
+
+  /* Kĩ thuật Auto-fill Grid: Các select field sẽ luôn lấp đầy khoảng trống.
+     Nếu lẻ 1 ô (do ko có tháng nhuận), ô cuối sẽ tự động dãn ra 100% chiều ngang! */
+  :global(.flex-wrap-group > *) {
+    flex: 1 1 calc(50% - var(--space-lg));
+    min-width: 240px;
   }
 </style>

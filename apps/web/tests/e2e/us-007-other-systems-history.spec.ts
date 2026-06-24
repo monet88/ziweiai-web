@@ -29,11 +29,11 @@ interface SystemCase {
 }
 
 const SYSTEM_CASES: readonly SystemCase[] = [
-  { route: '/bazi', navLabel: 'Mở màn hình Bát Tự', systemLabel: 'Bát Tự', day: '15', month: '8', year: '1990', hour: '10', minute: '30' },
-  { route: '/meihua', navLabel: 'Mở màn hình Mai Hoa', systemLabel: 'Mai Hoa Dịch Số', day: '3', month: '2', year: '1985', hour: '14', minute: '45' },
-  { route: '/liuyao', navLabel: 'Mở màn hình Lục Hào', systemLabel: 'Lục Hào', day: '21', month: '11', year: '1978', hour: '8', minute: '15' },
-  { route: '/daliuren', navLabel: 'Mở màn hình Đại Lục Nhâm', systemLabel: 'Đại Lục Nhâm', day: '7', month: '5', year: '2001', hour: '20', minute: '5' },
-  { route: '/qimen', navLabel: 'Mở màn hình Kỳ Môn', systemLabel: 'Kỳ Môn Độn Giáp', day: '29', month: '9', year: '1995', hour: '6', minute: '50' },
+  { route: '/bazi', navLabel: 'Xem Bát Tự', systemLabel: 'Bát Tự', day: '15', month: '8', year: '1990', hour: '10', minute: '30' },
+  { route: '/meihua', navLabel: 'Xem Mai Hoa', systemLabel: 'Mai Hoa Dịch Số', day: '3', month: '2', year: '1985', hour: '14', minute: '45' },
+  { route: '/liuyao', navLabel: 'Xem Lục Hào', systemLabel: 'Lục Hào', day: '21', month: '11', year: '1978', hour: '8', minute: '15' },
+  { route: '/daliuren', navLabel: 'Xem Đại Lục Nhâm', systemLabel: 'Đại Lục Nhâm', day: '7', month: '5', year: '2001', hour: '20', minute: '5' },
+  { route: '/qimen', navLabel: 'Xem Kỳ Môn', systemLabel: 'Kỳ Môn Độn Giáp', day: '29', month: '9', year: '1995', hour: '6', minute: '50' },
 ];
 
 // Điền form sinh trên màn hình hệ (đã đặt mặc định chartSystem) rồi submit. Trả chartId từ URL.

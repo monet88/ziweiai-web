@@ -28,17 +28,32 @@ const PALM_PERSONA = [
 const FACE_STRUCTURE = [
   'Hãy phân tích theo cấu trúc sau, mỗi mục một đoạn ngắn dễ hiểu:',
   '1. Ấn tượng tổng thể.',
-  '2. Tam đình (vùng trán, vùng giữa mặt, vùng cằm) và ngũ quan (lông mày, mắt, mũi, miệng, tai).',
-  '3. Luận về tính cách và xu hướng vận thế (sự nghiệp, tình cảm, tài lộc) ở mức gợi mở.',
-  '4. Gợi ý điều chỉnh tích cực.',
+  '2. Tam đình:',
+  '   - Thượng đình (từ chân tóc tới lông mày) ứng với vận thời trẻ và trí tuệ: trán rộng đầy gợi sớm có thành tựu, được người trên nâng đỡ; trán hẹp lõm gợi giai đoạn đầu nhiều thử thách, phải tự lập.',
+  '   - Trung đình (từ lông mày tới chóp mũi) ứng với vận trung niên và ý chí: sống mũi và chóp mũi đầy đặn gợi ý chí vững, sự nghiệp và tài chính trung niên ổn; vùng này phẳng lép gợi cần thêm quý nhân hỗ trợ.',
+  '   - Hạ đình (từ chóp mũi tới cằm) ứng với vận về sau và quan hệ với người dưới: cằm tròn đầy, địa các vuông vắn gợi hậu vận an nhàn, có chốn nương tựa; cằm nhọn vát gợi về sau vất vả hơn.',
+  '3. Ngũ quan (đọc theo nét thấy được, gắn với ý nghĩa đời sống):',
+  '   - Lông mày (tình anh em, bạn bè): mày thanh dài đều gợi tình nghĩa bền, làm việc có trước có sau; mày thưa rối gợi nên chủ động giữ các mối quan hệ.',
+  '   - Mắt (thần thái, trí tuệ): mắt sáng, lòng đen lòng trắng phân minh gợi tinh anh, phân biệt phải trái rõ; mắt thiếu thần gợi nên giữ gìn sức tập trung.',
+  '   - Mũi (ý chí, tài lộc): sống mũi thẳng, chóp mũi có thịt, cánh mũi đầy gợi giữ tiền có chừng mực, chính tài ổn định.',
+  '   - Miệng (giao tiếp, tình cảm): môi tươi cân đối, khóe miệng hơi hếch gợi lạc quan, ăn nói được lòng người; môi quá mỏng gợi nên ý tứ lời nói.',
+  '   - Tai (tiếp thu, phúc khí): tai dày dặn, vành rõ, dái tai đầy gợi tính cẩn trọng và phúc khí; tai mỏng nhỏ gợi nên dưỡng sức và tích phúc.',
+  '4. Thần khí - sắc diện: nét hồng hào tươi sáng gợi trạng thái đang lên; nét xám tối, thiếu sức sống chỉ là dấu hiệu cần nghỉ ngơi, KHÔNG suy diễn thành bệnh tật.',
+  '5. Luận về tính cách và xu hướng vận thế (sự nghiệp, tình cảm, tài lộc) ở mức gợi mở, dựa trên các nét đã quan sát.',
+  '6. Gợi ý điều chỉnh tích cực; nhấn mạnh "tướng tùy tâm sinh" - nét tướng đổi theo tâm tính và lối sống.',
 ].join('\n');
 
 const PALM_STRUCTURE = [
   'Hãy phân tích theo cấu trúc sau, mỗi mục một đoạn ngắn dễ hiểu:',
-  '1. Ấn tượng tổng thể về dáng tay.',
-  '2. Ba đường chính (đường sinh đạo, đường trí đạo, đường tâm đạo) và các đường phụ thấy được.',
-  '3. Luận về tính cách và xu hướng vận thế (sức khỏe tổng quát ở mức gợi mở, sự nghiệp, tình cảm).',
-  '4. Gợi ý điều chỉnh tích cực.',
+  '1. Ấn tượng tổng thể và dáng tay: tay vuông gợi tư duy mạch lạc, làm việc có kế hoạch; tay tròn mềm gợi giàu cảm xúc, khéo giao tiếp; tay thuôn dài nhiều đốt gợi thiên về suy tư, sáng tạo; tay dày chắc gợi thực tế, hành động.',
+  '2. Ba đường chính (đọc theo nét thấy được, gắn ý nghĩa đời sống):',
+  '   - đường sinh đạo (vòng quanh gốc ngón cái): nói về sức sống và thể trạng. Sâu rõ gợi thể lực sung; mờ hoặc đứt đoạn chỉ gợi nên chú ý nghỉ ngơi, KHÔNG kết luận bệnh tật.',
+  '   - đường trí đạo (vắt ngang lòng bàn tay): nói về cách tư duy. Dài và thẳng gợi lý trí, phân tích tốt; dài và cong gợi trực giác, giàu sáng tạo; ngắn gợi thiên về thực dụng.',
+  '   - đường tâm đạo (phía trên, hướng về ngón trỏ): nói về tình cảm. Bằng và rõ gợi tình cảm ổn định; cong lên gợi nồng nhiệt chủ động; nhiều nhánh gợi đời sống tình cảm phong phú nhưng phức tạp.',
+  '3. Đường phụ thấy được: đường vận mệnh (từ cổ tay lên ngón giữa) gợi hướng đi sự nghiệp; đường thành công (dưới ngón áp út) gợi tài năng được ghi nhận; đường hôn nhân (cạnh dưới ngón út) gợi nhịp tình cảm.',
+  '4. Hình ngón và gò bàn tay: ngón cái mạnh gợi ý chí và khả năng dẫn dắt; gò Kim tinh (gốc ngón cái) đầy gợi sức sống và sự nồng ấm; gò Mộc tinh (gốc ngón trỏ) đầy gợi tự tin, có chí tiến thủ; gò Thái âm/Nguyệt (mép ngoài lòng tay) đầy gợi giàu tưởng tượng và trực giác.',
+  '5. Luận về tính cách và xu hướng vận thế (sức khỏe tổng quát ở mức gợi mở, sự nghiệp, tình cảm), dựa trên các nét đã quan sát.',
+  '6. Gợi ý điều chỉnh tích cực; nhắc rằng chỉ tay thay đổi theo thời gian, phản ánh trạng thái hiện tại chứ không định đoạt số phận.',
 ].join('\n');
 
 /** Dựng user prompt cho luận giải vision theo loại (face/palm) + câu hỏi tuỳ chọn của người dùng. */

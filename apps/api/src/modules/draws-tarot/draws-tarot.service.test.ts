@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { tarotDrawSchema, type AuthenticatedUser } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
+import type { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
+import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
 import type { QuotasService } from '../quotas/quotas.service';
 import { DrawsTarotService } from './draws-tarot.service';
 
@@ -20,6 +22,7 @@ describe('DrawsTarotService', () => {
   const originalFreeForAll = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
   const user: AuthenticatedUser = { userId: '11111111-1111-1111-1111-111111111111', email: 'user@example.com' };
   let quotasService: Pick<QuotasService, 'assertCanCreateTarotDraw'>;
+  let providerRouter: Pick<ExplanationProviderRouter, 'generate'>;
   let service: DrawsTarotService;
 
   beforeEach(() => {
@@ -28,7 +31,16 @@ describe('DrawsTarotService', () => {
     quotasService = {
       assertCanCreateTarotDraw: vi.fn().mockResolvedValue(undefined),
     };
-    service = new DrawsTarotService(quotasService as QuotasService);
+    providerRouter = {
+      generate: vi.fn().mockResolvedValue({
+        renderedMarkdown: 'Diễn giải Tarot từ LLM.\n\n## Tóm lại\nGiữ chủ động.',
+        providerMetadata: { provider: 'mock' },
+      }),
+    };
+    service = new DrawsTarotService(
+      quotasService as QuotasService,
+      providerRouter as ExplanationProviderRouter,
+    );
   });
 
   afterEach(() => {
@@ -67,7 +79,8 @@ describe('DrawsTarotService', () => {
     expect(tarotDrawSchema.safeParse(result).success).toBe(true);
     expect(result.cards).toHaveLength(3);
     expect(result.cards.map((card) => card.position)).toEqual([0, 1, 2]);
-    expect(result.narrative).toContain('trải bài ba lá');
+    expect(result.narrative).toContain('Diễn giải Tarot từ LLM.');
+    expect(providerRouter.generate).toHaveBeenCalledTimes(1);
     expect(quotasService.assertCanCreateTarotDraw).toHaveBeenCalledWith(user.userId, '127.0.0.1', false);
   });
 
@@ -104,7 +117,35 @@ describe('DrawsTarotService', () => {
     const result = await service.drawTarot(user, '127.0.0.1', 'Tôi nên nhìn rộng hơn ra sao?', 'celtic-cross', 'seed-3');
 
     expect(result.cards).toHaveLength(10);
-    expect(result.narrative).toContain('Celtic Cross');
+    const payload = (providerRouter.generate as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as { promptOverride?: string };
+    expect(payload.promptOverride).toContain('Celtic Cross');
+  });
+
+  it('rơi về diễn giải template khi provider AI không khả dụng', async () => {
+    providerRouter.generate = vi.fn().mockRejectedValue(new ProviderUnavailableError('no provider'));
+
+    const result = await service.drawTarot(user, '127.0.0.1', 'Tôi nên tập trung điều gì?', 'three-card', 'seed-1');
+
+    expect(result.narrative).toContain('trải bài ba lá');
+    expect(tarotDrawSchema.safeParse(result).success).toBe(true);
+  });
+
+  it('rơi về diễn giải template khi provider AI timeout', async () => {
+    providerRouter.generate = vi.fn().mockRejectedValue(new ProviderTimeoutError('slow'));
+
+    const result = await service.drawTarot(user, '127.0.0.1', 'Một câu hỏi', 'three-card', 'seed-7');
+
+    expect(result.narrative).toContain('trải bài ba lá');
+  });
+
+  it('ném tiếp lỗi không phải provider (không nuốt thành fallback)', async () => {
+    // Chỉ ProviderUnavailableError/ProviderTimeoutError mới rơi về template. Lỗi bất ngờ khác phải
+    // propagate để không che giấu sự cố thật (vd bug lập trình) dưới một bài đọc template.
+    providerRouter.generate = vi.fn().mockRejectedValue(new Error('unexpected boom'));
+
+    await expect(
+      service.drawTarot(user, '127.0.0.1', 'Một câu hỏi', 'three-card', 'seed-8'),
+    ).rejects.toThrow('unexpected boom');
   });
 
   it('trim câu hỏi và chặn câu hỏi chỉ chứa khoảng trắng ở service path', async () => {

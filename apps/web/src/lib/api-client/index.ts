@@ -21,6 +21,7 @@ import {
   featuresResponseSchema,
   pairingSnapshotSchema,
   visionAnalysisSchema,
+  tarotDrawSchema,
   type AnnualReportResponse,
   type ChartDetailResponse,
   type CreateChartRequest,
@@ -40,6 +41,8 @@ import {
   type PairingSnapshot,
   type VisionAnalysis,
   type VisionKind,
+  type TarotDraw,
+  type TarotSpread,
 } from '@ziweiai/contracts';
 import { fetchJson, fetchMultipart } from './fetch-json';
 
@@ -163,6 +166,27 @@ export function createVisionAnalysis(
     form.append('question', params.question.trim());
   }
   return fetchMultipart(`/vision/${kind}`, visionAnalysisSchema, form, token);
+}
+
+/**
+ * US-017h: POST /draws/tarot — Bearer (anon được phép, theo backend). Gửi câu hỏi + kiểu trải bài
+ * (+ seed tuỳ chọn). Rút lá là deterministic server-side theo seed; diễn giải do LLM sinh. Web hiện
+ * KHÔNG gửi seed (mỗi lần rút là một quẻ mới); tham số seed để dành cho luồng cần tái lập về sau.
+ * Response parse qua tarotDrawSchema — sai shape → throw, không trust raw.
+ */
+export function drawTarot(
+  token: string,
+  params: { question: string; spread: TarotSpread; seed?: string },
+): Promise<TarotDraw> {
+  return fetchJson('/draws/tarot', tarotDrawSchema, {
+    method: 'POST',
+    token,
+    body: {
+      question: params.question,
+      spread: params.spread,
+      ...(params.seed ? { seed: params.seed } : {}),
+    },
+  });
 }
 
 /** US-016: vận hạn deterministic theo (chartId, asOf) → cache TanStack dài. */

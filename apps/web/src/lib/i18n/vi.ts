@@ -356,6 +356,7 @@ export const viCopy = {
     emptyDescription: 'Hãy tạo lá số đầu tiên để bắt đầu lịch sử xem riêng tư.',
     emptyTitle: 'Chưa có lịch sử',
     errorMessage: 'Không tải được lịch sử lá số. Hãy thử lại sau.',
+    retryButton: 'Thử lại',
     errorTitle: 'Không thể mở lịch sử',
     eventFallback: 'Sự kiện lịch sử',
     chartOnly: 'Chưa có luận giải đã lưu',

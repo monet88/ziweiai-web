@@ -84,6 +84,10 @@ export function createHepanModel(options: HepanModelOptions) {
     },
 
     submit(): void {
+      // Chặn double-submit: bỏ qua nếu đang có request bay (khớp dashboard-model.submit).
+      if (mutation.isPending) {
+        return;
+      }
       if (!isBirthFormDraftValid(primary) || !isBirthFormDraftValid(partner)) {
         validationMessage = viCopy.dashboardValidation.formInvalid;
         return;

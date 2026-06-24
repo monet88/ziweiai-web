@@ -377,8 +377,8 @@
     background: transparent;
     cursor: pointer;
     transition:
-      transform 140ms ease,
-      filter 140ms ease;
+      transform 150ms ease,
+      filter 150ms ease;
   }
 
   .deck-draw:hover:not(:disabled) {

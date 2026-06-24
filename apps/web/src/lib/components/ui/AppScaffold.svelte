@@ -83,10 +83,10 @@
 
   .eyebrow {
     margin: 0;
-    color: var(--color-accent-gold);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.8px;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.125px;
   }
 
   .title {

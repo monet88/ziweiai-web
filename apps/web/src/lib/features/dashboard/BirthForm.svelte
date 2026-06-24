@@ -4,9 +4,11 @@
   // hiện sau khi đã thử submit (model.submitAttempted) để không nhuộm đỏ form lúc trống.
   //
   // Lịch lunar mới hiện loại tháng nhuận; biết giờ mới hiện giờ/phút (khớp ràng buộc
-  // birthInputSchema). Địa điểm (toạ độ + múi giờ) KHÔNG nhập tay nữa: mặc định Việt Nam,
+  // birthInputSchema). Người dùng chỉ nhập DƯƠNG LỊCH: backend tự quy đổi sang âm lịch
+  // (snapshot mang sẵn lunarDate) nên form không còn ô chọn lịch / tháng nhuận. Biết giờ
+  // mới hiện giờ/phút. Địa điểm (toạ độ + múi giờ) KHÔNG nhập tay nữa: mặc định Việt Nam,
   // điền sẵn trong createBirthFormDraft (xem decision 0015). Ngày/tháng/năm dùng dropdown
-  // cho dễ chọn trên mobile, chạy cho cả Dương lẫn Âm lịch.
+  // cho dễ chọn trên mobile.
   import {
     PrimaryButton,
     SelectField,
@@ -42,16 +44,6 @@
     const value = String(CURRENT_YEAR - index);
     return { label: value, value };
   });
-
-  const calendarOptions = [
-    { label: copy.gregorianCalendar, value: 'gregorian' },
-    { label: copy.lunarCalendar, value: 'lunar' },
-  ];
-
-  const leapOptions = [
-    { label: copy.regularMonth, value: 'regular' },
-    { label: copy.leapMonth, value: 'leap' },
-  ];
 
   const genderOptions = [
     { label: copy.male, value: 'male' },
@@ -115,27 +107,9 @@
     />
   </div>
 
+  <p class="solar-hint">{copy.solarDateHint}</p>
+
   <div class="flex-wrap-group">
-    <SelectField
-      label={copy.calendar}
-      fieldId="birth-calendar"
-      value={model.draft.calendar}
-      options={calendarOptions}
-      disabled={model.isSubmitting}
-      onValueChange={(value) => model.setField('calendar', value as 'gregorian' | 'lunar')}
-    />
-
-    {#if model.draft.calendar === 'lunar'}
-      <SelectField
-        label={copy.lunarMonthKind}
-        fieldId="birth-leap-month"
-        value={model.draft.isLeapMonth ? 'leap' : 'regular'}
-        options={leapOptions}
-        disabled={model.isSubmitting}
-        onValueChange={(value) => model.setField('isLeapMonth', value === 'leap')}
-      />
-    {/if}
-
     <SelectField
       label={copy.genderForChart}
       fieldId="birth-gender"
@@ -214,6 +188,14 @@
 
   .grid-3 {
     grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  /* Chú thích dương lịch: gắn liền cụm ngày/tháng/năm (kéo sát lên trên), chữ phụ dịu. */
+  .solar-hint {
+    margin: calc(var(--space-md) * -1 + var(--space-xs)) 0 0;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    line-height: 1.4;
   }
 
   /* Màn hẹp (<480px): gom lưới về 1 cột để ô nhập không bị bóp hẹp/vỡ giao diện. */

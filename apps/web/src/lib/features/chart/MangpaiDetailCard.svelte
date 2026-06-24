@@ -59,7 +59,7 @@
 
   .reading-title {
     margin: 0 0 var(--space-sm);
-    color: var(--color-accent-gold-soft);
+    color: var(--color-text-primary);
     font-size: 16px;
     font-weight: 600;
   }

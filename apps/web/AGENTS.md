@@ -1,6 +1,7 @@
 # apps/web - `@ziweiai/web`
 
-SvelteKit 5 SPA (static adapter). Dark + gold theme, Vietnamese-only UI. Talks
+SvelteKit 5 SPA (static adapter). Notion paper-calm theme (see root `DESIGN.md`
+and `docs/decisions/0018`), Vietnamese-only UI. Talks
 to `@ziweiai/api` over HTTP, authenticates via Supabase, and shares request and
 response shapes through `@ziweiai/contracts` (`workspace:*`). Server state is
 managed with `@tanstack/svelte-query`.
@@ -16,7 +17,7 @@ managed with `@tanstack/svelte-query`.
   `system-registry`, `vision`.
 - `src/lib/api-client` - typed API client; `src/lib/query-client.ts` - query setup.
 - `src/lib/auth`, `src/lib/supabase` - auth/session and Supabase client.
-- `src/lib/components` - shared UI; `src/lib/theme` - dark+gold tokens.
+- `src/lib/components` - shared UI; `src/lib/theme` - Notion paper-calm tokens.
 - `src/lib/i18n`, `src/lib/text` - Vietnamese copy and text helpers.
 - `src/lib/env.ts` - typed env access; `src/test` - test setup.
 
@@ -24,8 +25,11 @@ managed with `@tanstack/svelte-query`.
 
 - UI text is Vietnamese only. Route copy through `src/lib/i18n` / `src/lib/text`;
   do not hardcode user-facing strings inline.
-- Theme is dark + gold (bg `#0B0B0D`, accent `#C8B780`). Use tokens from
-  `src/lib/theme`; do not introduce new color systems.
+- Theme is Notion paper-calm (canvas `#F6F5F4`, white surfaces, one structural
+  accent `--color-accent-primary` Notion blue `#0075DE`; sticker palette is
+  decorative-only). Use tokens from `src/lib/theme`; do not introduce new color
+  systems. Self-host Inter via `@fontsource-variable/inter`; apply the DESIGN.md
+  negative tracking on headings. Details: root `DESIGN.md`, `docs/decisions/0018`.
 - All backend calls go through `src/lib/api-client` and are typed by
   `@ziweiai/contracts`. Do not fetch the API ad hoc from components.
 - Wrap server state in `@tanstack/svelte-query`; keep components thin and push

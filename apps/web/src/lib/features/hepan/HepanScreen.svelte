@@ -129,8 +129,9 @@
   .result-eyebrow {
     margin: 0;
     color: var(--color-text-muted);
-    font-size: 14px;
-    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.125px;
   }
 
   .result-score {

@@ -101,6 +101,6 @@
 
   .fortune-card__error {
     margin: 0;
-    color: var(--color-danger, #c0392b);
+    color: var(--color-accent-danger);
   }
 </style>

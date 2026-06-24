@@ -6,7 +6,7 @@
   // click (disabled) và đổi con trỏ. Chỉ animate transform/opacity (compositor-friendly).
   interface Props {
     label?: string;
-    variant?: 'gold' | 'surface';
+    variant?: 'primary' | 'surface';
     type?: 'button' | 'submit' | 'reset';
     loading?: boolean;
     disabled?: boolean;
@@ -16,7 +16,7 @@
 
   let {
     label,
-    variant = 'gold',
+    variant = 'primary',
     type = 'button',
     loading = false,
     disabled = false,
@@ -37,7 +37,7 @@
   {onclick}
 >
   {#if loading}
-    <Spinner tone={variant === 'surface' ? 'gold' : 'dark'} />
+    <Spinner tone={variant === 'surface' ? 'primary' : 'dark'} />
   {:else if children}
     {@render children()}
   {:else}
@@ -54,8 +54,8 @@
     padding: var(--space-sm) var(--space-lg);
     border: 1px solid transparent;
     border-radius: var(--radius-pill);
-    background: var(--color-accent-gold);
-    color: #15120a;
+    background: var(--color-accent-primary);
+    color: var(--color-text-on-primary);
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
@@ -74,7 +74,7 @@
   }
 
   .button:focus-visible {
-    outline: 2px solid var(--color-accent-gold-soft);
+    outline: 2px solid var(--color-accent-primary);
     outline-offset: 2px;
   }
 </style>

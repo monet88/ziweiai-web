@@ -1,7 +1,12 @@
-import type { ExplanationPromptPayload } from './ai-explanation-provider';
 import { divinationChartSystems, type DivinationContextRecord, type DivinationPurposeKey } from '@ziweiai/contracts';
 
-export type DivinationInquiry = NonNullable<ExplanationPromptPayload['divinationInquiry']>;
+// Canonical shape for the stored divination question + purpose threaded into the
+// per-system prompt (explanation AND conversation). Both ExplanationPromptPayload and
+// ConversationPromptPayload reference this so the shape stays single-sourced.
+export interface DivinationInquiry {
+  question: string;
+  purposeLabel: string;
+}
 
 // Minimal structural source so both ExplanationsService and ConversationsService can
 // resolve the inquiry without this provider-layer module importing the concrete gateway.

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { LiuyaoLineStateKey } from '@ziweiai/contracts';
 import { IztroChartAdapter } from './adapters/iztro-chart-adapter';
 import { DaliurenAdapter } from './adapters/daliuren-adapter';
 import { LiuyaoAdapter } from './adapters/liuyao-adapter';
@@ -310,6 +311,53 @@ describe('runtime adapters', () => {
     }
     expect(snapshot.summary.baseHexagram).not.toMatch(CJK_TEXT_PATTERN);
     expect(snapshot.summary.changedHexagram).not.toMatch(CJK_TEXT_PATTERN);
+  });
+
+  it('casts a manual Liuyao hexagram from 6 line states bottom-to-top (US-026)', async () => {
+    const adapter = new LiuyaoAdapter();
+    // Line states bottom-to-top (position 1 = bottom). Moving lines (oldYang/oldYin)
+    // sit at positions 1 and 5; the rest are stable. This pins BOTH the bottom-to-top
+    // ordering and the old/young encoding of LIUYAO_STATE_TO_MANUAL_CODE: a reversed
+    // order would surface moving lines at [2, 6], and an old/young inversion would move
+    // them to the youngYang/youngYin positions instead.
+    const lineStates: LiuyaoLineStateKey[] = [
+      'oldYang', // pos 1 -> yang, moving
+      'youngYin', // pos 2 -> yin
+      'youngYang', // pos 3 -> yang
+      'youngYin', // pos 4 -> yin
+      'oldYin', // pos 5 -> yin, moving
+      'youngYang', // pos 6 -> yang
+    ];
+    const snapshot = await adapter.calculateChart(
+      {
+        calendar: 'gregorian',
+        date: { year: 2024, month: 1, day: 1, isLeapMonth: null },
+        time: { hour: 8, minute: 0, isUnknown: false },
+        sexOrGenderForChart: 'male',
+        place: {
+          label: 'Manual entry',
+          manual: { latitude: 10.8231, longitude: 106.6297, timezone: 'Asia/Ho_Chi_Minh' },
+        },
+        locale: 'vi-VN',
+        source: 'test-fixture',
+      },
+      { liuyaoManual: { lineStates } },
+    );
+
+    expect(snapshot.chartSystem).toBe('liu-yao');
+    expect(snapshot.liuyao?.method).toBe('manual');
+    const baseLines = snapshot.liuyao?.baseHexagram.lines;
+    expect(baseLines).toHaveLength(6);
+    // Moving lines land exactly where oldYang/oldYin were placed (bottom-to-top).
+    expect(snapshot.liuyao?.movingLinePositions).toEqual([1, 5]);
+    // Value + isMoving per position match the requested states (proves the 0-3 map).
+    const byPosition = new Map(baseLines?.map((line) => [line.position, line]));
+    expect(byPosition.get(1)).toMatchObject({ value: 'yang', isMoving: true });
+    expect(byPosition.get(2)).toMatchObject({ value: 'yin', isMoving: false });
+    expect(byPosition.get(3)).toMatchObject({ value: 'yang', isMoving: false });
+    expect(byPosition.get(4)).toMatchObject({ value: 'yin', isMoving: false });
+    expect(byPosition.get(5)).toMatchObject({ value: 'yin', isMoving: true });
+    expect(byPosition.get(6)).toMatchObject({ value: 'yang', isMoving: false });
   });
 
   it('produces a structured Daliuren snapshot with thiên địa bàn, tứ khóa và tam truyền via xuanshu bridge', async () => {

@@ -50,7 +50,7 @@ async function createChartForSystem(page: Page, birth: SystemCase): Promise<stri
   return match![1];
 }
 
-test('US-007: 5 hệ thuật số khác → tạo → chi tiết VN không Hán → history thấy item mới', async ({
+test('US-007: hệ Bát Tự → tạo → chi tiết VN không Hán → history thấy item mới', async ({
   page,
 }) => {
   await signInViaUi(page);

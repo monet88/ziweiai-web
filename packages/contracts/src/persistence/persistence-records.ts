@@ -115,17 +115,35 @@ export const divinationPurposeKeySchema = z.enum([
   'custom',
 ]);
 
-export const divinationContextRecordSchema = z.object({
-  id: z.uuid(),
-  ownerUserId: z.uuid(),
-  chartSnapshotId: z.uuid(),
-  question: z.string().trim().min(1),
-  purposeKey: divinationPurposeKeySchema,
-  // Free-text label only when purposeKey === 'custom'; null otherwise.
-  purposeCustom: z.string().trim().min(1).nullable(),
-  castAt: z.iso.datetime(),
-  createdAt: z.iso.datetime(),
-});
+export const divinationContextRecordSchema = z
+  .object({
+    id: z.uuid(),
+    ownerUserId: z.uuid(),
+    chartSnapshotId: z.uuid(),
+    question: z.string().trim().min(1),
+    purposeKey: divinationPurposeKeySchema,
+    // Free-text label only when purposeKey === 'custom'; null otherwise.
+    purposeCustom: z.string().trim().min(1).nullable(),
+    castAt: z.iso.datetime(),
+    createdAt: z.iso.datetime(),
+  })
+  .superRefine((value, ctx) => {
+    // purposeCustom is the free-text label, valid only for the 'custom' preset.
+    if (value.purposeKey === 'custom' && value.purposeCustom === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['purposeCustom'],
+        message: 'purposeCustom is required when purposeKey is "custom".',
+      });
+    }
+    if (value.purposeKey !== 'custom' && value.purposeCustom !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['purposeCustom'],
+        message: 'purposeCustom is only allowed when purposeKey is "custom".',
+      });
+    }
+  });
 
 export type ExplanationRequestState = z.infer<typeof explanationRequestStateSchema>;
 export type PromptStorageMode = z.infer<typeof promptStorageModeSchema>;

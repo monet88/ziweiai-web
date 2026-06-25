@@ -1,7 +1,7 @@
 import type { BirthInput, ChartSnapshot, LiuyaoLineStateKey, LiuyaoMethod } from '@ziweiai/contracts';
 import { chartSystemRequiresGender } from '@ziweiai/contracts';
 
-// US-026: map a Luc Hao line state to the vendored runtime's manualYaoShu code
+// US-026: map a Lục Hào line state to the vendored runtime's manualYaoShu code
 // (0=youngYang, 1=youngYin, 2=oldYang[moving], 3=oldYin[moving]), bottom-to-top.
 const LIUYAO_STATE_TO_MANUAL_CODE: Record<LiuyaoLineStateKey, number> = {
   youngYang: 0,

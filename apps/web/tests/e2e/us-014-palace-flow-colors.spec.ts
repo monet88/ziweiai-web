@@ -108,9 +108,12 @@ test('US-014: chọn 4 tầng → flow-bar segments đa màu hiện trên ô cun
   const flowBars = board.locator('.flow-bar');
   await expect(flowBars.first()).toBeVisible();
 
-  // Segment decadal tồn tại trên ít nhất 1 ô (đại vận luôn có)
-  const decadalSeg = board.locator('.flow-bar__seg--decadal');
-  await expect(decadalSeg.first()).toBeVisible();
+  // Sau khi chọn đủ 4 tầng, cả 4 loại segment phải render (không chỉ đại vận) — nếu chỉ
+  // kiểm decadal thì regression ở lưu niên/lưu nguyệt/lưu nhật sẽ lọt.
+  await expect(board.locator('.flow-bar__seg--decadal').first()).toBeVisible();
+  await expect(board.locator('.flow-bar__seg--yearly').first()).toBeVisible();
+  await expect(board.locator('.flow-bar__seg--monthly').first()).toBeVisible();
+  await expect(board.locator('.flow-bar__seg--daily').first()).toBeVisible();
 
   // Ô cung Mệnh đại vận có box-shadow ring (horoscopeRing inline style)
   const decadalCell = board.locator('.cell.in-decadal');

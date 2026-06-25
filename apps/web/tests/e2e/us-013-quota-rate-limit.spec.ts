@@ -56,10 +56,9 @@ test('US-013: POST /charts bị 429 → hiện thông báo lỗi quota', async (
 
   await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
 
-  // UI phải hiển thị thông báo lỗi (NoticeBanner hoặc lỗi dạng text)
-  // fetchJson map 429 → 'server' kind → message backend, render qua onError mutation.
-  // Chờ thông báo lỗi xuất hiện (chứa từ khoá "hạn ngạch" hoặc "vượt" hoặc "thất bại").
-  const errorBanner = page.locator('[class*="notice"], [class*="error"], [role="alert"]');
+  // UI phải hiển thị thông báo lỗi. BirthForm render lỗi quota qua NoticeBanner tone="danger",
+  // tức role="alert" — bám đúng vai trò thay vì quét class chung chung (dễ khớp nhầm phần tử).
+  const errorBanner = page.getByRole('alert');
   await expect(errorBanner.first()).toBeVisible({ timeout: 15_000 });
 
   // Kiểm nội dung chứa thông tin quota

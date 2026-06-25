@@ -56,8 +56,25 @@ const DEFAULT_LIUYAO_LINES: LiuyaoLineStateKey[] = [
   'youngYang',
 ];
 
-function isPositiveInt(value: string): boolean {
-  return /^\d+$/.test(value.trim()) && Number.parseInt(value.trim(), 10) >= 1;
+// Mirror the API contract (createDivinationRequestSchema): question 1..500,
+// purposeCustom 1..120, manual numbers integer 1..99999. Keeping client validation
+// in lockstep avoids submitting inputs the server will reject with a 400.
+const QUESTION_MAX_LENGTH = 500;
+const PURPOSE_CUSTOM_MAX_LENGTH = 120;
+const MANUAL_NUMBER_MIN = 1;
+const MANUAL_NUMBER_MAX = 99_999;
+
+function parseManualNumber(value: string): number | null {
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) {
+    return null;
+  }
+  return Number.parseInt(trimmed, 10);
+}
+
+function isValidManualNumber(value: string): boolean {
+  const parsed = parseManualNumber(value);
+  return parsed !== null && parsed >= MANUAL_NUMBER_MIN && parsed <= MANUAL_NUMBER_MAX;
 }
 
 function supportsManualCast(chartSystem: DivinationChartSystem): boolean {
@@ -66,18 +83,30 @@ function supportsManualCast(chartSystem: DivinationChartSystem): boolean {
 
 function validateDraft(draft: DivinationDraft, chartSystem: DivinationChartSystem): DivinationFieldErrors {
   const errors: DivinationFieldErrors = {};
-  if (draft.question.trim().length === 0) {
+  const question = draft.question.trim();
+  if (question.length === 0) {
     errors.question = viCopy.divination.questionRequired;
+  } else if (question.length > QUESTION_MAX_LENGTH) {
+    errors.question = viCopy.divination.questionTooLong;
   }
-  if (draft.purposeKey === 'custom' && draft.purposeCustom.trim().length === 0) {
-    errors.purposeCustom = viCopy.divination.purposeCustomRequired;
+  if (draft.purposeKey === 'custom') {
+    const purposeCustom = draft.purposeCustom.trim();
+    if (purposeCustom.length === 0) {
+      errors.purposeCustom = viCopy.divination.purposeCustomRequired;
+    } else if (purposeCustom.length > PURPOSE_CUSTOM_MAX_LENGTH) {
+      errors.purposeCustom = viCopy.divination.purposeCustomTooLong;
+    }
   }
   if (draft.castMethod === 'manual' && chartSystem === 'mei-hua-yi-shu') {
-    if (!isPositiveInt(draft.meihuaUpper)) {
-      errors.meihuaUpper = viCopy.divination.manualNumberRequired;
+    if (!isValidManualNumber(draft.meihuaUpper)) {
+      errors.meihuaUpper = parseManualNumber(draft.meihuaUpper) === null
+        ? viCopy.divination.manualNumberRequired
+        : viCopy.divination.manualNumberOutOfRange;
     }
-    if (!isPositiveInt(draft.meihuaLower)) {
-      errors.meihuaLower = viCopy.divination.manualNumberRequired;
+    if (!isValidManualNumber(draft.meihuaLower)) {
+      errors.meihuaLower = parseManualNumber(draft.meihuaLower) === null
+        ? viCopy.divination.manualNumberRequired
+        : viCopy.divination.manualNumberOutOfRange;
     }
   }
   return errors;

@@ -13,10 +13,12 @@ import {
   type CreateDivinationResponse,
   type DivinationChartSystem,
 } from '@ziweiai/contracts';
+import { randomUUID } from 'node:crypto';
 import { buildChartSnapshotDedupeKey } from '../../../database/idempotency';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { QuotasService } from '../../quotas/quotas.service';
+import { DailyQuotaExceededError, RateLimitWindowError } from '../../quotas/quota-errors';
 
 // Cast moment is always the server "now" (decision 0021): no client date, no
 // picker, no future. The four time-based adapters treat the BirthInput date/time
@@ -72,10 +74,12 @@ export class DivinationsService {
     // A divination is always a fresh cast for a specific question, so we never
     // dedupe-reuse here: even an identical cast moment is a new inquiry. We still
     // persist the snapshot via the same path and link a fresh context record.
+    // The random UUID suffix guarantees a unique dedupe key even if two casts land
+    // in the same millisecond for the same user (avoids a 23505 unique violation).
     const chartRecord = await this.persistenceGateway.createChartSnapshot({
       ownerUserId: userId,
       birthProfileId: null,
-      snapshotDedupeKey: `${dedupeKey}-${castAt.getTime()}`,
+      snapshotDedupeKey: `${dedupeKey}-${castAt.getTime()}-${randomUUID()}`,
       snapshot,
     });
 
@@ -115,12 +119,13 @@ export class DivinationsService {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false,
+      hourCycle: 'h23',
     }).formatToParts(castAt);
     const pick = (type: string): number =>
       Number.parseInt(parts.find((part) => part.type === type)?.value ?? '0', 10);
-    // Intl can emit hour '24' at midnight under hour12:false; normalize to 0.
-    const hour = pick('hour') % 24;
+    // hourCycle 'h23' guarantees midnight is 0 and hours stay in 0-23 across
+    // platforms/Node versions (hour12:false could emit '24' on some engines).
+    const hour = pick('hour');
 
     return {
       calendar: 'gregorian',
@@ -140,11 +145,12 @@ export class DivinationsService {
     try {
       await this.quotasService.assertCanCreateChart(userId, ipAddress, isAnonymous);
     } catch (error) {
-      throw new ApiErrorHttpException(
-        HttpStatus.TOO_MANY_REQUESTS,
-        'RATE_LIMITED',
-        error instanceof Error ? error.message : 'Đã vượt hạn mức gieo quẻ.',
-      );
+      // Only typed quota errors map to 429. Unexpected failures (e.g. a DB error
+      // while counting quota) must propagate, not be disguised as RATE_LIMITED.
+      if (error instanceof RateLimitWindowError || error instanceof DailyQuotaExceededError) {
+        throw new ApiErrorHttpException(HttpStatus.TOO_MANY_REQUESTS, 'RATE_LIMITED', error.message);
+      }
+      throw error;
     }
   }
 }

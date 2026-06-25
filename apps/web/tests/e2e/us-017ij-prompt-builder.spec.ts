@@ -31,18 +31,23 @@ test('US-017i: route /face hoạt động, request có câu hỏi bổ sung từ
   });
 
   // Nhập câu hỏi (prompt builder cho phép thêm question tùy chỉnh)
+  const faceQuestion = 'Khuôn mặt tôi nói gì về tính cách?';
   const questionInput = page.locator('#vision-question');
-  if (await questionInput.isVisible()) {
-    await questionInput.fill('Khuôn mặt tôi nói gì về tính cách?');
+  const hasQuestionInput = await questionInput.isVisible();
+  if (hasQuestionInput) {
+    await questionInput.fill(faceQuestion);
   }
 
   // Intercept POST /vision/face
   let capturedContentType = '';
   let capturedBodyLength = 0;
+  let capturedBodyText = '';
   await page.route('**/vision/face', async (route) => {
     const request = route.request();
     capturedContentType = request.headers()['content-type'] ?? '';
-    capturedBodyLength = request.postDataBuffer()?.length ?? 0;
+    const buffer = request.postDataBuffer();
+    capturedBodyLength = buffer?.length ?? 0;
+    capturedBodyText = buffer?.toString('utf8') ?? '';
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -64,6 +69,11 @@ test('US-017i: route /face hoạt động, request có câu hỏi bổ sung từ
   expect(capturedContentType, 'POST phải là multipart/form-data').toContain('multipart/form-data');
   expect(capturedBodyLength, 'body phải có dữ liệu').toBeGreaterThan(0);
 
+  // Câu hỏi tùy chỉnh phải có mặt trong body gửi đi (regression propagation sẽ lọt nếu thiếu).
+  if (hasQuestionInput) {
+    expect(capturedBodyText, 'body multipart phải chứa câu hỏi tùy chỉnh').toContain(faceQuestion);
+  }
+
   await page.screenshot({ path: 'test-results/us-017i-face-prompt-builder.png', fullPage: true });
 });
 
@@ -81,18 +91,23 @@ test('US-017j: route /palm hoạt động, prompt cải tiến không phá luồ
   });
 
   // Nhập câu hỏi bổ sung nếu có
+  const palmQuestion = 'Đường chỉ tay nói gì về sự nghiệp của tôi?';
   const questionInput = page.locator('#vision-question');
-  if (await questionInput.isVisible()) {
-    await questionInput.fill('Đường chỉ tay nói gì về sự nghiệp của tôi?');
+  const hasQuestionInput = await questionInput.isVisible();
+  if (hasQuestionInput) {
+    await questionInput.fill(palmQuestion);
   }
 
   // Intercept POST /vision/palm
   let capturedContentType = '';
   let capturedBodyLength = 0;
+  let capturedBodyText = '';
   await page.route('**/vision/palm', async (route) => {
     const request = route.request();
     capturedContentType = request.headers()['content-type'] ?? '';
-    capturedBodyLength = request.postDataBuffer()?.length ?? 0;
+    const buffer = request.postDataBuffer();
+    capturedBodyLength = buffer?.length ?? 0;
+    capturedBodyText = buffer?.toString('utf8') ?? '';
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -113,6 +128,11 @@ test('US-017j: route /palm hoạt động, prompt cải tiến không phá luồ
   // Request multipart + body
   expect(capturedContentType).toContain('multipart/form-data');
   expect(capturedBodyLength).toBeGreaterThan(0);
+
+  // Câu hỏi tùy chỉnh phải có mặt trong body gửi đi.
+  if (hasQuestionInput) {
+    expect(capturedBodyText, 'body multipart phải chứa câu hỏi tùy chỉnh').toContain(palmQuestion);
+  }
 
   await page.screenshot({ path: 'test-results/us-017j-palm-prompt-improved.png', fullPage: true });
 });

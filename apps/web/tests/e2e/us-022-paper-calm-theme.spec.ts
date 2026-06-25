@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { signInViaUi } from './sign-in';
 
 // US-022: Notion paper-calm theme — E2E test.

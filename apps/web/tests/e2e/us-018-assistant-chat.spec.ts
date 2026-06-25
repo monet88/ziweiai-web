@@ -2,12 +2,15 @@ import { test, expect, type Page } from '@playwright/test';
 import { signInViaUi } from './sign-in';
 
 // US-018: trợ lý AI hội thoại + SSE streaming — E2E test.
-// Kiểm 5 hành vi:
+// Kiểm 4 hành vi:
 //   1. Section trợ lý hiển thị với tiêu đề + gợi ý nhanh + hint mặc định.
 //   2. Gợi ý nhanh 5 nút đúng nhãn Việt.
 //   3. Composer (textarea + nút Gửi) hoạt động — gửi tin nhắn qua SSE.
 //   4. Sau khi gửi: user message hiện, rồi assistant message stream về (intercept SSE).
-//   5. Nút gửi bị disabled khi đang streaming.
+//
+// Lưu ý: hành vi "nút gửi disabled khi đang streaming" CHƯA được test ở đây (SSE stub trả
+// nguyên body tức thì nên không bắt được trạng thái trung gian một cách ổn định); không
+// liệt kê nó như đã phủ để tránh false coverage.
 //
 // Dùng route intercept cho:
 //   - POST /conversations → trả conversation mới (schema-compliant).

@@ -322,9 +322,12 @@ export class ExplanationsService {
     }
 
     const explanationContext = this.buildExplanationContext(chartRecord.snapshot);
-    const divinationInquiry = await this.resolveDivinationInquiry(user.userId, input.chartSnapshotId, chartRecord.snapshot.chartSystem);
 
     try {
+      // Inside try so a DB failure here is caught by the handler below and the
+      // request is marked 'failed' (otherwise it leaks in 'pending' with no cleanup).
+      const divinationInquiry = await this.resolveDivinationInquiry(user.userId, input.chartSnapshotId, chartRecord.snapshot.chartSystem);
+
       await this.persistenceGateway.updateExplanationRequest({
         ownerUserId: user.userId,
         requestId: request.id,

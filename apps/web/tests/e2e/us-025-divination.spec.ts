@@ -39,7 +39,10 @@ test('US-025: gieo quẻ Mai Hoa (preset) → chi tiết VN không Hán → hist
   // Không có ô ngày sinh trong luồng gieo quẻ.
   await expect(page.locator('#birth-day')).toHaveCount(0);
 
-  const question = 'Thang toi toi co nen nhan loi moi cong viec moi khong?';
+  // Câu hỏi mang token duy nhất theo lần chạy: tài khoản test bền nên câu hỏi tĩnh
+  // có thể trùng item lịch sử cũ → false positive. Token đảm bảo chỉ khớp quẻ vừa gieo.
+  const uniqueToken = `qa-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+  const question = `Thang toi toi co nen nhan loi moi cong viec moi khong? [${uniqueToken}]`;
   await castDivination(page, { question, purposeValue: 'career' });
 
   // Chi tiết: rời trạng thái tải, vùng main hiện card hệ + luận giải.

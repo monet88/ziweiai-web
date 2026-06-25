@@ -18,7 +18,23 @@ test('US-026: Mai Hoa gieo quẻ theo số qua UI', async ({ page }) => {
   await page.locator('#divination-meihua-upper').fill('7');
   await page.locator('#divination-meihua-lower').fill('3');
 
+  // Bắt request POST /divinations để khẳng định payload manual thực sự được gửi
+  // (regression castMethod sẽ lọt nếu chỉ kiểm điều hướng URL).
+  const requestPromise = page.waitForRequest(
+    (req) => req.method() === 'POST' && /\/divinations$/.test(req.url()),
+    { timeout: 30_000 },
+  );
+
   await page.getByRole('main').getByRole('button', { name: 'Gieo quẻ', exact: true }).click();
+
+  const divinationRequest = await requestPromise;
+  const payload = divinationRequest.postDataJSON() as Record<string, unknown>;
+  expect(payload.castMethod, 'castMethod phải là manual').toBe('manual');
+  expect(payload.chartSystem).toBe('mei-hua-yi-shu');
+  expect(payload.meihuaManual, 'phải gửi meihuaManual với 2 số đã nhập').toMatchObject({
+    upperNumber: 7,
+    lowerNumber: 3,
+  });
 
   await page.waitForURL(/\/charts\/[0-9a-f-]{36}$/i, { timeout: 30_000 });
   await expect(page.getByRole('heading', { name: 'Luận giải AI' })).toBeVisible({ timeout: 30_000 });
@@ -41,7 +57,26 @@ test('US-026: Lục Hào hiện 6 select hào khi chọn tự gieo', async ({ pa
   await page.locator('#divination-liuyao-line-3').selectOption('oldYang');
   await page.locator('#divination-liuyao-line-5').selectOption('oldYin');
 
+  // Bắt request để khẳng định payload manual (6 hào) thực sự gửi đi.
+  const requestPromise = page.waitForRequest(
+    (req) => req.method() === 'POST' && /\/divinations$/.test(req.url()),
+    { timeout: 30_000 },
+  );
+
   await page.getByRole('main').getByRole('button', { name: 'Gieo quẻ', exact: true }).click();
+
+  const divinationRequest = await requestPromise;
+  const payload = divinationRequest.postDataJSON() as {
+    castMethod?: string;
+    chartSystem?: string;
+    liuyaoManual?: { lineStates?: string[] };
+  };
+  expect(payload.castMethod, 'castMethod phải là manual').toBe('manual');
+  expect(payload.chartSystem).toBe('liu-yao');
+  expect(payload.liuyaoManual?.lineStates, 'phải gửi 6 trạng thái hào').toHaveLength(6);
+  // Hào 3 (index 2) = oldYang, hào 5 (index 4) = oldYin theo thao tác ở trên.
+  expect(payload.liuyaoManual?.lineStates?.[2]).toBe('oldYang');
+  expect(payload.liuyaoManual?.lineStates?.[4]).toBe('oldYin');
 
   await page.waitForURL(/\/charts\/[0-9a-f-]{36}$/i, { timeout: 30_000 });
   await expect(page.getByRole('heading', { name: 'Luận giải AI' })).toBeVisible({ timeout: 30_000 });

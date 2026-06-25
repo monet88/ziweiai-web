@@ -62,7 +62,10 @@ export class ConversationProviderRouter {
       return [this.geminiProvider];
     }
 
-    const order: AiConversationProvider[] = [this.deepseekProvider, this.openAiCompatProvider, this.geminiProvider];
+    // Chain mặc định openai-compat → deepseek → gemini (khớp ExplanationProviderRouter):
+    // openai-compat là provider mặc định, deepseek là fallback kế. AI_DEFAULT_PROVIDER (nếu
+    // khác 'auto') vẫn được đưa lên đầu chain, phần còn lại giữ nguyên làm fallback.
+    const order: AiConversationProvider[] = [this.openAiCompatProvider, this.deepseekProvider, this.geminiProvider];
     const head = apiEnv.AI_DEFAULT_PROVIDER;
     if (head === 'auto') {
       return order;

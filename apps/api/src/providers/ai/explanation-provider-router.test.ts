@@ -18,14 +18,15 @@ function mockProvider(opts: {
 }
 
 describe('ExplanationProviderRouter', () => {
-  it('prefers the first available auto provider', () => {
+  it('prefers the first available auto provider (openai-compat by default)', () => {
     const router = new ExplanationProviderRouter(
       { providerName: 'deepseek', isAvailable: () => true, generateExplanation: async () => ({ renderedMarkdown: 'a', providerMetadata: {} }) } as never,
       { providerName: 'openai-compat', isAvailable: () => true, generateExplanation: async () => ({ renderedMarkdown: 'c', providerMetadata: {} }) } as never,
       { providerName: 'gemini', isAvailable: () => true, generateExplanation: async () => ({ renderedMarkdown: 'b', providerMetadata: {} }) } as never,
     );
 
-    expect(router.resolveProviderName('auto')).toBe('deepseek');
+    // AI_DEFAULT_PROVIDER default 'openai-compat' → chain auto = [openai-compat, deepseek, gemini].
+    expect(router.resolveProviderName('auto')).toBe('openai-compat');
   });
 
   it('resolves the openai-compat provider for the openai-compat preference', () => {

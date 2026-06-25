@@ -86,6 +86,9 @@ export const apiEnvSchema = z.object({
     return val === '' ? undefined : val;
   }, z.url().optional()),
   GEMINI_MODEL: z.string().min(1).default('gemini-3.5-flash'),
+  // 'auto' dùng thứ tự chain gốc của router: [openai-compat, deepseek, gemini]
+  // (openai-compat mặc định, deepseek fallback kế, gemini cuối). Đặt giá trị khác để ép một
+  // provider cụ thể lên đầu chain mà vẫn giữ phần còn lại làm fallback.
   AI_DEFAULT_PROVIDER: z.enum(['auto', 'deepseek', 'openai-compat', 'gemini']).default('auto'),
   // z.stringbool (zod v4): "false"/"0"/"no" → false, "true"/"1"/"yes" → true.
   // KHÔNG dùng z.coerce.boolean() — nó chạy Boolean(string) nên mọi chuỗi non-empty

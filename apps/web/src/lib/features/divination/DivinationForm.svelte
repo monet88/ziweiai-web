@@ -1,10 +1,10 @@
 <script lang="ts">
-  // DivinationForm (US-025): form gieo quẻ cho 4 hệ theo thời điểm. KHÔNG nhập ngày
-  // sinh/giới tính — quẻ gieo theo "now" ở server. Người dùng nhập câu hỏi (bắt buộc)
-  // + lĩnh vực quan tâm (preset hoặc tự nhập). Lỗi chỉ hiện sau lần submit đầu.
+  // DivinationForm (US-025/US-026): form gieo quẻ cho 4 hệ theo thời điểm. KHÔNG nhập ngày
+  // sinh/giới tính. Mặc định gieo theo "now". Mai Hoa + Lục Hào (canManualCast) thêm lựa chọn
+  // gieo thủ công: Mai Hoa nhập 2 số, Lục Hào chọn 6 hào. Lỗi chỉ hiện sau lần submit đầu.
   import { PrimaryButton, FormField, TextInputField, SelectField, NoticeBanner } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
-  import type { DivinationPurposeKey } from '@ziweiai/contracts';
+  import type { DivinationCastMethod, DivinationPurposeKey, LiuyaoLineStateKey } from '@ziweiai/contracts';
   import type { DivinationModel } from './divination-model.svelte';
 
   interface Props {
@@ -14,6 +14,9 @@
   let { model }: Props = $props();
 
   const copy = viCopy.divination;
+  // chartSystem là prop hằng theo route; derive để khỏi cảnh báo state_referenced_locally.
+  const isMeihua = $derived(model.chartSystem === 'mei-hua-yi-shu');
+  const isLiuyao = $derived(model.chartSystem === 'liu-yao');
 
   const purposeOptions: { label: string; value: DivinationPurposeKey }[] = [
     { label: copy.purposeCareer, value: 'career' },
@@ -24,8 +27,27 @@
     { label: copy.purposeCustom, value: 'custom' },
   ];
 
-  function errorFor(field: 'question' | 'purposeCustom'): string | null {
+  const castMethodOptions = $derived<{ label: string; value: DivinationCastMethod }[]>([
+    { label: copy.castMethodTime, value: 'time' },
+    {
+      label: isMeihua ? copy.castMethodManualMeihua : copy.castMethodManualLiuyao,
+      value: 'manual',
+    },
+  ]);
+
+  const lineOptions: { label: string; value: LiuyaoLineStateKey }[] = [
+    { label: copy.liuyaoYoungYang, value: 'youngYang' },
+    { label: copy.liuyaoYoungYin, value: 'youngYin' },
+    { label: copy.liuyaoOldYang, value: 'oldYang' },
+    { label: copy.liuyaoOldYin, value: 'oldYin' },
+  ];
+
+  function errorFor(field: 'question' | 'purposeCustom' | 'meihuaUpper' | 'meihuaLower'): string | null {
     return model.submitAttempted ? (model.fieldErrors[field] ?? null) : null;
+  }
+
+  function lineLabel(position: number): string {
+    return copy.liuyaoLineLabel.replace('{position}', String(position));
   }
 
   function handleSubmit(event: Event): void {
@@ -72,7 +94,63 @@
     />
   {/if}
 
-  <p class="cast-hint">{copy.castNowHint}</p>
+  {#if model.canManualCast}
+    <SelectField
+      label={copy.castMethodLabel}
+      fieldId="divination-cast-method"
+      value={model.draft.castMethod}
+      options={castMethodOptions}
+      disabled={model.isSubmitting}
+      onValueChange={(value) => model.setField('castMethod', value as DivinationCastMethod)}
+    />
+  {/if}
+
+  {#if model.canManualCast && model.draft.castMethod === 'manual' && isMeihua}
+    <div class="grid-2">
+      <TextInputField
+        label={copy.meihuaUpperLabel}
+        fieldId="divination-meihua-upper"
+        type="number"
+        value={model.draft.meihuaUpper}
+        placeholder={copy.meihuaNumberPlaceholder}
+        errorText={errorFor('meihuaUpper')}
+        disabled={model.isSubmitting}
+        onValueChange={(value) => model.setField('meihuaUpper', value)}
+      />
+      <TextInputField
+        label={copy.meihuaLowerLabel}
+        fieldId="divination-meihua-lower"
+        type="number"
+        value={model.draft.meihuaLower}
+        placeholder={copy.meihuaNumberPlaceholder}
+        errorText={errorFor('meihuaLower')}
+        disabled={model.isSubmitting}
+        onValueChange={(value) => model.setField('meihuaLower', value)}
+      />
+    </div>
+    <p class="cast-hint">{copy.manualNumberHint}</p>
+  {/if}
+
+  {#if model.canManualCast && model.draft.castMethod === 'manual' && isLiuyao}
+    <fieldset class="lines">
+      <legend class="lines-legend">{copy.liuyaoLinesLabel}</legend>
+      {#each model.draft.liuyaoLines as line, index (index)}
+        <SelectField
+          label={lineLabel(index + 1)}
+          fieldId={`divination-liuyao-line-${index + 1}`}
+          value={line}
+          options={lineOptions}
+          disabled={model.isSubmitting}
+          onValueChange={(value) => model.setLiuyaoLine(index, value as LiuyaoLineStateKey)}
+        />
+      {/each}
+    </fieldset>
+    <p class="cast-hint">{copy.liuyaoLinesHint}</p>
+  {/if}
+
+  {#if !model.canManualCast || model.draft.castMethod === 'time'}
+    <p class="cast-hint">{copy.castNowHint}</p>
+  {/if}
 
   {#if model.isError && model.errorMessage}
     <NoticeBanner message={model.errorMessage} tone="danger" />
@@ -119,10 +197,41 @@
     cursor: not-allowed;
   }
 
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+  }
+
+  .lines {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .lines-legend {
+    grid-column: 1 / -1;
+    padding: 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+
   .cast-hint {
     margin: 0;
     color: var(--color-text-muted);
     font-size: 13px;
     line-height: 1.4;
+  }
+
+  @media (max-width: 480px) {
+    .grid-2,
+    .lines {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

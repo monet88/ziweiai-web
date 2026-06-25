@@ -1,7 +1,11 @@
-import type { BirthInput, ChartSnapshot, ChartSystem } from '@ziweiai/contracts';
+import type { BirthInput, ChartSnapshot, ChartSystem, LiuyaoLineStateKey } from '@ziweiai/contracts';
 
 export interface ChartCalculationOptions {
   viewYear?: number;
+  // US-026: manual number-casting for divination. Only Mai Hoa (two numbers) and
+  // Luc Hao (six line states) read these; other adapters ignore them and cast by time.
+  meihuaManual?: { upperNumber: number; lowerNumber: number };
+  liuyaoManual?: { lineStates: LiuyaoLineStateKey[] };
 }
 
 export interface AstrologyChartAdapter {

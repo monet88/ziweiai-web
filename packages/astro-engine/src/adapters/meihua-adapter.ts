@@ -13,6 +13,7 @@ import { createBaseSnapshotFields, createBlockedChartSnapshot } from './runtime-
 import type { AstrologyChartAdapter, ChartCalculationOptions } from './astro-adapter';
 import {
   buildHexagramKey,
+  buildNumberBasedNumbers,
   buildTimeBasedNumbers,
   formatMeihuaHexagramLabel,
   getRelationKey,
@@ -108,7 +109,7 @@ export class MeiHuaAdapter implements AstrologyChartAdapter {
   readonly adapterVersion = '1.7.7-time-port';
   readonly usesViewYear = false;
 
-  async calculateChart(input: BirthInput, _options?: ChartCalculationOptions): Promise<ChartSnapshot> {
+  async calculateChart(input: BirthInput, options?: ChartCalculationOptions): Promise<ChartSnapshot> {
     const normalizedBirth = normalizeBirthInput(input, { requiresGender: chartSystemRequiresGender('mei-hua-yi-shu') });
     const warnings = [...normalizedBirth.normalizationConfidence.reasons];
 
@@ -127,12 +128,16 @@ export class MeiHuaAdapter implements AstrologyChartAdapter {
     const lunar = toLunarSource(input);
     const yearBranch = lunar.getYearInGanZhiExact().slice(1);
     const hourBranch = lunar.getTimeInGanZhi().slice(1);
-    const numbers = buildTimeBasedNumbers({
-      lunarDay: lunar.getDay(),
-      lunarMonth: Math.abs(lunar.getMonth()),
-      yearBranch,
-      hourBranch,
-    });
+    // US-026: number-based casting when manual numbers provided; otherwise time-based.
+    const isNumberBased = Boolean(options?.meihuaManual);
+    const numbers = options?.meihuaManual
+      ? buildNumberBasedNumbers(options.meihuaManual)
+      : buildTimeBasedNumbers({
+          lunarDay: lunar.getDay(),
+          lunarMonth: Math.abs(lunar.getMonth()),
+          yearBranch,
+          hourBranch,
+        });
     const topTrigramKey = getTrigramKeyByNumber(numbers.topNumber);
     const bottomTrigramKey = getTrigramKeyByNumber(numbers.bottomNumber);
     const mainHexagram = buildHexagram(topTrigramKey, bottomTrigramKey, numbers.movingLine);
@@ -144,7 +149,7 @@ export class MeiHuaAdapter implements AstrologyChartAdapter {
     const useElementKey = meihuaTrigramElementByKey[useTrigramKey];
     const relationKey = getRelationKey(bodyElementKey, useElementKey);
     const meihua: MeihuaChart = {
-      method: 'time-based',
+      method: isNumberBased ? 'number-based' : 'time-based',
       guaCode: numbers.topNumber * 100 + numbers.bottomNumber * 10 + numbers.movingLine,
       movingLine: numbers.movingLine,
       mainHexagram,
@@ -190,7 +195,7 @@ export class MeiHuaAdapter implements AstrologyChartAdapter {
       palaces: [],
       pillars: [],
       summary: {
-        method: 'Theo thời gian',
+        method: isNumberBased ? 'Theo số' : 'Theo thời gian',
         mainHexagram: formatMeihuaHexagramLabel(mainHexagram),
         changedHexagram: formatMeihuaHexagramLabel(changedHexagram),
         nuclearHexagram: formatMeihuaHexagramLabel(nuclearHexagram),

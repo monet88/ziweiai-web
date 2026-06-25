@@ -94,6 +94,20 @@ describe('DivinationsService', () => {
     expect(contextArg.purposeCustom).toBe('Mua nhà');
   });
 
+  it('manual Mai Hoa casting produces a number-based snapshot', async () => {
+    const response = await service.createDivination(USER_ID, '127.0.0.1', {
+      chartSystem: 'mei-hua-yi-shu',
+      question: 'Quẻ này nói gì?',
+      purposeKey: 'decision',
+      castMethod: 'manual',
+      meihuaManual: { upperNumber: 7, lowerNumber: 3 },
+    });
+
+    // The real MeiHuaAdapter runs in-process; manual numbers select method 'number-based'.
+    const meihua = (response.snapshot as { meihua?: { method?: string } }).meihua;
+    expect(meihua?.method).toBe('number-based');
+  });
+
   it('maps quota errors to 429 RATE_LIMITED', async () => {
     quotasService.assertCanCreateChart = vi.fn().mockRejectedValue(new Error('Đã vượt hạn mức.'));
     service = new DivinationsService(

@@ -11,7 +11,7 @@ export const meihuaTrigramKeys = [
 
 export const meihuaElementKeys = ['wood', 'fire', 'earth', 'metal', 'water'] as const;
 export const meihuaLineValueKeys = ['yin', 'yang'] as const;
-export const meihuaMethodKeys = ['time-based'] as const;
+export const meihuaMethodKeys = ['time-based', 'number-based'] as const;
 export const meihuaRelationKeys = [
   'bodyEqualsUse',
   'bodyGeneratesUse',

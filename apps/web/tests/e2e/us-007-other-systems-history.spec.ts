@@ -1,9 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
 import { signInViaUi } from './sign-in';
 
-// US-007 full flow (acceptance): mỗi hệ thuật số khác Tử Vi qua route wrapper riêng
-// (/bazi, /meihua, /liuyao, /daliuren, /qimen) → tạo lá số → mở chi tiết (card đúng hệ)
-// → quét \p{Script=Han} trên vùng chi tiết = 0 ký tự Hán → quay lại /history thấy item mới.
+// US-007 full flow (acceptance): hệ Bát Tự (hệ duy nhất còn dùng BirthForm sau US-025)
+// qua route wrapper /bazi → tạo lá số → mở chi tiết (card đúng hệ) → quét \p{Script=Han}
+// trên vùng chi tiết = 0 ký tự Hán → quay lại /history thấy item mới. 4 hệ gieo quẻ theo
+// thời điểm (Mai Hoa/Lục Hào/Đại Lục Nhâm/Kỳ Môn) chuyển sang DivinationForm — phủ bởi
+// us-025-divination.spec.ts.
 //
 // Bất biến ngôn ngữ: toàn vùng chi tiết KHÔNG có chữ Hán (key đã dịch + free-text guard).
 // Selector bám role/nhãn tiếng Việt + id field (KHÔNG class CSS dễ vỡ).
@@ -29,11 +31,7 @@ interface SystemCase {
 }
 
 const SYSTEM_CASES: readonly SystemCase[] = [
-  { route: '/bazi', navLabel: 'Xem Bát Tự', systemLabel: 'Bát Tự', day: '15', month: '8', year: '1990', hour: '10', minute: '30' },
-  { route: '/meihua', navLabel: 'Xem Mai Hoa', systemLabel: 'Mai Hoa Dịch Số', day: '3', month: '2', year: '1985', hour: '14', minute: '45' },
-  { route: '/liuyao', navLabel: 'Xem Lục Hào', systemLabel: 'Lục Hào', day: '21', month: '11', year: '1978', hour: '8', minute: '15' },
-  { route: '/daliuren', navLabel: 'Xem Đại Lục Nhâm', systemLabel: 'Đại Lục Nhâm', day: '7', month: '5', year: '2001', hour: '20', minute: '5' },
-  { route: '/qimen', navLabel: 'Xem Kỳ Môn', systemLabel: 'Kỳ Môn Độn Giáp', day: '29', month: '9', year: '1995', hour: '6', minute: '50' },
+  { route: '/bazi', navLabel: 'Bát Tự', systemLabel: 'Bát Tự', day: '15', month: '8', year: '1990', hour: '10', minute: '30' },
 ];
 
 // Điền form sinh trên màn hình hệ (đã đặt mặc định chartSystem) rồi submit. Trả chartId từ URL.

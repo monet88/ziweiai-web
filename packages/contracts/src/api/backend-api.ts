@@ -14,6 +14,7 @@ import {
   divinationPurposeKeySchema,
 } from '../persistence/persistence-records';
 import { implementedChartSystems } from '../chart/chart-system';
+import { liuyaoLineStateKeys } from '../chart/liuyao-terms';
 
 // POST /charts chỉ chấp nhận 6 hệ đã có adapter (implementedChartSystems), KHÔNG phải toàn
 // bộ 12 hệ contract (chartSystemSchema). Nếu dùng chartSystemSchema, payload {chartSystem:'tarot'}
@@ -124,6 +125,22 @@ export const divinationChartSystems = [
 ] as const;
 export const divinationChartSystemSchema = z.enum(divinationChartSystems);
 
+// US-026: cast method. 'time' = cast by server "now" (all four systems). 'manual'
+// = cast by user-provided numbers/lines, supported only for Mai Hoa (two numbers)
+// and Luc Hao (six line states, bottom-to-top). Da Luc Nham / Ky Mon are time-only.
+export const divinationCastMethodSchema = z.enum(['time', 'manual']);
+
+export const meihuaManualCastSchema = z.object({
+  upperNumber: z.number().int().min(1).max(99_999),
+  lowerNumber: z.number().int().min(1).max(99_999),
+});
+
+export const liuyaoManualCastSchema = z.object({
+  // Six line states from bottom (position 1) to top (position 6). oldYin / oldYang
+  // are moving lines.
+  lineStates: z.array(z.enum(liuyaoLineStateKeys)).length(6),
+});
+
 export const createDivinationRequestSchema = z
   .object({
     chartSystem: divinationChartSystemSchema,
@@ -131,6 +148,9 @@ export const createDivinationRequestSchema = z
     purposeKey: divinationPurposeKeySchema,
     // Required (and only allowed) when purposeKey === 'custom'.
     purposeCustom: z.string().trim().min(1).max(120).optional(),
+    castMethod: divinationCastMethodSchema.default('time'),
+    meihuaManual: meihuaManualCastSchema.optional(),
+    liuyaoManual: liuyaoManualCastSchema.optional(),
   })
   .superRefine((value, ctx) => {
     if (value.purposeKey === 'custom' && !value.purposeCustom) {
@@ -146,6 +166,31 @@ export const createDivinationRequestSchema = z
         path: ['purposeCustom'],
         message: 'purposeCustom is only allowed when purposeKey is "custom".',
       });
+    }
+
+    if (value.castMethod === 'manual') {
+      if (value.chartSystem === 'mei-hua-yi-shu') {
+        if (!value.meihuaManual) {
+          ctx.addIssue({ code: 'custom', path: ['meihuaManual'], message: 'meihuaManual is required for manual Mai Hoa casting.' });
+        }
+        if (value.liuyaoManual) {
+          ctx.addIssue({ code: 'custom', path: ['liuyaoManual'], message: 'liuyaoManual is not allowed for Mai Hoa.' });
+        }
+      } else if (value.chartSystem === 'liu-yao') {
+        if (!value.liuyaoManual) {
+          ctx.addIssue({ code: 'custom', path: ['liuyaoManual'], message: 'liuyaoManual is required for manual Luc Hao casting.' });
+        }
+        if (value.meihuaManual) {
+          ctx.addIssue({ code: 'custom', path: ['meihuaManual'], message: 'meihuaManual is not allowed for Luc Hao.' });
+        }
+      } else {
+        ctx.addIssue({ code: 'custom', path: ['castMethod'], message: 'Manual casting is only supported for Mai Hoa and Luc Hao.' });
+      }
+    } else {
+      // time method: no manual payloads allowed.
+      if (value.meihuaManual || value.liuyaoManual) {
+        ctx.addIssue({ code: 'custom', path: ['castMethod'], message: 'Manual payloads require castMethod "manual".' });
+      }
     }
   });
 
@@ -214,6 +259,9 @@ export type ApiError = z.infer<typeof apiErrorSchema>;
 export type CreateChartRequest = z.infer<typeof createChartRequestSchema>;
 export type CreateChartResponse = z.infer<typeof createChartResponseSchema>;
 export type DivinationChartSystem = (typeof divinationChartSystems)[number];
+export type DivinationCastMethod = z.infer<typeof divinationCastMethodSchema>;
+export type MeihuaManualCast = z.infer<typeof meihuaManualCastSchema>;
+export type LiuyaoManualCast = z.infer<typeof liuyaoManualCastSchema>;
 export type CreateDivinationRequest = z.infer<typeof createDivinationRequestSchema>;
 export type CreateDivinationResponse = z.infer<typeof createDivinationResponseSchema>;
 export type CreateExplanationRequest = z.infer<typeof createExplanationRequestSchema>;

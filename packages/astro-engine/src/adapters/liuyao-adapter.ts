@@ -1,5 +1,14 @@
 import type { BirthInput, ChartSnapshot, LiuyaoLineStateKey, LiuyaoMethod } from '@ziweiai/contracts';
 import { chartSystemRequiresGender } from '@ziweiai/contracts';
+
+// US-026: map a Luc Hao line state to the vendored runtime's manualYaoShu code
+// (0=youngYang, 1=youngYin, 2=oldYang[moving], 3=oldYin[moving]), bottom-to-top.
+const LIUYAO_STATE_TO_MANUAL_CODE: Record<LiuyaoLineStateKey, number> = {
+  youngYang: 0,
+  youngYin: 1,
+  oldYang: 2,
+  oldYin: 3,
+};
 import { normalizeBirthInput } from '../normalization/normalize-birth-input';
 import { PHASE3_CONFIG_PROFILE } from './phase-3-config';
 import { createBaseSnapshotFields, createBlockedChartSnapshot } from './runtime-support';
@@ -95,9 +104,10 @@ export class LiuyaoAdapter implements AstrologyChartAdapter {
   readonly adapterVersion = 'phase-5-bridge-v1';
   readonly usesViewYear = false;
 
-  async calculateChart(input: BirthInput, _options?: ChartCalculationOptions): Promise<ChartSnapshot> {
+  async calculateChart(input: BirthInput, options?: ChartCalculationOptions): Promise<ChartSnapshot> {
     const normalizedBirth = normalizeBirthInput(input, { requiresGender: chartSystemRequiresGender('liu-yao') });
     const warnings = [...normalizedBirth.normalizationConfidence.reasons];
+    const manualLineStates = options?.liuyaoManual?.lineStates;
 
     if (normalizedBirth.normalizationConfidence.blocksExactReading) {
       return createBlockedChartSnapshot({
@@ -128,11 +138,16 @@ export class LiuyaoAdapter implements AstrologyChartAdapter {
       {
         ...buildXuanshuBridgeSettings(input),
         sex: toXuanshuSex(input),
-        paiPanType: 0,
+        // US-026: paiPanType 2 = manual line input (manualYaoShu codes bottom-to-top);
+        // 0 = time-based (default). Manual states map to the runtime's 0-3 codes.
+        paiPanType: manualLineStates ? 2 : 0,
+        ...(manualLineStates
+          ? { manualYaoShu: manualLineStates.map((state) => LIUYAO_STATE_TO_MANUAL_CODE[state]) }
+          : {}),
       },
       'Lục Hào',
     );
-    const method: LiuyaoMethod = 'time-based';
+    const method: LiuyaoMethod = manualLineStates ? 'manual' : 'time-based';
     const baseHexagram = buildHexagramFromXuanshuLines({
       lineData: result.liuYao.benGua,
       topTrigramLabel: result.shangGua,

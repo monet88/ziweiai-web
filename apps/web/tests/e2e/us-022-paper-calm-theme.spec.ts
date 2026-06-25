@@ -101,33 +101,30 @@ test('US-022: dashboard hiển thị đúng tone paper-calm + hairline borders',
   // Dashboard heading
   await expect(page.getByRole('heading', { name: 'Tạo lá số của bạn' })).toBeVisible();
 
-  // Kiểm tra ít nhất 1 phần tử có nền trắng (surface = --color-bg-surface → #fff → rgb(255,255,255)).
-  // Quét toàn bộ visible elements vì class name có thể là card, surface, hoặc component-scoped.
-  const surfaceEl = await page.evaluate(() => {
-    const all = document.querySelectorAll('*');
-    for (const el of all) {
-      const bg = getComputedStyle(el).backgroundColor;
-      if (bg === 'rgb(255, 255, 255)') {
-        return { found: true, bg };
-      }
-    }
-    return { found: false, bg: '' };
-  });
-  expect(surfaceEl.found, 'Ít nhất 1 phần tử phải có nền trắng (surface)').toBe(true);
+  // Thay vì quét querySelectorAll('*') (trắng/viền nhạt là màu quá phổ biến → gần như
+  // luôn pass kể cả khi theme hỏng), bám vào MỘT surface element ngữ nghĩa ổn định: link
+  // trong nav "Hệ thuật số khác". Link này dùng đồng thời --color-bg-surface (#fff) +
+  // --color-border-hairline (#e6e6e6), nên một element chứng minh cả hai token được áp dụng.
+  // Bám role/landmark (không bám class nội bộ dễ đổi).
+  const surfaceLink = page
+    .getByRole('navigation', { name: 'Hệ thuật số khác' })
+    .getByRole('link')
+    .first();
+  await expect(surfaceLink).toBeVisible();
 
-  // Kiểm tra viền hairline (border-color sáng): tìm phần tử có border-color gần #e6e6e6
-  const hairlineFound = await page.evaluate(() => {
-    const els = document.querySelectorAll('*');
-    for (const el of els) {
-      const bc = getComputedStyle(el).borderTopColor;
-      // rgb(230, 230, 230) = #e6e6e6
-      if (bc === 'rgb(230, 230, 230)') {
-        return true;
-      }
-    }
-    return false;
+  const surfaceStyles = await surfaceLink.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { background: s.backgroundColor, border: s.borderTopColor };
   });
-  expect(hairlineFound, 'Phải có ít nhất 1 viền hairline (#e6e6e6)').toBe(true);
+
+  // surface = --color-bg-surface → #fff → rgb(255, 255, 255)
+  expect(surfaceStyles.background, 'Surface element phải có nền trắng (--color-bg-surface)').toBe(
+    'rgb(255, 255, 255)',
+  );
+  // hairline = --color-border-hairline → #e6e6e6 → rgb(230, 230, 230)
+  expect(surfaceStyles.border, 'Surface element phải có viền hairline (--color-border-hairline)').toBe(
+    'rgb(230, 230, 230)',
+  );
 
   await page.screenshot({ path: 'test-results/us-022-dashboard-paper-calm.png', fullPage: true });
 });

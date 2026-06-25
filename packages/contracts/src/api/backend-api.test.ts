@@ -256,4 +256,77 @@ describe('backend API contracts', () => {
     });
     expect(ok.purposeCustom).toBe('Mua nha');
   });
+
+  it('accepts Mai Hoa manual number-casting and defaults castMethod to time', () => {
+    const timeDefault = createDivinationRequestSchema.parse({
+      chartSystem: 'mei-hua-yi-shu',
+      question: 'x',
+      purposeKey: 'career',
+    });
+    expect(timeDefault.castMethod).toBe('time');
+
+    const manual = createDivinationRequestSchema.parse({
+      chartSystem: 'mei-hua-yi-shu',
+      question: 'Viec nay the nao?',
+      purposeKey: 'career',
+      castMethod: 'manual',
+      meihuaManual: { upperNumber: 7, lowerNumber: 3 },
+    });
+    expect(manual.meihuaManual?.upperNumber).toBe(7);
+  });
+
+  it('accepts Luc Hao manual six-line casting', () => {
+    const manual = createDivinationRequestSchema.parse({
+      chartSystem: 'liu-yao',
+      question: 'Viec nay the nao?',
+      purposeKey: 'career',
+      castMethod: 'manual',
+      liuyaoManual: { lineStates: ['youngYang', 'youngYin', 'oldYang', 'youngYin', 'youngYang', 'oldYin'] },
+    });
+    expect(manual.liuyaoManual?.lineStates).toHaveLength(6);
+  });
+
+  it('rejects manual casting mismatches and unsupported systems', () => {
+    // Mai Hoa manual without payload.
+    expect(() =>
+      createDivinationRequestSchema.parse({
+        chartSystem: 'mei-hua-yi-shu',
+        question: 'x',
+        purposeKey: 'career',
+        castMethod: 'manual',
+      }),
+    ).toThrow();
+
+    // Da Luc Nham does not support manual casting.
+    expect(() =>
+      createDivinationRequestSchema.parse({
+        chartSystem: 'da-liu-ren',
+        question: 'x',
+        purposeKey: 'career',
+        castMethod: 'manual',
+        meihuaManual: { upperNumber: 1, lowerNumber: 2 },
+      }),
+    ).toThrow();
+
+    // Manual payload supplied but castMethod left as time.
+    expect(() =>
+      createDivinationRequestSchema.parse({
+        chartSystem: 'mei-hua-yi-shu',
+        question: 'x',
+        purposeKey: 'career',
+        meihuaManual: { upperNumber: 1, lowerNumber: 2 },
+      }),
+    ).toThrow();
+
+    // Luc Hao manual with wrong line count.
+    expect(() =>
+      createDivinationRequestSchema.parse({
+        chartSystem: 'liu-yao',
+        question: 'x',
+        purposeKey: 'career',
+        castMethod: 'manual',
+        liuyaoManual: { lineStates: ['youngYang', 'youngYin'] },
+      }),
+    ).toThrow();
+  });
 });

@@ -153,6 +153,16 @@ export function buildTimeBasedNumbers(params: {
   };
 }
 
+// US-026: classic Mai Hoa number-casting. Upper number -> upper trigram (mod 8),
+// lower number -> lower trigram (mod 8), (upper + lower) -> moving line (mod 6).
+export function buildNumberBasedNumbers(params: { upperNumber: number; lowerNumber: number }) {
+  return {
+    topNumber: normalizeGuaNumber(params.upperNumber),
+    bottomNumber: normalizeGuaNumber(params.lowerNumber),
+    movingLine: normalizeDongYaoNumber(params.upperNumber + params.lowerNumber),
+  };
+}
+
 export function getRelationKey(bodyElementKey: MeihuaElementKey, useElementKey: MeihuaElementKey): MeihuaRelationKey {
   if (bodyElementKey === useElementKey) {
     return 'bodyEqualsUse';

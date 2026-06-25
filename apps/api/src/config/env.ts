@@ -91,6 +91,18 @@ export const apiEnvSchema = z.object({
   // KHÔNG dùng z.coerce.boolean() — nó chạy Boolean(string) nên mọi chuỗi non-empty
   // (kể cả "false") đều thành true, khiến AI_EXPLANATION_FREE_FOR_ALL=false vô hiệu ở prod.
   AI_EXPLANATION_FREE_FOR_ALL: z.stringbool().default(true),
+  AI_CONVERSATION_ENABLED: z.stringbool().default(false),
+  // z.preprocess '' → undefined: env khai báo nhưng để trống (VAR=) đọc ra '' khiến
+  // z.coerce.number() ép thành 0, fail .positive() → crash khởi động và .default() KHÔNG áp
+  // (vì '' ≠ undefined). Chuẩn hoá '' → undefined để default(30)/default(12) áp đúng.
+  API_CONVERSATION_MESSAGES_PER_DAY_PER_USER: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.coerce.number().int().positive().default(30),
+  ),
+  AI_CONVERSATION_BUFFER_MESSAGES: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.coerce.number().int().positive().default(12),
+  ),
 
   // US-017: 6 feature flags for extended divination systems (default false = disabled)
   EXTENDED_SYSTEM_HEPAN_ENABLED: z.stringbool().default(false),

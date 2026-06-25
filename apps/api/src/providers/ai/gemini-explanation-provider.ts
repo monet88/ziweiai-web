@@ -4,10 +4,13 @@ import { containsCjkText } from '@ziweiai/core';
 import { apiEnv } from '../../config/env';
 import {
   buildExplanationPrompt,
-  type AiExplanationProvider,
+  type AiConversationProvider,
+  type ConversationPromptPayload,
+  type ConversationProviderResult,
   type ExplanationPromptPayload,
   type ExplanationProviderResult,
 } from './ai-explanation-provider';
+import { buildConversationPrompt } from './build-conversation-prompt';
 import { EXPLANATION_SYSTEM_PROMPT } from './ai-explanation-provider';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
 
@@ -45,7 +48,11 @@ function buildGeminiSdkEndpoint(model: string): string {
   return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 }
 
-function buildGeminiSdkRequest(payload: ExplanationPromptPayload): RequestInit {
+function buildGeminiSdkRequest(params: {
+  prompt: string;
+  imageInput?: { base64: string; mimeType: string };
+  timeoutMsOverride?: number;
+}): RequestInit {
   const headers: Record<string, string> = apiEnv.GEMINI_SDK_BASE_URL
     ? {
         Authorization: `Bearer ${apiEnv.GEMINI_API_KEY}`,
@@ -58,9 +65,9 @@ function buildGeminiSdkRequest(payload: ExplanationPromptPayload): RequestInit {
 
   // US-017e: Gemini dùng shape RIÊNG cho ảnh — KHÔNG phải image_url như OpenAI-style. Ảnh là một part
   // inlineData {mimeType, data:<base64>} nằm cùng mảng parts với text. Khi có imageInput, thêm part này.
-  const textPart = { text: payload.promptOverride ?? buildExplanationPrompt(payload) };
-  const parts = payload.imageInput
-    ? [textPart, { inlineData: { mimeType: payload.imageInput.mimeType, data: payload.imageInput.base64 } }]
+  const textPart = { text: params.prompt };
+  const parts = params.imageInput
+    ? [textPart, { inlineData: { mimeType: params.imageInput.mimeType, data: params.imageInput.base64 } }]
     : [textPart];
 
   return {
@@ -76,17 +83,26 @@ function buildGeminiSdkRequest(payload: ExplanationPromptPayload): RequestInit {
         },
       ],
     }),
-    signal: AbortSignal.timeout(payload.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS),
+    signal: AbortSignal.timeout(params.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS),
   };
 }
 
 @Injectable()
-export class GeminiExplanationProvider implements AiExplanationProvider {
+export class GeminiExplanationProvider implements AiConversationProvider {
   private readonly logger = new Logger(GeminiExplanationProvider.name);
   readonly providerName = 'gemini';
 
   isAvailable(): boolean {
     return apiEnv.GEMINI_API_KEY.length > 0;
+  }
+
+  async generateConversation(payload: ConversationPromptPayload): Promise<ConversationProviderResult> {
+    return this.generateContent({
+      prompt: buildConversationPrompt(payload),
+      emptyMessage: 'Gemini không trả về nội dung hội thoại.',
+      metadataKind: 'conversation',
+      modelOverride: payload.modelOverride,
+    });
   }
 
   // US-017e: model Gemini (gemini-3.5-flash mặc định) hỗ trợ đa thể thức (đọc ảnh). Coi như đọc được
@@ -96,13 +112,38 @@ export class GeminiExplanationProvider implements AiExplanationProvider {
   }
 
   async generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {
+    return this.generateContent({
+      prompt: payload.promptOverride ?? buildExplanationPrompt(payload),
+      emptyMessage: 'Gemini không trả về nội dung luận giải.',
+      metadataKind: 'explanation',
+      modelOverride: payload.modelOverride,
+      imageInput: payload.imageInput,
+      timeoutMsOverride: payload.timeoutMsOverride,
+    });
+  }
+
+  private async generateContent(params: {
+    prompt: string;
+    emptyMessage: string;
+    metadataKind: 'explanation' | 'conversation';
+    modelOverride?: string;
+    imageInput?: { base64: string; mimeType: string };
+    timeoutMsOverride?: number;
+  }): Promise<ExplanationProviderResult> {
     if (!this.isAvailable()) {
       throw new ProviderUnavailableError('Chưa cấu hình Gemini.');
     }
 
     try {
-      const model = payload.modelOverride ?? apiEnv.GEMINI_MODEL;
-      const response = await fetch(buildGeminiSdkEndpoint(model), buildGeminiSdkRequest(payload));
+      const model = params.modelOverride ?? apiEnv.GEMINI_MODEL;
+      const response = await fetch(
+        buildGeminiSdkEndpoint(model),
+        buildGeminiSdkRequest({
+          prompt: params.prompt,
+          imageInput: params.imageInput,
+          timeoutMsOverride: params.timeoutMsOverride,
+        }),
+      );
 
       const body = await readGeminiResponseBody(response);
 
@@ -122,7 +163,7 @@ export class GeminiExplanationProvider implements AiExplanationProvider {
         .join('')
         .trim();
       if (!renderedMarkdown) {
-        throw new ProviderUnavailableError('Gemini không trả về nội dung luận giải.');
+        throw new ProviderUnavailableError(params.emptyMessage);
       }
 
       if (containsCjkText(renderedMarkdown)) {
@@ -135,6 +176,7 @@ export class GeminiExplanationProvider implements AiExplanationProvider {
         providerMetadata: {
           provider: this.providerName,
           model,
+          kind: params.metadataKind,
           totalTokens: String(body.usageMetadata?.totalTokenCount ?? 0),
           promptTokens: String(body.usageMetadata?.promptTokenCount ?? 0),
           completionTokens: String(body.usageMetadata?.candidatesTokenCount ?? 0),

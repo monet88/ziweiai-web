@@ -40,6 +40,10 @@ export function buildConversationPrompt(payload: ConversationPromptPayload, hist
     chartSnapshot: payload.chartSnapshot,
     explanationKind: 'overview',
     explanationContext: payload.explanationContext,
+    // Thread the stored divination question/purpose so the per-system builder frames
+    // the chart context around the original inquiry, not a generic reading. No-op for
+    // natal/other systems where divinationInquiry is undefined.
+    divinationInquiry: payload.divinationInquiry,
   });
 
   return [

@@ -71,6 +71,14 @@ export interface ConversationPromptPayload {
   userMessage: string;
   quickPromptKey?: QuickPromptKey;
   modelOverride?: string;
+  // US-025 (decision 0021): for the four time-based divination systems, the stored
+  // question + purpose are threaded so the conversation prompt targets the original
+  // inquiry even when a quick prompt or follow-up does not restate it. Absent for
+  // natal/other systems.
+  divinationInquiry?: {
+    question: string;
+    purposeLabel: string;
+  };
 }
 
 export interface ConversationProviderResult {

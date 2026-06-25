@@ -68,7 +68,12 @@
     isDragging = true;
   }
 
-  function onDragLeave(): void {
+  function onDragLeave(event: DragEvent): void {
+    // Guard: drag rời sang phần tử con bên trong dropzone vẫn bắn dragleave → bỏ qua để khỏi
+    // nhấp nháy highlight. Chỉ reset khi con trỏ rời hẳn khỏi dropzone (relatedTarget nằm ngoài).
+    const current = event.currentTarget as HTMLElement | null;
+    const next = event.relatedTarget as Node | null;
+    if (current && next && current.contains(next)) return;
     isDragging = false;
   }
 
@@ -116,6 +121,7 @@
           type="file"
           accept="image/jpeg,image/png,image/webp"
           aria-label={copy.uploadLabel}
+          tabindex="-1"
           disabled={model.isSubmitting}
           onchange={onFileChange}
         />

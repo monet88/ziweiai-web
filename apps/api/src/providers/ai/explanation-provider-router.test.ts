@@ -25,7 +25,7 @@ describe('ExplanationProviderRouter', () => {
       { providerName: 'gemini', isAvailable: () => true, generateExplanation: async () => ({ renderedMarkdown: 'b', providerMetadata: {} }) } as never,
     );
 
-    // AI_DEFAULT_PROVIDER default 'openai-compat' → chain auto = [openai-compat, deepseek, gemini].
+    // AI_DEFAULT_PROVIDER mặc định 'auto'; 'auto' resolve theo chain = [openai-compat, deepseek, gemini].
     expect(router.resolveProviderName('auto')).toBe('openai-compat');
   });
 

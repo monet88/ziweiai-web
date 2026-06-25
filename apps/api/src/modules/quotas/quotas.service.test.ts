@@ -3,8 +3,9 @@ import { QuotasService } from './quotas.service';
 import { MemoryQuotaCounterStore } from './counter-stores/memory';
 
 type PersistenceStub = {
-  countChartSnapshotsSince: () => Promise<number>;
-  countExplanationRequestsSince: () => Promise<number>;
+  countChartSnapshotsSince?: () => Promise<number>;
+  countExplanationRequestsSince?: () => Promise<number>;
+  countConversationUserMessagesSince?: () => Promise<number>;
 };
 
 // Mỗi service mới đi kèm một MemoryQuotaCounterStore mới (cô lập trạng thái đếm giữa các test).
@@ -17,6 +18,7 @@ describe('QuotasService', () => {
     const service = makeService({
       countChartSnapshotsSince: async () => 0,
       countExplanationRequestsSince: async () => 0,
+      countConversationUserMessagesSince: async () => 0,
     });
 
     await expect(service.assertCanCreateChart('user-a', '127.0.0.1')).resolves.toBeUndefined();
@@ -132,6 +134,39 @@ describe('QuotasService', () => {
       });
 
       await expect(service.assertCanCreateVisionAnalysis('user-vision-iso', '10.0.2.2')).resolves.toBeUndefined();
+    });
+  });
+
+  describe('assertCanCreateConversationMessage (US-018)', () => {
+    it('cho qua khi dưới trần (mặc định 30) cho user thường', async () => {
+      const service = makeService({
+        countConversationUserMessagesSince: async () => 29,
+      });
+
+      await expect(service.assertCanCreateConversationMessage('user-conv', '10.0.3.1')).resolves.toBeUndefined();
+    });
+
+    it('chặn khi vượt quá trần cho user thường', async () => {
+      const service = makeService({
+        countConversationUserMessagesSince: async () => 30,
+      });
+
+      await expect(service.assertCanCreateConversationMessage('user-conv', '10.0.3.1')).rejects.toThrow(
+        'Daily conversation quota exceeded.',
+      );
+    });
+
+    it('anon đếm qua IP: bỏ qua nhánh DB, chặn ở lần thứ 31 trên cùng IP', async () => {
+      const service = makeService({
+        countConversationUserMessagesSince: async () => 999, // DB báo rất nhiều nhưng anon bỏ qua
+      });
+
+      for (let i = 0; i < 30; i += 1) {
+        await expect(service.assertCanCreateConversationMessage(`anon-${i}`, '10.0.3.2', true)).resolves.toBeUndefined();
+      }
+      await expect(service.assertCanCreateConversationMessage('anon-30', '10.0.3.2', true)).rejects.toThrow(
+        'Daily conversation quota exceeded.',
+      );
     });
   });
 });

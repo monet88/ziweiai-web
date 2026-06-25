@@ -235,6 +235,7 @@ export async function* streamConversationMessage(
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
+      buffer = buffer.replace(/\r\n/g, '\n');
 
       let idx: number;
       // SSE frames are separated by double newlines; each data: line carries JSON

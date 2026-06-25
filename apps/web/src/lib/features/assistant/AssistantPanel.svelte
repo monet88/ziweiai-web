@@ -66,9 +66,9 @@
 </script>
 
 <section class="assistant" aria-labelledby="assistant-title">
-  <h3 id="assistant-title" class="title">{viCopy.chart.explanationTitle} — Trợ lý AI</h3>
+  <h3 id="assistant-title" class="title">{viCopy.assistant.title}</h3>
 
-  <div class="quick-row" role="group" aria-label="Quick prompts">
+  <div class="quick-row" role="group" aria-label={viCopy.assistant.quickPromptsLabel}>
     {#each QUICK_PROMPT_KEYS as key (key)}
       <button
         type="button"
@@ -83,13 +83,13 @@
 
   <div class="transcript" aria-live="polite">
     {#if assistant.messages.length === 0}
-      <p class="hint">Hãy chọn một gợi ý nhanh hoặc nhập câu hỏi để bắt đầu hội thoại.</p>
+      <p class="hint">{viCopy.assistant.hint}</p>
     {:else}
       {#each assistant.messages as m, idx (idx)}
         <div class={m.role === 'user' ? 'msg user' : 'msg assistant'}>
-          <div class="role">{m.role === 'user' ? 'Bạn' : 'Trợ lý'}</div>
+          <div class="role">{m.role === 'user' ? viCopy.assistant.roleUser : viCopy.assistant.roleAssistant}</div>
           <div class="content">
-            {m.content}
+            {m.quickPromptKey ? (QUICK_PROMPT_LABELS[m.quickPromptKey] ?? m.content) : m.content}
             {#if m.isStreaming}<span class="cursor">▍</span>{/if}
           </div>
         </div>
@@ -105,12 +105,12 @@
     <textarea
       bind:value={inputValue}
       onkeydown={handleKeydown}
-      placeholder="Nhập câu hỏi của bạn..."
+      placeholder={viCopy.assistant.placeholder}
       rows={2}
       disabled={assistant.isGenerating}
     ></textarea>
     <button type="button" onclick={() => handleSendText()} disabled={assistant.isGenerating || !inputValue.trim()}>
-      Gửi
+      {viCopy.assistant.send}
     </button>
   </div>
 </section>

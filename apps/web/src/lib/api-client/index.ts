@@ -9,10 +9,13 @@
  */
 import {
   chartDetailResponseSchema,
+  conversationDetailResponseSchema,
   createChartResponseSchema,
+  createConversationResponseSchema,
   createExplanationResponseSchema,
   healthResponseSchema,
   historyListResponseSchema,
+  conversationStreamEventSchema,
   horoscopeResponseSchema,
   annualReportResponseSchema,
   dailyFortuneResponseSchema,
@@ -24,13 +27,19 @@ import {
   tarotDrawSchema,
   type AnnualReportResponse,
   type ChartDetailResponse,
+  type ConversationDetailResponse,
+  type ConversationStreamEvent,
   type CreateChartRequest,
   type CreateChartResponse,
+  type CreateConversationRequest,
+  type CreateConversationResponse,
+  type CreateConversationMessageRequest,
   type CreateExplanationRequest,
   type CreateExplanationResponse,
   type DailyFortuneResponse,
   type HealthResponse,
   type HistoryListResponse,
+  type ConversationMessageRecord,
   type HoroscopeResponse,
   type HoroscopeScope,
   type MonthlyFortuneResponse,
@@ -45,6 +54,7 @@ import {
   type TarotSpread,
 } from '@ziweiai/contracts';
 import { fetchJson, fetchMultipart } from './fetch-json';
+import { env } from '$lib/env';
 
 export { ApiError } from './fetch-json';
 export type { ApiErrorKind } from './fetch-json';
@@ -130,6 +140,39 @@ export function createExplanation(
   });
 }
 
+/** POST /conversations — Bearer. Tạo cuộc hội thoại mới gắn với một chart. */
+export function createConversation(
+  token: string,
+  request: CreateConversationRequest,
+): Promise<CreateConversationResponse> {
+  return fetchJson('/conversations', createConversationResponseSchema, {
+    method: 'POST',
+    token,
+    body: request,
+  });
+}
+
+/** GET /conversations/:id — Bearer. Lấy chi tiết cuộc hội thoại (conversation + messages). */
+export function fetchConversationDetail(
+  token: string,
+  conversationId: string,
+): Promise<ConversationDetailResponse> {
+  return fetchJson(`/conversations/${conversationId}`, conversationDetailResponseSchema, { token });
+}
+
+/** POST /conversations/:id/messages — Bearer. Non-streaming append (trả full detail). */
+export function appendConversationMessage(
+  token: string,
+  conversationId: string,
+  request: CreateConversationMessageRequest,
+): Promise<ConversationDetailResponse> {
+  return fetchJson(`/conversations/${conversationId}/messages`, conversationDetailResponseSchema, {
+    method: 'POST',
+    token,
+    body: request,
+  });
+}
+
 /** US-017b: POST /quizzes/mbti — Bearer. Gửi mảng câu trả lời Likert, nhận kết quả MBTI. */
 export function createMbtiQuiz(token: string, answers: MbtiAnswer[]): Promise<MbtiResult> {
   return fetchJson('/quizzes/mbti', mbtiResultSchema, {
@@ -146,6 +189,110 @@ export function createPairing(token: string, request: PairingRequest): Promise<P
     token,
     body: request,
   });
+}
+
+/**
+ * POST /conversations/:id/messages/stream — Bearer.
+ * Trả về AsyncIterable<ConversationStreamEvent> đã parse bằng schema (chunk/done/error).
+ * Dùng fetch + ReadableStream (không EventSource) để giữ Authorization header.
+ */
+export async function* streamConversationMessage(
+  token: string,
+  conversationId: string,
+  request: CreateConversationMessageRequest,
+): AsyncGenerator<ConversationStreamEvent> {
+  const res = await fetch(`${env.apiBaseUrl}/conversations/${conversationId}/messages/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!res.ok || !res.body) {
+    // Parse error body the same way fetchJson does (best effort)
+    let message = `Yêu cầu thất bại (${res.status}).`;
+    try {
+      const err: unknown = await res.json();
+      if (err && typeof err === 'object' && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+        message = (err as { message: string }).message;
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(message);
+  }
+
+  const reader = res.body.getReader();
+  // try/finally so an early abort (caller breaks out of `for await`, or navigates away) still releases
+  // the reader lock and cancels the underlying stream — otherwise the connection can hang/leak.
+  try {
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      buffer = buffer.replace(/\r\n/g, '\n');
+
+      let idx: number;
+      // SSE frames are separated by double newlines; each data: line carries JSON
+      while ((idx = buffer.indexOf('\n\n')) !== -1) {
+        const frame = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
+
+        // Extract data: lines (support multi-line data by concatenation)
+        const dataLines = frame
+          .split('\n')
+          .filter((l) => l.startsWith('data:'))
+          .map((l) => l.replace(/^data:\s?/, ''));
+
+        if (dataLines.length === 0) continue;
+
+        const payload = dataLines.join('\n');
+        let raw: unknown;
+        try {
+          raw = JSON.parse(payload);
+        } catch {
+          continue;
+        }
+
+        const parsed = conversationStreamEventSchema.safeParse(raw);
+        if (!parsed.success) {
+          if (import.meta.env.DEV) {
+            console.error('[api] stream event parse error:', parsed.error.issues);
+          }
+          continue;
+        }
+        yield parsed.data;
+      }
+    }
+  } finally {
+    reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
+
+/** Helper: consume streaming assistant text until 'done' or 'error'. */
+export async function collectAssistantStream(
+  token: string,
+  conversationId: string,
+  request: CreateConversationMessageRequest,
+): Promise<{ text: string; finalMessage?: ConversationMessageRecord }> {
+  let text = '';
+  let final: ConversationMessageRecord | undefined;
+  for await (const evt of streamConversationMessage(token, conversationId, request)) {
+    if (evt.type === 'chunk') {
+      text += evt.delta;
+    } else if (evt.type === 'done') {
+      final = evt.message;
+    } else if (evt.type === 'error') {
+      throw new Error(evt.error.message);
+    }
+  }
+  return { text, finalMessage: final };
 }
 
 /**

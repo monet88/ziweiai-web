@@ -1,4 +1,4 @@
-import type { ChartSnapshot, ExplanationContext, PalaceScope } from '@ziweiai/contracts';
+import type { ChartSnapshot, ConversationMessageRecord, ExplanationContext, PalaceScope, QuickPromptKey } from '@ziweiai/contracts';
 import * as ziweiCore from '@ziweiai/core';
 import { buildBaziExplanationPrompt } from './build-bazi-explanation-prompt';
 import { buildMangpaiExplanationPrompt } from './build-mangpai-explanation-prompt';
@@ -55,6 +55,24 @@ export interface AiExplanationProvider {
   // cho phép kiểm tra theo model được ép riêng cho đường vision thay vì model ENV mặc định.
   isVisionCapable(modelOverride?: string): boolean;
   generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult>;
+}
+
+export interface ConversationPromptPayload {
+  chartSnapshot: ChartSnapshot;
+  explanationContext: ExplanationContext;
+  messages: ConversationMessageRecord[];
+  userMessage: string;
+  quickPromptKey?: QuickPromptKey;
+  modelOverride?: string;
+}
+
+export interface ConversationProviderResult {
+  renderedMarkdown: string;
+  providerMetadata: Record<string, string>;
+}
+
+export interface AiConversationProvider extends AiExplanationProvider {
+  generateConversation(payload: ConversationPromptPayload): Promise<ConversationProviderResult>;
 }
 
 const legacyZodiacMap: Record<string, string> = {

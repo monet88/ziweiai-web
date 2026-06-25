@@ -177,6 +177,30 @@ export class QuotasService {
     }
   }
 
+  async assertCanCreateConversationMessage(userId: string, ipAddress: string, isAnonymous = false): Promise<void> {
+    this.assertSlidingWindow(this.ipBuckets, `ip:${ipAddress}`, apiEnv.API_REQUESTS_PER_MINUTE_PER_IP, 60_000);
+    this.assertSlidingWindow(this.userBuckets, `user:${userId}`, apiEnv.API_REQUESTS_PER_MINUTE_PER_USER, 60_000);
+
+    if (isAnonymous) {
+      // US-013: anon daily quota dùng QuotaCounterStore bền qua restart (thay Map in-memory cũ),
+      // đếm theo IP + ngày UTC để chống reset phiên (xoá localStorage / incognito).
+      await this.assertAnonDailyQuota(
+        `anon-conversation:${ipAddress}:${utcDayKey(Date.now())}`,
+        apiEnv.API_CONVERSATION_MESSAGES_PER_DAY_PER_USER,
+        'Daily conversation quota exceeded.',
+      );
+      return;
+    }
+
+    const sinceIso = new Date(Date.now() - ONE_DAY_MS).toISOString();
+    // Count only user turns (each successful turn writes a user + assistant row). Counting both would
+    // halve the effective signed-in limit vs anon (which increments the counter once per request).
+    const turnsCreated = await this.persistenceGateway.countConversationUserMessagesSince(userId, sinceIso);
+    if (turnsCreated >= apiEnv.API_CONVERSATION_MESSAGES_PER_DAY_PER_USER) {
+      throw new DailyQuotaExceededError('Daily conversation quota exceeded.');
+    }
+  }
+
   private assertSlidingWindow(
     store: Map<string, SlidingWindowBucket>,
     key: string,

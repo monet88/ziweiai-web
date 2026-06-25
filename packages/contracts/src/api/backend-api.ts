@@ -8,6 +8,8 @@ import {
   explanationRequestRecordSchema,
   explanationResultRecordSchema,
   historyViewRecordSchema,
+  conversationRecordSchema,
+  conversationMessageRecordSchema,
 } from '../persistence/persistence-records';
 import { implementedChartSystems } from '../chart/chart-system';
 
@@ -39,6 +41,23 @@ export const authenticatedUserSchema = z.object({
 
 export const explanationKindSchema = z.enum(['overview', 'love', 'career', 'health', 'relationship']);
 export const providerPreferenceSchema = z.enum(['auto', 'deepseek', 'openai-compat', 'gemini']);
+export const quickPromptKeySchema = z.enum(['overview', 'love', 'career', 'health', 'timing']);
+
+export const createConversationRequestSchema = z.object({
+  chartSnapshotId: z.uuid(),
+  title: z.string().trim().min(1).max(120).optional(),
+});
+
+export const createConversationMessageRequestSchema = z
+  .object({
+    content: z.string().trim().min(1).max(2_000).optional(),
+    quickPromptKey: quickPromptKeySchema.optional(),
+    providerPreference: providerPreferenceSchema.default('auto'),
+  })
+  .refine((value) => Boolean(value.content) !== Boolean(value.quickPromptKey), {
+    message: 'Gửi đúng một trong content hoặc quickPromptKey.',
+    path: ['content'],
+  });
 
 // Phạm vi luận giải theo từng cung (12 cung an theo iztro nameKey) cộng hai mục vận hạn
 // (decadal = Đại Vận, yearly = Lưu Niên — mục Lưu Niên gói luôn dữ liệu Tiểu Vận theo
@@ -66,6 +85,15 @@ export const apiErrorSchema = z.object({
   message: z.string().min(1),
   requestId: z.string().min(1).nullable(),
 });
+
+export const conversationStreamEventSchema = z.discriminatedUnion('type', [
+  // delta carries raw streaming text. Whitespace between words is meaningful (the client
+  // concatenates deltas), so allow any non-empty string — do NOT trim. Empty strings are still
+  // rejected to catch real bugs. Trimming here would drop inter-word spaces and abort the stream.
+  z.object({ type: z.literal('chunk'), delta: z.string().min(1) }),
+  z.object({ type: z.literal('done'), message: conversationMessageRecordSchema }),
+  z.object({ type: z.literal('error'), error: apiErrorSchema }),
+]);
 
 export const createChartRequestSchema = z.object({
   birthInput: birthInputSchema,
@@ -97,6 +125,19 @@ export const createExplanationResponseSchema = z.object({
   explanationContext: explanationContextSchema,
 });
 
+export const createConversationResponseSchema = z.object({
+  conversation: conversationRecordSchema,
+});
+
+export const conversationDetailResponseSchema = z.object({
+  conversation: conversationRecordSchema,
+  messages: z.array(conversationMessageRecordSchema),
+});
+
+export const conversationListResponseSchema = z.object({
+  items: z.array(conversationRecordSchema),
+});
+
 export const chartDetailResponseSchema = z.object({
   chartRecord: chartSnapshotRecordSchema,
   snapshot: chartSnapshotSchema,
@@ -116,6 +157,7 @@ export const historyListResponseSchema = z.object({
 export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>;
 export type AuthenticatedUser = z.infer<typeof authenticatedUserSchema>;
 export type ExplanationKind = z.infer<typeof explanationKindSchema>;
+export type QuickPromptKey = z.infer<typeof quickPromptKeySchema>;
 export type PalaceScope = z.infer<typeof palaceScopeSchema>;
 export type ProviderPreference = z.infer<typeof providerPreferenceSchema>;
 export type ApiError = z.infer<typeof apiErrorSchema>;
@@ -123,6 +165,12 @@ export type CreateChartRequest = z.infer<typeof createChartRequestSchema>;
 export type CreateChartResponse = z.infer<typeof createChartResponseSchema>;
 export type CreateExplanationRequest = z.infer<typeof createExplanationRequestSchema>;
 export type CreateExplanationResponse = z.infer<typeof createExplanationResponseSchema>;
+export type CreateConversationRequest = z.infer<typeof createConversationRequestSchema>;
+export type CreateConversationResponse = z.infer<typeof createConversationResponseSchema>;
+export type CreateConversationMessageRequest = z.infer<typeof createConversationMessageRequestSchema>;
+export type ConversationStreamEvent = z.infer<typeof conversationStreamEventSchema>;
+export type ConversationDetailResponse = z.infer<typeof conversationDetailResponseSchema>;
+export type ConversationListResponse = z.infer<typeof conversationListResponseSchema>;
 export type ChartDetailResponse = z.infer<typeof chartDetailResponseSchema>;
 export type HistoryItem = z.infer<typeof historyItemSchema>;
 export type HistoryListResponse = z.infer<typeof historyListResponseSchema>;

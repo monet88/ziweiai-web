@@ -3,6 +3,7 @@ import { RequestIdMiddleware } from './common/request-id.middleware';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ChartsModule } from './modules/charts/charts.module';
+import { ConversationsModule } from './modules/conversations/conversations.module';
 import { ExplanationsModule } from './modules/explanations/explanations.module';
 import { DrawsTarotModule } from './modules/draws-tarot/draws-tarot.module';
 import { FortuneModule } from './modules/fortune/fortune.module';
@@ -14,7 +15,7 @@ import { VisionFaceModule } from './modules/vision-face/vision-face.module';
 import { VisionPalmModule } from './modules/vision-palm/vision-palm.module';
 
 @Module({
-  imports: [AuthModule, ChartsModule, DrawsTarotModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionFaceModule, VisionPalmModule],
+  imports: [AuthModule, ChartsModule, ConversationsModule, DrawsTarotModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionFaceModule, VisionPalmModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

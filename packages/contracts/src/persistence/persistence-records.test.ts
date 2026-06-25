@@ -3,6 +3,8 @@ import {
   birthProfileRecordSchema,
   chartSnapshotRecordSchema,
   explanationRequestRecordSchema,
+  conversationMessageRecordSchema,
+  conversationRecordSchema,
 } from './persistence-records';
 
 describe('birthProfileRecordSchema', () => {
@@ -333,5 +335,54 @@ describe('explanationRequestRecordSchema', () => {
     });
 
     expect(result.success).toBe(true);
+  });
+});
+
+describe('conversation persistence schemas', () => {
+  it('accepts user-owned conversation metadata', () => {
+    const result = conversationRecordSchema.safeParse({
+      id: '0f8fad5b-d9cb-469f-a165-70867728950e',
+      ownerUserId: 'dff0da0d-f89c-4485-8d11-4e58fc00b8cb',
+      chartSnapshotId: 'a9ac741c-7423-4767-90d7-f8b6781ccf0a',
+      title: 'Hỏi nhanh về lá số',
+      status: 'active',
+      createdAt: '2026-06-18T00:00:00.000Z',
+      updatedAt: '2026-06-18T00:01:00.000Z',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts assistant and user messages but rejects unsupported roles', () => {
+    const baseMessage = {
+      id: '1f8fad5b-d9cb-469f-a165-70867728950e',
+      ownerUserId: 'dff0da0d-f89c-4485-8d11-4e58fc00b8cb',
+      conversationId: '0f8fad5b-d9cb-469f-a165-70867728950e',
+      content: 'Luận giải mẫu bằng tiếng Việt.',
+      quickPromptKey: null,
+      providerName: 'deepseek',
+      providerMetadata: { provider: 'deepseek' },
+      createdAt: '2026-06-18T00:02:00.000Z',
+    };
+
+    expect(conversationMessageRecordSchema.safeParse({ ...baseMessage, role: 'assistant' }).success).toBe(true);
+    expect(conversationMessageRecordSchema.safeParse({ ...baseMessage, role: 'user' }).success).toBe(true);
+    expect(conversationMessageRecordSchema.safeParse({ ...baseMessage, role: 'system' }).success).toBe(false);
+  });
+
+  it('rejects empty stored conversation message content', () => {
+    const result = conversationMessageRecordSchema.safeParse({
+      id: '1f8fad5b-d9cb-469f-a165-70867728950e',
+      ownerUserId: 'dff0da0d-f89c-4485-8d11-4e58fc00b8cb',
+      conversationId: '0f8fad5b-d9cb-469f-a165-70867728950e',
+      role: 'user',
+      content: '   ',
+      quickPromptKey: 'overview',
+      providerName: null,
+      providerMetadata: {},
+      createdAt: '2026-06-18T00:02:00.000Z',
+    });
+
+    expect(result.success).toBe(false);
   });
 });

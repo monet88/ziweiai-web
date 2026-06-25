@@ -3,10 +3,13 @@ import { containsCjkText } from '@ziweiai/core';
 import { apiEnv } from '../../config/env';
 import {
   buildExplanationPrompt,
-  type AiExplanationProvider,
+  type AiConversationProvider,
+  type ConversationPromptPayload,
+  type ConversationProviderResult,
   type ExplanationPromptPayload,
   type ExplanationProviderResult,
 } from './ai-explanation-provider';
+import { buildConversationPrompt } from './build-conversation-prompt';
 import { EXPLANATION_SYSTEM_PROMPT } from './ai-explanation-provider';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
 import { buildImageDataUrl } from './vision-prompt';
@@ -31,12 +34,21 @@ function buildChatCompletionsEndpoint(): string {
 }
 
 @Injectable()
-export class OpenAiCompatibleExplanationProvider implements AiExplanationProvider {
+export class OpenAiCompatibleExplanationProvider implements AiConversationProvider {
   private readonly logger = new Logger(OpenAiCompatibleExplanationProvider.name);
   readonly providerName = 'openai-compat';
 
   isAvailable(): boolean {
     return apiEnv.OPENAI_COMPAT_API_KEY.length > 0;
+  }
+
+  async generateConversation(payload: ConversationPromptPayload): Promise<ConversationProviderResult> {
+    return this.generateChatCompletion({
+      prompt: buildConversationPrompt(payload),
+      emptyMessage: 'Nhà cung cấp OpenAI-compatible không trả về nội dung hội thoại.',
+      metadataKind: 'conversation',
+      modelOverride: payload.modelOverride,
+    });
   }
 
   // US-017e: endpoint OpenAI-compatible do operator cấu hình (OPENAI_COMPAT_MODEL). Coi như đọc được
@@ -47,20 +59,37 @@ export class OpenAiCompatibleExplanationProvider implements AiExplanationProvide
   }
 
   async generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {
+    return this.generateChatCompletion({
+      prompt: payload.promptOverride ?? buildExplanationPrompt(payload),
+      emptyMessage: 'Nhà cung cấp OpenAI-compatible không trả về nội dung luận giải.',
+      metadataKind: 'explanation',
+      modelOverride: payload.modelOverride,
+      imageInput: payload.imageInput,
+      timeoutMsOverride: payload.timeoutMsOverride,
+    });
+  }
+
+  private async generateChatCompletion(params: {
+    prompt: string;
+    emptyMessage: string;
+    metadataKind: 'explanation' | 'conversation';
+    modelOverride?: string;
+    imageInput?: { base64: string; mimeType: string };
+    timeoutMsOverride?: number;
+  }): Promise<ExplanationProviderResult> {
     if (!this.isAvailable()) {
       throw new ProviderUnavailableError('Chưa cấu hình nhà cung cấp OpenAI-compatible.');
     }
 
     try {
-      const model = payload.modelOverride ?? apiEnv.OPENAI_COMPAT_MODEL;
-      const timeoutMs = payload.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
-      const userText = payload.promptOverride ?? buildExplanationPrompt(payload);
-      const userContent: string | OpenAiStyleContentPart[] = payload.imageInput
+      const model = params.modelOverride ?? apiEnv.OPENAI_COMPAT_MODEL;
+      const timeoutMs = params.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
+      const userContent: string | OpenAiStyleContentPart[] = params.imageInput
         ? [
-            { type: 'text', text: userText },
-            { type: 'image_url', image_url: { url: buildImageDataUrl(payload.imageInput.mimeType, payload.imageInput.base64) } },
+            { type: 'text', text: params.prompt },
+            { type: 'image_url', image_url: { url: buildImageDataUrl(params.imageInput.mimeType, params.imageInput.base64) } },
           ]
-        : userText;
+        : params.prompt;
       const response = await fetch(buildChatCompletionsEndpoint(), {
         method: 'POST',
         headers: {
@@ -103,10 +132,12 @@ export class OpenAiCompatibleExplanationProvider implements AiExplanationProvide
         );
       }
 
-      const renderedMarkdown = body.choices?.[0]?.message?.content?.trim();
-      if (!renderedMarkdown) {
-        throw new ProviderUnavailableError('Nhà cung cấp OpenAI-compatible không trả về nội dung luận giải.');
-      }
+    const renderedMarkdown = body.choices?.[0]?.message?.content?.trim();
+    if (!renderedMarkdown) {
+      // Use the caller-supplied message so the conversation flow surfaces "không trả về nội dung hội
+      // thoại" instead of the explanation text. Both callers pass `emptyMessage`.
+      throw new ProviderUnavailableError(params.emptyMessage);
+    }
 
       if (containsCjkText(renderedMarkdown)) {
         this.logger.warn('Nhà cung cấp OpenAI-compatible trả về nội dung chứa chữ Hán, từ chối.');

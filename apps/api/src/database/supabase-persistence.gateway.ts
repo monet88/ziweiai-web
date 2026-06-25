@@ -8,6 +8,7 @@ import {
   historyViewRecordSchema,
   conversationRecordSchema,
   conversationMessageRecordSchema,
+  divinationContextRecordSchema,
   type BirthInput,
   type BirthProfileRecord,
   type ChartSnapshot,
@@ -20,6 +21,8 @@ import {
   type CacheScope,
   type ConversationRecord,
   type ConversationMessageRecord,
+  type DivinationContextRecord,
+  type DivinationPurposeKey,
 } from '@ziweiai/contracts';
 import { apiEnv } from '../config/env';
 import { normalizePostgresTimestamp } from './postgres-timestamp';
@@ -158,6 +161,73 @@ export class SupabasePersistenceGateway {
       .single();
     this.throwIfError(error);
     return this.toChartSnapshotRecord(data);
+  }
+
+  async createDivinationContext(params: {
+    ownerUserId: string;
+    chartSnapshotId: string;
+    question: string;
+    purposeKey: DivinationPurposeKey;
+    purposeCustom: string | null;
+    castAt: string;
+  }): Promise<DivinationContextRecord> {
+    const { data, error } = await this.client
+      .from('divination_context')
+      .insert({
+        owner_user_id: params.ownerUserId,
+        chart_snapshot_id: params.chartSnapshotId,
+        question: params.question,
+        purpose_key: params.purposeKey,
+        purpose_custom: params.purposeCustom,
+        cast_at: params.castAt,
+      })
+      .select('*')
+      .single();
+    this.throwIfError(error);
+    return this.toDivinationContextRecord(data);
+  }
+
+  async findDivinationContextBySnapshotId(
+    ownerUserId: string,
+    chartSnapshotId: string,
+  ): Promise<DivinationContextRecord | null> {
+    const { data, error } = await this.client
+      .from('divination_context')
+      .select('*')
+      .eq('owner_user_id', ownerUserId)
+      .eq('chart_snapshot_id', chartSnapshotId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    this.throwIfError(error);
+    return data ? this.toDivinationContextRecord(data) : null;
+  }
+
+  async findDivinationContextsByChartIds(
+    ownerUserId: string,
+    chartSnapshotIds: string[],
+  ): Promise<Record<string, DivinationContextRecord>> {
+    if (chartSnapshotIds.length === 0) {
+      return {};
+    }
+    const uniqueIds = [...new Set(chartSnapshotIds)];
+    const { data, error } = await this.client
+      .from('divination_context')
+      .select('*')
+      .eq('owner_user_id', ownerUserId)
+      .in('chart_snapshot_id', uniqueIds)
+      .order('created_at', { ascending: false });
+    this.throwIfError(error);
+
+    // Keep the latest context per snapshot (rows arrive newest-first; first wins).
+    const byChartId: Record<string, DivinationContextRecord> = {};
+    for (const row of data ?? []) {
+      const record = this.toDivinationContextRecord(row);
+      if (!byChartId[record.chartSnapshotId]) {
+        byChartId[record.chartSnapshotId] = record;
+      }
+    }
+    return byChartId;
   }
 
   async findExplanationRequestByIdempotencyKey(ownerUserId: string, idempotencyKey: string): Promise<ExplanationRequestRecord | null> {
@@ -597,6 +667,19 @@ export class SupabasePersistenceGateway {
       snapshot: row.chart_snapshot_json,
       inputHashDigest: row.input_hash_digest,
       confidenceLevel: row.confidence_level,
+      createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
+    });
+  }
+
+  private toDivinationContextRecord(row: SupabaseRow): DivinationContextRecord {
+    return divinationContextRecordSchema.parse({
+      id: row.id,
+      ownerUserId: row.owner_user_id,
+      chartSnapshotId: row.chart_snapshot_id,
+      question: row.question,
+      purposeKey: row.purpose_key,
+      purposeCustom: row.purpose_custom ?? null,
+      castAt: normalizePostgresTimestamp(row.cast_at as string | null | undefined),
       createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
     });
   }

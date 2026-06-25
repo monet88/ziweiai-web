@@ -1,10 +1,10 @@
 <script lang="ts">
-  // Route Mai Hoa Dịch Số (US-007): wrapper mỏng đặt mặc định hệ mei-hua-yi-shu.
-  import SystemChartScreen from '$lib/features/dashboard/SystemChartScreen.svelte';
+  // Route Mai Hoa Dịch Số (US-025): gieo quẻ theo thời điểm, dùng DivinationForm.
+  import DivinationScreen from '$lib/features/divination/DivinationScreen.svelte';
   import { viCopy } from '$lib/i18n/vi';
 </script>
 
-<SystemChartScreen
+<DivinationScreen
   chartSystem="mei-hua-yi-shu"
   eyebrow={viCopy.meihua.heroEyebrow}
   title={viCopy.meihua.heroTitle}

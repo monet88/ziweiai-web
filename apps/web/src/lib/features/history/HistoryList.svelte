@@ -13,8 +13,24 @@
   import { viCopy } from '$lib/i18n/vi';
   import { formatHistoryViewedAt } from '$lib/features/chart/chart-display';
   import { dedupeHistoryChartEntries } from '$lib/features/dashboard/dashboard-history';
+  import type { DivinationPurposeKey } from '@ziweiai/contracts';
 
   const auth = getAuthStore();
+
+  const purposeLabels: Record<Exclude<DivinationPurposeKey, 'custom'>, string> = {
+    career: viCopy.divination.purposeCareer,
+    love: viCopy.divination.purposeLove,
+    wealth: viCopy.divination.purposeWealth,
+    health: viCopy.divination.purposeHealth,
+    decision: viCopy.divination.purposeDecision,
+  };
+
+  function purposeLabel(purposeKey: DivinationPurposeKey, purposeCustom: string | null): string {
+    if (purposeKey === 'custom') {
+      return purposeCustom?.trim() || viCopy.divination.purposeCustom;
+    }
+    return purposeLabels[purposeKey];
+  }
 
   const history = createQuery(() => ({
     queryKey: ['history', auth.getAccessToken(), HISTORY_SCREEN_LIMIT],
@@ -32,12 +48,18 @@
   }));
 
   // Gộp view cùng lá số → mục duy nhất; nhãn hệ tiếng Việt + ngày locale vi-VN.
+  // US-025: mục gieo quẻ (divinationContext != null) hiện câu hỏi + lĩnh vực thay vì
+  // chỉ nhãn hệ, để phân biệt rõ với lá số natal.
   const chartItems = $derived(
     dedupeHistoryChartEntries(history.data?.items ?? []).map((entry) => ({
       id: entry.chartRecord.id,
       systemLabel: viCopy.chartSystem[entry.chartRecord.chartSystem],
       createdAtLabel: formatHistoryViewedAt(entry.chartRecord.createdAt),
       hasExplanation: entry.hasExplanation,
+      question: entry.divinationContext?.question ?? null,
+      purposeText: entry.divinationContext
+        ? purposeLabel(entry.divinationContext.purposeKey, entry.divinationContext.purposeCustom)
+        : null,
     })),
   );
 
@@ -75,11 +97,18 @@
     {#each chartItems as item (item.id)}
       <li>
         <a class="item" href={resolve(`/charts/${item.id}`)}>
-          <span class="item-system">{item.systemLabel}</span>
-          <span class="item-meta">
-            {item.createdAtLabel}
-            · {item.hasExplanation ? viCopy.history.savedExplanation : viCopy.history.chartOnly}
-          </span>
+          {#if item.question}
+            <span class="item-question">{item.question}</span>
+            <span class="item-meta">
+              {item.systemLabel} · {item.purposeText} · {item.createdAtLabel}
+            </span>
+          {:else}
+            <span class="item-system">{item.systemLabel}</span>
+            <span class="item-meta">
+              {item.createdAtLabel}
+              · {item.hasExplanation ? viCopy.history.savedExplanation : viCopy.history.chartOnly}
+            </span>
+          {/if}
         </a>
       </li>
     {/each}
@@ -149,6 +178,15 @@
   .item-system {
     font-size: 15px;
     font-weight: 600;
+  }
+
+  .item-question {
+    font-size: 15px;
+    font-weight: 600;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
 
   .item-meta {

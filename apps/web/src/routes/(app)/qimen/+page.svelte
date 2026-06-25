@@ -1,10 +1,10 @@
 <script lang="ts">
-  // Route Kỳ Môn Độn Giáp (US-007): wrapper mỏng đặt mặc định hệ qi-men-dun-jia.
-  import SystemChartScreen from '$lib/features/dashboard/SystemChartScreen.svelte';
+  // Route Kỳ Môn Độn Giáp (US-025): gieo quẻ theo thời điểm, dùng DivinationForm.
+  import DivinationScreen from '$lib/features/divination/DivinationScreen.svelte';
   import { viCopy } from '$lib/i18n/vi';
 </script>
 
-<SystemChartScreen
+<DivinationScreen
   chartSystem="qi-men-dun-jia"
   eyebrow={viCopy.qimen.heroEyebrow}
   title={viCopy.qimen.heroTitle}

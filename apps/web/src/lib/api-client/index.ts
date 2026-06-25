@@ -12,6 +12,7 @@ import {
   conversationDetailResponseSchema,
   createChartResponseSchema,
   createConversationResponseSchema,
+  createDivinationResponseSchema,
   createExplanationResponseSchema,
   healthResponseSchema,
   historyListResponseSchema,
@@ -34,6 +35,8 @@ import {
   type CreateConversationRequest,
   type CreateConversationResponse,
   type CreateConversationMessageRequest,
+  type CreateDivinationRequest,
+  type CreateDivinationResponse,
   type CreateExplanationRequest,
   type CreateExplanationResponse,
   type DailyFortuneResponse,
@@ -94,6 +97,18 @@ export function createChart(
   request: CreateChartRequest,
 ): Promise<CreateChartResponse> {
   return fetchJson('/charts', createChartResponseSchema, {
+    method: 'POST',
+    token,
+    body: request,
+  });
+}
+
+/** POST /divinations — Bearer. US-025: cast a time-based divination (cast=now) with a mandatory question + purpose. */
+export function createDivination(
+  token: string,
+  request: CreateDivinationRequest,
+): Promise<CreateDivinationResponse> {
+  return fetchJson('/divinations', createDivinationResponseSchema, {
     method: 'POST',
     token,
     body: request,

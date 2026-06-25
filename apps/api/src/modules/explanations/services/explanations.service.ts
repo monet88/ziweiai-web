@@ -14,6 +14,7 @@ import { buildExplanationRequestIdempotencyKey } from '../../../database/idempot
 import { buildFailedExplanationRetentionTimestamp, DEFAULT_PROMPT_STORAGE_MODE, PERSONALIZED_CACHE_SCOPE, shouldStorePrompt } from '../../../database/persistence-lifecycle';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import { ExplanationProviderRouter } from '../../../providers/ai/explanation-provider-router';
+import { resolveDivinationPurposeLabel, type DivinationInquiry } from '../../../providers/ai/divination-inquiry';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../../providers/ai/provider-errors';
 import { QuotasService } from '../../quotas/quotas.service';
 
@@ -321,6 +322,7 @@ export class ExplanationsService {
     }
 
     const explanationContext = this.buildExplanationContext(chartRecord.snapshot);
+    const divinationInquiry = await this.resolveDivinationInquiry(user.userId, input.chartSnapshotId, chartRecord.snapshot.chartSystem);
 
     try {
       await this.persistenceGateway.updateExplanationRequest({
@@ -334,6 +336,7 @@ export class ExplanationsService {
         explanationKind: input.explanationKind,
         explanationContext,
         palaceScope: input.palaceScope,
+        divinationInquiry,
       });
 
       const result = await this.persistenceGateway.createExplanationResult({
@@ -430,6 +433,28 @@ export class ExplanationsService {
       result,
       explanationContext,
     });
+  }
+
+  // US-025 (decision 0021): for the four time-based divination systems, load the
+  // stored question + purpose so the per-system prompt can target the inquiry.
+  // Other systems (natal Tu Vi, Bat Tu, Mangpai...) have no context row -> undefined.
+  private async resolveDivinationInquiry(
+    ownerUserId: string,
+    chartSnapshotId: string,
+    chartSystem: string,
+  ): Promise<DivinationInquiry | undefined> {
+    const divinationSystems = ['mei-hua-yi-shu', 'liu-yao', 'da-liu-ren', 'qi-men-dun-jia'];
+    if (!divinationSystems.includes(chartSystem)) {
+      return undefined;
+    }
+    const context = await this.persistenceGateway.findDivinationContextBySnapshotId(ownerUserId, chartSnapshotId);
+    if (!context) {
+      return undefined;
+    }
+    return {
+      question: context.question,
+      purposeLabel: resolveDivinationPurposeLabel(context.purposeKey, context.purposeCustom),
+    };
   }
 
   private buildExplanationContext(snapshot: { calculationConfidence: { reasons: string[]; visibleMessageKey: string; level: string; blocksExactReading: boolean }; chartSystem: string; ruleSource: { canonicalLibrary: { name: string; version: string } } }) {

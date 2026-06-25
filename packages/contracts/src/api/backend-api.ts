@@ -10,6 +10,8 @@ import {
   historyViewRecordSchema,
   conversationRecordSchema,
   conversationMessageRecordSchema,
+  divinationContextRecordSchema,
+  divinationPurposeKeySchema,
 } from '../persistence/persistence-records';
 import { implementedChartSystems } from '../chart/chart-system';
 
@@ -109,6 +111,51 @@ export const createChartResponseSchema = z.object({
   reusedExistingSnapshot: z.boolean(),
 });
 
+// US-025 (decision 0021): POST /divinations is limited to the four time-based
+// divination systems. Cast moment is always the server "now" (no client date),
+// so the request carries no birthInput -- only the system, the mandatory
+// question, and the purpose. Mirrors the createChartSystemSchema guard idea:
+// reject any non-divination system at the schema boundary.
+export const divinationChartSystems = [
+  'mei-hua-yi-shu',
+  'liu-yao',
+  'da-liu-ren',
+  'qi-men-dun-jia',
+] as const;
+export const divinationChartSystemSchema = z.enum(divinationChartSystems);
+
+export const createDivinationRequestSchema = z
+  .object({
+    chartSystem: divinationChartSystemSchema,
+    question: z.string().trim().min(1).max(500),
+    purposeKey: divinationPurposeKeySchema,
+    // Required (and only allowed) when purposeKey === 'custom'.
+    purposeCustom: z.string().trim().min(1).max(120).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.purposeKey === 'custom' && !value.purposeCustom) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['purposeCustom'],
+        message: 'purposeCustom is required when purposeKey is "custom".',
+      });
+    }
+    if (value.purposeKey !== 'custom' && value.purposeCustom) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['purposeCustom'],
+        message: 'purposeCustom is only allowed when purposeKey is "custom".',
+      });
+    }
+  });
+
+export const createDivinationResponseSchema = z.object({
+  snapshot: chartSnapshotSchema,
+  chartRecord: chartSnapshotRecordSchema,
+  divinationContext: divinationContextRecordSchema,
+  reusedExistingSnapshot: z.boolean(),
+});
+
 export const createExplanationRequestSchema = z.object({
   chartSnapshotId: z.uuid(),
   explanationKind: explanationKindSchema,
@@ -148,6 +195,9 @@ export const historyItemSchema = z.object({
   view: historyViewRecordSchema,
   chartRecord: chartSnapshotRecordSchema.nullable(),
   explanationResult: explanationResultRecordSchema.nullable(),
+  // US-025: present only for the four time-based divination snapshots; null for
+  // natal charts. Lets the history card show question + purpose + cast date.
+  divinationContext: divinationContextRecordSchema.nullable(),
 });
 
 export const historyListResponseSchema = z.object({
@@ -163,6 +213,9 @@ export type ProviderPreference = z.infer<typeof providerPreferenceSchema>;
 export type ApiError = z.infer<typeof apiErrorSchema>;
 export type CreateChartRequest = z.infer<typeof createChartRequestSchema>;
 export type CreateChartResponse = z.infer<typeof createChartResponseSchema>;
+export type DivinationChartSystem = (typeof divinationChartSystems)[number];
+export type CreateDivinationRequest = z.infer<typeof createDivinationRequestSchema>;
+export type CreateDivinationResponse = z.infer<typeof createDivinationResponseSchema>;
 export type CreateExplanationRequest = z.infer<typeof createExplanationRequestSchema>;
 export type CreateExplanationResponse = z.infer<typeof createExplanationResponseSchema>;
 export type CreateConversationRequest = z.infer<typeof createConversationRequestSchema>;

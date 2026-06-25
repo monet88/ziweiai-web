@@ -8,6 +8,7 @@ import {
   type ChartSnapshot,
   type QimenPalace,
 } from '@ziweiai/contracts';
+import { buildDivinationInquiryLines, type DivinationInquiry } from './divination-inquiry';
 
 // Tên cung Lạc Thư 1-9 dùng để hiển thị (Khảm/Khôn/Chấn/Tốn/Trung/Càn/Đoài/Cấn/Ly).
 const palaceLabelsVi: Record<number, string> = {
@@ -46,11 +47,20 @@ function formatPalace(palace: QimenPalace): string {
   return segments.join(' | ');
 }
 
-export function buildQimenExplanationPrompt(snapshot: ChartSnapshot, explanationKind: string): string {
+export function buildQimenExplanationPrompt(
+  snapshot: ChartSnapshot,
+  explanationKind: string,
+  inquiry?: DivinationInquiry,
+): string {
+  const inquiryLines = buildDivinationInquiryLines(
+    inquiry,
+    'Chọn dụng thần (cửa/sao/thần/can) ứng với việc được hỏi rồi xét bố cục cửu cung, Trực phù - Trực sử và cát hung của cửa để chỉ ra hướng, thời điểm nên hành động và điều cần tránh đúng theo câu hỏi.',
+  );
   if (!snapshot.qimen) {
     return [
       'Bạn là chuyên gia luận giải Kỳ Môn Độn Giáp, văn phong rõ ràng, chiến lược, hoàn toàn bằng tiếng Việt.',
       'BẮT BUỘC: không dùng ký tự chữ Hán/Trung/Nhật/Hàn trong nội dung trả lời.',
+      ...inquiryLines,
       `Mục đích luận giải: ${explanationKind}`,
       'Dữ liệu Kỳ Môn chi tiết chưa sẵn sàng, hãy chỉ viết tổng quan ngắn từ phần tóm tắt hiện có.',
       ...Object.entries(snapshot.summary).map(([label, value]) => `${label}: ${String(value)}`),
@@ -65,6 +75,7 @@ export function buildQimenExplanationPrompt(snapshot: ChartSnapshot, explanation
     'BẮT BUỘC: không dùng ký tự chữ Hán/Trung/Nhật/Hàn trong nội dung trả lời.',
     'Tập trung vào cục Âm/Dương Độn, số cục, Trực phù, Trực sử, cửa cát/hung và bố cục thần/sao trong cửu cung để gợi ý hướng đi và thời điểm hành động.',
     'Trả về Markdown khoảng 420-680 từ, giải thích kỹ và dễ hiểu cho người mới, gồm: tổng quan thế cục, cung quan trọng, cửa nên dùng, thời điểm và hướng nên đi, điều cần tránh.',
+    ...inquiryLines,
     `Mục đích luận giải: ${explanationKind}`,
     `Cục: ${translateQimenDunKey(q.dunKey)} ${q.juShu} (${translateQimenYuanKey(q.yuanKey)})`,
     `Trực phù: ${translateQimenStarKey(q.dutyChiefStarKey)}`,

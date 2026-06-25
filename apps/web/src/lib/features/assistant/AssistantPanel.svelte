@@ -27,6 +27,8 @@
   // Conversation id lives here. Seeded from the prop, then owned locally once the model creates one.
   // The parent (ChartDetailScreen) is remounted via {#key chartId} on every chart switch, so there is
   // no stale-prop case to reconcile and NO $effect write-back is needed (unidirectional flow, §3).
+  // Intentional one-time seed; remount handles prop changes.
+  // svelte-ignore state_referenced_locally
   let localConversationId = $state<string | null>(initialConversationId);
 
   const assistant = createAssistantModel({

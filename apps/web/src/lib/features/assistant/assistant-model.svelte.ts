@@ -141,12 +141,14 @@ export function createAssistantModel(options: AssistantModelOptions) {
         await queryClient.invalidateQueries({ queryKey: ['conversation-detail', conversationId] });
         return true;
     } catch (err) {
-      // Remove the placeholder assistant ONLY if it is still streaming. If the stream already emitted
+      // Roll back the optimistic turn ONLY if generation failed before completion (placeholder still
+      // streaming): drop BOTH the user message and the assistant placeholder so a retry does not
+      // duplicate the prompt or leave it orphaned without an answer. If the stream already emitted
       // `done` (placeholder replaced by the real message, isStreaming=false) a late error — e.g. a
-      // network close after completion — must not discard the completed answer.
+      // network close after completion — must NOT discard the completed answer, so leave it intact.
       const last = messages[messages.length - 1];
       if (last?.role === 'assistant' && last.isStreaming) {
-        messages = messages.slice(0, -1);
+        messages = messages.slice(0, -2);
       }
       lastError = err instanceof Error ? err.message : viCopy.explanation.statusFailed;
       // Do NOT rethrow: callers are UI event handlers, and an unawaited rejection would surface as an

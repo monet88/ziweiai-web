@@ -103,6 +103,9 @@ export class ConversationsController {
       // Naive chunking to satisfy stream contract (word-by-word-ish). Real streaming can replace this later.
       const words = fullText.split(/(\s+)/);
       for (const w of words) {
+        // Stop immediately if the client disconnected mid-stream: writing to a destroyed socket
+        // throws and wastes the artificial per-chunk delay below.
+        if (res.destroyed) break;
         if (!w) continue;
         send({ type: 'chunk', delta: w });
         // small delay to make stream observable in dev; harmless in prod

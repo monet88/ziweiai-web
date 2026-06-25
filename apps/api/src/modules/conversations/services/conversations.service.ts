@@ -10,6 +10,7 @@ import {
   type CreateConversationRequest,
   type CreateConversationResponse,
 } from '@ziweiai/contracts';
+import { assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { apiEnv } from '../../../config/env';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
@@ -66,6 +67,12 @@ export class ConversationsService {
     if (!chartRecord) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số liên kết.');
     }
+
+    // Gate AI entitlement (402) BEFORE quota — mirrors every other LLM-backed path (explanations,
+    // pairings, mbti, vision, annual). With AI_CONVERSATION_ENABLED=true but
+    // AI_EXPLANATION_FREE_FOR_ALL=false, conversations must not bypass the shared paywall and burn
+    // provider tokens. Shared guard (decision 0010) keeps one policy source for all AI text routes.
+    assertCanUseAiExplanation(this.logger);
 
     await this.assertCanCreateConversationMessage(user.userId, ipAddress, user.email === null);
 

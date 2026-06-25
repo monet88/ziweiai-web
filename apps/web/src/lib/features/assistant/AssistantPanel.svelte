@@ -24,19 +24,10 @@
   const auth = getAuthStore();
   const queryClient = useQueryClient();
 
-  // Capture initial value once; live value is managed via localConversationId + getters passed to the model.
-  // The Svelte 5 heuristic warns on initial capture; behavior is intentional (getter below reads live state).
+  // Conversation id lives here. Seeded from the prop, then owned locally once the model creates one.
+  // The parent (ChartDetailScreen) is remounted via {#key chartId} on every chart switch, so there is
+  // no stale-prop case to reconcile and NO $effect write-back is needed (unidirectional flow, §3).
   let localConversationId = $state<string | null>(initialConversationId);
-
-  // Keep local state in sync when the PARENT switches to a different conversation/chart. Guard against
-  // clobbering an id the model just created: the parent does not feed that id back through the prop, so
-  // only adopt a non-null prop change (parent explicitly selected another conversation). A null prop is
-  // ignored to preserve a model-created id.
-  $effect(() => {
-    if (initialConversationId !== null && initialConversationId !== localConversationId) {
-      localConversationId = initialConversationId;
-    }
-  });
 
   const assistant = createAssistantModel({
     auth,

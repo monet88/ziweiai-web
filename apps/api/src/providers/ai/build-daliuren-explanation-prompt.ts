@@ -8,6 +8,7 @@ import {
   type ChartSnapshot,
   type DaliurenChart,
 } from '@ziweiai/contracts';
+import { buildDivinationInquiryLines, type DivinationInquiry } from './divination-inquiry';
 
 function formatCellLine(cell: DaliurenChart['cells'][number]): string {
   const stem = cell.stemKey ? translateBaziKey(cell.stemKey) : 'không độn can';
@@ -30,11 +31,20 @@ function formatTransmissionLine(transmission: DaliurenChart['threeTransmissions'
   return `${translateDaliurenTransmissionSlot(transmission.slot)}: ${translateBaziKey(transmission.branchKey)}${dunGan} | ${translateDaliurenSpiritKey(transmission.spiritKey)} | ${translateLiuyaoSixKinKey(transmission.sixKinKey)}`;
 }
 
-export function buildDaliurenExplanationPrompt(snapshot: ChartSnapshot, explanationKind: string): string {
+export function buildDaliurenExplanationPrompt(
+  snapshot: ChartSnapshot,
+  explanationKind: string,
+  inquiry?: DivinationInquiry,
+): string {
+  const inquiryLines = buildDivinationInquiryLines(
+    inquiry,
+    'Lấy nhật can làm người hỏi; xét khóa 1, nguyệt tướng - thời chi và diễn biến tam truyền (sơ → trung → mạt) theo đúng việc được hỏi, dùng lục thân tương tác với nhật can để định cát hung và thời điểm ứng.',
+  );
   if (!snapshot.daliuren) {
     return [
       'Bạn là chuyên gia luận giải Đại Lục Nhâm, văn phong trang trọng và hoàn toàn bằng tiếng Việt.',
       'BẮT BUỘC: không dùng ký tự chữ Hán/Trung/Nhật/Hàn trong nội dung trả lời.',
+      ...inquiryLines,
       `Mục đích luận giải: ${explanationKind}`,
       'Dữ liệu Đại Lục Nhâm chi tiết chưa sẵn sàng, hãy chỉ viết tổng quan ngắn dựa vào summary hiện có.',
       ...Object.entries(snapshot.summary).map(([label, value]) => `${label}: ${String(value)}`),
@@ -48,6 +58,7 @@ export function buildDaliurenExplanationPrompt(snapshot: ChartSnapshot, explanat
     'BẮT BUỘC: không dùng ký tự chữ Hán/Trung/Nhật/Hàn trong nội dung trả lời.',
     'Tập trung vào: kiểu thiên địa bàn (như Phục Ngâm, Phản Ngâm, Tam Hợp...), nguyệt tướng - thời chi, ý nghĩa của bốn khóa (đặc biệt khóa 1), diễn biến tam truyền (sơ → trung → mạt) và tương tác lục thân với nhật can.',
     'Trả về Markdown khoảng 420-680 từ, giải thích kỹ và dễ hiểu cho người mới, gồm: tổng quan thế cục, phân tích bốn khóa, diễn biến tam truyền, gợi ý ứng xử.',
+    ...inquiryLines,
     `Mục đích luận giải: ${explanationKind}`,
     `Kiểu thiên địa bàn: ${translateDaliurenBoardTypeKey(d.boardTypeKey)}`,
     `Nguyệt tướng: ${translateBaziKey(d.monthGeneralBranchKey)} ${translateDaliurenMonthGeneralKey(d.monthGeneralKey)}`,

@@ -46,6 +46,13 @@ export interface ExplanationPromptPayload {
     base64: string;
     mimeType: string;
   };
+  // US-025 (decision 0021): for the four time-based divination systems, the
+  // user's question + purpose are threaded here so each per-system prompt builder
+  // can frame the inquiry in its own terms. Absent for natal/other systems.
+  divinationInquiry?: {
+    question: string;
+    purposeLabel: string;
+  };
 }
 
 export interface AiExplanationProvider {
@@ -210,19 +217,19 @@ export function buildExplanationPrompt(payload: ExplanationPromptPayload): strin
   }
 
   if (payload.chartSnapshot.chartSystem === 'mei-hua-yi-shu') {
-    return buildMeihuaExplanationPrompt(payload.chartSnapshot, payload.explanationKind);
+    return buildMeihuaExplanationPrompt(payload.chartSnapshot, payload.explanationKind, payload.divinationInquiry);
   }
 
   if (payload.chartSnapshot.chartSystem === 'liu-yao') {
-    return buildLiuyaoExplanationPrompt(payload.chartSnapshot, payload.explanationKind);
+    return buildLiuyaoExplanationPrompt(payload.chartSnapshot, payload.explanationKind, payload.divinationInquiry);
   }
 
   if (payload.chartSnapshot.chartSystem === 'da-liu-ren') {
-    return buildDaliurenExplanationPrompt(payload.chartSnapshot, payload.explanationKind);
+    return buildDaliurenExplanationPrompt(payload.chartSnapshot, payload.explanationKind, payload.divinationInquiry);
   }
 
   if (payload.chartSnapshot.chartSystem === 'qi-men-dun-jia') {
-    return buildQimenExplanationPrompt(payload.chartSnapshot, payload.explanationKind);
+    return buildQimenExplanationPrompt(payload.chartSnapshot, payload.explanationKind, payload.divinationInquiry);
   }
 
   // Luận giải theo từng cung/vận hạn (Phase 5) chỉ áp dụng cho Tử Vi; các hệ khác

@@ -11,10 +11,11 @@ export class HistoryService {
     const chartSnapshotIds = views.flatMap((view) => (view.chartSnapshotId ? [view.chartSnapshotId] : []));
     const directExplanationResultIds = views.flatMap((view) => (view.explanationResultId ? [view.explanationResultId] : []));
 
-    const [chartRecordsById, directExplanationResultsById, latestExplanationResultsByChartId] = await Promise.all([
+    const [chartRecordsById, directExplanationResultsById, latestExplanationResultsByChartId, divinationContextsByChartId] = await Promise.all([
       this.persistenceGateway.findChartSnapshotsByIds(userId, chartSnapshotIds),
       this.persistenceGateway.findExplanationResultsByIds(userId, directExplanationResultIds),
       this.persistenceGateway.findLatestExplanationResultsForCharts(userId, chartSnapshotIds),
+      this.persistenceGateway.findDivinationContextsByChartIds(userId, chartSnapshotIds),
     ]);
 
     const items = views.map((view) => {
@@ -25,6 +26,7 @@ export class HistoryService {
         view,
         chartRecord: view.chartSnapshotId ? chartRecordsById[view.chartSnapshotId] ?? null : null,
         explanationResult: directExplanationResult ?? latestExplanationResult,
+        divinationContext: view.chartSnapshotId ? divinationContextsByChartId[view.chartSnapshotId] ?? null : null,
       };
     });
 

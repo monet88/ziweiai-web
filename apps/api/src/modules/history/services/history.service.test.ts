@@ -37,6 +37,7 @@ function createGateway(overrides: Partial<Record<keyof SupabasePersistenceGatewa
     findChartSnapshotsByIds: vi.fn(async () => ({} as Record<string, ChartSnapshotRecord>)),
     findExplanationResultsByIds: vi.fn(async () => ({} as Record<string, ExplanationResultRecord>)),
     findLatestExplanationResultsForCharts: vi.fn(async () => ({} as Record<string, ExplanationResultRecord>)),
+    findDivinationContextsByChartIds: vi.fn(async () => ({} as Record<string, unknown>)),
     findChartSnapshotById: vi.fn(async () => null as ChartSnapshotRecord | null),
     findExplanationResultById: vi.fn(async () => null as ExplanationResultRecord | null),
     listExplanationResultsForChart: vi.fn(async () => [] as ExplanationResultRecord[]),

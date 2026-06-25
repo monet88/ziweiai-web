@@ -13,10 +13,12 @@ import type { HistoryListResponse } from '@ziweiai/contracts';
 
 type HistoryItem = HistoryListResponse['items'][number];
 type ChartRecord = NonNullable<HistoryItem['chartRecord']>;
+type DivinationContext = NonNullable<HistoryItem['divinationContext']>;
 
 export interface DashboardChartHistoryEntry {
   chartRecord: ChartRecord;
   hasExplanation: boolean;
+  divinationContext: DivinationContext | null;
 }
 
 /**
@@ -41,7 +43,11 @@ export function dedupeHistoryChartEntries(
       continue;
     }
     indexByChartId[record.id] = entries.length;
-    entries.push({ chartRecord: record, hasExplanation: item.explanationResult !== null });
+    entries.push({
+      chartRecord: record,
+      hasExplanation: item.explanationResult !== null,
+      divinationContext: item.divinationContext ?? null,
+    });
   }
 
   return entries;

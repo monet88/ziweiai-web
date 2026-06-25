@@ -102,6 +102,31 @@ export const historyViewRecordSchema = z.object({
   viewedAt: z.iso.datetime(),
 });
 
+// US-025 (decision 0021): the four time-based divination systems are cast "now"
+// for a specific question. The snapshot stays pure engine output; the question +
+// purpose live in this separate context record linked to the snapshot, so
+// history/sharing can show them and explanations can target the inquiry.
+export const divinationPurposeKeySchema = z.enum([
+  'career',
+  'love',
+  'wealth',
+  'health',
+  'decision',
+  'custom',
+]);
+
+export const divinationContextRecordSchema = z.object({
+  id: z.uuid(),
+  ownerUserId: z.uuid(),
+  chartSnapshotId: z.uuid(),
+  question: z.string().trim().min(1),
+  purposeKey: divinationPurposeKeySchema,
+  // Free-text label only when purposeKey === 'custom'; null otherwise.
+  purposeCustom: z.string().trim().min(1).nullable(),
+  castAt: z.iso.datetime(),
+  createdAt: z.iso.datetime(),
+});
+
 export type ExplanationRequestState = z.infer<typeof explanationRequestStateSchema>;
 export type PromptStorageMode = z.infer<typeof promptStorageModeSchema>;
 export type CacheScope = z.infer<typeof cacheScopeSchema>;
@@ -115,3 +140,5 @@ export type ExplanationResultRecord = z.infer<typeof explanationResultRecordSche
 export type ConversationRecord = z.infer<typeof conversationRecordSchema>;
 export type ConversationMessageRecord = z.infer<typeof conversationMessageRecordSchema>;
 export type HistoryViewRecord = z.infer<typeof historyViewRecordSchema>;
+export type DivinationPurposeKey = z.infer<typeof divinationPurposeKeySchema>;
+export type DivinationContextRecord = z.infer<typeof divinationContextRecordSchema>;

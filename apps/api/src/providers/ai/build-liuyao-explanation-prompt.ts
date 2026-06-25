@@ -9,6 +9,7 @@ import {
   translateLiuyaoSixSpiritKey,
   type ChartSnapshot,
 } from '@ziweiai/contracts';
+import { buildDivinationInquiryLines, type DivinationInquiry } from './divination-inquiry';
 
 function formatLiuyaoLine(
   line: NonNullable<ChartSnapshot['liuyao']>['baseHexagram']['lines'][number],
@@ -25,11 +26,20 @@ function formatLiuyaoLine(
   return `Hào ${line.position}: ${value} ${state}${moving} — ${role}, ${sixKin}, ${sixSpirit}, ${branch} (${element})${hidden}, ${line.naYin}`;
 }
 
-export function buildLiuyaoExplanationPrompt(snapshot: ChartSnapshot, explanationKind: string): string {
+export function buildLiuyaoExplanationPrompt(
+  snapshot: ChartSnapshot,
+  explanationKind: string,
+  inquiry?: DivinationInquiry,
+): string {
+  const inquiryLines = buildDivinationInquiryLines(
+    inquiry,
+    'Lấy hào Thế làm người hỏi, hào Ứng làm đối tượng/việc; chọn dụng thần theo lục thân ứng với câu hỏi rồi xét vượng suy, sinh khắc, hào động và quẻ biến để đoán thành/bại và ứng kỳ.',
+  );
   if (!snapshot.liuyao) {
     return [
       'Bạn là chuyên gia luận giải Lục Hào, văn phong thực tế, chi tiết từng hào và hoàn toàn bằng tiếng Việt.',
       'BẮT BUỘC: không dùng ký tự chữ Hán/Trung/Nhật/Hàn trong nội dung trả lời.',
+      ...inquiryLines,
       `Mục đích luận giải: ${explanationKind}`,
       'Dữ liệu Lục Hào chi tiết chưa sẵn sàng, hãy chỉ viết tổng quan ngắn từ phần tóm tắt hiện có.',
       ...Object.entries(snapshot.summary).map(([label, value]) => `${label}: ${String(value)}`),
@@ -48,6 +58,7 @@ export function buildLiuyaoExplanationPrompt(snapshot: ChartSnapshot, explanatio
     'BẮT BUỘC: không dùng ký tự chữ Hán/Trung/Nhật/Hàn trong nội dung trả lời.',
     'Tập trung vào quẻ gốc, quẻ biến, hào động, thế/ứng, lục thân, lục thần, nạp âm và phục thần để suy diễn tình thế và hướng xử lý.',
     'Trả về Markdown khoảng 400-650 từ, giải thích kỹ và dễ hiểu cho người mới, gồm: tổng quan thế cục, phân tích quẻ gốc & biến, các hào then chốt, gợi ý hành động cụ thể.',
+    ...inquiryLines,
     `Mục đích luận giải: ${explanationKind}`,
     `Phương pháp: ${translateLiuyaoMethodKey(l.method)}`,
     `Hào động: ${moving}`,

@@ -4,6 +4,7 @@ import { chartSystemSchema } from '../chart/chart-system';
 import {
   apiErrorCodeSchema,
   createChartRequestSchema,
+  createDivinationRequestSchema,
   createExplanationRequestSchema,
   createConversationMessageRequestSchema,
   createConversationRequestSchema,
@@ -210,5 +211,49 @@ describe('backend API contracts', () => {
     });
 
     expect(payload.messages).toHaveLength(0);
+  });
+
+  it('accepts a divination payload and rejects non-divination systems', () => {
+    const ok = createDivinationRequestSchema.parse({
+      chartSystem: 'mei-hua-yi-shu',
+      question: 'Toi co nen doi viec khong?',
+      purposeKey: 'career',
+    });
+    expect(ok.chartSystem).toBe('mei-hua-yi-shu');
+
+    expect(() =>
+      createDivinationRequestSchema.parse({
+        chartSystem: 'ba-zi',
+        question: 'x',
+        purposeKey: 'career',
+      }),
+    ).toThrow();
+  });
+
+  it('requires purposeCustom only when purposeKey is custom', () => {
+    expect(() =>
+      createDivinationRequestSchema.parse({
+        chartSystem: 'liu-yao',
+        question: 'Viec nay co thanh khong?',
+        purposeKey: 'custom',
+      }),
+    ).toThrow();
+
+    expect(() =>
+      createDivinationRequestSchema.parse({
+        chartSystem: 'liu-yao',
+        question: 'Viec nay co thanh khong?',
+        purposeKey: 'love',
+        purposeCustom: 'thua',
+      }),
+    ).toThrow();
+
+    const ok = createDivinationRequestSchema.parse({
+      chartSystem: 'liu-yao',
+      question: 'Viec nay co thanh khong?',
+      purposeKey: 'custom',
+      purposeCustom: 'Mua nha',
+    });
+    expect(ok.purposeCustom).toBe('Mua nha');
   });
 });

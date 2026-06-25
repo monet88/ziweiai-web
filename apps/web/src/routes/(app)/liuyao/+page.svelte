@@ -1,10 +1,10 @@
 <script lang="ts">
-  // Route Lục Hào (US-007): wrapper mỏng đặt mặc định hệ liu-yao.
-  import SystemChartScreen from '$lib/features/dashboard/SystemChartScreen.svelte';
+  // Route Lục Hào (US-025): gieo quẻ theo thời điểm, dùng DivinationForm.
+  import DivinationScreen from '$lib/features/divination/DivinationScreen.svelte';
   import { viCopy } from '$lib/i18n/vi';
 </script>
 
-<SystemChartScreen
+<DivinationScreen
   chartSystem="liu-yao"
   eyebrow={viCopy.liuyao.heroEyebrow}
   title={viCopy.liuyao.heroTitle}

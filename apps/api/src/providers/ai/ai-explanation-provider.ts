@@ -7,6 +7,7 @@ import { buildLiuyaoExplanationPrompt } from './build-liuyao-explanation-prompt'
 import { buildDaliurenExplanationPrompt } from './build-daliuren-explanation-prompt';
 import { buildQimenExplanationPrompt } from './build-qimen-explanation-prompt';
 import { buildPalaceExplanationPrompt } from './build-palace-explanation-prompt';
+import type { DivinationInquiry } from './divination-inquiry';
 import { EXPLANATION_SYSTEM_PROMPT } from './explanation-system-prompt';
 
 export { EXPLANATION_SYSTEM_PROMPT };
@@ -49,10 +50,7 @@ export interface ExplanationPromptPayload {
   // US-025 (decision 0021): for the four time-based divination systems, the
   // user's question + purpose are threaded here so each per-system prompt builder
   // can frame the inquiry in its own terms. Absent for natal/other systems.
-  divinationInquiry?: {
-    question: string;
-    purposeLabel: string;
-  };
+  divinationInquiry?: DivinationInquiry;
 }
 
 export interface AiExplanationProvider {
@@ -75,10 +73,7 @@ export interface ConversationPromptPayload {
   // question + purpose are threaded so the conversation prompt targets the original
   // inquiry even when a quick prompt or follow-up does not restate it. Absent for
   // natal/other systems.
-  divinationInquiry?: {
-    question: string;
-    purposeLabel: string;
-  };
+  divinationInquiry?: DivinationInquiry;
 }
 
 export interface ConversationProviderResult {

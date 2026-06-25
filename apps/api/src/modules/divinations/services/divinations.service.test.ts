@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import type { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import type { QuotasService } from '../../quotas/quotas.service';
+import { DailyQuotaExceededError } from '../../quotas/quota-errors';
 import { DivinationsService } from './divinations.service';
 
 function expectApiError(error: unknown, status: HttpStatus, code: string): void {
@@ -108,8 +109,8 @@ describe('DivinationsService', () => {
     expect(meihua?.method).toBe('number-based');
   });
 
-  it('maps quota errors to 429 RATE_LIMITED', async () => {
-    quotasService.assertCanCreateChart = vi.fn().mockRejectedValue(new Error('Đã vượt hạn mức.'));
+  it('maps typed quota errors to 429 RATE_LIMITED', async () => {
+    quotasService.assertCanCreateChart = vi.fn().mockRejectedValue(new DailyQuotaExceededError('Đã vượt hạn mức.'));
     service = new DivinationsService(
       persistenceGateway as SupabasePersistenceGateway,
       quotasService as QuotasService,
@@ -125,6 +126,24 @@ describe('DivinationsService', () => {
     } catch (error) {
       expectApiError(error, HttpStatus.TOO_MANY_REQUESTS, 'RATE_LIMITED');
     }
+    expect(persistenceGateway.createChartSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('propagates unexpected (non-quota) errors instead of masking them as 429', async () => {
+    const dbError = new Error('connection reset while counting quota');
+    quotasService.assertCanCreateChart = vi.fn().mockRejectedValue(dbError);
+    service = new DivinationsService(
+      persistenceGateway as SupabasePersistenceGateway,
+      quotasService as QuotasService,
+    );
+
+    await expect(
+      service.createDivination(USER_ID, '127.0.0.1', {
+        chartSystem: 'qi-men-dun-jia',
+        question: 'Chuyến đi sắp tới có thuận không?',
+        purposeKey: 'decision',
+      }),
+    ).rejects.toBe(dbError);
     expect(persistenceGateway.createChartSnapshot).not.toHaveBeenCalled();
   });
 });

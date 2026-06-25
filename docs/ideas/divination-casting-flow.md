@@ -64,8 +64,10 @@ In:
 
 Out (separate follow-up):
 
-- Manual hexagram casting by numbers / coin toss (Mai Hoa + Luc Hao only; needs
-  engine + contract extension). Tracked as a later story.
+- Manual number / line casting (Mai Hoa two numbers + Luc Hao six line states)
+  was delivered as US-026 (decision 0022); it is no longer a follow-up. What
+  remains out is the coin-toss animation UI for Luc Hao: the contract already
+  accepts the resulting line states, so this is a presentation-only follow-up.
 
 ## Not Doing (and Why)
 

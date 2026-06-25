@@ -57,7 +57,17 @@ Mapping đầy đủ: `SPEC.md` Part A8.
 
 ## API backend
 
-5 endpoint: `GET /health` (public), `POST /charts`, `GET /charts/:id`, `POST /explanations`, `GET /history?limit=N` (đều cần Bearer). Mọi response UI dùng phải `parse()` bằng schema từ `@ziweiai/contracts` (tên camelCase: `historyListResponseSchema`, `chartDetailResponseSchema`, ...) — web không tự định nghĩa DTO. Token = `session.access_token` gửi qua header `Authorization: Bearer`. Chi tiết: `docs/product/api-contract.md`.
+`GET /health` + `GET /features` là public; phần còn lại đều cần Bearer, gom theo domain:
+
+| Nhóm | Endpoint |
+|---|---|
+| Lá số Tử Vi | `POST /charts`, `GET /charts/:id`, `POST /charts/:id/horoscope` |
+| Vận hạn | `GET /charts/:id/daily`, `GET /charts/:id/monthly`, `POST /charts/:id/annual-report` |
+| Luận giải + lịch sử | `POST /explanations`, `GET /history?limit=N` |
+| Trợ lý AI hội thoại | `POST /conversations`, `GET /conversations`, `GET /conversations/:id`, `POST /conversations/:id/messages`, `POST /conversations/:id/messages/stream` |
+| Các hệ thuật số mở rộng | `POST /divinations`, `POST /draws/tarot`, `POST /vision/face`, `POST /vision/palm`, `POST /quizzes/mbti`, `POST /pairings` |
+
+Mọi response UI dùng phải `parse()` bằng schema từ `@ziweiai/contracts` (tên camelCase: `historyListResponseSchema`, `chartDetailResponseSchema`, ...) — web không tự định nghĩa DTO. Token = `session.access_token` gửi qua header `Authorization: Bearer`. Chi tiết: `docs/product/api-contract.md`.
 
 ## Cấu hình env
 
@@ -89,9 +99,11 @@ Chạy từ repo root.
 
 ## Trạng thái
 
-Đã hoàn thành 8 phase (story US-001..US-007): scaffold foundation → auth + route guard → logic thuần + i18n + design tokens → UI primitives → dashboard + birth form → chi tiết lá số Tử Vi + luận giải → các hệ thuật số khác + lịch sử.
+Nền tảng 8 phase đầu (US-001..US-007) đã xong: scaffold → auth + route guard → logic thuần + i18n + design tokens → UI primitives → dashboard + birth form → chi tiết lá số Tử Vi + luận giải → các hệ thuật số khác + lịch sử.
 
-Xem proof status: `scripts/bin/harness-cli.exe query matrix`.
+Sau đó tiếp tục mở rộng (US-008 trở đi): lá số Tử Vi trực quan + đường nối tam phương tứ chính, tô màu sao, highlight đa màu vận hạn, panel vận hạn (đại vận/lưu niên/lưu nguyệt/lưu nhật); quota anon qua Redis/Upstash; khung 6 hệ luận giải mở rộng (Hợp Hôn, Manh Phái, Tarot, MBTI, Xem Tướng, Xem Tay) + trợ lý AI hội thoại multi-turn; ví XU + ledger + thanh toán VietQR; re-theme Notion paper-calm; flow gieo quẻ (Lục Hào / Mai Hoa). Mặc định AI provider là **openai-compat**, fallback **deepseek**.
+
+Xem proof status từng story: `scripts/bin/harness-cli.exe query matrix`.
 
 ## Quy trình harness
 

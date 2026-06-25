@@ -114,4 +114,42 @@ describe('buildConversationPrompt', () => {
     expect(prompt).toContain('Tôi nên chú ý điều gì trong công việc?');
     expect(HAN_TEXT_PATTERN.test(prompt)).toBe(false);
   });
+
+  it('threads the stored divination question + purpose into the chart prompt', () => {
+    // US-025: a quick prompt / follow-up that does not restate the original question must still
+    // carry the stored inquiry so the model answers the actual question, not a generic reading.
+    const meihuaSnapshot = {
+      ...chartSnapshot,
+      chartSystem: 'mei-hua-yi-shu',
+      summary: { 'Tổng quan': 'Quẻ mẫu cho kiểm thử' },
+    } as ChartSnapshot;
+
+    const prompt = buildConversationPrompt({
+      chartSnapshot: meihuaSnapshot,
+      explanationContext: { ...explanationContext, chartSystem: 'mei-hua-yi-shu' },
+      messages: [],
+      userMessage: 'Tổng quan', // quick prompt — does NOT restate the question
+      quickPromptKey: 'career',
+      divinationInquiry: {
+        question: 'Tháng tới tôi có nên nhận lời mời công việc mới không?',
+        purposeLabel: 'Sự nghiệp - công việc',
+      },
+    });
+
+    expect(prompt).toContain('Tháng tới tôi có nên nhận lời mời công việc mới không?');
+    expect(prompt).toContain('Sự nghiệp - công việc');
+    expect(prompt).toContain('NGƯỜI GIEO ĐÃ NÊU MỘT CÂU HỎI CỤ THỂ');
+    expect(HAN_TEXT_PATTERN.test(prompt)).toBe(false);
+  });
+
+  it('omits the divination inquiry block for natal charts (no inquiry)', () => {
+    const prompt = buildConversationPrompt({
+      chartSnapshot,
+      explanationContext,
+      messages: [],
+      userMessage: 'Xin chào',
+    });
+
+    expect(prompt).not.toContain('NGƯỜI GIEO ĐÃ NÊU MỘT CÂU HỎI CỤ THỂ');
+  });
 });

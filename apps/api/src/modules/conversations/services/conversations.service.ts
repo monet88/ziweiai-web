@@ -15,6 +15,7 @@ import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { apiEnv } from '../../../config/env';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import { ConversationProviderRouter } from '../../../providers/ai/conversation-provider-router';
+import { resolveDivinationInquiry } from '../../../providers/ai/divination-inquiry';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../../providers/ai/provider-errors';
 import { DailyQuotaExceededError, RateLimitWindowError } from '../../quotas/quota-errors';
 import { resolveQuickPrompt } from '../../../providers/ai/quick-prompts';
@@ -108,6 +109,15 @@ export class ConversationsService {
     });
 
     const explanationContext = this.buildExplanationContext(chartRecord.snapshot);
+    // US-025 (decision 0021): for the four time-based divination charts, load the stored
+    // question + purpose so the conversation prompt targets the original inquiry even when
+    // a quick prompt / follow-up does not restate it. Undefined for natal/other systems.
+    const divinationInquiry = await resolveDivinationInquiry(
+      this.persistenceGateway,
+      user.userId,
+      conversation.chartSnapshotId,
+      chartRecord.snapshot.chartSystem,
+    );
 
     this.logger.log('Conversation generation started', {
       userId: user.userId,
@@ -123,6 +133,7 @@ export class ConversationsService {
         messages: previousMessages,
         userMessage: userContent,
         quickPromptKey: input.quickPromptKey,
+        divinationInquiry,
       });
 
       const assistantMessage = await this.persistenceGateway.createConversationMessage({

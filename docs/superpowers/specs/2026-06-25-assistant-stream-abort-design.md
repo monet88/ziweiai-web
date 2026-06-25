@@ -2,7 +2,17 @@
 
 Date: 2026-06-25
 Story context: US-018 (multi-turn AI assistant + SSE), PR #16 follow-up
-Status: approved (brainstorming), pending implementation plan
+Status: DEFERRED (idea-refine) -> harness backlog #28. Not implementing now.
+
+> Decision (2026-06-25, idea-refine): under the current fake-chunk backend (full text
+> is generated AND persisted server-side before any chunk is sent, ~1-2s stream window),
+> client-side abort has near-zero value today: aborting saves no provider cost (already
+> spent), loses no data (already persisted), and writing into an unmounted Svelte 5 model
+> is harmless. All three parts (abort, timeout, retry) are deferred and bundled to activate
+> together when real provider streaming lands. See backlog #28. This document is retained
+> as the design for that future work. Implementation note for then: the AbortError check
+> MUST sit BEFORE the optimistic-rollback branch in the model catch, or abort will delete
+> the chat turn — cover it with a test.
 
 ## Problem
 

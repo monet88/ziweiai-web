@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import type { LiuyaoLineStateKey } from '@ziweiai/contracts';
+import { buildNumberBasedNumbers } from './adapters/meihua-maps';
 import { IztroChartAdapter } from './adapters/iztro-chart-adapter';
 import { DaliurenAdapter } from './adapters/daliuren-adapter';
 import { LiuyaoAdapter } from './adapters/liuyao-adapter';
@@ -274,6 +276,62 @@ describe('runtime adapters', () => {
     expect(snapshot.summary.relation).not.toMatch(CJK_TEXT_PATTERN);
   });
 
+  it('builds number-based Mai Hoa numbers with mod-8 / mod-6 wrap (US-026)', () => {
+    // Plain inputs: upper/lower < 8, sum < 6.
+    expect(buildNumberBasedNumbers({ upperNumber: 7, lowerNumber: 3 })).toEqual({
+      topNumber: 7,
+      bottomNumber: 3,
+      movingLine: 4, // (7 + 3) % 6
+    });
+    // Edge: multiples wrap to 8 (not 0) for the trigram, and a sum that is a
+    // multiple of 6 wraps to 6 (not 0) for the moving line.
+    expect(buildNumberBasedNumbers({ upperNumber: 8, lowerNumber: 16 })).toEqual({
+      topNumber: 8, // 8 % 8 -> 0 -> 8
+      bottomNumber: 8, // 16 % 8 -> 0 -> 8
+      movingLine: 6, // (8 + 16) % 6 -> 0 -> 6
+    });
+    // Larger numbers fold into the 1-8 / 1-6 ranges.
+    expect(buildNumberBasedNumbers({ upperNumber: 10, lowerNumber: 5 })).toEqual({
+      topNumber: 2, // 10 % 8
+      bottomNumber: 5,
+      movingLine: 3, // (10 + 5) % 6
+    });
+  });
+
+  it('casts a number-based Mai Hoa hexagram from two numbers (US-026)', async () => {
+    const adapter = new MeiHuaAdapter();
+    const snapshot = await adapter.calculateChart(
+      {
+        calendar: 'gregorian',
+        date: { year: 2026, month: 6, day: 12, isLeapMonth: null },
+        time: { hour: 9, minute: 15, isUnknown: false },
+        sexOrGenderForChart: 'female',
+        place: {
+          label: 'Manual entry',
+          manual: { latitude: 10.8231, longitude: 106.6297, timezone: 'Asia/Ho_Chi_Minh' },
+        },
+        locale: 'vi-VN',
+        source: 'test-fixture',
+      },
+      { meihuaManual: { upperNumber: 7, lowerNumber: 3 } },
+    );
+
+    expect(snapshot.chartSystem).toBe('mei-hua-yi-shu');
+    expect(snapshot.meihua?.method).toBe('number-based');
+    // moving line = (7 + 3) % 6 = 4 — independent of the cast-now date/time.
+    expect(snapshot.meihua?.movingLine).toBe(4);
+    const mainLines = snapshot.meihua?.mainHexagram.lines;
+    expect(mainLines).toHaveLength(6);
+    const movingMain = mainLines?.filter((line) => line.isMoving);
+    expect(movingMain).toHaveLength(1);
+    expect(movingMain?.[0]?.position).toBe(4);
+    // The changed hexagram flips exactly the moving line at the same position.
+    const movingChanged = snapshot.meihua?.changedHexagram.lines.filter((line) => line.isMoving);
+    expect(movingChanged).toHaveLength(1);
+    expect(movingChanged?.[0]?.position).toBe(4);
+    expect(snapshot.meihua?.nuclearHexagram.lines.every((line) => !line.isMoving)).toBe(true);
+  });
+
   it('produces a structured Liuyao snapshot with line-level metadata via xuanshu bridge', async () => {
     const adapter = new LiuyaoAdapter();
     const snapshot = await adapter.calculateChart({
@@ -310,6 +368,53 @@ describe('runtime adapters', () => {
     }
     expect(snapshot.summary.baseHexagram).not.toMatch(CJK_TEXT_PATTERN);
     expect(snapshot.summary.changedHexagram).not.toMatch(CJK_TEXT_PATTERN);
+  });
+
+  it('casts a manual Liuyao hexagram from 6 line states bottom-to-top (US-026)', async () => {
+    const adapter = new LiuyaoAdapter();
+    // Line states bottom-to-top (position 1 = bottom). Moving lines (oldYang/oldYin)
+    // sit at positions 1 and 5; the rest are stable. This pins BOTH the bottom-to-top
+    // ordering and the old/young encoding of LIUYAO_STATE_TO_MANUAL_CODE: a reversed
+    // order would surface moving lines at [2, 6], and an old/young inversion would move
+    // them to the youngYang/youngYin positions instead.
+    const lineStates: LiuyaoLineStateKey[] = [
+      'oldYang', // pos 1 -> yang, moving
+      'youngYin', // pos 2 -> yin
+      'youngYang', // pos 3 -> yang
+      'youngYin', // pos 4 -> yin
+      'oldYin', // pos 5 -> yin, moving
+      'youngYang', // pos 6 -> yang
+    ];
+    const snapshot = await adapter.calculateChart(
+      {
+        calendar: 'gregorian',
+        date: { year: 2024, month: 1, day: 1, isLeapMonth: null },
+        time: { hour: 8, minute: 0, isUnknown: false },
+        sexOrGenderForChart: 'male',
+        place: {
+          label: 'Manual entry',
+          manual: { latitude: 10.8231, longitude: 106.6297, timezone: 'Asia/Ho_Chi_Minh' },
+        },
+        locale: 'vi-VN',
+        source: 'test-fixture',
+      },
+      { liuyaoManual: { lineStates } },
+    );
+
+    expect(snapshot.chartSystem).toBe('liu-yao');
+    expect(snapshot.liuyao?.method).toBe('manual');
+    const baseLines = snapshot.liuyao?.baseHexagram.lines;
+    expect(baseLines).toHaveLength(6);
+    // Moving lines land exactly where oldYang/oldYin were placed (bottom-to-top).
+    expect(snapshot.liuyao?.movingLinePositions).toEqual([1, 5]);
+    // Value + isMoving per position match the requested states (proves the 0-3 map).
+    const byPosition = new Map(baseLines?.map((line) => [line.position, line]));
+    expect(byPosition.get(1)).toMatchObject({ value: 'yang', isMoving: true });
+    expect(byPosition.get(2)).toMatchObject({ value: 'yin', isMoving: false });
+    expect(byPosition.get(3)).toMatchObject({ value: 'yang', isMoving: false });
+    expect(byPosition.get(4)).toMatchObject({ value: 'yin', isMoving: false });
+    expect(byPosition.get(5)).toMatchObject({ value: 'yin', isMoving: true });
+    expect(byPosition.get(6)).toMatchObject({ value: 'yang', isMoving: false });
   });
 
   it('produces a structured Daliuren snapshot with thiên địa bàn, tứ khóa và tam truyền via xuanshu bridge', async () => {

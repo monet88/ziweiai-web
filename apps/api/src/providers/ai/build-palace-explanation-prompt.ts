@@ -45,6 +45,12 @@ const LANGUAGE_INVARIANT_LINES = [
   'Trả về Markdown khoảng 320-550 từ, giải thích kỹ và dễ hiểu cho người mới, giọng luận giải tử vi.',
 ];
 
+// Trình tự suy luận chuẩn cho mọi mục luận giải Tử Vi: chính tinh trước, rồi độ sáng,
+// rồi Tứ Hóa, sau đó mới mở rộng ra tam phương tứ chính. Đặt thành chỉ dẫn rõ ràng để
+// model không nhảy thẳng vào kết luận mà bỏ qua các tầng dữ liệu trung gian.
+const REASONING_ORDER_LINE =
+  'Trình tự suy luận BẮT BUỘC: (1) đọc chính tinh tại bản cung; (2) xét độ sáng (Miếu/Vượng/Đắc/Lợi/Bình/Bất/Hãm) để định mức mạnh yếu; (3) xét Tứ Hóa (Lộc/Quyền/Khoa/Kỵ) tác động lên sao; (4) đối chiếu tam phương tứ chính để lấy bối cảnh; (5) tổng hợp thành luận giải, mỗi nhận định gắn với sao hoặc dữ kiện cụ thể bên trên.';
+
 function translateToken(value: string): string {
   return ziweiCore.formatZiweiTokenVi(value);
 }
@@ -174,6 +180,7 @@ export function buildPalaceExplanationPrompt(
     `Mục luận giải: ${resolveScopeLabel(palaceScope)}`,
     ...(kindLine ? [kindLine] : []),
     ...scopeLines,
-    'Yêu cầu: luận giải ý nghĩa của mục trên dựa vào sao, độ sáng và Tứ Hóa; nêu điểm mạnh, điểm cần lưu ý và lời khuyên ngắn.',
+    REASONING_ORDER_LINE,
+    'Cấu trúc bài viết theo các đề mục Markdown sau, đúng thứ tự: "## Tổng quan", "## Điểm mạnh", "## Điểm cần lưu ý", "## Lời khuyên".',
   ].join('\n');
 }

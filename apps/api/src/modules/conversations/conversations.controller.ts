@@ -16,12 +16,27 @@ import { ConversationsService } from './services/conversations.service';
 export class ConversationsController {
   constructor(private readonly conversationsService: ConversationsService) {}
 
+  // Đồng nhất với VisionController: validate input bằng safeParse rồi ném ApiErrorHttpException
+  // (INVALID_INPUT, thông điệp tiếng Việt) thay vì để Zod ném ZodError thô. Gom về một helper để
+  // mọi handler dùng chung một dạng lỗi 400 cho dữ liệu thiếu/sai.
+  private parseOrBadRequest<T>(schema: z.ZodType<T>, value: unknown, message: string): T {
+    const result = schema.safeParse(value);
+    if (!result.success) {
+      throw new ApiErrorHttpException(HttpStatus.BAD_REQUEST, 'INVALID_INPUT', message);
+    }
+    return result.data;
+  }
+
   @Post()
   async createConversation(
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: unknown,
   ) {
-    const input = createConversationRequestSchema.parse(body);
+    const input = this.parseOrBadRequest(
+      createConversationRequestSchema,
+      body,
+      'Dữ liệu tạo cuộc trò chuyện không hợp lệ.',
+    );
     return this.conversationsService.createConversation(currentUser, input);
   }
 
@@ -33,7 +48,11 @@ export class ConversationsController {
     // List-by-chart: the client always scopes conversations to a chart (the assistant panel lives on
     // the chart-detail screen). chartSnapshotId is required — without it there is no useful "all my
     // conversations" view in the product, and an unscoped list would be an unbounded cross-chart scan.
-    const parsedChartId = z.uuid().parse(chartSnapshotId);
+    const parsedChartId = this.parseOrBadRequest(
+      z.uuid(),
+      chartSnapshotId,
+      'Thiếu hoặc sai mã lá số (chartSnapshotId).',
+    );
     return this.conversationsService.listConversationsForChart(currentUser.userId, parsedChartId);
   }
 
@@ -42,7 +61,11 @@ export class ConversationsController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Param('conversationId') conversationId: string,
   ) {
-    const parsedId = z.uuid().parse(conversationId);
+    const parsedId = this.parseOrBadRequest(
+      z.uuid(),
+      conversationId,
+      'Mã cuộc trò chuyện không hợp lệ.',
+    );
     return this.conversationsService.getConversationDetail(currentUser.userId, parsedId);
   }
 
@@ -53,8 +76,16 @@ export class ConversationsController {
     @Body() body: unknown,
     @Req() request: AuthenticatedRequest,
   ) {
-    const parsedId = z.uuid().parse(conversationId);
-    const input = createConversationMessageRequestSchema.parse(body);
+    const parsedId = this.parseOrBadRequest(
+      z.uuid(),
+      conversationId,
+      'Mã cuộc trò chuyện không hợp lệ.',
+    );
+    const input = this.parseOrBadRequest(
+      createConversationMessageRequestSchema,
+      body,
+      'Dữ liệu tin nhắn không hợp lệ.',
+    );
     // Non-streaming path: persist user + generate assistant, return full assistant message via detail.
     // Pass the real client IP so per-IP daily quota / rate-limit applies (anon abuse control); the
     // streaming path already does this. A hardcoded value would collapse all anon callers into one key.
@@ -75,8 +106,16 @@ export class ConversationsController {
     @Req() request: AuthenticatedRequest,
     @Res() res: Response,
   ) {
-    const parsedId = z.uuid().parse(conversationId);
-    const input = createConversationMessageRequestSchema.parse(body);
+    const parsedId = this.parseOrBadRequest(
+      z.uuid(),
+      conversationId,
+      'Mã cuộc trò chuyện không hợp lệ.',
+    );
+    const input = this.parseOrBadRequest(
+      createConversationMessageRequestSchema,
+      body,
+      'Dữ liệu tin nhắn không hợp lệ.',
+    );
 
     const send = (event: unknown) => {
       const validated = conversationStreamEventSchema.parse(event);

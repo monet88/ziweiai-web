@@ -9,6 +9,7 @@ import { RateLimitWindowError } from '../quotas/quota-errors';
 import type { QuotasService } from '../quotas/quotas.service';
 import { VisionAnalysisService } from './vision-analysis.service';
 import type { VisionStorageGateway } from './vision-storage.gateway';
+import type { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 
 function expectApiError(error: unknown, status: HttpStatus, code: string): void {
   expect(error).toBeInstanceOf(ApiErrorHttpException);
@@ -28,6 +29,7 @@ describe('VisionAnalysisService', () => {
   let quotasService: Pick<QuotasService, 'assertCanCreateVisionAnalysis'>;
   let providerRouter: Pick<ExplanationProviderRouter, 'generate'>;
   let storageGateway: Pick<VisionStorageGateway, 'uploadVisionImage'>;
+  let persistence: Pick<SupabasePersistenceGateway, 'createVisionResult' | 'createHistoryView'>;
   let service: VisionAnalysisService;
 
   beforeEach(() => {
@@ -38,10 +40,15 @@ describe('VisionAnalysisService', () => {
       generate: vi.fn().mockResolvedValue({ renderedMarkdown: 'Phân tích tướng mặt.', providerMetadata: { provider: 'deepseek' } }),
     };
     storageGateway = { uploadVisionImage: vi.fn().mockResolvedValue({ imagePath: 'owner/req.png' }) };
+    persistence = {
+      createVisionResult: vi.fn().mockResolvedValue({ id: '33333333-3333-4333-8333-333333333333' }),
+      createHistoryView: vi.fn().mockResolvedValue({ id: '44444444-4444-4444-8444-444444444444' }),
+    };
     service = new VisionAnalysisService(
       quotasService as QuotasService,
       providerRouter as ExplanationProviderRouter,
       storageGateway as VisionStorageGateway,
+      persistence as SupabasePersistenceGateway,
     );
   });
 
@@ -143,7 +150,38 @@ describe('VisionAnalysisService', () => {
     const generateMock = providerRouter.generate as ReturnType<typeof vi.fn>;
     const payload = generateMock.mock.calls[0]?.[1] as { imageInput?: { base64: string; mimeType: string }; promptOverride?: string };
     expect(payload.imageInput).toEqual({ base64: Buffer.from(imageBytes).toString('base64'), mimeType: 'image/png' });
-    expect(payload.promptOverride).toContain('Câu hỏi người dùng đặc biệt quan tâm: Sự nghiệp của tôi?');
+    expect(payload.promptOverride).toContain('Sự nghiệp của tôi?');
+    expect(payload.promptOverride).toContain('Nhiệm vụ chính của bạn là TRẢ LỜI');
+
+    // US-017 follow-up (decision 0023): persist vĩnh viễn vision_result + history_view.
+    expect(persistence.createVisionResult).toHaveBeenCalledWith({
+      ownerUserId: emailUser.userId,
+      kind: 'face',
+      imagePath: 'owner/req.png',
+      question: 'Sự nghiệp của tôi?',
+      renderedMarkdown: 'Phân tích tướng mặt.',
+      providerMetadata: { provider: 'deepseek' },
+    });
+    expect(persistence.createHistoryView).toHaveBeenCalledWith({
+      ownerUserId: emailUser.userId,
+      chartSnapshotId: null,
+      explanationResultId: null,
+      visionResultId: '33333333-3333-4333-8333-333333333333',
+    });
+  });
+
+  it('câu hỏi rỗng/khoảng trắng → lưu question=null (không ép chuỗi trắng vào lịch sử)', async () => {
+    await service.analyze(baseInput({ question: '   ' }));
+    const createMock = persistence.createVisionResult as ReturnType<typeof vi.fn>;
+    expect(createMock.mock.calls[0]?.[0]?.question).toBeNull();
+  });
+
+  it('persist lịch sử lỗi KHÔNG làm hỏng response (người dùng đã chờ LLM)', async () => {
+    persistence.createVisionResult = vi.fn().mockRejectedValue(new Error('db down'));
+    const result = await service.analyze(baseInput());
+    // Kết quả vision vẫn trả về bình thường dù ghi lịch sử thất bại.
+    expect(visionAnalysisSchema.safeParse(result).success).toBe(true);
+    expect(result.imagePath).toBe('owner/req.png');
   });
 
   it('palm dùng cờ EXTENDED_SYSTEM_PALM_ENABLED riêng (Face bật không mở Palm)', async () => {

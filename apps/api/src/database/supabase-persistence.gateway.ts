@@ -5,6 +5,7 @@ import {
   chartSnapshotRecordSchema,
   explanationRequestRecordSchema,
   explanationResultRecordSchema,
+  visionResultRecordSchema,
   historyViewRecordSchema,
   conversationRecordSchema,
   conversationMessageRecordSchema,
@@ -15,6 +16,8 @@ import {
   type ChartSnapshotRecord,
   type ExplanationRequestRecord,
   type ExplanationResultRecord,
+  type VisionResultRecord,
+  type VisionKind,
   type HistoryViewRecord,
   type NormalizedBirth,
   type PromptStorageMode,
@@ -447,6 +450,7 @@ export class SupabasePersistenceGateway {
     ownerUserId: string;
     chartSnapshotId: string | null;
     explanationResultId: string | null;
+    visionResultId?: string | null;
   }): Promise<HistoryViewRecord> {
     const { data, error } = await this.client
       .from('history_views')
@@ -454,11 +458,71 @@ export class SupabasePersistenceGateway {
         owner_user_id: params.ownerUserId,
         chart_snapshot_id: params.chartSnapshotId,
         explanation_result_id: params.explanationResultId,
+        vision_result_id: params.visionResultId ?? null,
       })
       .select('*')
       .single();
     this.throwIfError(error);
     return this.toHistoryViewRecord(data);
+  }
+
+  // US-017 follow-up (decision 0023): persist a vision reading (Xem Tướng / Xem Tay).
+  // Mirrors createExplanationResult but has no chart snapshot / request row — vision is a
+  // standalone reading keyed only by owner + kind + image path.
+  async createVisionResult(params: {
+    ownerUserId: string;
+    kind: VisionKind;
+    imagePath: string;
+    question: string | null;
+    renderedMarkdown: string;
+    providerMetadata: Record<string, string>;
+  }): Promise<VisionResultRecord> {
+    const { data, error } = await this.client
+      .from('vision_results')
+      .insert({
+        owner_user_id: params.ownerUserId,
+        kind: params.kind,
+        image_path: params.imagePath,
+        question: params.question,
+        rendered_markdown: params.renderedMarkdown,
+        provider_metadata: params.providerMetadata,
+      })
+      .select('*')
+      .single();
+    this.throwIfError(error);
+    return this.toVisionResultRecord(data);
+  }
+
+  async findVisionResultsByIds(ownerUserId: string, visionResultIds: string[]): Promise<Record<string, VisionResultRecord>> {
+    if (visionResultIds.length === 0) {
+      return {};
+    }
+
+    const uniqueIds = [...new Set(visionResultIds)];
+    const { data, error } = await this.client
+      .from('vision_results')
+      .select('*')
+      .eq('owner_user_id', ownerUserId)
+      .in('id', uniqueIds);
+    this.throwIfError(error);
+
+    return Object.fromEntries(
+      (data ?? []).map((row: SupabaseRow) => {
+        const record = this.toVisionResultRecord(row);
+        return [record.id, record];
+      }),
+    );
+  }
+
+  async findVisionResultById(ownerUserId: string, visionResultId: string): Promise<VisionResultRecord | null> {
+    const { data, error } = await this.client
+      .from('vision_results')
+      .select('*')
+      .eq('owner_user_id', ownerUserId)
+      .eq('id', visionResultId)
+      .maybeSingle();
+    this.throwIfError(error);
+    return data ? this.toVisionResultRecord(data) : null;
   }
 
   async listHistoryViews(ownerUserId: string, limit: number): Promise<HistoryViewRecord[]> {
@@ -726,7 +790,29 @@ export class SupabasePersistenceGateway {
       ownerUserId: row.owner_user_id,
       chartSnapshotId: row.chart_snapshot_id,
       explanationResultId: row.explanation_result_id,
+      visionResultId: row.vision_result_id ?? null,
       viewedAt: normalizePostgresTimestamp(row.viewed_at as string | null | undefined),
+    });
+  }
+
+  private toVisionResultRecord(row: SupabaseRow): VisionResultRecord {
+    const providerMetadataRow = row.provider_metadata;
+    const providerMetadata =
+      providerMetadataRow && typeof providerMetadataRow === 'object'
+        ? Object.fromEntries(
+            Object.entries(providerMetadataRow as Record<string, unknown>).map(([key, value]) => [key, String(value)]),
+          )
+        : {};
+
+    return visionResultRecordSchema.parse({
+      id: row.id,
+      ownerUserId: row.owner_user_id,
+      kind: row.kind,
+      imagePath: row.image_path,
+      question: (row.question as string | null) ?? null,
+      renderedMarkdown: row.rendered_markdown,
+      providerMetadata,
+      createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
     });
   }
 

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AiProvidersModule } from '../../providers/ai/ai-providers.module';
+import { DatabaseModule } from '../../database/database.module';
 import { QuotasModule } from '../quotas/quotas.module';
 import { VisionAnalysisService } from './vision-analysis.service';
 import { VisionStorageGateway } from './vision-storage.gateway';
@@ -11,8 +12,8 @@ import { VisionStorageGateway } from './vision-storage.gateway';
  * gateway + VisionAnalysisService, rồi export service cho vision-face/vision-palm cắm vào.
  */
 @Module({
-  imports: [QuotasModule, AiProvidersModule],
+  imports: [QuotasModule, AiProvidersModule, DatabaseModule],
   providers: [VisionStorageGateway, VisionAnalysisService],
-  exports: [VisionAnalysisService],
+  exports: [VisionAnalysisService, VisionStorageGateway],
 })
 export class VisionSharedModule {}

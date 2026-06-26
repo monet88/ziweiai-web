@@ -12,7 +12,11 @@
   import { NoticeBanner, EmptyStateCard, Spinner, PrimaryButton } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { formatHistoryViewedAt } from '$lib/features/chart/chart-display';
-  import { dedupeHistoryChartEntries } from '$lib/features/dashboard/dashboard-history';
+  import {
+    dedupeHistoryChartEntries,
+    collectVisionHistoryEntries,
+  } from '$lib/features/dashboard/dashboard-history';
+  import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
   import type { DivinationPurposeKey } from '@ziweiai/contracts';
 
   const auth = getAuthStore();
@@ -63,6 +67,26 @@
     })),
   );
 
+  // US-017 follow-up (decision 0023): Xem Tướng/Xem Tay không có lá số nên không link
+  // /charts/[id]; render inline ngay tại đây (ảnh đã ký + câu hỏi + luận giải Markdown).
+  const visionItems = $derived(
+    collectVisionHistoryEntries(history.data?.items ?? []).map((entry) => ({
+      id: entry.visionResult.id,
+      kindLabel:
+        entry.visionResult.kind === 'face'
+          ? viCopy.history.visionKindFace
+          : viCopy.history.visionKindPalm,
+      createdAtLabel: formatHistoryViewedAt(entry.visionResult.createdAt),
+      question: entry.visionResult.question,
+      narrative: entry.visionResult.renderedMarkdown,
+      imageUrl: entry.imageUrl,
+    })),
+  );
+
+  // Trang trống chỉ khi không còn cả lá số lẫn vision; trước đây chỉ xét chartItems sẽ ẩn
+  // các lượt Xem Tướng/Xem Tay đã lưu.
+  const isEmpty = $derived(chartItems.length === 0 && visionItems.length === 0);
+
   function goToDashboard(): void {
     void goto(resolve('/'));
   }
@@ -85,7 +109,7 @@
       />
     </div>
   </NoticeBanner>
-{:else if chartItems.length === 0}
+{:else if isEmpty}
   <EmptyStateCard
     title={viCopy.history.emptyTitle}
     description={viCopy.history.emptyDescription}
@@ -93,26 +117,56 @@
     onaction={goToDashboard}
   />
 {:else}
-  <ul class="list">
-    {#each chartItems as item (item.id)}
-      <li>
-        <a class="item" href={resolve(`/charts/${item.id}`)}>
-          {#if item.question}
-            <span class="item-question">{item.question}</span>
-            <span class="item-meta">
-              {item.systemLabel} · {item.purposeText} · {item.createdAtLabel}
-            </span>
-          {:else}
-            <span class="item-system">{item.systemLabel}</span>
-            <span class="item-meta">
-              {item.createdAtLabel}
-              · {item.hasExplanation ? viCopy.history.savedExplanation : viCopy.history.chartOnly}
-            </span>
-          {/if}
-        </a>
-      </li>
-    {/each}
-  </ul>
+  {#if chartItems.length > 0}
+    <ul class="list">
+      {#each chartItems as item (item.id)}
+        <li>
+          <a class="item" href={resolve(`/charts/${item.id}`)}>
+            {#if item.question}
+              <span class="item-question">{item.question}</span>
+              <span class="item-meta">
+                {item.systemLabel} · {item.purposeText} · {item.createdAtLabel}
+              </span>
+            {:else}
+              <span class="item-system">{item.systemLabel}</span>
+              <span class="item-meta">
+                {item.createdAtLabel}
+                · {item.hasExplanation ? viCopy.history.savedExplanation : viCopy.history.chartOnly}
+              </span>
+            {/if}
+          </a>
+        </li>
+      {/each}
+    </ul>
+  {/if}
+
+  {#if visionItems.length > 0}
+    <section class="vision-section">
+      <h2 class="vision-section-title">{viCopy.history.visionSectionTitle}</h2>
+      <ul class="list">
+        {#each visionItems as item (item.id)}
+          <li class="vision-item">
+            <div class="vision-head">
+              <span class="item-system">{item.kindLabel}</span>
+              <span class="item-meta">{item.createdAtLabel}</span>
+            </div>
+            {#if item.imageUrl}
+              <img class="vision-image" src={item.imageUrl} alt={viCopy.history.visionImageAlt} />
+            {:else}
+              <p class="vision-image-missing">{viCopy.history.visionImageUnavailable}</p>
+            {/if}
+            {#if item.question}
+              <p class="vision-question">
+                <span class="vision-question-label">{viCopy.history.visionQuestionLabel}:</span>
+                {item.question}
+              </p>
+            {/if}
+            <MarkdownView markdown={item.narrative} />
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
 {/if}
 
 <style>
@@ -193,5 +247,67 @@
   .item-meta {
     color: var(--color-text-muted);
     font-size: 13px;
+  }
+
+  .vision-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-top: var(--space-lg);
+  }
+
+  .vision-section-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .vision-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    border: 1px solid var(--color-border-hairline);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+  }
+
+  .vision-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-sm);
+  }
+
+  .vision-image {
+    display: block;
+    width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-elevated);
+  }
+
+  .vision-image-missing {
+    margin: 0;
+    padding: var(--space-md);
+    border: 1px dashed var(--color-border-hairline);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .vision-question {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .vision-question-label {
+    font-weight: 600;
+    color: var(--color-text-primary);
   }
 </style>

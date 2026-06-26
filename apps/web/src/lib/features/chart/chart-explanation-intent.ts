@@ -2,7 +2,9 @@ import type { CreateExplanationRequest, ExplanationKind, PalaceScope } from '@zi
 
 type ChartCopy = typeof import('../../i18n/vi').viCopy.chart;
 
-const CHART_DETAIL_EXPLANATION_KIND: ExplanationKind = 'overview';
+// Kind luận giải của trang chi tiết (overview). Export để explanation-model hydrate lọc
+// đúng kind khi tra kết quả đã lưu — single source of truth, tránh hardcode 'overview' hai nơi.
+export const CHART_DETAIL_EXPLANATION_KIND: ExplanationKind = 'overview';
 
 export function buildChartDetailExplanationRequest(chartSnapshotId: string): CreateExplanationRequest {
   return {

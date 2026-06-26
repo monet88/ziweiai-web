@@ -133,9 +133,16 @@ export class VisionAnalysisService {
       this.logger.warn(
         `[vision.${kind}] persist lịch sử thất bại (kết quả vẫn trả về): ${error instanceof Error ? error.message : String(error)}`,
       );
-      // Bù trừ: nếu vision_results đã tạo nhưng history_views hỏng → row + ảnh sẽ mồ côi. Gỡ cả hai.
+      // Bù trừ: ảnh đã upload TRƯỚC khi ghi DB nên persist hỏng ở BẤT KỲ bước nào cũng để lại ảnh
+      // sinh trắc mồ côi (bucket không còn cron dọn — decision 0023). Hai nhánh:
+      //  - vision_results đã tạo nhưng history_views hỏng → gỡ cả row + ảnh.
+      //  - createVisionResult hỏng ngay (chưa có row) → chỉ có ảnh mồ côi; vẫn phải gỡ, vì client
+      //    chỉ xoá được theo visionResult.id xuất hiện trong lịch sử — không có row thì người dùng
+      //    không bao giờ với tới ảnh này để xoá.
       if (visionResultId) {
         await this.rollbackOrphanedVisionResult(user.userId, visionResultId, imagePath, kind);
+      } else {
+        await this.deleteOrphanedVisionImage(imagePath, kind);
       }
     }
   }
@@ -156,6 +163,13 @@ export class VisionAnalysisService {
         `[vision.${kind}] bù trừ xoá vision_results id=${visionResultId} thất bại (row mồ côi): ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`,
       );
     }
+    await this.deleteOrphanedVisionImage(imagePath, kind);
+  }
+
+  // Gỡ riêng ảnh đã upload khi chưa kịp tạo row vision_results (createVisionResult hỏng ngay). Không có
+  // row để xoá nên chỉ dọn file Storage. Tự bọc lỗi như mọi bước bù trừ: ảnh dọn hỏng KHÔNG leo thang
+  // thành 5xx — chỉ log để vận hành xử lý sau.
+  private async deleteOrphanedVisionImage(imagePath: string, kind: VisionKind): Promise<void> {
     try {
       await this.storageGateway.deleteVisionImage(imagePath);
     } catch (rollbackError) {

@@ -184,15 +184,24 @@ describe('VisionAnalysisService', () => {
     expect(createMock.mock.calls[0]?.[0]?.question).toBeNull();
   });
 
-  it('persist lịch sử lỗi KHÔNG làm hỏng response (người dùng đã chờ LLM)', async () => {
+  it('createVisionResult hỏng ngay → dọn ảnh mồ côi đã upload (không để lại dữ liệu sinh trắc trong Storage)', async () => {
     persistence.createVisionResult = vi.fn().mockRejectedValue(new Error('db down'));
     const result = await service.analyze(baseInput());
     // Kết quả vision vẫn trả về bình thường dù ghi lịch sử thất bại.
     expect(visionAnalysisSchema.safeParse(result).success).toBe(true);
     expect(result.imagePath).toBe('owner/req.png');
-    // createVisionResult hỏng ngay → chưa có row → KHÔNG bù trừ (không gọi xoá row/ảnh).
+    // Chưa có row → KHÔNG gọi xoá row. NHƯNG ảnh đã upload TRƯỚC khi ghi DB nên phải dọn để
+    // không để lại ảnh sinh trắc mồ côi mà client không xoá được (delete flow dựa trên row.id).
     expect(persistence.deleteVisionResult).not.toHaveBeenCalled();
-    expect(storageGateway.deleteVisionImage).not.toHaveBeenCalled();
+    expect(storageGateway.deleteVisionImage).toHaveBeenCalledWith('owner/req.png');
+  });
+
+  it('dọn ảnh mồ côi lỗi (createVisionResult hỏng + xoá ảnh hỏng) KHÔNG leo thang thành 5xx', async () => {
+    persistence.createVisionResult = vi.fn().mockRejectedValue(new Error('db down'));
+    storageGateway.deleteVisionImage = vi.fn().mockRejectedValue(new Error('rollback image failed'));
+    const result = await service.analyze(baseInput());
+    expect(visionAnalysisSchema.safeParse(result).success).toBe(true);
+    expect(result.imagePath).toBe('owner/req.png');
   });
 
   it('history_views hỏng sau khi vision_result đã tạo → bù trừ gỡ row + ảnh mồ côi (vẫn trả kết quả)', async () => {

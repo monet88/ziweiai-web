@@ -4,7 +4,7 @@
 // bật hasExplanation nếu bất kỳ view nào có luận giải, và bỏ view không có chartRecord.
 import { describe, expect, it } from 'vitest';
 import type { HistoryListResponse } from '@ziweiai/contracts';
-import { dedupeHistoryChartEntries } from './dashboard-history';
+import { collectVisionHistoryEntries, dedupeHistoryChartEntries } from './dashboard-history';
 
 type HistoryItem = HistoryListResponse['items'][number];
 
@@ -86,5 +86,79 @@ describe('dedupeHistoryChartEntries', () => {
 
   it('danh sách rỗng trả về mảng rỗng', () => {
     expect(dedupeHistoryChartEntries([])).toEqual([]);
+  });
+});
+
+// Dựng view vision tối thiểu: collector chỉ đọc visionResult (id + question + ...) và
+// visionImageUrl. chartRecord null vì view vision không gắn lá số (decision 0023).
+function makeVisionView(options: {
+  visionId: string;
+  kind?: 'face' | 'palm';
+  question?: string | null;
+  imageUrl?: string | null;
+}): HistoryItem {
+  return {
+    view: { id: `view-${Math.random()}` },
+    chartRecord: null,
+    explanationResult: null,
+    visionResult: {
+      id: options.visionId,
+      kind: options.kind ?? 'palm',
+      question: options.question ?? null,
+      renderedMarkdown: 'Luận giải đã lưu.',
+    },
+    visionImageUrl: options.imageUrl ?? null,
+  } as unknown as HistoryItem;
+}
+
+describe('collectVisionHistoryEntries', () => {
+  it('giữ các view vision (chart null) mà dedupeHistoryChartEntries bỏ qua', () => {
+    const items = [
+      makeVisionView({ visionId: 'vision-a', kind: 'palm', imageUrl: 'https://signed/a.jpg' }),
+      makeVisionView({ visionId: 'vision-b', kind: 'face', imageUrl: 'https://signed/b.jpg' }),
+    ];
+
+    const entries = collectVisionHistoryEntries(items);
+
+    expect(entries).toHaveLength(2);
+    expect(entries.map((entry) => entry.visionResult.id)).toEqual(['vision-a', 'vision-b']);
+    expect(entries[0].imageUrl).toBe('https://signed/a.jpg');
+  });
+
+  it('dedupe theo visionResult.id, giữ view xuất hiện đầu', () => {
+    const items = [
+      makeVisionView({ visionId: 'vision-a', imageUrl: 'https://signed/first.jpg' }),
+      makeVisionView({ visionId: 'vision-a', imageUrl: 'https://signed/dup.jpg' }),
+    ];
+
+    const entries = collectVisionHistoryEntries(items);
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0].imageUrl).toBe('https://signed/first.jpg');
+  });
+
+  it('giữ imageUrl null khi ký URL thất bại (ảnh hỏng không làm sập danh sách)', () => {
+    const entries = collectVisionHistoryEntries([
+      makeVisionView({ visionId: 'vision-a', imageUrl: null }),
+    ]);
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0].imageUrl).toBeNull();
+  });
+
+  it('bỏ qua các view không có visionResult (lá số/luận giải thuần)', () => {
+    const items = [
+      makeView({ chartId: 'chart-a', hasExplanation: true }),
+      makeVisionView({ visionId: 'vision-a' }),
+    ];
+
+    const entries = collectVisionHistoryEntries(items);
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0].visionResult.id).toBe('vision-a');
+  });
+
+  it('danh sách rỗng trả về mảng rỗng', () => {
+    expect(collectVisionHistoryEntries([])).toEqual([]);
   });
 });

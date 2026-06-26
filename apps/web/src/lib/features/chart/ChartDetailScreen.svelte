@@ -52,6 +52,7 @@
     queryClient,
     getChartSnapshotId: () => detail.chartId,
     getSelectedPalaceKey: () => detail.selectedPalaceKey,
+    getExplanationResults: () => detail.explanationResults,
   });
 
   const copy = viCopy.chart;

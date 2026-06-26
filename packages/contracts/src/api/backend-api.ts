@@ -7,6 +7,7 @@ import {
   chartSnapshotRecordSchema,
   explanationRequestRecordSchema,
   explanationResultRecordSchema,
+  visionResultRecordSchema,
   historyViewRecordSchema,
   conversationRecordSchema,
   conversationMessageRecordSchema,
@@ -243,6 +244,13 @@ export const historyItemSchema = z.object({
   // US-025: present only for the four time-based divination snapshots; null for
   // natal charts. Lets the history card show question + purpose + cast date.
   divinationContext: divinationContextRecordSchema.nullable(),
+  // US-017 follow-up (decision 0023): present only for Xem Tướng / Xem Tay views;
+  // null for chart/divination views. Carries kind + image path + narrative + question.
+  visionResult: visionResultRecordSchema.nullable(),
+  // Short-lived signed URL for the vision image (private bucket vision-uploads cannot be
+  // read by path on the client). Generated per list request; null for non-vision views or
+  // when signing fails. The web renders the image from this, never from visionResult.imagePath.
+  visionImageUrl: z.url().nullable(),
 });
 
 export const historyListResponseSchema = z.object({

@@ -4,6 +4,7 @@ import { tarotDrawSchema } from './tarot-draw';
 import { visionAnalysisSchema } from './vision-analysis';
 import { mangpaiChartSchema } from './chart-snapshot';
 import { mbtiResultSchema, mbtiAnswerSchema } from '../quizzes/mbti-result';
+import { visionResultRecordSchema } from '../persistence/persistence-records';
 
 describe('US-017 new schemas parse/reject', () => {
   it('pairingSnapshotSchema basic parse', () => {
@@ -132,5 +133,49 @@ describe('US-017 new schemas parse/reject', () => {
     expect(mangpaiChartSchema.safeParse({ ...ok, insights: [] }).success).toBe(false);
     // key sai bộ enum Bát Tự → reject (chống lệch dữ liệu nhật trụ).
     expect(mangpaiChartSchema.safeParse({ ...ok, dayMasterElementKey: 'plasma' }).success).toBe(false);
+  });
+
+  describe('visionResultRecordSchema question normalization', () => {
+    const base = {
+      id: '11111111-1111-4111-8111-111111111111',
+      ownerUserId: '22222222-2222-4222-8222-222222222222',
+      kind: 'face' as const,
+      imagePath: 'vision-uploads/u1/s1.jpg',
+      renderedMarkdown: 'Luận giải tướng mặt.',
+      providerMetadata: { provider: 'gemini' },
+      createdAt: '2026-06-03T00:00:00.000Z',
+    };
+
+    it('keeps a non-empty question (trimmed)', () => {
+      const r = visionResultRecordSchema.safeParse({ ...base, question: '  Vận trình ra sao?  ' });
+      expect(r.success).toBe(true);
+      if (r.success) {
+        expect(r.data.question).toBe('Vận trình ra sao?');
+      }
+    });
+
+    it('accepts an explicit null question', () => {
+      const r = visionResultRecordSchema.safeParse({ ...base, question: null });
+      expect(r.success).toBe(true);
+      if (r.success) {
+        expect(r.data.question).toBeNull();
+      }
+    });
+
+    it('collapses an empty string to null instead of failing', () => {
+      const r = visionResultRecordSchema.safeParse({ ...base, question: '' });
+      expect(r.success).toBe(true);
+      if (r.success) {
+        expect(r.data.question).toBeNull();
+      }
+    });
+
+    it('collapses a whitespace-only question to null instead of failing', () => {
+      const r = visionResultRecordSchema.safeParse({ ...base, question: '   \t\n ' });
+      expect(r.success).toBe(true);
+      if (r.success) {
+        expect(r.data.question).toBeNull();
+      }
+    });
   });
 });

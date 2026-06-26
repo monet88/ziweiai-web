@@ -1,17 +1,18 @@
 import { test, expect } from '@playwright/test';
 import { signInViaUi } from './sign-in';
 
-// US-017h (live): luồng Rút Tarot end-to-end qua UI, KHÔNG intercept — thực sự gọi POST /draws/tarot
-// (cờ EXTENDED_SYSTEM_TAROT_ENABLED bật ở playwright webServer env). Rút lá là deterministic
-// server-side; narrative do provider chain sinh, hoặc rơi về template tiếng Việt khi không cấu hình
-// provider trong môi trường e2e. Test khẳng định: route /tarot dựng đúng, đặt câu hỏi + chọn trải
-// bài → kết quả render đủ số lá kèm ảnh thật, và toàn bộ kết quả không lọt ký tự Hán.
+// US-017h (@live): luồng Rút Tarot end-to-end qua UI, KHÔNG intercept — thực sự gọi POST /draws/tarot
+// (cờ EXTENDED_SYSTEM_TAROT_ENABLED bật ở playwright webServer env) → narrative do provider AI thật
+// sinh. Vì đốt token LLM mỗi lần chạy nên gắn @live: chỉ chạy khi yêu cầu (pnpm e2e:live), KHÔNG nằm
+// trong bộ default. Bản default deterministic (stub /draws/tarot) ở us-017h-tarot-default.spec.ts.
+// Test khẳng định: route /tarot dựng đúng, đặt câu hỏi + chọn trải bài → kết quả render đủ số lá kèm
+// ảnh thật, và toàn bộ kết quả không lọt ký tự Hán.
 
 // Quét chữ Hán/CJK ở phía test (đồng bộ CJK_TEXT_PATTERN của web) để chốt bất biến ngôn ngữ live.
 const HAN_TEXT_PATTERN =
   /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Bopomofo}\u3000-\u303F\uFF00-\uFFEF]/u;
 
-test('US-017h: rút Tarot ba lá qua UI → render lá + ảnh + diễn giải, 0 chữ Hán', async ({ page }) => {
+test('US-017h @live: rút Tarot ba lá qua UI → render lá + ảnh + diễn giải, 0 chữ Hán', async ({ page }) => {
   await signInViaUi(page);
 
   await page.goto('/tarot');
@@ -37,7 +38,7 @@ test('US-017h: rút Tarot ba lá qua UI → render lá + ảnh + diễn giải, 
   expect(HAN_TEXT_PATTERN.test(resultText), 'kết quả Tarot không được chứa chữ Hán').toBe(false);
 });
 
-test('US-017h: trải bài Celtic Cross → rút 10 lá', async ({ page }) => {
+test('US-017h @live: trải bài Celtic Cross → rút 10 lá', async ({ page }) => {
   await signInViaUi(page);
 
   await page.goto('/tarot');

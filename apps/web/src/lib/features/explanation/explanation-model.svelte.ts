@@ -17,11 +17,13 @@ import { createMutation, type QueryClient } from '@tanstack/svelte-query';
 import {
   palaceScopeSchema,
   type CreateExplanationResponse,
+  type ExplanationResultRecord,
   type PalaceScope,
 } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
 import { ApiError, createExplanation } from '$lib/api-client';
-import { buildPalaceExplanationRequest } from '$lib/features/chart/chart-explanation-intent';
+import { buildPalaceExplanationRequest, CHART_DETAIL_EXPLANATION_KIND } from '$lib/features/chart/chart-explanation-intent';
+import { buildHydrationResultByScope, OVERVIEW_SCOPE_KEY } from '$lib/features/explanation/explanation-sections';
 import { viCopy } from '$lib/i18n/vi';
 
 /**
@@ -50,17 +52,38 @@ export interface ExplanationModelOptions {
   getChartSnapshotId: () => string | null;
   /** nameKey cung đang chọn ở model chi tiết (null = chưa chọn → overview). */
   getSelectedPalaceKey: () => string | null;
+  /**
+   * Kết quả luận giải ĐÃ LƯU của lá số (từ chart-detail query). Dùng để hydrate lại nội dung
+   * khi mở lá số cũ từ history: trước đây model chỉ giữ markdown của lần tạo trong phiên nên
+   * lá số đã có luận giải vẫn hiện nút "Tạo" + EmptyState — kết quả tưởng như "không được lưu".
+   */
+  getExplanationResults: () => readonly ExplanationResultRecord[];
 }
 
 export function createExplanationModel(options: ExplanationModelOptions) {
   const auth = options.auth;
   const queryClient = options.queryClient;
 
-  // Giữ markdown thành công gần nhất để tránh giật màn hình khi bấm "Tạo lại": TanStack
-  // reset mutation.data về undefined lúc pending, nên nếu render trực tiếp từ mutation.data
-  // thì nội dung cũ biến mất trong lúc chờ. Cập nhật qua onSuccess (callback, KHÔNG $effect
-  // ghi ngược) — UI tiếp tục hiển thị luận giải cũ tới khi kết quả mới về.
-  let lastRenderedMarkdown = $state<string | null>(null);
+  // Markdown đã tạo trong phiên, theo scope (overview/cung). Giữ riêng từng scope để chọn cung
+  // khác không xoá kết quả vừa tạo của cung trước; đồng thời là lớp anti-flicker khi bấm "Tạo
+  // lại" (TanStack reset mutation.data về undefined lúc pending) — UI vẫn hiện kết quả cũ của
+  // scope đó tới khi kết quả mới về. Cập nhật qua onSuccess (callback, KHÔNG $effect ghi ngược).
+  let sessionMarkdownByScope = $state<Record<string, string>>({});
+
+  // Hydrate kết quả ĐÃ LƯU theo scope từ chart-detail query (lọc đúng kind overview của trang
+  // chi tiết). Đây là mảnh sửa lỗi "luận giải không được lưu": mở lá số cũ sẽ hiện lại nội dung
+  // đã lưu thay vì luôn rơi về EmptyState + nút "Tạo".
+  const hydrationByScope = $derived(
+    buildHydrationResultByScope(options.getExplanationResults(), CHART_DETAIL_EXPLANATION_KIND),
+  );
+
+  // Scope đang xem: cung đang chọn (map an toàn về PalaceScope) hoặc overview.
+  const currentScopeKey = $derived(resolvePalaceScope(options.getSelectedPalaceKey()) ?? OVERVIEW_SCOPE_KEY);
+
+  // Ưu tiên kết quả tạo trong phiên (user vừa bấm), fallback kết quả đã lưu của đúng scope.
+  const renderedMarkdown = $derived<string | null>(
+    sessionMarkdownByScope[currentScopeKey] ?? hydrationByScope.get(currentScopeKey)?.renderedMarkdown ?? null,
+  );
 
   const mutation = createMutation(() => ({
     mutationFn: async (): Promise<CreateExplanationResponse> => {
@@ -76,15 +99,16 @@ export function createExplanationModel(options: ExplanationModelOptions) {
       return createExplanation(token, buildPalaceExplanationRequest(chartSnapshotId, scope));
     },
     onSuccess: async (data: CreateExplanationResponse): Promise<void> => {
-      lastRenderedMarkdown = data.result.renderedMarkdown;
+      // Key theo scope của chính kết quả (providerMetadata.palaceScope; overview khi vắng) để
+      // không gán nhầm markdown cung này cho scope đang chọn nếu user đã đổi cung lúc chờ.
+      const resultScopeKey = data.result.providerMetadata?.palaceScope ?? OVERVIEW_SCOPE_KEY;
+      sessionMarkdownByScope = { ...sessionMarkdownByScope, [resultScopeKey]: data.result.renderedMarkdown };
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['history'] }),
         queryClient.invalidateQueries({ queryKey: ['chart-detail'] }),
       ]);
     },
   }));
-
-  // renderedMarkdown = kết quả thành công gần nhất (giữ qua lần "Tạo lại" để không giật màn).
 
   function generate(): void {
     if (mutation.isPending) {
@@ -101,10 +125,10 @@ export function createExplanationModel(options: ExplanationModelOptions) {
       return mutation.isError;
     },
     get hasResult(): boolean {
-      return lastRenderedMarkdown !== null;
+      return renderedMarkdown !== null;
     },
     get renderedMarkdown(): string | null {
-      return lastRenderedMarkdown;
+      return renderedMarkdown;
     },
     get isPaymentRequired(): boolean {
       return mutation.isError && mutation.error instanceof ApiError && mutation.error.kind === 'payment-required';

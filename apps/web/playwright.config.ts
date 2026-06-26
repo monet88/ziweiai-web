@@ -13,6 +13,30 @@ const API_ORIGIN = `http://localhost:${API_PORT}`;
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 
+// Nhóm @live (pnpm e2e:live) gọi LLM thật. Một số feature cần cờ server bật mới sinh được kết quả
+// thật — cụ thể báo cáo năm (AI_ANNUAL_REPORT_ENABLED, mặc định tắt ở mọi nơi để tránh đốt token).
+// webServer khởi động MỘT lần với env tĩnh nên phải quyết cờ tại đây: phát hiện chế độ live qua argv
+// rồi chỉ bật cờ annual cho phiên live. Bộ default vẫn chạy với cờ tắt (paywall, 0 token).
+//
+// Phát hiện phải nhận MỌI dạng CLI tương đương của Playwright (`--grep @live`, `-g @live`,
+// `--grep=@live`, `-g=@live`) — nếu chỉ khớp đúng dạng hai-token `--grep @live` thì các lệnh khác
+// lặng lẽ khởi động server KHÔNG có cờ live → test @live rơi vào nhánh paywall/FEATURE_DISABLED mà
+// không có tín hiệu lỗi rõ. ĐỒNG THỜI phải loại `--grep-invert @live` (đây là bộ default loại bỏ
+// @live, KHÔNG phải phiên live) — vì vậy so khớp chính xác tên cờ, không quét @live ở mọi vị trí.
+const cliArgs = process.argv.slice(2);
+const isLiveRun = cliArgs.some((arg, index) => {
+  // Dạng gộp: --grep=@live / -g=@live (regex chốt `=` ngay sau tên cờ → '--grep-invert=' không khớp).
+  const inlineMatch = /^(--grep|-g)=(.*)$/.exec(arg);
+  if (inlineMatch) {
+    return inlineMatch[2].includes('@live');
+  }
+  // Dạng hai-token: --grep @live / -g @live ('--grep-invert' !== '--grep' nên bị loại đúng cách).
+  if (arg === '--grep' || arg === '-g') {
+    return (cliArgs[index + 1] ?? '').includes('@live');
+  }
+  return false;
+});
+
 export default defineConfig({
   testDir: './tests/e2e',
   // Luận giải AI gọi provider thật (mạng) → cho mỗi test tối đa 90s; toàn bộ flow 1 worker
@@ -69,6 +93,11 @@ export default defineConfig({
         EXTENDED_SYSTEM_PALM_ENABLED: 'true',
         // US-017h: bật cờ Tarot cho e2e (mặc định false ở mọi nơi khác → fail-closed).
         EXTENDED_SYSTEM_TAROT_ENABLED: 'true',
+        // Báo cáo năm (US-016) + Trợ lý hội thoại (US-018) chỉ sinh thật khi cờ tương ứng bật (mặc
+        // định tắt ở mọi nơi → nhánh paywall/FEATURE_DISABLED). webServer khởi động MỘT lần với env
+        // tĩnh nên chỉ bật cho phiên @live: bản live gọi LLM thật, bộ default giữ tắt (0 token LLM,
+        // các spec stub tự intercept request nên không phụ thuộc cờ server).
+        ...(isLiveRun ? { AI_ANNUAL_REPORT_ENABLED: 'true', AI_CONVERSATION_ENABLED: 'true' } : {}),
       },
     },
     {

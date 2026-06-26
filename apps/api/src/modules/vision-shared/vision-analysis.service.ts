@@ -147,9 +147,14 @@ export class VisionAnalysisService {
     }
   }
 
-  // Gỡ row vision + ảnh khi bước history_views hỏng. deleteVisionResult ở gateway xoá row (history_views
-  // cascade theo FK nếu có), deleteVisionImage gỡ file Storage. Mỗi bước bù trừ tự bọc lỗi: rollback hỏng
-  // KHÔNG được leo thang thành 5xx (kết quả LLM đã trả cho người dùng) — chỉ log để vận hành xử lý sau.
+  // Gỡ row vision + ảnh khi bước history_views hỏng. Gọi persistence.deleteVisionResult (gateway
+  // owner-scoped delete; history_views cascade theo FK), rồi deleteVisionImage gỡ file Storage.
+  //
+  // Thứ tự ở ĐÂY (row trước, ảnh sau) NGƯỢC với deleteVisionResult công khai (ảnh trước, row sau) — và
+  // sự bất đối xứng này là CỐ Ý: rollback ưu tiên gỡ row vô-chủ trước (row vừa tạo chưa có history_views
+  // trỏ tới, người dùng không bao giờ với tới được để tự xoá), còn delete công khai ưu tiên gỡ ảnh sinh
+  // trắc trước để không bao giờ để ảnh mồ côi trong bucket không-cron. Mỗi bước bù trừ tự bọc lỗi: rollback
+  // hỏng KHÔNG được leo thang thành 5xx (kết quả LLM đã trả cho người dùng) — chỉ log để vận hành xử lý sau.
   private async rollbackOrphanedVisionResult(
     ownerUserId: string,
     visionResultId: string,

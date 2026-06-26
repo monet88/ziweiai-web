@@ -307,6 +307,24 @@ describe('VisionAnalysisService', () => {
       expect(persistence.deleteVisionResult).not.toHaveBeenCalled();
     });
 
+    it('ảnh xoá xong nhưng xoá row hỏng → ném: trạng thái còn lại là ảnh đã gỡ, row còn (không vỡ ngầm)', async () => {
+      // Chốt nửa sau của thứ tự image-first: nếu deleteRow hỏng SAU khi deleteImage thành công thì
+      // row vision_results (+ history_views cascade) còn lại nhưng ảnh đã bị gỡ → listHistory sau đó
+      // trả visionImageUrl=null cho mục này. Đây là transient inconsistent state đã biết, KHÔNG phải
+      // data-loss: không có ảnh sinh trắc mồ côi (ưu tiên của bucket không-cron) và lỗi nổi lên cho
+      // caller thay vì nuốt lặng. Test khoá đúng thứ tự + việc lỗi được ném ra ngoài.
+      persistence.findVisionResultById = vi.fn().mockResolvedValue(existingRecord());
+      const deleteImage = storageGateway.deleteVisionImage as ReturnType<typeof vi.fn>;
+      deleteImage.mockResolvedValue(undefined);
+      persistence.deleteVisionResult = vi.fn().mockRejectedValue(new Error('row delete failed'));
+
+      await expect(service.deleteVisionResult(emailUser, VISION_ID)).rejects.toThrow('row delete failed');
+      expect(deleteImage).toHaveBeenCalledWith(`${emailUser.userId}/img.png`);
+      expect(deleteImage.mock.invocationCallOrder[0]).toBeLessThan(
+        (persistence.deleteVisionResult as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0],
+      );
+    });
+
     it('tài khoản khách (email null) → 403 IDENTITY_REQUIRED', async () => {
       try {
         await service.deleteVisionResult(anonUser, VISION_ID);

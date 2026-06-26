@@ -147,6 +147,52 @@ describe('backend API contracts', () => {
     expect(payload.items).toHaveLength(0);
   });
 
+  it('round-trips a vision history item with null and signed-URL visionImageUrl', () => {
+    // Contract proof for the signed-URL field (decision 0023): the success path carries a full
+    // https signed URL, the sign-failure path carries literal null. z.url().nullable() must accept
+    // both and reject a non-URL string — the web reads the image from this field, never from the
+    // raw imagePath, so a wrong shape here is a silent broken-image bug at the boundary.
+    const visionResult = {
+      id: '11111111-1111-4111-8111-111111111111',
+      ownerUserId: '22222222-2222-4222-8222-222222222222',
+      kind: 'palm' as const,
+      imagePath: '22222222-2222-4222-8222-222222222222/s1.jpg',
+      question: null,
+      renderedMarkdown: 'Luận giải xem chỉ tay.',
+      providerMetadata: { provider: 'gemini' },
+      createdAt: '2026-06-26T00:00:00.000Z',
+    };
+    const view = {
+      id: '33333333-3333-4333-8333-333333333333',
+      ownerUserId: '22222222-2222-4222-8222-222222222222',
+      chartSnapshotId: null,
+      explanationResultId: null,
+      visionResultId: visionResult.id,
+      viewedAt: '2026-06-26T00:00:00.000Z',
+    };
+    const baseItem = {
+      view,
+      chartRecord: null,
+      explanationResult: null,
+      divinationContext: null,
+      visionResult,
+    };
+
+    const signed = historyListResponseSchema.parse({
+      items: [{ ...baseItem, visionImageUrl: 'https://signed.example/vision.jpg' }],
+    });
+    expect(signed.items[0]?.visionImageUrl).toBe('https://signed.example/vision.jpg');
+
+    const nulled = historyListResponseSchema.parse({
+      items: [{ ...baseItem, visionImageUrl: null }],
+    });
+    expect(nulled.items[0]?.visionImageUrl).toBeNull();
+
+    expect(() =>
+      historyListResponseSchema.parse({ items: [{ ...baseItem, visionImageUrl: 'not-a-url' }] }),
+    ).toThrow();
+  });
+
   it('accepts conversation creation payloads', () => {
     const payload = createConversationRequestSchema.parse({
       chartSnapshotId: '0f8fad5b-d9cb-469f-a165-70867728950e',

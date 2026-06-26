@@ -39,9 +39,12 @@
     onCancel();
   }
 
-  // Modal chỉ mount khi mở → focus nút xác nhận ngay để keyboard user vào vùng dialog.
+  // Modal chỉ mount khi mở → focus nút xác nhận ngay để keyboard user vào vùng dialog. PrimaryButton
+  // render một <button> con; `node` là <div> bọc (không tabindex) nên focus thẳng vào nó sẽ trượt —
+  // truy nút thật bên trong rồi focus. Fallback focus chính node phòng khi cấu trúc đổi.
   function autofocus(node: HTMLElement): void {
-    node.focus();
+    const target = node.querySelector<HTMLButtonElement>('button') ?? node;
+    target.focus();
   }
 </script>
 

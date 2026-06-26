@@ -202,5 +202,9 @@ describe('HistoryService', () => {
 
     expect(response.items[0]?.visionResult?.id).toBe(visionResult.id);
     expect(response.items[0]?.visionImageUrl).toBeNull();
+    // Khẳng định nhánh ký URL thực sự được chạy: nếu một regression bỏ qua ký hoàn toàn thì
+    // visionImageUrl vẫn null (đúng kỳ vọng) nhưng test sẽ không phát hiện. Kiểm chứng gateway
+    // được gọi đúng path để chốt rằng null đến từ lỗi ký, không phải do bỏ qua bước ký.
+    expect(visionStorage.createSignedImageUrl).toHaveBeenCalledWith(visionResult.imagePath);
   });
 });

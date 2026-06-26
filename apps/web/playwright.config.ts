@@ -13,6 +13,12 @@ const API_ORIGIN = `http://localhost:${API_PORT}`;
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 
+// Nhóm @live (pnpm e2e:live) gọi LLM thật. Một số feature cần cờ server bật mới sinh được kết quả
+// thật — cụ thể báo cáo năm (AI_ANNUAL_REPORT_ENABLED, mặc định tắt ở mọi nơi để tránh đốt token).
+// webServer khởi động MỘT lần với env tĩnh nên phải quyết cờ tại đây: phát hiện chế độ live qua argv
+// (`--grep @live`) rồi chỉ bật cờ annual cho phiên live. Bộ default vẫn chạy với cờ tắt (paywall, 0 token).
+const isLiveRun = process.argv.some((arg, index) => arg === '--grep' && process.argv[index + 1] === '@live');
+
 export default defineConfig({
   testDir: './tests/e2e',
   // Luận giải AI gọi provider thật (mạng) → cho mỗi test tối đa 90s; toàn bộ flow 1 worker
@@ -69,6 +75,11 @@ export default defineConfig({
         EXTENDED_SYSTEM_PALM_ENABLED: 'true',
         // US-017h: bật cờ Tarot cho e2e (mặc định false ở mọi nơi khác → fail-closed).
         EXTENDED_SYSTEM_TAROT_ENABLED: 'true',
+        // Báo cáo năm (US-016) + Trợ lý hội thoại (US-018) chỉ sinh thật khi cờ tương ứng bật (mặc
+        // định tắt ở mọi nơi → nhánh paywall/FEATURE_DISABLED). webServer khởi động MỘT lần với env
+        // tĩnh nên chỉ bật cho phiên @live: bản live gọi LLM thật, bộ default giữ tắt (0 token LLM,
+        // các spec stub tự intercept request nên không phụ thuộc cờ server).
+        ...(isLiveRun ? { AI_ANNUAL_REPORT_ENABLED: 'true', AI_CONVERSATION_ENABLED: 'true' } : {}),
       },
     },
     {

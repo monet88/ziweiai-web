@@ -65,31 +65,34 @@ export function createHeaders(token?: string, hasBody = false): HeadersInit {
 }
 
 /**
- * Xử lý CHUNG cho mọi response backend: map lỗi HTTP → ApiError (ưu tiên message tiếng Việt từ
- * apiErrorSchema), rồi parse JSON qua schema contracts (không trust raw). fetchJson và fetchMultipart
- * cùng gọi hàm này để mọi sửa đổi (thêm mã lỗi, đổi cách trích message...) chỉ nằm một chỗ.
+ * Map một response lỗi (status không ok) sang ApiError, ưu tiên message tiếng Việt từ backend
+ * (apiErrorSchema: { code, message, requestId }); body không phải JSON → message generic. Tách riêng
+ * để fetchJson/fetchMultipart (qua parseResponseOrThrow) và fetchNoContent dùng CHUNG một cách map lỗi
+ * — đổi mã lỗi/cách trích message chỉ sửa một chỗ, không lệch hành vi ApiError giữa các nhánh.
  */
+async function throwHttpError(response: Response): Promise<never> {
+  const kind = mapStatusToKind(response.status);
+  let message = `Yêu cầu thất bại (${response.status}).`;
+  try {
+    const errorBody: unknown = await response.json();
+    if (
+      errorBody !== null &&
+      typeof errorBody === 'object' &&
+      'message' in errorBody &&
+      typeof (errorBody as { message: unknown }).message === 'string' &&
+      (errorBody as { message: string }).message.length > 0
+    ) {
+      message = (errorBody as { message: string }).message;
+    }
+  } catch {
+    // Body không phải JSON (ví dụ 500 trả HTML) → giữ message generic.
+  }
+  throw new ApiError(kind, message, response.status);
+}
+
 async function parseResponseOrThrow<T>(response: Response, schema: ZodType<T>): Promise<T> {
   if (!response.ok) {
-    const kind = mapStatusToKind(response.status);
-    // Ưu tiên message tiếng Việt từ backend (apiErrorSchema: { code, message, requestId }).
-    // Đọc body một lần ở đây; nếu không phải JSON hợp lệ thì rơi về message generic.
-    let message = `Yêu cầu thất bại (${response.status}).`;
-    try {
-      const errorBody: unknown = await response.json();
-      if (
-        errorBody !== null &&
-        typeof errorBody === 'object' &&
-        'message' in errorBody &&
-        typeof (errorBody as { message: unknown }).message === 'string' &&
-        (errorBody as { message: string }).message.length > 0
-      ) {
-        message = (errorBody as { message: string }).message;
-      }
-    } catch {
-      // Body không phải JSON (ví dụ 500 trả HTML) → giữ message generic.
-    }
-    throw new ApiError(kind, message, response.status);
+    await throwHttpError(response);
   }
 
   let raw: unknown;
@@ -156,23 +159,7 @@ export async function fetchNoContent(
   }
 
   if (!response.ok) {
-    const kind = mapStatusToKind(response.status);
-    let message = `Yêu cầu thất bại (${response.status}).`;
-    try {
-      const errorBody: unknown = await response.json();
-      if (
-        errorBody !== null &&
-        typeof errorBody === 'object' &&
-        'message' in errorBody &&
-        typeof (errorBody as { message: unknown }).message === 'string' &&
-        (errorBody as { message: string }).message.length > 0
-      ) {
-        message = (errorBody as { message: string }).message;
-      }
-    } catch {
-      // Body không phải JSON → giữ message generic.
-    }
-    throw new ApiError(kind, message, response.status);
+    await throwHttpError(response);
   }
 }
 

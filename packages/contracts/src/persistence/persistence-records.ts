@@ -79,7 +79,17 @@ export const visionResultRecordSchema = z.object({
   kind: visionKindSchema,
   imagePath: z.string().min(1),
   // Optional user question that focused the reading; null when none was asked.
-  question: z.string().trim().min(1).nullable(),
+  // Normalize first: a DB row may carry '' or whitespace-only text. Trimming to
+  // null here avoids a `too_small` failure that would otherwise blow up the whole
+  // history list parse (z.string().trim().min(1) treats '' as a string, so
+  // .nullable() never catches it). Empty/whitespace collapses to null.
+  question: z.preprocess((value) => {
+    if (typeof value !== 'string') {
+      return value;
+    }
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }, z.string().min(1).nullable()),
   renderedMarkdown: z.string().min(1),
   providerMetadata: z.record(z.string(), z.string()),
   createdAt: z.iso.datetime(),

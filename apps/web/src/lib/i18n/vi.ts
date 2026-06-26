@@ -120,6 +120,7 @@ export const viCopy = {
     navOpen: 'Tướng',
     privacyNotice:
       'Ảnh chỉ dùng để luận giải, lưu riêng tư trong tài khoản của bạn và được giữ lại để xem trong lịch sử. Vui lòng chỉ tải ảnh của chính bạn.',
+    overlayLabel: 'Lớp phủ minh hoạ các đường nét nhận diện được trên ảnh.',
     identityRequired: 'Tính năng Xem Tướng yêu cầu đăng nhập bằng email; tài khoản khách không sử dụng được.',
     missingImage: 'Hãy chọn một tấm ảnh trước khi luận giải.',
     invalidImageType: 'Định dạng ảnh không được hỗ trợ. Chỉ chấp nhận JPEG, PNG hoặc WebP.',
@@ -149,6 +150,7 @@ export const viCopy = {
     missingImage: 'Hãy chọn một tấm ảnh trước khi luận giải.',
     invalidImageType: 'Định dạng ảnh không được hỗ trợ. Chỉ chấp nhận JPEG, PNG hoặc WebP.',
     imageTooLarge: 'Ảnh vượt quá 4MB. Vui lòng chọn ảnh nhỏ hơn.',
+    overlayLabel: 'Lớp phủ minh hoạ các đường nét nhận diện được trên ảnh lòng bàn tay.',
   },
   tarot: {
     heroEyebrow: 'TAROT',

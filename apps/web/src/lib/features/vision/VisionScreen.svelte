@@ -9,6 +9,7 @@
   import { AppScaffold, PrimaryButton, NoticeBanner } from '$lib/components/ui';
   import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
   import { createVisionModel, type VisionCopy } from './vision-model.svelte';
+  import PalmLandmarkOverlay from './PalmLandmarkOverlay.svelte';
   import type { VisionKind } from '@ziweiai/contracts';
 
   interface Props {
@@ -30,6 +31,8 @@
   // URL preview tạo từ File đang chọn. Quản ở component (DOM/trình duyệt) chứ không ở model: object URL
   // là tài nguyên trình duyệt cần revoke đúng vòng đời để tránh rò bộ nhớ.
   let previewUrl = $state<string | null>(null);
+  // Ref tới ảnh preview để lớp phủ Xem Tay đo đúng vùng hiển thị (chỉ dùng khi kind==='palm').
+  let previewImg = $state<HTMLImageElement | null>(null);
 
   // Tạo object URL khi có ảnh, revoke khi ảnh đổi/biến mất (cleanup của $effect chạy trước lần kế tiếp
   // và khi unmount). Theo dõi model.imageFile làm dependency.
@@ -128,7 +131,17 @@
 
         {#if previewUrl}
           <figure class="preview">
-            <img class="preview-img" src={previewUrl} alt={model.imageFile?.name ?? copy.uploadLabel} />
+            <div class="preview-canvas">
+              <img
+                bind:this={previewImg}
+                class="preview-img"
+                src={previewUrl}
+                alt={model.imageFile?.name ?? copy.uploadLabel}
+              />
+              {#if kind === 'palm'}
+                <PalmLandmarkOverlay image={previewImg} label={copy.overlayLabel} />
+              {/if}
+            </div>
             <figcaption class="preview-bar">
               <span class="preview-name" title={model.imageFile?.name}>{model.imageFile?.name}</span>
               <span class="preview-actions">
@@ -315,6 +328,12 @@
     border-radius: var(--radius-lg);
     overflow: hidden;
     background: var(--color-bg-surface);
+  }
+
+  /* Khung chứa ảnh + lớp phủ landmark: relative để overlay (absolute, inset:0) khớp đúng ảnh. */
+  .preview-canvas {
+    position: relative;
+    display: block;
   }
 
   .preview-img {

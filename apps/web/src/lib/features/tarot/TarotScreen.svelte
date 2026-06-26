@@ -26,7 +26,11 @@
   // copy là prop tĩnh (route truyền literal) nên nhãn không đổi sau mount → bọc untrack để Svelte 5
   // không cảnh báo state_referenced_locally.
   const spreadOptions: ReadonlyArray<{ value: TarotSpread; label: string }> = untrack(() => [
+    { value: 'single', label: copy.spreadSingle },
     { value: 'three-card', label: copy.spreadThreeCard },
+    { value: 'diamond', label: copy.spreadDiamond },
+    { value: 'moon', label: copy.spreadMoon },
+    { value: 'horseshoe', label: copy.spreadHorseshoe },
     { value: 'celtic-cross', label: copy.spreadCelticCross },
   ]);
 

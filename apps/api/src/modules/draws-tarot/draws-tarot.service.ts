@@ -1,12 +1,18 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { tarotDrawSchema, type AuthenticatedUser, type TarotDraw, type TarotSpread } from '@ziweiai/contracts';
+import {
+  tarotDrawSchema,
+  TAROT_SPREAD_CARD_COUNTS,
+  type AuthenticatedUser,
+  type TarotDraw,
+  type TarotSpread,
+} from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
 import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
 import { QuotasService } from '../quotas/quotas.service';
 import { drawDeterministic, type TarotCardDraw } from './tarot-deck';
-import { buildTarotReadingPrompt } from './tarot-prompts';
+import { buildTarotReadingPrompt, SPREAD_LABELS_VI } from './tarot-prompts';
 
 @Injectable()
 export class DrawsTarotService {
@@ -50,7 +56,7 @@ export class DrawsTarotService {
     // null), nên dùng !user.email để không bỏ lọt nhánh anon. Đồng bộ với assertEmailIdentityRequired.
     await this.assertCanCreateTarotDraw(user.userId, ipAddress, !user.email);
 
-    const count = spread === 'celtic-cross' ? 10 : 3;
+    const count = TAROT_SPREAD_CARD_COUNTS[spread];
     const cards = drawDeterministic(seed, count).map((card, index) => ({ ...card, position: index }));
     const narrative = await this.generateNarrative(normalizedQuestion, cards, spread);
 
@@ -130,7 +136,7 @@ export class DrawsTarotService {
     cards: ReadonlyArray<TarotCardDraw & { position: number }>,
     spread: TarotSpread,
   ): string {
-    const spreadLabel = spread === 'celtic-cross' ? 'trải bài Celtic Cross' : 'trải bài ba lá';
+    const spreadLabel = SPREAD_LABELS_VI[spread];
     const cardSummary = cards
       .map((card) => `${card.position + 1}. ${card.name}${card.reversed ? ' (ngược)' : ''}`)
       .join('; ');

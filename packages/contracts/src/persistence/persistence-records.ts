@@ -3,6 +3,7 @@ import { birthInputSchema } from '../chart/birth-input';
 import { chartSnapshotSchema } from '../chart/chart-snapshot';
 import { chartSystemSchema } from '../chart/chart-system';
 import { normalizedBirthSchema } from '../chart/chart-metadata';
+import { visionKindSchema } from '../chart/vision-analysis';
 
 export const explanationRequestStateSchema = z.enum([
   'pending',
@@ -69,6 +70,21 @@ export const explanationResultRecordSchema = z.object({
   createdAt: z.iso.datetime(),
 });
 
+// US-017 follow-up (decision 0023): one row per vision analysis (face/palm).
+// Parallels explanationResultRecord, but vision has no chart snapshot / request row.
+// Column names mirror migration 000009_vision-results-history.sql exactly.
+export const visionResultRecordSchema = z.object({
+  id: z.uuid(),
+  ownerUserId: z.uuid(),
+  kind: visionKindSchema,
+  imagePath: z.string().min(1),
+  // Optional user question that focused the reading; null when none was asked.
+  question: z.string().trim().min(1).nullable(),
+  renderedMarkdown: z.string().min(1),
+  providerMetadata: z.record(z.string(), z.string()),
+  createdAt: z.iso.datetime(),
+});
+
 export const conversationStatusSchema = z.enum(['active', 'archived']);
 export const conversationMessageRoleSchema = z.enum(['user', 'assistant']);
 
@@ -99,6 +115,8 @@ export const historyViewRecordSchema = z.object({
   ownerUserId: z.uuid(),
   chartSnapshotId: z.uuid().nullable(),
   explanationResultId: z.uuid().nullable(),
+  // US-017 follow-up (decision 0023): links a history row to a vision (face/palm) reading.
+  visionResultId: z.uuid().nullable(),
   viewedAt: z.iso.datetime(),
 });
 
@@ -155,6 +173,7 @@ export type BirthProfileRecord = z.infer<typeof birthProfileRecordSchema>;
 export type ChartSnapshotRecord = z.infer<typeof chartSnapshotRecordSchema>;
 export type ExplanationRequestRecord = z.infer<typeof explanationRequestRecordSchema>;
 export type ExplanationResultRecord = z.infer<typeof explanationResultRecordSchema>;
+export type VisionResultRecord = z.infer<typeof visionResultRecordSchema>;
 export type ConversationRecord = z.infer<typeof conversationRecordSchema>;
 export type ConversationMessageRecord = z.infer<typeof conversationMessageRecordSchema>;
 export type HistoryViewRecord = z.infer<typeof historyViewRecordSchema>;

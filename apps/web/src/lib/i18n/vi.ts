@@ -119,7 +119,7 @@ export const viCopy = {
     returnToDashboard: 'Quay về trang chính',
     navOpen: 'Tướng',
     privacyNotice:
-      'Ảnh chỉ dùng để luận giải, lưu riêng tư và tự động xoá sau 7 ngày. Vui lòng chỉ tải ảnh của chính bạn.',
+      'Ảnh chỉ dùng để luận giải, lưu riêng tư trong tài khoản của bạn và được giữ lại để xem trong lịch sử. Vui lòng chỉ tải ảnh của chính bạn.',
     identityRequired: 'Tính năng Xem Tướng yêu cầu đăng nhập bằng email; tài khoản khách không sử dụng được.',
     missingImage: 'Hãy chọn một tấm ảnh trước khi luận giải.',
     invalidImageType: 'Định dạng ảnh không được hỗ trợ. Chỉ chấp nhận JPEG, PNG hoặc WebP.',
@@ -144,7 +144,7 @@ export const viCopy = {
     returnToDashboard: 'Quay về trang chính',
     navOpen: 'Tay',
     privacyNotice:
-      'Ảnh chỉ dùng để luận giải, lưu riêng tư và tự động xoá sau 7 ngày. Vui lòng chỉ tải ảnh của chính bạn.',
+      'Ảnh chỉ dùng để luận giải, lưu riêng tư trong tài khoản của bạn và được giữ lại để xem trong lịch sử. Vui lòng chỉ tải ảnh của chính bạn.',
     identityRequired: 'Tính năng Xem Tay yêu cầu đăng nhập bằng email; tài khoản khách không sử dụng được.',
     missingImage: 'Hãy chọn một tấm ảnh trước khi luận giải.',
     invalidImageType: 'Định dạng ảnh không được hỗ trợ. Chỉ chấp nhận JPEG, PNG hoặc WebP.',
@@ -419,6 +419,12 @@ export const viCopy = {
     openHistoryScreen: 'Mở toàn bộ lịch sử',
     savedExplanation: 'Đã có luận giải đã lưu',
     title: 'Lá số gần đây',
+    visionSectionTitle: 'Xem Tướng & Xem Tay đã lưu',
+    visionKindFace: 'Xem Tướng',
+    visionKindPalm: 'Xem Tay',
+    visionQuestionLabel: 'Câu hỏi',
+    visionImageAlt: 'Ảnh đã tải lên để luận giải',
+    visionImageUnavailable: 'Ảnh không còn khả dụng',
   },
   normalizationMessage: {
     'birth.time.unknown': 'Chưa có giờ sinh chính xác.',

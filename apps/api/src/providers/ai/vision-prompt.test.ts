@@ -45,8 +45,11 @@ describe('buildVisionUserPrompt', () => {
     expect(prompt).not.toMatch(CJK_TEXT_PATTERN);
   });
 
-  it('appends the user question when provided', () => {
+  it('đặt câu hỏi người dùng làm trọng tâm khi có (trả lời trực tiếp, không theo form chung)', () => {
     const prompt = buildVisionUserPrompt('face', 'Sự nghiệp của tôi thế nào?');
-    expect(prompt).toContain('Câu hỏi người dùng đặc biệt quan tâm: Sự nghiệp của tôi thế nào?');
+    expect(prompt).toContain('Sự nghiệp của tôi thế nào?');
+    expect(prompt).toContain('Nhiệm vụ chính của bạn là TRẢ LỜI');
+    expect(prompt).toContain('## Trả lời câu hỏi của bạn');
+    expect(prompt).not.toMatch(CJK_TEXT_PATTERN);
   });
 });

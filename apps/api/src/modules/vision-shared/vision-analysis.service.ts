@@ -10,6 +10,7 @@ import { QuotasService } from '../quotas/quotas.service';
 import { RateLimitWindowError } from '../quotas/quota-errors';
 import { buildVisionUserPrompt } from './vision-prompts';
 import { VisionStorageGateway } from './vision-storage.gateway';
+import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 
 export interface VisionAnalysisInput {
   kind: VisionKind;
@@ -44,6 +45,7 @@ export class VisionAnalysisService {
     private readonly quotasService: QuotasService,
     private readonly providerRouter: ExplanationProviderRouter,
     private readonly storageGateway: VisionStorageGateway,
+    private readonly persistence: SupabasePersistenceGateway,
   ) {}
 
   async analyze(input: VisionAnalysisInput): Promise<VisionAnalysis> {
@@ -72,16 +74,42 @@ export class VisionAnalysisService {
 
     // GATE 5: gọi vision LLM TRƯỚC, upload ảnh SAU khi có kết quả. Ảnh chân dung/lòng bàn tay là dữ
     // liệu sinh trắc — nếu upload trước rồi LLM lỗi (chưa cấu hình provider đọc ảnh, timeout/5xx, CJK
-    // guard từ chối) thì ảnh đã ghi vào Storage mà người dùng không nhận được kết quả, chỉ bị cron xoá
-    // sau 7 ngày (review PR #28). Provider chỉ cần imageBytes/mimeType (không cần imagePath) nên đảo
-    // thứ tự an toàn: LLM lỗi → ném sớm, KHÔNG ghi ảnh mồ côi.
-    const narrative = await this.generateVisionNarrative(kind, mimeType, imageBytes, question);
+    // guard từ chối) thì ảnh đã ghi vào Storage mà người dùng không nhận được kết quả. Provider chỉ
+    // cần imageBytes/mimeType (không cần imagePath) nên đảo thứ tự an toàn: LLM lỗi → ném sớm, KHÔNG
+    // ghi ảnh mồ côi.
+    const { narrative, providerMetadata } = await this.generateVisionNarrative(kind, mimeType, imageBytes, question);
 
     const { imagePath } = await this.storageGateway.uploadVisionImage({
       ownerUserId: user.userId,
       imageBytes,
       mimeType,
     });
+
+    // US-017 follow-up (decision 0023): lưu vĩnh viễn ảnh + luận giải + câu hỏi để Xem Tướng/Xem Tay
+    // hiện trong Lịch sử như mọi hệ khác. Một row vision_results + một row history_views trỏ vào nó.
+    // Bọc trong try/catch không nuốt lỗi: persist hỏng vẫn trả kết quả cho người dùng (họ đã chờ LLM),
+    // chỉ log cảnh báo — KHÔNG để lỗi ghi lịch sử biến một lượt vision thành công thành 5xx.
+    const normalizedQuestion = question?.trim() ? question.trim() : null;
+    try {
+      const visionResult = await this.persistence.createVisionResult({
+        ownerUserId: user.userId,
+        kind,
+        imagePath,
+        question: normalizedQuestion,
+        renderedMarkdown: narrative,
+        providerMetadata,
+      });
+      await this.persistence.createHistoryView({
+        ownerUserId: user.userId,
+        chartSnapshotId: null,
+        explanationResultId: null,
+        visionResultId: visionResult.id,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `[vision.${kind}] persist lịch sử thất bại (kết quả vẫn trả về): ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
 
     return visionAnalysisSchema.parse({ kind, imagePath, narrative });
   }
@@ -118,7 +146,7 @@ export class VisionAnalysisService {
     mimeType: string,
     imageBytes: Uint8Array,
     question?: string,
-  ): Promise<string> {
+  ): Promise<{ narrative: string; providerMetadata: Record<string, string> }> {
     const base64 = Buffer.from(imageBytes).toString('base64');
     try {
       const providerResult = await this.providerRouter.generate('auto', {
@@ -129,7 +157,7 @@ export class VisionAnalysisService {
       this.logger.log(
         `[vision.${kind}] outcome=generated provider=${providerResult.providerMetadata.provider ?? 'unknown'} tokensIn=${providerResult.providerMetadata.promptTokens ?? '0'} tokensOut=${providerResult.providerMetadata.completionTokens ?? '0'}`,
       );
-      return providerResult.renderedMarkdown;
+      return { narrative: providerResult.renderedMarkdown, providerMetadata: providerResult.providerMetadata };
     } catch (error) {
       if (error instanceof ProviderTimeoutError) {
         throw new ApiErrorHttpException(HttpStatus.GATEWAY_TIMEOUT, 'PROVIDER_TIMEOUT', error.message);

@@ -1,10 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ChartSnapshotRecord, ExplanationResultRecord, HistoryViewRecord } from '@ziweiai/contracts';
+import type {
+  ChartSnapshotRecord,
+  ExplanationResultRecord,
+  HistoryViewRecord,
+  VisionResultRecord,
+} from '@ziweiai/contracts';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+import { VisionStorageGateway } from '../../vision-shared/vision-storage.gateway';
 import { HistoryService } from './history.service';
 
 const USER_ID = '22222222-2222-4222-8222-222222222222';
 const CHART_ID = '33333333-3333-4333-8333-333333333333';
+const VISION_RESULT_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 
 function createHistoryView(overrides: Partial<HistoryViewRecord> = {}): HistoryViewRecord {
   return {
@@ -12,7 +19,22 @@ function createHistoryView(overrides: Partial<HistoryViewRecord> = {}): HistoryV
     ownerUserId: USER_ID,
     chartSnapshotId: CHART_ID,
     explanationResultId: null,
+    visionResultId: null,
     viewedAt: '2026-06-10T12:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function createVisionResult(overrides: Partial<VisionResultRecord> = {}): VisionResultRecord {
+  return {
+    id: VISION_RESULT_ID,
+    ownerUserId: USER_ID,
+    kind: 'palm',
+    imagePath: `${USER_ID}/cccccccc-cccc-4ccc-8ccc-cccccccccccc.jpg`,
+    question: 'Tình duyên của tôi thế nào?',
+    renderedMarkdown: 'Luận giải xem chỉ tay đã lưu.',
+    providerMetadata: { provider: 'gemini', visionKind: 'palm' },
+    createdAt: '2026-06-10T12:10:00.000Z',
     ...overrides,
   };
 }
@@ -38,6 +60,7 @@ function createGateway(overrides: Partial<Record<keyof SupabasePersistenceGatewa
     findExplanationResultsByIds: vi.fn(async () => ({} as Record<string, ExplanationResultRecord>)),
     findLatestExplanationResultsForCharts: vi.fn(async () => ({} as Record<string, ExplanationResultRecord>)),
     findDivinationContextsByChartIds: vi.fn(async () => ({} as Record<string, unknown>)),
+    findVisionResultsByIds: vi.fn(async () => ({} as Record<string, VisionResultRecord>)),
     findChartSnapshotById: vi.fn(async () => null as ChartSnapshotRecord | null),
     findExplanationResultById: vi.fn(async () => null as ExplanationResultRecord | null),
     listExplanationResultsForChart: vi.fn(async () => [] as ExplanationResultRecord[]),
@@ -48,6 +71,14 @@ function createGateway(overrides: Partial<Record<keyof SupabasePersistenceGatewa
   return gateway as unknown as SupabasePersistenceGateway;
 }
 
+function createVisionStorage(signedUrl: string | null = 'https://signed.example/vision.jpg') {
+  const gateway = {
+    createSignedImageUrl: vi.fn(async () => signedUrl),
+  };
+
+  return gateway as unknown as VisionStorageGateway;
+}
+
 describe('HistoryService', () => {
   it('gắn luận giải mới nhất của chart cho history view không trỏ trực tiếp tới result', async () => {
     const view = createHistoryView();
@@ -56,7 +87,7 @@ describe('HistoryService', () => {
       listHistoryViews: vi.fn(async () => [view]),
       findLatestExplanationResultsForCharts: vi.fn(async () => ({ [CHART_ID]: latestResult })),
     });
-    const service = new HistoryService(gateway);
+    const service = new HistoryService(gateway, createVisionStorage());
 
     const response = await service.listHistory(USER_ID, 20);
 
@@ -72,7 +103,7 @@ describe('HistoryService', () => {
       listHistoryViews: vi.fn(async () => [view]),
       findExplanationResultsByIds: vi.fn(async () => ({ [directResult.id]: directResult })),
     });
-    const service = new HistoryService(gateway);
+    const service = new HistoryService(gateway, createVisionStorage());
 
     const response = await service.listHistory(USER_ID, 20);
 
@@ -89,7 +120,7 @@ describe('HistoryService', () => {
       findExplanationResultsByIds: vi.fn(async () => ({})),
       findLatestExplanationResultsForCharts: vi.fn(async () => ({ [CHART_ID]: latestResult })),
     });
-    const service = new HistoryService(gateway);
+    const service = new HistoryService(gateway, createVisionStorage());
 
     const response = await service.listHistory(USER_ID, 20);
 
@@ -114,7 +145,7 @@ describe('HistoryService', () => {
       findExplanationResultsByIds: vi.fn(async () => ({ [directResult.id]: directResult })),
       findLatestExplanationResultsForCharts: vi.fn(async () => ({ [CHART_ID]: directResult, [chartTwoId]: latestResult })),
     });
-    const service = new HistoryService(gateway);
+    const service = new HistoryService(gateway, createVisionStorage());
 
     const response = await service.listHistory(USER_ID, 20);
 
@@ -128,5 +159,48 @@ describe('HistoryService', () => {
     expect(gateway.findChartSnapshotById).not.toHaveBeenCalled();
     expect(gateway.findExplanationResultById).not.toHaveBeenCalled();
     expect(gateway.findLatestExplanationResultForChart).not.toHaveBeenCalled();
+  });
+
+  it('gắn vision result + ảnh đã ký cho history view xem chỉ tay/xem tướng', async () => {
+    const visionResult = createVisionResult();
+    const view = createHistoryView({
+      chartSnapshotId: null,
+      visionResultId: visionResult.id,
+    });
+    const gateway = createGateway({
+      listHistoryViews: vi.fn(async () => [view]),
+      findVisionResultsByIds: vi.fn(async () => ({ [visionResult.id]: visionResult })),
+    });
+    const visionStorage = createVisionStorage('https://signed.example/palm.jpg');
+    const service = new HistoryService(gateway, visionStorage);
+
+    const response = await service.listHistory(USER_ID, 20);
+
+    expect(response.items[0]?.visionResult?.id).toBe(visionResult.id);
+    expect(response.items[0]?.visionResult?.question).toBe('Tình duyên của tôi thế nào?');
+    expect(response.items[0]?.visionImageUrl).toBe('https://signed.example/palm.jpg');
+    expect(response.items[0]?.chartRecord).toBeNull();
+    expect(response.items[0]?.explanationResult).toBeNull();
+    expect(gateway.findVisionResultsByIds).toHaveBeenCalledWith(USER_ID, [visionResult.id]);
+    expect(visionStorage.createSignedImageUrl).toHaveBeenCalledWith(visionResult.imagePath);
+  });
+
+  it('giữ vision result nhưng để visionImageUrl null khi ký URL thất bại (ảnh hỏng không làm sập danh sách)', async () => {
+    const visionResult = createVisionResult({ kind: 'face' });
+    const view = createHistoryView({
+      chartSnapshotId: null,
+      visionResultId: visionResult.id,
+    });
+    const gateway = createGateway({
+      listHistoryViews: vi.fn(async () => [view]),
+      findVisionResultsByIds: vi.fn(async () => ({ [visionResult.id]: visionResult })),
+    });
+    const visionStorage = createVisionStorage(null);
+    const service = new HistoryService(gateway, visionStorage);
+
+    const response = await service.listHistory(USER_ID, 20);
+
+    expect(response.items[0]?.visionResult?.id).toBe(visionResult.id);
+    expect(response.items[0]?.visionImageUrl).toBeNull();
   });
 });

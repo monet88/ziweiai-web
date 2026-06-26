@@ -62,22 +62,38 @@ export function buildVisionUserPrompt(kind: VisionKind, question?: string): stri
   const structure = kind === 'face' ? FACE_STRUCTURE : PALM_STRUCTURE;
   const subject = kind === 'face' ? 'khuôn mặt' : 'lòng bàn tay';
 
-  const lines = [
+  const trimmedQuestion = question?.trim();
+
+  // Có câu hỏi: ĐẶT câu hỏi làm trọng tâm ngay đầu prompt + chỉ thị bám sát, để model không trả lời
+  // theo khuôn 6 mục cứng rồi bỏ qua điều người dùng thật sự muốn biết (bug: hỏi "tình duyên" nhưng
+  // chỉ nhận luận giải tổng quát). Các mục cấu trúc lúc này là BẰNG CHỨNG quan sát để trả lời câu hỏi,
+  // không phải bản tường thuật độc lập; chốt bằng một đoạn trả lời thẳng câu hỏi.
+  if (trimmedQuestion) {
+    return [
+      persona,
+      '',
+      `Người dùng gửi ảnh ${subject} kèm câu hỏi cụ thể, và điều họ muốn biết nhất là:`,
+      `"${trimmedQuestion}"`,
+      '',
+      `Nhiệm vụ chính của bạn là TRẢ LỜI trực tiếp câu hỏi này dựa trên những gì quan sát được trên ${subject} trong ảnh.`,
+      'Hãy soi kỹ các nét tướng LIÊN QUAN tới câu hỏi và diễn giải chúng để phục vụ câu trả lời; có thể tham chiếu các nét khác làm bối cảnh, nhưng đừng sa đà liệt kê đầy đủ mọi bộ phận một cách máy móc.',
+      '',
+      'Tham khảo khung quan sát sau để rút ra dẫn chứng (KHÔNG cần trình bày tuần tự hết các mục nếu không liên quan tới câu hỏi):',
+      structure,
+      '',
+      `Cuối bài, viết một đoạn "## Trả lời câu hỏi của bạn" đúc kết trực tiếp cho câu hỏi "${trimmedQuestion}", kèm gợi ý tích cực.`,
+      '',
+      'Nếu ảnh không đủ rõ hoặc góc chụp không phù hợp để trả lời câu hỏi, hãy nói rõ cần tấm ảnh như thế nào thay vì suy đoán.',
+    ].join('\n');
+  }
+
+  // Không có câu hỏi: luận giải tổng quát theo khung cấu trúc đầy đủ (luồng cũ).
+  return [
     persona,
     '',
     `Hãy phân tích tấm ảnh ${subject} được đính kèm.`,
     structure,
-  ];
-
-  const trimmedQuestion = question?.trim();
-  if (trimmedQuestion) {
-    lines.push('', `Câu hỏi người dùng đặc biệt quan tâm: ${trimmedQuestion}`);
-  }
-
-  lines.push(
     '',
     'Nếu ảnh không đủ rõ hoặc góc chụp không phù hợp, hãy nói rõ cần tấm ảnh như thế nào thay vì suy đoán.',
-  );
-
-  return lines.join('\n');
+  ].join('\n');
 }

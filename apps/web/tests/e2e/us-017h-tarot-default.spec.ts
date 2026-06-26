@@ -24,8 +24,14 @@ test('US-017h: rút Tarot ba lá (stub) → render 3 lá + ảnh + diễn giải
   // Stub trả 3 lá three-card; ảnh trỏ tới static/tarot/<id>.jpg (id khớp file thật → tải được).
   const cardImages = page.locator('img[src*="/tarot/"]');
   await expect(cardImages).toHaveCount(3);
-  const firstWidth = await cardImages.first().evaluate((img) => (img as HTMLImageElement).naturalWidth);
-  expect(firstWidth, 'ảnh lá Tarot phải tải được (naturalWidth > 0)').toBeGreaterThan(0);
+  // Khẳng định ảnh THẬT SỰ tải xong (naturalWidth > 0). Dùng expect.poll thay vì evaluate() một lần:
+  // toHaveCount chỉ xác nhận <img> có trong DOM, KHÔNG đảm bảo đã decode xong — đọc naturalWidth ngay
+  // có thể bắt được lúc còn 0 → flaky CI. poll lặp lại tới khi ảnh load (hoặc hết 15s).
+  await expect
+    .poll(async () => cardImages.first().evaluate((img) => (img as HTMLImageElement).naturalWidth), {
+      timeout: 15_000,
+    })
+    .toBeGreaterThan(0);
 
   // Bất biến ngôn ngữ: vùng kết quả (tên lá + diễn giải) không được chứa ký tự Hán.
   const resultText = await page.getByRole('main').innerText();

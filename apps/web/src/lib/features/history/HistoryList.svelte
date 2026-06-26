@@ -249,11 +249,14 @@
             {/if}
             {#if item.imageUrl && !failedImageUrls.has(item.imageUrl)}
               {@const imageUrl = item.imageUrl}
+              <!-- KHÔNG dùng loading="lazy": signed URL ngắn hạn (~1h) được ký tại lúc liệt kê. Hoãn
+                   tải ảnh offscreen tới khi vào viewport có thể rơi vào SAU khi URL hết hạn (tab mở
+                   lâu không refetch) → ảnh hỏng vĩnh viễn. Tải ngay khi URL còn tươi + trình duyệt
+                   cache là đúng cho ảnh có URL hết hạn nhanh. -->
               <img
                 class="vision-image"
                 src={imageUrl}
                 alt={viCopy.history.visionImageAlt}
-                loading="lazy"
                 decoding="async"
                 onerror={() => markImageFailed(imageUrl)}
               />

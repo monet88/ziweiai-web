@@ -32,6 +32,11 @@ import { normalizePostgresTimestamp } from './postgres-timestamp';
 
 type SupabaseRow = Record<string, unknown>;
 
+// Trần phòng thủ cho danh sách hội thoại theo một lá số (listConversationsForChart). Query không có
+// pagination/cursor; con số này đủ rộng cho mọi ca thực tế nhưng chặn payload vô hạn nếu một lá số
+// bị tạo bất thường nhiều hội thoại. Kết quả newest-first nên trần cắt bỏ hội thoại cũ nhất.
+const MAX_CONVERSATIONS_PER_CHART = 200;
+
 /** Bản ghi cache báo cáo năm (US-016). Không phải public contract — chỉ dùng nội bộ server. */
 export interface AnnualReportRecord {
   id: string;
@@ -593,7 +598,11 @@ export class SupabasePersistenceGateway {
       .select('*')
       .eq('owner_user_id', ownerUserId)
       .eq('chart_snapshot_id', chartSnapshotId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      // Chặn trên phòng thủ: số hội thoại trên một lá số thực tế nhỏ, nhưng query không có
+      // pagination/cursor nên cần một trần để một lá số bị tạo bất thường nhiều hội thoại không kéo
+      // về payload không giới hạn. Newest-first nên trần cắt bỏ các hội thoại cũ nhất, không cắt mới.
+      .limit(MAX_CONVERSATIONS_PER_CHART);
     this.throwIfError(error);
     return (data ?? []).map((row: SupabaseRow) => this.toConversationRecord(row));
   }

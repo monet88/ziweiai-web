@@ -77,7 +77,12 @@ export class VisionStorageGateway {
       // danh sách lịch sử: HistoryService ký song song bằng Promise.all, một lần ký ném sẽ reject
       // cả batch → GET /history 5xx. Nuốt ở đây và trả null như mọi lỗi ký khác — một ảnh hỏng chỉ
       // mất đúng ảnh đó.
-      this.logger.warn(
+      //
+      // Log ở mức `error` (không phải `warn`): một ngoại lệ ném ra báo hiệu lỗi BẤT THƯỜNG (storage
+      // sập, mạng, SDK lỗi) chứ không phải path-lạ thông thường (đã trả null ở nhánh trên với `warn`).
+      // Nếu một sự cố storage hệ thống khiến MỌI lần ký ném, ta vẫn trả danh sách toàn ảnh-null lặng
+      // lẽ; mức `error` để các sự cố diện rộng đó nổi lên monitoring thay vì chìm trong warn per-item.
+      this.logger.error(
         `[vision.storage] ký URL ném ngoại lệ path=${imagePath}: ${error instanceof Error ? error.message : String(error)}`,
       );
       return null;

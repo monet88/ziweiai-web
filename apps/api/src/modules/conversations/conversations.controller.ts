@@ -1,8 +1,7 @@
-import { Body, Controller, Get, HttpStatus, Param, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Param, Post, Query, Req, Res } from '@nestjs/common';
 import {
   createConversationRequestSchema,
   createConversationMessageRequestSchema,
-  conversationListResponseSchema,
   conversationStreamEventSchema,
   type AuthenticatedUser,
 } from '@ziweiai/contracts';
@@ -28,12 +27,14 @@ export class ConversationsController {
 
   @Get()
   async listConversations(
-    @CurrentUser() _currentUser: AuthenticatedUser,
-    @Req() _request: AuthenticatedRequest,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Query('chartSnapshotId') chartSnapshotId: string | undefined,
   ) {
-    // For now list by chart via query param is not implemented; expose detail by id instead.
-    // Return empty shape to keep contract; actual list-by-chart is via ChartDetail enrichment later.
-    return conversationListResponseSchema.parse({ items: [] });
+    // List-by-chart: the client always scopes conversations to a chart (the assistant panel lives on
+    // the chart-detail screen). chartSnapshotId is required — without it there is no useful "all my
+    // conversations" view in the product, and an unscoped list would be an unbounded cross-chart scan.
+    const parsedChartId = z.uuid().parse(chartSnapshotId);
+    return this.conversationsService.listConversationsForChart(currentUser.userId, parsedChartId);
   }
 
   @Get(':conversationId')

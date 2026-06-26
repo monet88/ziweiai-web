@@ -77,3 +77,58 @@ describe('ConversationsService entitlement gate', () => {
     expect(quotasService.assertCanCreateConversationMessage).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('ConversationsService.listConversationsForChart', () => {
+  const CHART_ID = '44444444-4444-4444-8444-944444444444';
+
+  function buildService(
+    gateway: Pick<SupabasePersistenceGateway, 'findChartSnapshotById' | 'listConversationsForChart'>,
+  ): ConversationsService {
+    return new ConversationsService(
+      gateway as SupabasePersistenceGateway,
+      {} as QuotasService,
+      {} as ConversationProviderRouter,
+    );
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('trả NOT_FOUND khi chart không thuộc người dùng (không lộ tồn tại lá số người khác)', async () => {
+    const gateway = {
+      findChartSnapshotById: vi.fn().mockResolvedValue(null),
+      listConversationsForChart: vi.fn(),
+    };
+    const service = buildService(gateway);
+
+    try {
+      await service.listConversationsForChart(emailUser.userId, CHART_ID);
+      throw new Error('expected NOT_FOUND to throw');
+    } catch (error) {
+      expectApiError(error, HttpStatus.NOT_FOUND, 'NOT_FOUND');
+    }
+    // Ownership check must short-circuit BEFORE listing conversations.
+    expect(gateway.listConversationsForChart).not.toHaveBeenCalled();
+  });
+
+  it('trả danh sách conversation của chart (newest-first từ gateway) trong shape items', async () => {
+    const OWNER_ID = '11111111-1111-4111-8111-911111111111';
+    const ID_NEWER = '55555555-5555-4555-8555-955555555555';
+    const ID_OLDER = '66666666-6666-4666-8666-966666666666';
+    const conversations = [
+      { id: ID_NEWER, ownerUserId: OWNER_ID, chartSnapshotId: CHART_ID, title: null, status: 'active', createdAt: '2026-06-26T02:00:00.000Z', updatedAt: '2026-06-26T02:00:00.000Z' },
+      { id: ID_OLDER, ownerUserId: OWNER_ID, chartSnapshotId: CHART_ID, title: null, status: 'active', createdAt: '2026-06-26T01:00:00.000Z', updatedAt: '2026-06-26T01:00:00.000Z' },
+    ];
+    const gateway = {
+      findChartSnapshotById: vi.fn().mockResolvedValue({ snapshot: {} }),
+      listConversationsForChart: vi.fn().mockResolvedValue(conversations),
+    };
+    const service = buildService(gateway);
+
+    const result = await service.listConversationsForChart(emailUser.userId, CHART_ID);
+
+    expect(gateway.listConversationsForChart).toHaveBeenCalledWith(emailUser.userId, CHART_ID);
+    expect(result.items.map((c) => c.id)).toEqual([ID_NEWER, ID_OLDER]);
+  });
+});

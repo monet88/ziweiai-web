@@ -122,9 +122,11 @@ describe('ConversationsController.appendMessageStream', () => {
   function createResponse() {
     const writes: string[] = [];
     const headers: Record<string, string> = {};
+    const closeHandlers: Array<() => void> = [];
     const res = {
       headersSent: false,
       destroyed: false,
+      writableEnded: false,
       statusCode: 200,
       setHeader: vi.fn((key: string, value: string) => {
         headers[key] = value;
@@ -141,9 +143,20 @@ describe('ConversationsController.appendMessageStream', () => {
         return res;
       }),
       json: vi.fn(),
-      end: vi.fn(),
+      on: vi.fn((event: string, handler: () => void) => {
+        if (event === 'close') {
+          closeHandlers.push(handler);
+        }
+      }),
+      off: vi.fn(),
+      end: vi.fn(() => {
+        // Mirror Node: end() sets writableEnded before the eventual 'close'. The disconnect guard
+        // relies on this so a normal end() is not mistaken for a client disconnect.
+        res.writableEnded = true;
+      }),
     };
-    return { res, writes, headers };
+    const fireClose = () => closeHandlers.forEach((handler) => handler());
+    return { res, writes, headers, fireClose };
   }
 
   function parseSseFrames(writes: string[]): unknown[] {
@@ -243,69 +256,42 @@ describe('ConversationsController.appendMessageStream', () => {
     expect(res.end).toHaveBeenCalledOnce();
   });
 
-  // P2-1 (decision 0026): the controller must pass an AbortSignal into the service stream and trip it
-  // when the client disconnects (req/res 'close'), so the upstream fetch is cancelled and tokens stop.
-  function createStreamRequest(): {
-    request: AuthenticatedRequest;
-    fireClose: () => void;
-  } {
-    const closeHandlers: Array<() => void> = [];
-    const request = {
-      ip: '127.0.0.1',
-      requestId: 'req-1',
-      on: vi.fn((event: string, handler: () => void) => {
-        if (event === 'close') {
-          closeHandlers.push(handler);
-        }
-      }),
-    } as unknown as AuthenticatedRequest;
-    return {
-      request,
-      fireClose: () => closeHandlers.forEach((handler) => handler()),
-    };
-  }
-
-  it('passes an AbortSignal to the service and aborts it when the client disconnects mid-stream', async () => {
-    let capturedSignal: AbortSignal | undefined;
-    const { request, fireClose } = createStreamRequest();
-    // The service stream yields one delta, then waits; the test fires the client 'close' between the
-    // first and second pull, mirroring a disconnect. The controller must abort the captured signal.
-    let resolveSecond: (() => void) | undefined;
+  // US-027 (decision 0026, revised): the controller drives the provider stream to completion so the
+  // service ALWAYS persists the assistant message, even if the client disconnects mid-stream. We do
+  // not abort on a client 'close' — the response 'close' is not a reliable mid-stream disconnect
+  // signal under Node/Express (it can fire before the SSE ends), and a spurious abort would kill the
+  // upstream fetch before the assistant message is persisted. After a disconnect, the controller
+  // simply stops writing to the dead socket but keeps consuming so the service finishes + persists.
+  // The disconnect-driven upstream-abort optimization is re-deferred to backlog #28.
+  it('drives the stream to completion even if the client socket dies mid-stream (persist must win)', async () => {
+    let consumedToEnd = false;
     async function* gen(): AsyncGenerator<string, unknown, void> {
       yield 'Xin ';
-      await new Promise<void>((resolve) => {
-        resolveSecond = resolve;
-      });
+      yield 'chào';
+      consumedToEnd = true;
       return ASSISTANT_MESSAGE;
     }
     const service = createService({
-      appendMessageAndGenerateStream: vi.fn((_user, _ip, _id, _input, signal?: AbortSignal) => {
-        capturedSignal = signal;
-        return gen();
-      }),
+      appendMessageAndGenerateStream: vi.fn(() => gen()),
     });
     const controller = new ConversationsController(service);
-    const { res } = createResponse();
+    const { res, writes } = createResponse();
+    // Simulate a dead client socket: writes are no-ops and the socket reports destroyed.
+    (res as { destroyed: boolean }).destroyed = true;
 
-    const pending = controller.appendMessageStream(
+    await controller.appendMessageStream(
       USER,
       CONVERSATION_ID,
       { content: 'Xin chào' },
-      request,
+      createRequest(),
       res as never,
     );
-    // Let the generator emit the first delta and park on the pending promise.
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(capturedSignal).toBeInstanceOf(AbortSignal);
-    expect(capturedSignal?.aborted).toBe(false);
 
-    fireClose();
-    expect(capturedSignal?.aborted).toBe(true);
-
-    // Unpark so the controller can finish and we can await cleanly.
-    resolveSecond?.();
-    await pending;
-    expect(request.on).toHaveBeenCalledWith('close', expect.any(Function));
+    // The generator was driven to its return value (service persisted), not abandoned at first delta.
+    expect(consumedToEnd).toBe(true);
+    // Nothing was written to the dead socket, and res.end() is skipped on a destroyed socket.
+    expect(writes).toEqual([]);
+    expect(res.end).not.toHaveBeenCalled();
   });
 
   it('does not leak a raw non-typed error message to the client (generic message instead)', async () => {

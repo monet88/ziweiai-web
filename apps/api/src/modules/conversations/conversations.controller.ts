@@ -141,46 +141,42 @@ export class ConversationsController {
       headersFlushed = true;
     };
 
-    // P2-1 (decision 0026): abort the upstream provider fetch when the client disconnects so we stop
-    // burning tokens. The signal is threaded service -> provider; both the request and response 'close'
-    // events fire on disconnect, so listen on both (idempotent: AbortController.abort is a no-op once
-    // already aborted).
-    const abortController = new AbortController();
-    const onClientClose = () => abortController.abort();
-    request.on('close', onClientClose);
-    res.on?.('close', onClientClose);
-
+    // US-027 (decision 0026): drive the provider stream to completion REGARDLESS of the client
+    // connection. Persistence happens inside the service AFTER the stream finishes, so the assistant
+    // message is only durable if we consume the generator fully. We deliberately do NOT abort the
+    // generator on a client 'close': in this Node/Express setup that event is an unreliable mid-stream
+    // signal (it fires while the response is still writable), and aborting it kills the upstream fetch
+    // before the service can persist — losing the answer the user already saw stream in. Cancelling
+    // the upstream fetch on a genuine client disconnect is a cost optimization tracked in backlog #28b;
+    // it must not come at the price of dropping the persisted reply. Socket writes are still guarded by
+    // res.destroyed so we never write to a dead socket, but we keep pulling tokens so the service
+    // commits the message.
     try {
-      // US-027 (decision 0026): consume the REAL token stream from the service. The service runs all
-      // gates (enabled -> entitlement 402 -> quota 429) and persists the user message BEFORE the first
-      // delta, so any failure up to here throws before a byte is sent. Each delta becomes a `chunk`
-      // frame; the generator's return value is the persisted assistant message for the `done` frame.
-      // When no provider supports streaming, the service falls back to non-stream generation and emits
-      // the full text as a single delta, preserving the chunk -> done contract.
+      // The service runs all gates (enabled -> entitlement 402 -> quota 429) and persists the user
+      // message BEFORE the first delta, so any failure up to here throws before a byte is sent. Each
+      // delta becomes a `chunk` frame; the generator's return value is the persisted assistant message
+      // for the `done` frame. When no provider supports streaming, the service falls back to non-stream
+      // generation and emits the full text as a single delta, preserving the chunk -> done contract.
       const generator = this.conversationsService.appendMessageAndGenerateStream(
         currentUser,
         request.ip ?? 'unknown',
         parsedId,
         input,
-        abortController.signal,
       );
 
       let next = await generator.next();
       while (!next.done) {
-        // Stop immediately if the client disconnected mid-stream: writing to a destroyed socket throws
-        // and there is no point pulling more tokens from the upstream provider. .return() propagates
-        // down to the provider so it cancels the upstream fetch.
-        if (res.destroyed || abortController.signal.aborted) {
-          await generator.return?.(undefined as never);
-          break;
-        }
         // The first delta is the safe point to commit headers: generation has started successfully.
-        ensureHeaders();
-        send({ type: 'chunk', delta: next.value });
+        // Skip the socket write if the client is gone, but keep draining the generator so the service
+        // still persists the completed assistant message.
+        if (!res.destroyed) {
+          ensureHeaders();
+          send({ type: 'chunk', delta: next.value });
+        }
         next = await generator.next();
       }
 
-      if (!res.destroyed && !abortController.signal.aborted) {
+      if (!res.destroyed) {
         // Headers may still be unsent if the stream produced zero deltas (defensive: providers reject
         // empty content upstream, but the contract still needs a `done` frame).
         ensureHeaders();
@@ -196,14 +192,14 @@ export class ConversationsController {
       if (!res.headersSent) {
         // Stream never started — respond with a normal JSON error the client already understands.
         res.status(status).json({ code, message, requestId });
-      } else {
+      } else if (!res.destroyed) {
         // Stream already open — the status is locked; surface the error as an SSE error frame.
         send({ type: 'error', error: { code, message, requestId } });
       }
     } finally {
-      request.off?.('close', onClientClose);
-      res.off?.('close', onClientClose);
-      res.end();
+      if (!res.destroyed) {
+        res.end();
+      }
     }
   }
 

@@ -19,7 +19,11 @@ import { signInViaUi } from './sign-in';
 
 const SHOT_DIR = 'test-results/vision-history-live';
 const FACE_IMAGE_PATH = fileURLToPath(new URL('../../static/tarot/major_00.jpg', import.meta.url));
-const QUESTION = 'Sự nghiệp của tôi năm nay thế nào?';
+// Câu hỏi gắn token DUY NHẤT theo lần chạy: user test BỀN (decision 0023 — bỏ cron xoá 7 ngày) nên
+// mỗi lần chạy live trước để lại entry lịch sử cùng câu hỏi. Với câu hỏi tĩnh, getByText().first()
+// có thể khớp entry CŨ → false positive (test xanh dù persist của lần này âm thầm lỗi). Token duy
+// nhất bảo đảm assertion chỉ khớp đúng entry vừa tạo ở lần chạy này.
+const QUESTION = `Sự nghiệp của tôi năm nay thế nào? [run-${Date.now()}]`;
 
 async function shot(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: `${SHOT_DIR}/${name}.png`, fullPage: true });
@@ -59,9 +63,9 @@ test('US-017e LIVE @live: Xem Tướng thật → lưu vào lịch sử (ảnh +
     timeout: 20_000,
   });
 
-  // Mục vision lưu kèm câu hỏi (bằng chứng question được persist, không bị nuốt). User test bền có
-  // thể đã tích luỹ nhiều mục cùng câu hỏi từ các lần chạy live trước → .first() tránh strict-mode
-  // violation (chỉ cần CÓ ÍT NHẤT một mục hiện câu hỏi đã lưu).
+  // Mục vision lưu kèm câu hỏi (bằng chứng question được persist, không bị nuốt). QUESTION mang
+  // token duy nhất theo lần chạy nên chỉ khớp đúng entry vừa tạo — entry cũ từ lần chạy trước (user
+  // test bền) không lọt vào. .first() chỉ là phòng thủ strict-mode, không còn để bỏ qua entry cũ.
   await expect(page.getByText(QUESTION, { exact: false }).first()).toBeVisible({ timeout: 10_000 });
 
   // Ảnh đã ký (signed URL) phải tải được — alt nhãn tiếng Việt cố định trong HistoryList.

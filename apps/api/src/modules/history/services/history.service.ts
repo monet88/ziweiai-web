@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { historyListResponseSchema } from '@ziweiai/contracts';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import { VisionStorageGateway } from '../../vision-shared/vision-storage.gateway';
 
 @Injectable()
 export class HistoryService {
+  private readonly logger = new Logger(HistoryService.name);
+
   constructor(
     private readonly persistenceGateway: SupabasePersistenceGateway,
     private readonly visionStorageGateway: VisionStorageGateway,
@@ -46,6 +48,17 @@ export class HistoryService {
       }),
     );
     const signedUrlByImagePath = new Map(signedUrlEntries);
+
+    // Observability: từng lỗi ký đã log per-item ở gateway (warn cho path-lạ, error cho ngoại lệ),
+    // nhưng một sự cố storage DIỆN RỘNG chỉ hiện ra dưới dạng nhiều dòng rời rạc, không có tín hiệu
+    // tổng. Đếm số path ký hỏng trên cả batch và log một dòng error khi CÓ lỗi — "ký hỏng N/M ảnh"
+    // biến outage hệ thống thành một sự kiện quan sát được (alert theo tỉ lệ), không chìm trong warn.
+    const failedSignCount = signedUrlEntries.filter(([, signedUrl]) => signedUrl === null).length;
+    if (failedSignCount > 0) {
+      this.logger.error(
+        `[history] ký signed URL ảnh vision thất bại ${failedSignCount}/${distinctImagePaths.length} (userId=${userId})`,
+      );
+    }
 
     const items = views.map((view) => {
       const directExplanationResult = view.explanationResultId ? directExplanationResultsById[view.explanationResultId] ?? null : null;

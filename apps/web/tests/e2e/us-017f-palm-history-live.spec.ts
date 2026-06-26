@@ -18,7 +18,11 @@ import { signInViaUi } from './sign-in';
 
 const SHOT_DIR = 'test-results/vision-history-live';
 const PALM_IMAGE_PATH = fileURLToPath(new URL('../../static/tarot/major_01.jpg', import.meta.url));
-const QUESTION = 'Đường chỉ tay nói gì về sự nghiệp của tôi?';
+// Câu hỏi gắn token DUY NHẤT theo lần chạy: user test BỀN (decision 0023 — bỏ cron xoá 7 ngày) nên
+// mỗi lần chạy live trước để lại entry lịch sử cùng câu hỏi. Với câu hỏi tĩnh, getByText().first()
+// có thể khớp entry CŨ → false positive (test xanh dù persist của lần này âm thầm lỗi). Token duy
+// nhất bảo đảm assertion chỉ khớp đúng entry vừa tạo ở lần chạy này.
+const QUESTION = `Đường chỉ tay nói gì về sự nghiệp của tôi? [run-${Date.now()}]`;
 
 async function shot(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: `${SHOT_DIR}/${name}.png`, fullPage: true });
@@ -55,7 +59,9 @@ test('US-017f LIVE @live: Xem Tay thật → lưu vào lịch sử (ảnh + câu
     timeout: 20_000,
   });
 
-  // Mục vision lưu kèm câu hỏi vừa hỏi (bằng chứng question được persist, không bị nuốt).
+  // Mục vision lưu kèm câu hỏi vừa hỏi (bằng chứng question được persist, không bị nuốt). QUESTION
+  // mang token duy nhất theo lần chạy nên chỉ khớp đúng entry vừa tạo — entry cũ từ lần chạy trước
+  // (user test bền) không lọt vào. .first() chỉ là phòng thủ strict-mode.
   await expect(page.getByText(QUESTION, { exact: false }).first()).toBeVisible({ timeout: 10_000 });
 
   // Ảnh đã ký (signed URL) phải tải được — alt nhãn tiếng Việt cố định trong HistoryList.

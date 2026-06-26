@@ -39,6 +39,10 @@ export type PersistedExplanationResult = {
   providerMetadata?: Record<string, string>;
 };
 
+// Key tra cứu cho luận giải overview (không có palaceScope). Dùng chung helper + model để
+// không lệch magic string khi hydrate/seed kết quả theo scope.
+export const OVERVIEW_SCOPE_KEY = 'overview';
+
 // Lập bảng tra scope -> result để hydrate section card ngay từ chart detail.
 // Khóa theo scope (null = 'overview') NHƯNG phải lọc theo expectedKind: một chart có thể có nhiều
 // result cùng scope khác explanationKind (ví dụ overview + love cho spousePalace). Nếu không lọc,
@@ -50,7 +54,7 @@ export type PersistedExplanationResult = {
 // Nhờ vậy record cũ ambiguous (ví dụ love/career legacy cùng scope) KHÔNG che mất record overview thật
 // khi record overview tồn tại; legacy chỉ dùng khi không có kind-match nào cho scope đó.
 export function buildHydrationResultByScope(
-  results: PersistedExplanationResult[] | undefined,
+  results: readonly PersistedExplanationResult[] | undefined,
   expectedKind: string,
 ): Map<string, { renderedMarkdown: string }> {
   const map = new Map<string, { renderedMarkdown: string }>();
@@ -58,7 +62,7 @@ export function buildHydrationResultByScope(
     return map;
   }
 
-  const scopeKeyOf = (r: PersistedExplanationResult): string => r.providerMetadata?.palaceScope ?? 'overview';
+  const scopeKeyOf = (r: PersistedExplanationResult): string => r.providerMetadata?.palaceScope ?? OVERVIEW_SCOPE_KEY;
 
   // Pass 1: kind khớp tường minh (newest-first → record khớp đầu tiên là mới nhất, không ghi đè).
   for (const r of results) {

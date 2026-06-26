@@ -78,6 +78,13 @@ export function createChartDetailModel(options: ChartDetailModelOptions) {
     palaces.find((palace) => palace.nameKey === selection.selectedPalaceKey) ?? null,
   );
 
+  // Kết quả luận giải đã lưu của lá số (overview + theo cung). Phơi ra để model luận giải
+  // hydrate lại nội dung khi mở lá số cũ từ history — query đã trả về nhưng trước đây bị bỏ,
+  // khiến mục luận giải luôn hiện nút "Tạo" dù DB đã có kết quả.
+  const explanationResults = $derived<ChartDetailResponse['explanationResults']>(
+    query.data?.explanationResults ?? [],
+  );
+
   return {
     get chartId(): string {
       return options.getChartId();
@@ -102,6 +109,9 @@ export function createChartDetailModel(options: ChartDetailModelOptions) {
     },
     get selectedPalace(): PalaceView | null {
       return selectedPalace;
+    },
+    get explanationResults(): ChartDetailResponse['explanationResults'] {
+      return explanationResults;
     },
     selectPalace: selection.select,
     clearSelection: selection.clear,

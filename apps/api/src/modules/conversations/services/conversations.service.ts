@@ -1,10 +1,12 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import {
   conversationDetailResponseSchema,
+  conversationListResponseSchema,
   createConversationResponseSchema,
   explanationContextSchema,
   type AuthenticatedUser,
   type ConversationDetailResponse,
+  type ConversationListResponse,
   type ConversationMessageRecord,
   type CreateConversationMessageRequest,
   type CreateConversationRequest,
@@ -164,6 +166,20 @@ export class ConversationsService {
       }
       throw error;
     }
+  }
+
+  // List conversations bound to a chart (newest-first). Verify chart ownership first so an
+  // attacker probing another user's chartSnapshotId gets NOT_FOUND, not an empty 200 that leaks
+  // chart existence. The gateway already scopes by owner_user_id, so this is defense-in-depth +
+  // a clearer client signal (the chart isn't theirs vs. it has no conversations yet).
+  async listConversationsForChart(userId: string, chartSnapshotId: string): Promise<ConversationListResponse> {
+    const chartRecord = await this.persistenceGateway.findChartSnapshotById(userId, chartSnapshotId);
+    if (!chartRecord) {
+      throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số đã lưu.');
+    }
+
+    const items = await this.persistenceGateway.listConversationsForChart(userId, chartSnapshotId);
+    return conversationListResponseSchema.parse({ items });
   }
 
   async getConversationDetail(userId: string, conversationId: string): Promise<ConversationDetailResponse> {

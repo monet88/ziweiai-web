@@ -48,6 +48,7 @@ describe('explanation-model invalidate history', () => {
       queryClient: qc as never,
       getChartSnapshotId: () => 'chart-123',
       getSelectedPalaceKey: () => null,
+      getExplanationResults: () => [],
     });
 
     const onSuccess = capturedMutationOptions.onSuccess as (data: unknown) => Promise<void>;
@@ -65,6 +66,7 @@ describe('explanation-model invalidate history', () => {
       queryClient: qc as never,
       getChartSnapshotId: () => 'chart-456',
       getSelectedPalaceKey: () => null,
+      getExplanationResults: () => [],
     });
 
     const onSuccess = capturedMutationOptions.onSuccess as (data: unknown) => Promise<void>;

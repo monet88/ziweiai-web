@@ -14,11 +14,19 @@ import type { HistoryListResponse } from '@ziweiai/contracts';
 type HistoryItem = HistoryListResponse['items'][number];
 type ChartRecord = NonNullable<HistoryItem['chartRecord']>;
 type DivinationContext = NonNullable<HistoryItem['divinationContext']>;
+type VisionResult = NonNullable<HistoryItem['visionResult']>;
 
 export interface DashboardChartHistoryEntry {
   chartRecord: ChartRecord;
   hasExplanation: boolean;
   divinationContext: DivinationContext | null;
+}
+
+export interface VisionHistoryEntry {
+  visionResult: VisionResult;
+  // Signed URL ngắn hạn để xem ảnh (bucket private). Có thể null nếu ký URL thất bại
+  // (ảnh hỏng/đã xoá) — UI vẫn hiện luận giải + câu hỏi, chỉ ẩn ảnh.
+  imageUrl: string | null;
 }
 
 /**
@@ -47,6 +55,35 @@ export function dedupeHistoryChartEntries(
       chartRecord: record,
       hasExplanation: item.explanationResult !== null,
       divinationContext: item.divinationContext ?? null,
+    });
+  }
+
+  return entries;
+}
+
+/**
+ * Gom các view lịch sử Xem Tướng/Xem Tay (US-017 follow-up, decision 0023). Khác lá số: vision
+ * view trỏ visionResult (chart null) nên dedupeHistoryChartEntries bỏ qua. Mỗi visionResult.id là
+ * một lượt xem riêng (ảnh + luận giải tách biệt) → dedupe theo visionResult.id, giữ view đầu (mới
+ * nhất). Trả kèm imageUrl đã ký để render ảnh inline.
+ */
+export function collectVisionHistoryEntries(
+  items: readonly HistoryItem[],
+): VisionHistoryEntry[] {
+  const seenVisionIds = new Set<string>();
+  const entries: VisionHistoryEntry[] = [];
+
+  for (const item of items) {
+    if (!item.visionResult) {
+      continue;
+    }
+    if (seenVisionIds.has(item.visionResult.id)) {
+      continue;
+    }
+    seenVisionIds.add(item.visionResult.id);
+    entries.push({
+      visionResult: item.visionResult,
+      imageUrl: item.visionImageUrl ?? null,
     });
   }
 

@@ -73,8 +73,13 @@ test('US-010: 402 → hiện CTA paywall + gợi ý premium + điều hướng /
   await expect(board).toBeVisible();
   await board.getByRole('button').first().click();
 
-  // Bấm luận giải cung → mutation sẽ nhận 402
-  await page.getByRole('button', { name: 'Luận giải cung này', exact: true }).click();
+  // Bấm luận giải cung → mutation sẽ nhận 402. Chấp nhận cả hai nhãn: cung có thể đã có luận giải
+  // lưu sẵn (chart dedupe theo birth input — user test bền dùng chung lá số với các spec khác) nên
+  // nút hiện "Tạo lại luận giải"; cung chưa có thì hiện "Luận giải cung này". Cả hai click đều POST
+  // /explanations → trúng intercept 402, nên test paywall không phụ thuộc trạng thái hydrate.
+  await page
+    .getByRole('button', { name: /^(Luận giải cung này|Tạo lại luận giải)$/ })
+    .click();
 
   // (1) CTA paywall hiện
   const premiumCta = page.getByRole('button', { name: 'Nâng cấp để dùng luận giải AI', exact: true });

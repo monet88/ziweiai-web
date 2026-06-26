@@ -525,6 +525,18 @@ export class SupabasePersistenceGateway {
     return data ? this.toVisionResultRecord(data) : null;
   }
 
+  // US-017 follow-up (decision 0023): right-to-be-forgotten. Drop the vision row; the
+  // history_views.vision_result_id FK is `on delete cascade`, so the linked history row goes
+  // with it. Owner-scoped eq so a user can only delete their own reading.
+  async deleteVisionResult(ownerUserId: string, visionResultId: string): Promise<void> {
+    const { error } = await this.client
+      .from('vision_results')
+      .delete()
+      .eq('owner_user_id', ownerUserId)
+      .eq('id', visionResultId);
+    this.throwIfError(error);
+  }
+
   async listHistoryViews(ownerUserId: string, limit: number): Promise<HistoryViewRecord[]> {
     const { data, error } = await this.client
       .from('history_views')

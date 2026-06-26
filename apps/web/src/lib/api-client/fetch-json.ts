@@ -47,7 +47,7 @@ function mapStatusToKind(status: number): ApiErrorKind {
 }
 
 export interface FetchJsonOptions {
-  method?: 'GET' | 'POST';
+  method?: 'GET' | 'POST' | 'DELETE';
   /** Bearer token (session.access_token). Bỏ qua cho endpoint public. */
   token?: string;
   body?: unknown;
@@ -134,6 +134,46 @@ export async function fetchJson<T>(
   }
 
   return parseResponseOrThrow(response, schema);
+}
+
+/**
+ * Gọi backend cho endpoint KHÔNG trả body (204 No Content, ví dụ DELETE). Tái dùng cùng cách map
+ * lỗi HTTP → ApiError với fetchJson nhưng KHÔNG parse JSON khi thành công (body rỗng). Lỗi mạng →
+ * ApiError('network').
+ */
+export async function fetchNoContent(
+  path: string,
+  options: Omit<FetchJsonOptions, 'body'> & { method: 'POST' | 'DELETE' },
+): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(`${env.apiBaseUrl}${path}`, {
+      method: options.method,
+      headers: createHeaders(options.token, false),
+    });
+  } catch {
+    throw new ApiError('network', 'Không kết nối được máy chủ. Thử lại sau.');
+  }
+
+  if (!response.ok) {
+    const kind = mapStatusToKind(response.status);
+    let message = `Yêu cầu thất bại (${response.status}).`;
+    try {
+      const errorBody: unknown = await response.json();
+      if (
+        errorBody !== null &&
+        typeof errorBody === 'object' &&
+        'message' in errorBody &&
+        typeof (errorBody as { message: unknown }).message === 'string' &&
+        (errorBody as { message: string }).message.length > 0
+      ) {
+        message = (errorBody as { message: string }).message;
+      }
+    } catch {
+      // Body không phải JSON → giữ message generic.
+    }
+    throw new ApiError(kind, message, response.status);
+  }
 }
 
 /**

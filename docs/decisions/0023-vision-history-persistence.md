@@ -79,6 +79,10 @@ Tradeoffs:
 
 ## Follow-Up
 
-- Thêm chức năng người dùng tự xoá một mục vision (ảnh + record) — quyền được quên. Backlog.
-- Cảnh báo Việt ngữ trên UI Xem Tướng/Xem Tay: "Ảnh và luận giải được lưu vào lịch sử của bạn."
-- Cân nhắc nén ảnh trước khi lưu (giảm dung lượng dài hạn).
+- ~~Thêm chức năng người dùng tự xoá một mục vision (ảnh + record) — quyền được quên.~~ **Đã làm**
+  (PR review follow-up): `DELETE /vision/results/:id` (owner-scoped, gỡ ảnh Storage TRƯỚC rồi xoá row
+  `vision_results`; `history_views` cascade theo FK). Web có nút "Xoá" trên từng thẻ vision trong lịch
+  sử + xác nhận trước khi xoá. Đáp ứng quyền được quên/GDPR.
+- ~~Cảnh báo Việt ngữ trên UI Xem Tướng/Xem Tay~~ **Đã làm**: `privacyNotice` đổi sang "lưu riêng tư
+  trong tài khoản của bạn và được giữ lại để xem trong lịch sử".
+- Cân nhắc nén ảnh trước khi lưu (giảm dung lượng dài hạn). Backlog.

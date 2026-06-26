@@ -4,12 +4,13 @@
   // (dedupeHistoryChartEntries) để gộp nhiều view cùng lá số về một mục → key theo
   // chartRecord.id không trùng. Mỗi mục link tới /charts/[id] (route chi tiết đúng hệ
   // tự chọn card theo chartSystem của snapshot). Token đọc tươi trong queryFn (§3).
-  import { createQuery } from '@tanstack/svelte-query';
+  import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
+  import { SvelteSet } from 'svelte/reactivity';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { fetchHistory, HISTORY_SCREEN_LIMIT } from '$lib/api-client';
+  import { deleteVisionResult, fetchHistory, HISTORY_SCREEN_LIMIT } from '$lib/api-client';
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { NoticeBanner, EmptyStateCard, Spinner, PrimaryButton } from '$lib/components/ui';
+  import { NoticeBanner, EmptyStateCard, Spinner, PrimaryButton, ConfirmDialog } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { formatHistoryViewedAt } from '$lib/features/chart/chart-display';
   import {
@@ -20,6 +21,10 @@
   import type { DivinationPurposeKey } from '@ziweiai/contracts';
 
   const auth = getAuthStore();
+
+  // Nửa thời hạn signed URL ảnh vision (server ký 3600s). Dùng làm staleTime/gcTime để query
+  // history tự refetch + ký URL mới trước khi link cũ hết hạn; biên an toàn cho lệch giờ/clock skew.
+  const VISION_SIGNED_URL_STALE_MS = 30 * 60 * 1000;
 
   const purposeLabels: Record<Exclude<DivinationPurposeKey, 'custom'>, string> = {
     career: viCopy.divination.purposeCareer,
@@ -49,7 +54,72 @@
     // refresh — bật query lúc đó khiến queryFn ném missingChartContext và hiện banner lỗi
     // thừa cho người dùng (khớp chart-detail-model.svelte.ts §enabled).
     enabled: auth.isAuthenticated && !!auth.getAccessToken(),
+    // Signed URL ảnh vision hết hạn sau 1 giờ (createSignedImageUrl, decision 0023). Giữ cache
+    // ngắn hơn hạn đó để danh sách tự refetch và ký URL mới trước khi link cũ hỏng — tránh ảnh
+    // vỡ khi user mở lại tab lịch sử để lâu. 30 phút = nửa hạn, an toàn cho lệch giờ/clock skew.
+    staleTime: VISION_SIGNED_URL_STALE_MS,
+    gcTime: VISION_SIGNED_URL_STALE_MS,
   }));
+
+  const queryClient = useQueryClient();
+
+  // Quyền được quên (decision 0023): xoá một mục Xem Tướng/Xem Tay (ảnh sinh trắc + luận giải).
+  // Token đọc TƯƠI trong mutationFn (bất biến §3). pendingDeleteId = mục đang chờ xác nhận trong
+  // ConfirmDialog (UX nhất quán với modal dự án, thay window.confirm); deletingId = mục đang gọi
+  // API (disable đúng nút + khoá dialog); deleteErrorId = mục lỗi gần nhất để hiện thông báo cạnh
+  // đúng mục. onSettled invalidate history để danh sách phản ánh state thật sau khi xoá.
+  let pendingDeleteId = $state<string | null>(null);
+  let deletingId = $state<string | null>(null);
+  let deleteErrorId = $state<string | null>(null);
+
+  const deleteMutation = createMutation(() => ({
+    mutationFn: async (visionResultId: string): Promise<void> => {
+      const token = auth.getAccessToken();
+      if (!token) {
+        throw new Error(viCopy.errors.missingChartContext);
+      }
+      await deleteVisionResult(token, visionResultId);
+    },
+    onSuccess: (_data: void, visionResultId: string): void => {
+      if (deleteErrorId === visionResultId) {
+        deleteErrorId = null;
+      }
+    },
+    onError: (_error: unknown, visionResultId: string): void => {
+      deleteErrorId = visionResultId;
+    },
+    onSettled: async (): Promise<void> => {
+      deletingId = null;
+      pendingDeleteId = null;
+      await queryClient.invalidateQueries({ queryKey: ['history'] });
+    },
+  }));
+
+  function isDeleting(visionResultId: string): boolean {
+    return deletingId === visionResultId;
+  }
+
+  // Bấm "Xoá" → mở ConfirmDialog (không xoá ngay). Bỏ qua khi đang có request xoá chạy dở.
+  function requestDelete(visionResultId: string): void {
+    if (deletingId) {
+      return;
+    }
+    pendingDeleteId = visionResultId;
+  }
+
+  // Xác nhận trong dialog → gọi API thật. deletingId khoá nút + đánh dấu dialog đang xử lý.
+  function confirmDelete(): void {
+    if (!pendingDeleteId) {
+      return;
+    }
+    deletingId = pendingDeleteId;
+    deleteMutation.mutate(pendingDeleteId);
+  }
+
+  // Huỷ dialog (Escape/backdrop/nút Huỷ). onSettled đã khoá huỷ khi đang xử lý nên an toàn.
+  function cancelDelete(): void {
+    pendingDeleteId = null;
+  }
 
   // Gộp view cùng lá số → mục duy nhất; nhãn hệ tiếng Việt + ngày locale vi-VN.
   // US-025: mục gieo quẻ (divinationContext != null) hiện câu hỏi + lĩnh vực thay vì
@@ -86,6 +156,16 @@
   // Trang trống chỉ khi không còn cả lá số lẫn vision; trước đây chỉ xét chartItems sẽ ẩn
   // các lượt Xem Tướng/Xem Tay đã lưu.
   const isEmpty = $derived(chartItems.length === 0 && visionItems.length === 0);
+
+  // Signed URL ảnh vision chỉ sống ngắn hạn (~1h). Nếu tab mở lâu hơn thời hạn ký mà query
+  // history chưa refetch, URL hết hạn → <img> load lỗi (markup vẫn có src nên nhánh imageUrl
+  // null KHÔNG bắt được). Thu thập id ảnh load hỏng lúc runtime để rơi về cùng placeholder
+  // "ảnh không còn khả dụng" thay vì hiện icon ảnh vỡ.
+  const failedImageIds = new SvelteSet<string>();
+
+  function markImageFailed(id: string): void {
+    failedImageIds.add(id);
+  }
 
   function goToDashboard(): void {
     void goto(resolve('/'));
@@ -147,11 +227,29 @@
         {#each visionItems as item (item.id)}
           <li class="vision-item">
             <div class="vision-head">
-              <span class="item-system">{item.kindLabel}</span>
-              <span class="item-meta">{item.createdAtLabel}</span>
+              <div class="vision-head-meta">
+                <span class="item-system">{item.kindLabel}</span>
+                <span class="item-meta">{item.createdAtLabel}</span>
+              </div>
+              <button
+                type="button"
+                class="vision-delete"
+                disabled={isDeleting(item.id)}
+                onclick={() => requestDelete(item.id)}
+              >
+                {isDeleting(item.id) ? viCopy.history.visionDeleting : viCopy.history.visionDeleteLabel}
+              </button>
             </div>
-            {#if item.imageUrl}
-              <img class="vision-image" src={item.imageUrl} alt={viCopy.history.visionImageAlt} />
+            {#if deleteErrorId === item.id}
+              <p class="vision-delete-error" role="alert">{viCopy.history.visionDeleteFailed}</p>
+            {/if}
+            {#if item.imageUrl && !failedImageIds.has(item.id)}
+              <img
+                class="vision-image"
+                src={item.imageUrl}
+                alt={viCopy.history.visionImageAlt}
+                onerror={() => markImageFailed(item.id)}
+              />
             {:else}
               <p class="vision-image-missing">{viCopy.history.visionImageUnavailable}</p>
             {/if}
@@ -167,6 +265,19 @@
       </ul>
     </section>
   {/if}
+{/if}
+
+{#if pendingDeleteId}
+  <ConfirmDialog
+    title={viCopy.history.visionDeleteTitle}
+    message={viCopy.history.visionDeleteConfirm}
+    confirmLabel={viCopy.history.visionDeleteLabel}
+    cancelLabel={viCopy.history.visionDeleteCancel}
+    loadingLabel={viCopy.history.visionDeleting}
+    loading={deletingId !== null}
+    onConfirm={confirmDelete}
+    onCancel={cancelDelete}
+  />
 {/if}
 
 <style>
@@ -278,6 +389,44 @@
     align-items: baseline;
     justify-content: space-between;
     gap: var(--space-sm);
+  }
+
+  .vision-head-meta {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+  }
+
+  .vision-delete {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border: 1px solid var(--color-border-hairline);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .vision-delete:hover:not(:disabled) {
+    border-color: var(--color-danger, #c0392b);
+    color: var(--color-danger, #c0392b);
+  }
+
+  .vision-delete:focus-visible {
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: 1px;
+  }
+
+  .vision-delete:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .vision-delete-error {
+    margin: 0;
+    color: var(--color-danger, #c0392b);
+    font-size: 13px;
   }
 
   .vision-image {

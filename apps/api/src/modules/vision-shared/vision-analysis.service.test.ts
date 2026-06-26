@@ -28,8 +28,11 @@ describe('VisionAnalysisService', () => {
 
   let quotasService: Pick<QuotasService, 'assertCanCreateVisionAnalysis'>;
   let providerRouter: Pick<ExplanationProviderRouter, 'generate'>;
-  let storageGateway: Pick<VisionStorageGateway, 'uploadVisionImage'>;
-  let persistence: Pick<SupabasePersistenceGateway, 'createVisionResult' | 'createHistoryView'>;
+  let storageGateway: Pick<VisionStorageGateway, 'uploadVisionImage' | 'deleteVisionImage'>;
+  let persistence: Pick<
+    SupabasePersistenceGateway,
+    'createVisionResult' | 'createHistoryView' | 'findVisionResultById' | 'deleteVisionResult'
+  >;
   let service: VisionAnalysisService;
 
   beforeEach(() => {
@@ -39,10 +42,15 @@ describe('VisionAnalysisService', () => {
     providerRouter = {
       generate: vi.fn().mockResolvedValue({ renderedMarkdown: 'Phân tích tướng mặt.', providerMetadata: { provider: 'deepseek' } }),
     };
-    storageGateway = { uploadVisionImage: vi.fn().mockResolvedValue({ imagePath: 'owner/req.png' }) };
+    storageGateway = {
+      uploadVisionImage: vi.fn().mockResolvedValue({ imagePath: 'owner/req.png' }),
+      deleteVisionImage: vi.fn().mockResolvedValue(undefined),
+    };
     persistence = {
       createVisionResult: vi.fn().mockResolvedValue({ id: '33333333-3333-4333-8333-333333333333' }),
       createHistoryView: vi.fn().mockResolvedValue({ id: '44444444-4444-4444-8444-444444444444' }),
+      findVisionResultById: vi.fn(),
+      deleteVisionResult: vi.fn().mockResolvedValue(undefined),
     };
     service = new VisionAnalysisService(
       quotasService as QuotasService,
@@ -210,5 +218,67 @@ describe('VisionAnalysisService', () => {
     } finally {
       apiEnv.EXTENDED_SYSTEM_PALM_ENABLED = originalPalm;
     }
+  });
+
+  // US-017 follow-up (decision 0023): quyền được quên — xoá ảnh sinh trắc TRƯỚC, rồi xoá row DB.
+  describe('deleteVisionResult', () => {
+    const VISION_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
+    function existingRecord(overrides: Record<string, unknown> = {}) {
+      return {
+        id: VISION_ID,
+        ownerUserId: emailUser.userId,
+        kind: 'face',
+        imagePath: `${emailUser.userId}/img.png`,
+        question: null,
+        renderedMarkdown: 'Luận giải đã lưu.',
+        providerMetadata: {},
+        createdAt: '2026-06-26T00:00:00.000Z',
+        ...overrides,
+      };
+    }
+
+    it('xoá ảnh khỏi Storage TRƯỚC rồi mới xoá row DB (không để ảnh sinh trắc mồ côi)', async () => {
+      persistence.findVisionResultById = vi.fn().mockResolvedValue(existingRecord());
+      const deleteImage = storageGateway.deleteVisionImage as ReturnType<typeof vi.fn>;
+      const deleteRow = persistence.deleteVisionResult as ReturnType<typeof vi.fn>;
+
+      await service.deleteVisionResult(emailUser, VISION_ID);
+
+      expect(deleteImage).toHaveBeenCalledWith(`${emailUser.userId}/img.png`);
+      expect(deleteRow).toHaveBeenCalledWith(emailUser.userId, VISION_ID);
+      expect(deleteImage.mock.invocationCallOrder[0]).toBeLessThan(deleteRow.mock.invocationCallOrder[0]);
+    });
+
+    it('không tìm thấy mục của owner → 404 NOT_FOUND, KHÔNG đụng Storage', async () => {
+      persistence.findVisionResultById = vi.fn().mockResolvedValue(null);
+
+      try {
+        await service.deleteVisionResult(emailUser, VISION_ID);
+        throw new Error('expected NOT_FOUND');
+      } catch (error) {
+        expectApiError(error, HttpStatus.NOT_FOUND, 'NOT_FOUND');
+      }
+      expect(storageGateway.deleteVisionImage).not.toHaveBeenCalled();
+      expect(persistence.deleteVisionResult).not.toHaveBeenCalled();
+    });
+
+    it('lỗi xoá ảnh → ném (KHÔNG xoá row): tránh row mất nhưng ảnh còn mồ côi', async () => {
+      persistence.findVisionResultById = vi.fn().mockResolvedValue(existingRecord());
+      storageGateway.deleteVisionImage = vi.fn().mockRejectedValue(new Error('storage down'));
+
+      await expect(service.deleteVisionResult(emailUser, VISION_ID)).rejects.toThrow('storage down');
+      expect(persistence.deleteVisionResult).not.toHaveBeenCalled();
+    });
+
+    it('tài khoản khách (email null) → 403 IDENTITY_REQUIRED', async () => {
+      try {
+        await service.deleteVisionResult(anonUser, VISION_ID);
+        throw new Error('expected IDENTITY_REQUIRED');
+      } catch (error) {
+        expectApiError(error, HttpStatus.FORBIDDEN, 'IDENTITY_REQUIRED');
+      }
+      expect(persistence.findVisionResultById).not.toHaveBeenCalled();
+    });
   });
 });

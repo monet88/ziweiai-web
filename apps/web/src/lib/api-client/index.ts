@@ -56,7 +56,7 @@ import {
   type TarotDraw,
   type TarotSpread,
 } from '@ziweiai/contracts';
-import { fetchJson, fetchMultipart } from './fetch-json';
+import { fetchJson, fetchMultipart, fetchNoContent } from './fetch-json';
 import { env } from '$lib/env';
 
 export { ApiError } from './fetch-json';
@@ -328,6 +328,17 @@ export function createVisionAnalysis(
     form.append('question', params.question.trim());
   }
   return fetchMultipart(`/vision/${kind}`, visionAnalysisSchema, form, token);
+}
+
+/**
+ * DELETE /vision/results/:id — Bearer (US-017 follow-up, decision 0023: quyền được quên).
+ *
+ * Xoá một mục Xem Tướng/Xem Tay đã lưu (ảnh sinh trắc + luận giải + history view cascade). Backend
+ * trả 204 No Content nên KHÔNG parse body — chỉ ném ApiError khi status lỗi (owner-scoped: 404 nếu
+ * không phải mục của người gọi).
+ */
+export function deleteVisionResult(token: string, visionResultId: string): Promise<void> {
+  return fetchNoContent(`/vision/results/${visionResultId}`, { method: 'DELETE', token });
 }
 
 /**

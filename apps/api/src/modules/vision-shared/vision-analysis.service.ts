@@ -114,6 +114,27 @@ export class VisionAnalysisService {
     return visionAnalysisSchema.parse({ kind, imagePath, narrative });
   }
 
+  // US-017 follow-up (decision 0023): quyền được quên. Xoá một mục vision của chính người dùng —
+  // gỡ ảnh sinh trắc khỏi Storage TRƯỚC rồi mới xoá row DB (history_views cascade theo FK). Thứ tự
+  // này tránh để row biến mất nhưng ảnh còn mồ côi trong bucket không-cron. Không tìm thấy id của
+  // owner → NOT_FOUND (không lộ tồn tại của tài nguyên người khác).
+  async deleteVisionResult(user: AuthenticatedUser, visionResultId: string): Promise<void> {
+    assertEmailIdentityRequired(user);
+
+    const record = await this.persistence.findVisionResultById(user.userId, visionResultId);
+    if (!record) {
+      throw new ApiErrorHttpException(
+        HttpStatus.NOT_FOUND,
+        'NOT_FOUND',
+        'Không tìm thấy mục Xem Tướng/Xem Tay cần xoá.',
+      );
+    }
+
+    await this.storageGateway.deleteVisionImage(record.imagePath);
+    await this.persistence.deleteVisionResult(user.userId, visionResultId);
+    this.logger.log(`[vision.${record.kind}] đã xoá vision result id=${visionResultId} (quyền được quên)`);
+  }
+
   private isSystemEnabled(kind: VisionKind): boolean {
     return kind === 'face' ? apiEnv.EXTENDED_SYSTEM_FACE_ENABLED : apiEnv.EXTENDED_SYSTEM_PALM_ENABLED;
   }

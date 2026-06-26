@@ -172,6 +172,8 @@ export class ConversationsService {
   // attacker probing another user's chartSnapshotId gets NOT_FOUND, not an empty 200 that leaks
   // chart existence. The gateway already scopes by owner_user_id, so this is defense-in-depth +
   // a clearer client signal (the chart isn't theirs vs. it has no conversations yet).
+  // The returned list is bounded: the gateway applies a defensive MAX_CONVERSATIONS_PER_CHART cap
+  // (newest-first), so this never returns an unbounded set even for a chart with many conversations.
   async listConversationsForChart(userId: string, chartSnapshotId: string): Promise<ConversationListResponse> {
     const chartRecord = await this.persistenceGateway.findChartSnapshotById(userId, chartSnapshotId);
     if (!chartRecord) {

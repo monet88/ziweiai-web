@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { Logger } from '@nestjs/common';
 import type {
   ChartSnapshotRecord,
   ExplanationResultRecord,
@@ -206,5 +207,92 @@ describe('HistoryService', () => {
     // visionImageUrl vẫn null (đúng kỳ vọng) nhưng test sẽ không phát hiện. Kiểm chứng gateway
     // được gọi đúng path để chốt rằng null đến từ lỗi ký, không phải do bỏ qua bước ký.
     expect(visionStorage.createSignedImageUrl).toHaveBeenCalledWith(visionResult.imagePath);
+  });
+
+  it('log ở mức warn (không error) khi chỉ một phần ảnh ký hỏng — điều kiện dữ liệu bình thường', async () => {
+    const okVision = createVisionResult({
+      id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      imagePath: `${USER_ID}/ok.jpg`,
+    });
+    const brokenVision = createVisionResult({
+      id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+      imagePath: `${USER_ID}/broken.jpg`,
+    });
+    const views = [
+      createHistoryView({ id: '77777777-7777-4777-8777-777777777777', chartSnapshotId: null, visionResultId: okVision.id }),
+      createHistoryView({ id: '88888888-8888-4888-8888-888888888888', chartSnapshotId: null, visionResultId: brokenVision.id }),
+    ];
+    const gateway = createGateway({
+      listHistoryViews: vi.fn(async () => views),
+      findVisionResultsByIds: vi.fn(async () => ({ [okVision.id]: okVision, [brokenVision.id]: brokenVision })),
+    });
+    const visionStorage = {
+      createSignedImageUrl: vi.fn(async (imagePath: string) =>
+        imagePath === okVision.imagePath ? 'https://signed.example/ok.jpg' : null,
+      ),
+    } as unknown as VisionStorageGateway;
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const service = new HistoryService(gateway, visionStorage);
+
+    await service.listHistory(USER_ID, 20);
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it('log ở mức error khi CẢ batch nhiều ảnh đều ký hỏng — tín hiệu sự cố storage diện rộng', async () => {
+    const visionOne = createVisionResult({
+      id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      imagePath: `${USER_ID}/one.jpg`,
+    });
+    const visionTwo = createVisionResult({
+      id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+      imagePath: `${USER_ID}/two.jpg`,
+    });
+    const views = [
+      createHistoryView({ id: '77777777-7777-4777-8777-777777777777', chartSnapshotId: null, visionResultId: visionOne.id }),
+      createHistoryView({ id: '88888888-8888-4888-8888-888888888888', chartSnapshotId: null, visionResultId: visionTwo.id }),
+    ];
+    const gateway = createGateway({
+      listHistoryViews: vi.fn(async () => views),
+      findVisionResultsByIds: vi.fn(async () => ({ [visionOne.id]: visionOne, [visionTwo.id]: visionTwo })),
+    });
+    const visionStorage = createVisionStorage(null);
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const service = new HistoryService(gateway, visionStorage);
+
+    await service.listHistory(USER_ID, 20);
+
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it('log ở mức warn khi ảnh DUY NHẤT ký hỏng — một ảnh thiếu không phải outage', async () => {
+    const visionResult = createVisionResult({ kind: 'face' });
+    const view = createHistoryView({ chartSnapshotId: null, visionResultId: visionResult.id });
+    const gateway = createGateway({
+      listHistoryViews: vi.fn(async () => [view]),
+      findVisionResultsByIds: vi.fn(async () => ({ [visionResult.id]: visionResult })),
+    });
+    const visionStorage = createVisionStorage(null);
+    const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const service = new HistoryService(gateway, visionStorage);
+
+    await service.listHistory(USER_ID, 20);
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 });

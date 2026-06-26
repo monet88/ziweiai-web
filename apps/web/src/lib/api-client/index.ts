@@ -10,6 +10,7 @@
 import {
   chartDetailResponseSchema,
   conversationDetailResponseSchema,
+  conversationListResponseSchema,
   createChartResponseSchema,
   createConversationResponseSchema,
   createDivinationResponseSchema,
@@ -29,6 +30,7 @@ import {
   type AnnualReportResponse,
   type ChartDetailResponse,
   type ConversationDetailResponse,
+  type ConversationListResponse,
   type ConversationStreamEvent,
   type CreateChartRequest,
   type CreateChartResponse,
@@ -165,6 +167,22 @@ export function createConversation(
     token,
     body: request,
   });
+}
+
+/**
+ * GET /conversations?chartSnapshotId=… — Bearer. Liệt kê hội thoại của MỘT lá số (newest-first).
+ * Backend bắt buộc chartSnapshotId: panel trợ lý luôn sống trong trang chi tiết lá số, không có
+ * view "tất cả hội thoại" toàn cục.
+ */
+export function fetchConversationsForChart(
+  token: string,
+  chartSnapshotId: string,
+): Promise<ConversationListResponse> {
+  return fetchJson(
+    `/conversations?chartSnapshotId=${encodeURIComponent(chartSnapshotId)}`,
+    conversationListResponseSchema,
+    { token },
+  );
 }
 
 /** GET /conversations/:id — Bearer. Lấy chi tiết cuộc hội thoại (conversation + messages). */

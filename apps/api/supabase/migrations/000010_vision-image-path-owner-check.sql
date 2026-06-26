@@ -7,18 +7,22 @@
 -- so the private-bucket isolation does not depend solely on application code being correct.
 -- Run after 000009.
 
--- Add as NOT VALID: the constraint is enforced immediately on every INSERT/UPDATE (so the
--- cross-user leak is closed going forward), but Postgres does NOT scan pre-existing rows when
--- the constraint is created. 000009 (same release) may already be applied with rows in
--- dev/staging; a plain (validated) CHECK takes an ACCESS EXCLUSIVE lock and full-table scan that
--- aborts the whole migration if any single row predates the rule — needlessly blocking rollout.
--- New rows are always written as '{ownerUserId}/{requestId}.{ext}' by vision-storage.gateway, so
--- forward enforcement is what matters here; legacy rows (if any) are grandfathered, not a new leak
--- vector since they were inserted by the service-role gateway with server-controlled paths.
+-- Hai bước để an toàn rollout mà vẫn kết thúc ở trạng thái VALIDATED (khớp prod — xác nhận
+-- 2026-06-26 qua Management API: constraint đã tồn tại, convalidated=true, 11 row, 0 vi phạm):
+--   1. ADD ... NOT VALID: thêm constraint với lock NHẸ, KHÔNG scan toàn bảng → enforce mọi
+--      INSERT/UPDATE mới ngay (đóng lỗ rò cross-user) mà không chặn rollout trên môi trường đã có
+--      row từ 000009 (cùng release).
+--   2. VALIDATE CONSTRAINT: scan các row cũ với lock SHARE UPDATE EXCLUSIVE (vẫn cho read/write,
+--      không như ADD validated dùng ACCESS EXCLUSIVE). An toàn vì image_path luôn do server ghi
+--      dạng '{ownerUserId}/{requestId}.{ext}' (vision-storage.gateway) → không có row nonconforming.
+-- Run after 000009.
 alter table public.vision_results
   add constraint vision_results_image_path_owner_scoped
   check (image_path like owner_user_id::text || '/%')
   not valid;
+
+alter table public.vision_results
+  validate constraint vision_results_image_path_owner_scoped;
 
 -- rollback note:
 --   alter table public.vision_results drop constraint if exists vision_results_image_path_owner_scoped;

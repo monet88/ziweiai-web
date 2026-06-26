@@ -83,6 +83,15 @@ export interface ConversationProviderResult {
 
 export interface AiConversationProvider extends AiExplanationProvider {
   generateConversation(payload: ConversationPromptPayload): Promise<ConversationProviderResult>;
+  // US-027 (decision 0026): optional REAL token streaming. Providers that implement it yield text
+  // deltas as they arrive from the upstream and return the final accumulated result (markdown +
+  // metadata) as the generator return value. Providers without it (deepseek/gemini) stay
+  // non-streaming; callers fall back to generateConversation. `signal` cancels the upstream fetch
+  // when the client disconnects mid-stream (token-cost saving).
+  generateConversationStream?(
+    payload: ConversationPromptPayload,
+    signal?: AbortSignal,
+  ): AsyncGenerator<string, ConversationProviderResult, void>;
 }
 
 const legacyZodiacMap: Record<string, string> = {

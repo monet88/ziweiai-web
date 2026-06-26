@@ -106,3 +106,133 @@ describe('ConversationsController input validation', () => {
     });
   });
 });
+
+// US-027 (decision 0026): the streaming endpoint consumes a REAL async iterator from the service
+// (appendMessageAndGenerateStream), emits each delta as an SSE `chunk` frame, then a `done` frame
+// with the persisted message. A gate/error firing BEFORE the first byte must return a normal JSON
+// error with the correct status (headers not yet sent).
+describe('ConversationsController.appendMessageStream', () => {
+  function createResponse() {
+    const writes: string[] = [];
+    const headers: Record<string, string> = {};
+    const res = {
+      headersSent: false,
+      destroyed: false,
+      statusCode: 200,
+      setHeader: vi.fn((key: string, value: string) => {
+        headers[key] = value;
+      }),
+      flushHeaders: vi.fn(() => {
+        res.headersSent = true;
+      }),
+      write: vi.fn((chunk: string) => {
+        writes.push(chunk);
+        return true;
+      }),
+      status: vi.fn((code: number) => {
+        res.statusCode = code;
+        return res;
+      }),
+      json: vi.fn(),
+      end: vi.fn(),
+    };
+    return { res, writes, headers };
+  }
+
+  function parseSseFrames(writes: string[]): unknown[] {
+    return writes
+      .join('')
+      .split('\n\n')
+      .filter((frame) => frame.startsWith('data: '))
+      .map((frame) => JSON.parse(frame.slice('data: '.length)));
+  }
+
+  const ASSISTANT_MESSAGE = {
+    id: '77777777-7777-4777-8777-777777777777',
+    ownerUserId: USER.userId,
+    conversationId: CONVERSATION_ID,
+    role: 'assistant',
+    content: 'Xin chao ban',
+    quickPromptKey: null,
+    providerName: 'openai-compat',
+    providerMetadata: { provider: 'openai-compat' },
+    createdAt: '2026-06-26T03:00:00.000Z',
+  };
+
+  function streamingService(generator: () => AsyncGenerator<string, unknown, void>) {
+    return createService({
+      appendMessageAndGenerateStream: vi.fn(() => generator()),
+    });
+  }
+
+  it('emits real chunk frames per delta then a done frame with the persisted message', async () => {
+    async function* gen(): AsyncGenerator<string, unknown, void> {
+      yield 'Xin ';
+      yield 'chao ';
+      yield 'ban';
+      return ASSISTANT_MESSAGE;
+    }
+    const service = streamingService(gen);
+    const controller = new ConversationsController(service);
+    const { res, writes } = createResponse();
+
+    await controller.appendMessageStream(USER, CONVERSATION_ID, { content: 'Xin chào' }, createRequest(), res as never);
+
+    expect(res.flushHeaders).toHaveBeenCalledOnce();
+    const frames = parseSseFrames(writes);
+    expect(frames).toEqual([
+      { type: 'chunk', delta: 'Xin ' },
+      { type: 'chunk', delta: 'chao ' },
+      { type: 'chunk', delta: 'ban' },
+      { type: 'done', message: ASSISTANT_MESSAGE },
+    ]);
+    expect(res.end).toHaveBeenCalledOnce();
+  });
+
+  it('returns a JSON error with the typed status when a gate fires before the first byte', async () => {
+    // The gate throws before any token is produced (mirrors entitlement/quota failures): the service
+    // generator rejects on the first `.next()`, so headers are never flushed. A plain rejecting
+    // iterator models this without an empty generator body.
+    const service = createService({
+      appendMessageAndGenerateStream: vi.fn(() => ({
+        next: () =>
+          Promise.reject(
+            new ApiErrorHttpException(HttpStatus.PAYMENT_REQUIRED, 'PAYMENT_REQUIRED', 'Cần gói trả phí.'),
+          ),
+      })),
+    });
+    const controller = new ConversationsController(service);
+    const { res } = createResponse();
+
+    await controller.appendMessageStream(USER, CONVERSATION_ID, { content: 'Xin chào' }, createRequest(), res as never);
+
+    expect(res.flushHeaders).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(HttpStatus.PAYMENT_REQUIRED);
+    expect(res.json).toHaveBeenCalledWith({
+      code: 'PAYMENT_REQUIRED',
+      message: 'Cần gói trả phí.',
+      requestId: 'req-1',
+    });
+  });
+
+  it('surfaces an SSE error frame when the provider fails AFTER the stream opened', async () => {
+    async function* gen(): AsyncGenerator<string, unknown, void> {
+      yield 'Xin ';
+      throw new ApiErrorHttpException(HttpStatus.BAD_GATEWAY, 'PROVIDER_UNAVAILABLE', 'Đứt giữa chừng.');
+    }
+    const service = streamingService(gen);
+    const controller = new ConversationsController(service);
+    const { res, writes } = createResponse();
+
+    await controller.appendMessageStream(USER, CONVERSATION_ID, { content: 'Xin chào' }, createRequest(), res as never);
+
+    expect(res.flushHeaders).toHaveBeenCalledOnce();
+    const frames = parseSseFrames(writes);
+    expect(frames).toEqual([
+      { type: 'chunk', delta: 'Xin ' },
+      { type: 'error', error: { code: 'PROVIDER_UNAVAILABLE', message: 'Đứt giữa chừng.', requestId: 'req-1' } },
+    ]);
+    expect(res.json).not.toHaveBeenCalled();
+    expect(res.end).toHaveBeenCalledOnce();
+  });
+});

@@ -122,37 +122,57 @@ export class ConversationsController {
       res.write(`data: ${JSON.stringify(validated)}\n\n`);
     };
 
+    // Flush SSE headers lazily: only once the first byte is ready to go out. Flushing earlier would
+    // lock a 200 status, so a gate/provider error firing BEFORE any token could no longer set the
+    // real HTTP status. With this guard, a pre-stream failure (entitlement 402, quota 429, feature
+    // flag 403, provider error before the first delta) still lands in the catch branch with headers
+    // unsent and returns a clean JSON error.
+    let headersFlushed = false;
+    const ensureHeaders = () => {
+      if (headersFlushed) {
+        return;
+      }
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders?.();
+      headersFlushed = true;
+    };
+
     try {
-      // Persist user message + generate assistant (full text); stream chunks if provider supports.
-      // Current providers return full text; simulate chunking for contract compatibility.
-      const { fullText, assistantMessage } = await this.conversationsService.appendMessageAndGenerate(
+      // US-027 (decision 0026): consume the REAL token stream from the service. The service runs all
+      // gates (enabled -> entitlement 402 -> quota 429) and persists the user message BEFORE the first
+      // delta, so any failure up to here throws before a byte is sent. Each delta becomes a `chunk`
+      // frame; the generator's return value is the persisted assistant message for the `done` frame.
+      // When no provider supports streaming, the service falls back to non-stream generation and emits
+      // the full text as a single delta, preserving the chunk -> done contract.
+      const generator = this.conversationsService.appendMessageAndGenerateStream(
         currentUser,
         request.ip ?? 'unknown',
         parsedId,
         input,
       );
 
-      // Flush SSE headers ONLY after generation succeeds. Flushing earlier sends a 200 status, so a
-      // later failure can no longer set the real HTTP status (ERR_HTTP_HEADERS_SENT). With this order,
-      // a pre-stream failure returns a clean JSON error with the correct status (catch branch below).
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache, no-transform');
-      res.setHeader('Connection', 'keep-alive');
-      res.flushHeaders?.();
-
-      // Naive chunking to satisfy stream contract (word-by-word-ish). Real streaming can replace this later.
-      const words = fullText.split(/(\s+)/);
-      for (const w of words) {
-        // Stop immediately if the client disconnected mid-stream: writing to a destroyed socket
-        // throws and wastes the artificial per-chunk delay below.
-        if (res.destroyed) break;
-        if (!w) continue;
-        send({ type: 'chunk', delta: w });
-        // small delay to make stream observable in dev; harmless in prod
-        await new Promise((r) => setTimeout(r, 5));
+      let next = await generator.next();
+      while (!next.done) {
+        // Stop immediately if the client disconnected mid-stream: writing to a destroyed socket throws
+        // and there is no point pulling more tokens from the upstream provider.
+        if (res.destroyed) {
+          await generator.return?.(undefined as never);
+          break;
+        }
+        // The first delta is the safe point to commit headers: generation has started successfully.
+        ensureHeaders();
+        send({ type: 'chunk', delta: next.value });
+        next = await generator.next();
       }
 
-      send({ type: 'done', message: assistantMessage });
+      if (!res.destroyed) {
+        // Headers may still be unsent if the stream produced zero deltas (defensive: providers reject
+        // empty content upstream, but the contract still needs a `done` frame).
+        ensureHeaders();
+        send({ type: 'done', message: next.value });
+      }
     } catch (error) {
       // Known failures arrive as ApiErrorHttpException (typed code + status) from the service: quota
       // (429 RATE_LIMITED), feature flag (403 FEATURE_DISABLED), provider timeout/unavailable, etc.

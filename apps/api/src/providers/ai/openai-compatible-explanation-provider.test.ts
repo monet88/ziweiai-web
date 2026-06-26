@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ExplanationPromptPayload } from './ai-explanation-provider';
+import type { ConversationPromptPayload, ExplanationPromptPayload } from './ai-explanation-provider';
 
 function buildPayload(): ExplanationPromptPayload {
   return {
@@ -69,6 +69,53 @@ function buildPayload(): ExplanationPromptPayload {
 async function loadProvider() {
   const { OpenAiCompatibleExplanationProvider } = await import('./openai-compatible-explanation-provider');
   return new OpenAiCompatibleExplanationProvider();
+}
+
+// US-027: build a minimal conversation payload. The provider only needs the snapshot/context to
+// build a prompt; the streaming behaviour under test does not depend on prompt content.
+function buildConversationPayload(): ConversationPromptPayload {
+  const explanationPayload = buildPayload();
+  return {
+    chartSnapshot: explanationPayload.chartSnapshot!,
+    explanationContext: explanationPayload.explanationContext!,
+    messages: [],
+    userMessage: 'Xin chao',
+  };
+}
+
+// US-027: build a streaming Response whose body emits the given raw byte slices as SSE frames.
+// Each entry is written verbatim so tests can split a single JSON frame across two reads to prove
+// the parser buffers partial frames across reads.
+function streamingResponse(rawSlices: string[], init: ResponseInit = { status: 200 }): Response {
+  const encoder = new TextEncoder();
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const slice of rawSlices) {
+        controller.enqueue(encoder.encode(slice));
+      }
+      controller.close();
+    },
+  });
+  return new Response(body, {
+    status: init.status ?? 200,
+    headers: { 'Content-Type': 'text/event-stream', ...(init.headers ?? {}) },
+  });
+}
+
+function deltaFrame(content: string): string {
+  return `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`;
+}
+
+async function collectStream(
+  generator: AsyncGenerator<string, { renderedMarkdown: string; providerMetadata: Record<string, string> }, void>,
+): Promise<{ deltas: string[]; result: { renderedMarkdown: string; providerMetadata: Record<string, string> } | undefined }> {
+  const deltas: string[] = [];
+  let next = await generator.next();
+  while (!next.done) {
+    deltas.push(next.value);
+    next = await generator.next();
+  }
+  return { deltas, result: next.value };
 }
 
 describe('OpenAiCompatibleExplanationProvider', () => {
@@ -211,5 +258,126 @@ describe('OpenAiCompatibleExplanationProvider', () => {
     } finally {
       process.loadEnvFile = originalLoadEnvFile;
     }
+  });
+});
+
+describe('OpenAiCompatibleExplanationProvider.generateConversationStream', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete process.env.OPENAI_COMPAT_API_KEY;
+    delete process.env.OPENAI_COMPAT_BASE_URL;
+    delete process.env.OPENAI_COMPAT_MODEL;
+  });
+
+  it('posts with stream:true and yields token deltas in order, returning accumulated markdown', async () => {
+    process.env.OPENAI_COMPAT_API_KEY = 'sk-test-key';
+    process.env.OPENAI_COMPAT_BASE_URL = 'https://vps.monet.uno/api-cli';
+    process.env.OPENAI_COMPAT_MODEL = 'gemini-3.1-flash-lite';
+    vi.resetModules();
+
+    const fetchMock = vi.fn(async () =>
+      streamingResponse([deltaFrame('Xin '), deltaFrame('chao '), deltaFrame('ban'), 'data: [DONE]\n\n']),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const provider = await loadProvider();
+    const { deltas, result } = await collectStream(provider.generateConversationStream(buildConversationPayload()));
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const requestInit = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(JSON.parse(String(requestInit?.body))).toMatchObject({ stream: true });
+    expect(deltas).toEqual(['Xin ', 'chao ', 'ban']);
+    expect(result?.renderedMarkdown).toBe('Xin chao ban');
+    expect(result?.providerMetadata.provider).toBe('openai-compat');
+    expect(result?.providerMetadata.model).toBe('gemini-3.1-flash-lite');
+  });
+
+  it('buffers a JSON frame split across two reads', async () => {
+    process.env.OPENAI_COMPAT_API_KEY = 'sk-test-key';
+    process.env.OPENAI_COMPAT_BASE_URL = 'https://vps.monet.uno/api-cli';
+    process.env.OPENAI_COMPAT_MODEL = 'gemini-3.1-flash-lite';
+    vi.resetModules();
+
+    const full = deltaFrame('Hello world');
+    const splitAt = Math.floor(full.length / 2);
+    const fetchMock = vi.fn(async () =>
+      streamingResponse([full.slice(0, splitAt), full.slice(splitAt), 'data: [DONE]\n\n']),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const provider = await loadProvider();
+    const { deltas, result } = await collectStream(provider.generateConversationStream(buildConversationPayload()));
+
+    expect(deltas).toEqual(['Hello world']);
+    expect(result?.renderedMarkdown).toBe('Hello world');
+  });
+
+  it('rejects when the accumulated streamed text contains Han script', async () => {
+    process.env.OPENAI_COMPAT_API_KEY = 'sk-test-key';
+    process.env.OPENAI_COMPAT_BASE_URL = 'https://vps.monet.uno/api-cli';
+    process.env.OPENAI_COMPAT_MODEL = 'gemini-3.1-flash-lite';
+    vi.resetModules();
+
+    const fetchMock = vi.fn(async () =>
+      streamingResponse([deltaFrame('命'), deltaFrame('宫'), 'data: [DONE]\n\n']),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const provider = await loadProvider();
+    await expect(collectStream(provider.generateConversationStream(buildConversationPayload()))).rejects.toThrow(
+      'Nhà cung cấp trả về nội dung không hợp lệ (chứa chữ Hán).',
+    );
+  });
+
+  it('maps an aborted/timed-out request to a provider-timeout error', async () => {
+    process.env.OPENAI_COMPAT_API_KEY = 'sk-test-key';
+    process.env.OPENAI_COMPAT_BASE_URL = 'https://vps.monet.uno/api-cli';
+    process.env.OPENAI_COMPAT_MODEL = 'gemini-3.1-flash-lite';
+    vi.resetModules();
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        const timeoutError = new Error('The operation was aborted due to timeout');
+        timeoutError.name = 'TimeoutError';
+        throw timeoutError;
+      }),
+    );
+
+    const provider = await loadProvider();
+    await expect(collectStream(provider.generateConversationStream(buildConversationPayload()))).rejects.toThrow(
+      'Nhà cung cấp OpenAI-compatible phản hồi quá thời gian chờ.',
+    );
+  });
+
+  it('throws provider-unavailable when the upstream responds non-2xx', async () => {
+    process.env.OPENAI_COMPAT_API_KEY = 'sk-test-key';
+    process.env.OPENAI_COMPAT_BASE_URL = 'https://vps.monet.uno/api-cli';
+    process.env.OPENAI_COMPAT_MODEL = 'gemini-3.1-flash-lite';
+    vi.resetModules();
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('upstream boom', { status: 502 })),
+    );
+
+    const provider = await loadProvider();
+    await expect(collectStream(provider.generateConversationStream(buildConversationPayload()))).rejects.toThrow(
+      /thất bại/,
+    );
+  });
+
+  it('throws provider-unavailable when the stream yields no content', async () => {
+    process.env.OPENAI_COMPAT_API_KEY = 'sk-test-key';
+    process.env.OPENAI_COMPAT_BASE_URL = 'https://vps.monet.uno/api-cli';
+    process.env.OPENAI_COMPAT_MODEL = 'gemini-3.1-flash-lite';
+    vi.resetModules();
+
+    vi.stubGlobal('fetch', vi.fn(async () => streamingResponse(['data: [DONE]\n\n'])));
+
+    const provider = await loadProvider();
+    await expect(collectStream(provider.generateConversationStream(buildConversationPayload()))).rejects.toThrow(
+      'Nhà cung cấp OpenAI-compatible không trả về nội dung hội thoại.',
+    );
   });
 });

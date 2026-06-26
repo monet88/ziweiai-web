@@ -20,6 +20,13 @@ type OpenAiCompatibleResponse = {
   error?: { message?: string };
 };
 
+// US-027: shape of a streamed SSE chunk from an OpenAI-compatible upstream. Only the delta content
+// and the optional trailing usage block matter for us.
+type OpenAiCompatibleStreamChunk = {
+  choices?: Array<{ delta?: { content?: string } }>;
+  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+};
+
 // US-017e: user message OpenAI-style là string hoặc mảng content part (text + image_url).
 type OpenAiStyleContentPart =
   | { type: 'text'; text: string }
@@ -168,5 +175,180 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
       }
       throw new ProviderUnavailableError('Yêu cầu nhà cung cấp OpenAI-compatible thất bại.');
     }
+  }
+
+  // US-027 (decision 0026): REAL token streaming. POST with stream:true, read the upstream SSE
+  // body, parse `data:` frames, and yield each delta as it arrives. The accumulated text is run
+  // through the CJK guard before the final result is returned, mirroring the non-stream path.
+  // Timeout (AbortSignal.timeout) and error mapping match generateChatCompletion. An optional
+  // external `signal` lets the caller cancel the upstream fetch when the client disconnects.
+  async *generateConversationStream(
+    payload: ConversationPromptPayload,
+    signal?: AbortSignal,
+  ): AsyncGenerator<string, ConversationProviderResult, void> {
+    if (!this.isAvailable()) {
+      throw new ProviderUnavailableError('Chưa cấu hình nhà cung cấp OpenAI-compatible.');
+    }
+
+    const emptyMessage = 'Nhà cung cấp OpenAI-compatible không trả về nội dung hội thoại.';
+    const model = payload.modelOverride ?? apiEnv.OPENAI_COMPAT_MODEL;
+    const timeoutMs = apiEnv.AI_PROVIDER_TIMEOUT_MS;
+
+    // Combine the per-request timeout with the optional caller signal: either firing aborts the
+    // upstream fetch. AbortSignal.any is available on Node >=20; the repo targets Node >=22.
+    const timeoutSignal = AbortSignal.timeout(timeoutMs);
+    const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+
+    try {
+      const response = await fetch(buildChatCompletionsEndpoint(), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiEnv.OPENAI_COMPAT_API_KEY}`,
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: EXPLANATION_SYSTEM_PROMPT },
+            { role: 'user', content: buildConversationPrompt(payload) },
+          ],
+          stream: true,
+          temperature: 0.7,
+          max_tokens: 2048,
+        }),
+        signal: combinedSignal,
+      });
+
+      if (!response.ok) {
+        // Surface the upstream status; the body may be a non-JSON error page so we do not parse it.
+        throw new ProviderUnavailableError(
+          `Yêu cầu nhà cung cấp OpenAI-compatible thất bại: HTTP ${response.status} ${response.statusText}.`,
+        );
+      }
+
+      if (!response.body) {
+        throw new ProviderUnavailableError(emptyMessage);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let accumulated = '';
+      let usage: OpenAiCompatibleStreamChunk['usage'];
+      let done = false;
+
+      // Yield deltas as frames complete. SSE frames are separated by a blank line ("\n\n"); a single
+      // JSON payload can be split across reads, so we keep a buffer and only consume complete frames.
+      const deltas: string[] = [];
+      while (!done) {
+        const { value, done: streamDone } = await reader.read();
+        if (streamDone) {
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+
+        let separatorIndex = buffer.indexOf('\n\n');
+        while (separatorIndex !== -1) {
+          const rawFrame = buffer.slice(0, separatorIndex);
+          buffer = buffer.slice(separatorIndex + 2);
+
+          const parsed = this.parseStreamFrame(rawFrame);
+          if (parsed.isDone) {
+            done = true;
+            break;
+          }
+          if (parsed.usage) {
+            usage = parsed.usage;
+          }
+          if (parsed.delta) {
+            accumulated += parsed.delta;
+            deltas.push(parsed.delta);
+          }
+          separatorIndex = buffer.indexOf('\n\n');
+        }
+
+        // Flush the collected deltas to the caller. Deltas are buffered per read so the inner frame
+        // loop stays synchronous; yielding here keeps order and lets the controller emit chunks live.
+        while (deltas.length > 0) {
+          yield deltas.shift() as string;
+        }
+      }
+
+      const renderedMarkdown = accumulated.trim();
+      if (!renderedMarkdown) {
+        throw new ProviderUnavailableError(emptyMessage);
+      }
+      if (containsCjkText(renderedMarkdown)) {
+        this.logger.warn('Nhà cung cấp OpenAI-compatible trả về nội dung chứa chữ Hán, từ chối.');
+        throw new ProviderUnavailableError('Nhà cung cấp trả về nội dung không hợp lệ (chứa chữ Hán).');
+      }
+
+      return {
+        renderedMarkdown,
+        providerMetadata: {
+          provider: this.providerName,
+          model,
+          totalTokens: String(usage?.total_tokens ?? 0),
+          promptTokens: String(usage?.prompt_tokens ?? 0),
+          completionTokens: String(usage?.completion_tokens ?? 0),
+        },
+      };
+    } catch (error) {
+      if (error instanceof ProviderUnavailableError) {
+        this.logger.warn(error.message);
+        throw error;
+      }
+      this.logger.error(
+        'Yêu cầu nhà cung cấp OpenAI-compatible (stream) thất bại.',
+        error instanceof Error ? error.stack : String(error),
+      );
+      if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
+        throw new ProviderTimeoutError('Nhà cung cấp OpenAI-compatible phản hồi quá thời gian chờ.');
+      }
+      throw new ProviderUnavailableError('Yêu cầu nhà cung cấp OpenAI-compatible thất bại.');
+    }
+  }
+
+  // Parse a single SSE frame body. Each frame may contain one or more `data:` lines; we read the
+  // payload after the first `data:` prefix. `[DONE]` is the OpenAI sentinel that ends the stream.
+  // Non-JSON keepalive lines (comments starting ":") and blank frames return an empty delta.
+  private parseStreamFrame(rawFrame: string): {
+    delta: string;
+    isDone: boolean;
+    usage?: OpenAiCompatibleStreamChunk['usage'];
+  } {
+    let delta = '';
+    let isDone = false;
+    let usage: OpenAiCompatibleStreamChunk['usage'];
+
+    for (const line of rawFrame.split('\n')) {
+      const trimmed = line.trimStart();
+      if (!trimmed.startsWith('data:')) {
+        continue;
+      }
+      const data = trimmed.slice('data:'.length).trim();
+      if (data.length === 0) {
+        continue;
+      }
+      if (data === '[DONE]') {
+        isDone = true;
+        break;
+      }
+      try {
+        const chunk = JSON.parse(data) as OpenAiCompatibleStreamChunk;
+        const content = chunk.choices?.[0]?.delta?.content;
+        if (typeof content === 'string') {
+          delta += content;
+        }
+        if (chunk.usage) {
+          usage = chunk.usage;
+        }
+      } catch {
+        // Ignore non-JSON data lines (some proxies emit keepalive text); keep streaming.
+      }
+    }
+
+    return { delta, isDone, usage };
   }
 }

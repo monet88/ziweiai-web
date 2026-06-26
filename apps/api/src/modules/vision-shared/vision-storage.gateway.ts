@@ -72,4 +72,18 @@ export class VisionStorageGateway {
 
     return data.signedUrl;
   }
+
+  /**
+   * Xoá ảnh vision khỏi Storage (quyền được quên, decision 0023). Bucket private không có cron dọn
+   * nữa nên khi người dùng xoá một mục vision phải gỡ luôn file ảnh sinh trắc, không để mồ côi. Lỗi
+   * xoá → ném để caller biết ảnh CHƯA bị gỡ (không nuốt: xoá ảnh sinh trắc là thao tác cần chắc chắn).
+   */
+  async deleteVisionImage(imagePath: string): Promise<void> {
+    const { error } = await this.client.storage.from(VISION_BUCKET).remove([imagePath]);
+
+    if (error) {
+      this.logger.error(`[vision.storage] xoá ảnh thất bại path=${imagePath}: ${error.message}`);
+      throw new Error(error.message);
+    }
+  }
 }

@@ -425,6 +425,12 @@ export const viCopy = {
     visionQuestionLabel: 'Câu hỏi',
     visionImageAlt: 'Ảnh đã tải lên để luận giải',
     visionImageUnavailable: 'Ảnh không còn khả dụng',
+    visionDeleteLabel: 'Xoá',
+    visionDeleteCancel: 'Huỷ',
+    visionDeleteTitle: 'Xoá mục này?',
+    visionDeleting: 'Đang xoá…',
+    visionDeleteConfirm: 'Xoá vĩnh viễn ảnh và luận giải này khỏi lịch sử? Thao tác không thể hoàn tác.',
+    visionDeleteFailed: 'Không xoá được mục này. Vui lòng thử lại.',
   },
   normalizationMessage: {
     'birth.time.unknown': 'Chưa có giờ sinh chính xác.',

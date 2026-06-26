@@ -10,3 +10,4 @@ export { default as NoticeBanner } from './NoticeBanner.svelte';
 export { default as FullScreenState } from './FullScreenState.svelte';
 export { default as EmptyStateCard } from './EmptyStateCard.svelte';
 export { default as Spinner } from './Spinner.svelte';
+export { default as ConfirmDialog } from './ConfirmDialog.svelte';

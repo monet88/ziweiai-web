@@ -86,7 +86,10 @@ function buildConversationPayload(): ConversationPromptPayload {
 // US-027: build a streaming Response whose body emits the given raw byte slices as SSE frames.
 // Each entry is written verbatim so tests can split a single JSON frame across two reads to prove
 // the parser buffers partial frames across reads.
-function streamingResponse(rawSlices: string[], init: ResponseInit = { status: 200 }): Response {
+function streamingResponse(
+  rawSlices: string[],
+  init: ResponseInit & { onCancel?: () => void } = { status: 200 },
+): Response {
   const encoder = new TextEncoder();
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -94,6 +97,11 @@ function streamingResponse(rawSlices: string[], init: ResponseInit = { status: 2
         controller.enqueue(encoder.encode(slice));
       }
       controller.close();
+    },
+    // US-027 P2-2: lets a test observe that the provider releases the upstream stream (reader.cancel)
+    // on every exit path (CJK reject / empty / success), proving the finally block runs.
+    cancel() {
+      init.onCancel?.();
     },
   });
   return new Response(body, {
@@ -350,6 +358,38 @@ describe('OpenAiCompatibleExplanationProvider.generateConversationStream', () =>
     );
   });
 
+  it('does NOT map a caller-driven abort (client disconnect) to a provider-timeout error', async () => {
+    process.env.OPENAI_COMPAT_API_KEY = 'sk-test-key';
+    process.env.OPENAI_COMPAT_BASE_URL = 'https://vps.monet.uno/api-cli';
+    process.env.OPENAI_COMPAT_MODEL = 'gemini-3.1-flash-lite';
+    vi.resetModules();
+
+    // Low-2: the caller signal (client disconnect) is already aborted. fetch rejects with an
+    // AbortError, but this is NOT a timeout — it must not surface as ProviderTimeoutError (504).
+    const callerAbort = new AbortController();
+    callerAbort.abort();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        const abortError = new Error('The operation was aborted');
+        abortError.name = 'AbortError';
+        throw abortError;
+      }),
+    );
+
+    const provider = await loadProvider();
+    const { ProviderTimeoutError, ProviderUnavailableError } = await import('./provider-errors');
+    let thrown: unknown;
+    try {
+      await collectStream(provider.generateConversationStream(buildConversationPayload(), callerAbort.signal));
+      throw new Error('expected the aborted stream to reject');
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toBeInstanceOf(ProviderUnavailableError);
+    expect(thrown).not.toBeInstanceOf(ProviderTimeoutError);
+  });
+
   it('throws provider-unavailable when the upstream responds non-2xx', async () => {
     process.env.OPENAI_COMPAT_API_KEY = 'sk-test-key';
     process.env.OPENAI_COMPAT_BASE_URL = 'https://vps.monet.uno/api-cli';
@@ -379,5 +419,54 @@ describe('OpenAiCompatibleExplanationProvider.generateConversationStream', () =>
     await expect(collectStream(provider.generateConversationStream(buildConversationPayload()))).rejects.toThrow(
       'Nhà cung cấp OpenAI-compatible không trả về nội dung hội thoại.',
     );
+  });
+
+  it('cancels the upstream reader when the consumer returns early (client disconnect)', async () => {
+    process.env.OPENAI_COMPAT_API_KEY = 'sk-test-key';
+    process.env.OPENAI_COMPAT_BASE_URL = 'https://vps.monet.uno/api-cli';
+    process.env.OPENAI_COMPAT_MODEL = 'gemini-3.1-flash-lite';
+    vi.resetModules();
+
+    // P2-2 (the real disconnect path): the consumer pulls one delta then calls generator.return(),
+    // mirroring the controller aborting mid-stream when the client goes away. The finally must cancel
+    // the upstream body so we stop reading (and the server stops burning provider tokens).
+    const onCancel = vi.fn();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        streamingResponse([deltaFrame('Xin '), deltaFrame('chao '), deltaFrame('ban'), 'data: [DONE]\n\n'], {
+          status: 200,
+          onCancel,
+        }),
+      ),
+    );
+
+    const provider = await loadProvider();
+    const generator = provider.generateConversationStream(buildConversationPayload());
+    const first = await generator.next();
+    expect(first.value).toBe('Xin ');
+    await generator.return(undefined as never);
+
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it('flushes a trailing frame the upstream sent without a final blank line or [DONE]', async () => {
+    process.env.OPENAI_COMPAT_API_KEY = 'sk-test-key';
+    process.env.OPENAI_COMPAT_BASE_URL = 'https://vps.monet.uno/api-cli';
+    process.env.OPENAI_COMPAT_MODEL = 'gemini-3.1-flash-lite';
+    vi.resetModules();
+
+    // Non-conformant proxy: closes the body right after the last data line, no trailing "\n\n"/[DONE].
+    const fetchMock = vi.fn(async () =>
+      streamingResponse([deltaFrame('Xin '), 'data: {"choices":[{"delta":{"content":"chao"}}]}']),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const provider = await loadProvider();
+    const { deltas, result } = await collectStream(provider.generateConversationStream(buildConversationPayload()));
+
+    // Medium-2: the trailing token must not be dropped when the stream ends without a frame separator.
+    expect(deltas).toEqual(['Xin ', 'chao']);
+    expect(result?.renderedMarkdown).toBe('Xin chao');
   });
 });

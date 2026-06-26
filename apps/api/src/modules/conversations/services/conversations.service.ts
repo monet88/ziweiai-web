@@ -118,12 +118,32 @@ export class ConversationsService {
       }
 
       const generator = streamingProvider.generateConversationStream(promptPayload, signal);
-      let next = await generator.next();
-      while (!next.done) {
-        yield next.value;
-        next = await generator.next();
+      // P2-1 (decision 0026): drive the provider iterator inside try/finally so a consumer-side
+      // .return() (controller aborting on client disconnect) propagates DOWN to the provider via
+      // generator.return(). That lets the provider's own finally cancel the upstream fetch and stop
+      // burning tokens. Without this, returning from THIS generator would not forward .return() to a
+      // generator we drive manually with .next().
+      let providerDone = false;
+      let providerResult: ConversationProviderResult;
+      try {
+        let next = await generator.next();
+        while (!next.done) {
+          yield next.value;
+          next = await generator.next();
+        }
+        providerDone = true;
+        providerResult = next.value;
+      } finally {
+        if (!providerDone) {
+          // Consumer stopped early (or an error broke the loop): tell the provider to tear down its
+          // upstream stream. Best-effort; a rejection here must not mask the original outcome.
+          try {
+            await generator.return?.(undefined as never);
+          } catch {
+            // Ignore teardown errors; the original outcome (return value or thrown error) wins.
+          }
+        }
       }
-      const providerResult = next.value;
 
       // Persist the assistant message ONLY after the stream finished cleanly (full accumulated text +
       // provider metadata). Errors above throw before reaching this point, so a partial reply is never

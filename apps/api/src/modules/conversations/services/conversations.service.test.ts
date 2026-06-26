@@ -324,4 +324,38 @@ describe('ConversationsService.appendMessageAndGenerateStream', () => {
     });
     expect((result as { id: string }).id).toBe(ASSISTANT_RECORD.id);
   });
+
+  it('propagates .return() to the provider iterator when the consumer stops early (client disconnect)', async () => {
+    // P2-1: when the controller aborts mid-stream (client disconnect), calling .return() on the
+    // service generator must flow down to the provider iterator's .return() so the upstream fetch is
+    // cancelled and no more tokens are billed. A hand-rolled iterator records the .return() call.
+    const providerReturn = vi.fn(async () => ({ value: undefined, done: true }) as IteratorReturnResult<undefined>);
+    let pulls = 0;
+    const providerIterator = {
+      next: vi.fn(async () => {
+        pulls += 1;
+        return { value: `tok-${pulls}`, done: false } as IteratorYieldResult<string>;
+      }),
+      return: providerReturn,
+      [Symbol.asyncIterator]() {
+        return this;
+      },
+    };
+    const streamProvider = { generateConversationStream: vi.fn(() => providerIterator) };
+    const { service, createConversationMessage } = buildStreamingService(streamProvider);
+
+    const generator = service.appendMessageAndGenerateStream(emailUser, '127.0.0.1', CONVERSATION_ID, {
+      content: 'Xin chào',
+      providerPreference: 'auto',
+    });
+
+    const first = await generator.next();
+    expect(first.value).toBe('tok-1');
+    await generator.return(undefined as never);
+
+    expect(providerReturn).toHaveBeenCalledOnce();
+    // No assistant message is persisted on an early disconnect — the stream never completed.
+    expect(createConversationMessage).toHaveBeenCalledTimes(1);
+    expect(createConversationMessage.mock.calls[0]?.[0]).toMatchObject({ role: 'user' });
+  });
 });

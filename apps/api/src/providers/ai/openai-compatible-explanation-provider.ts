@@ -241,44 +241,72 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
       // Yield deltas as frames complete. SSE frames are separated by a blank line ("\n\n"); a single
       // JSON payload can be split across reads, so we keep a buffer and only consume complete frames.
       const deltas: string[] = [];
-      while (!done) {
-        const { value, done: streamDone } = await reader.read();
-        if (streamDone) {
-          break;
-        }
-        buffer += decoder.decode(value, { stream: true });
-
-        let separatorIndex = buffer.indexOf('\n\n');
-        while (separatorIndex !== -1) {
-          const rawFrame = buffer.slice(0, separatorIndex);
-          buffer = buffer.slice(separatorIndex + 2);
-
-          const parsed = this.parseStreamFrame(rawFrame);
-          if (parsed.isDone) {
-            done = true;
+      try {
+        while (!done) {
+          const { value, done: streamDone } = await reader.read();
+          if (streamDone) {
             break;
           }
+          buffer += decoder.decode(value, { stream: true });
+
+          let separatorIndex = buffer.indexOf('\n\n');
+          while (separatorIndex !== -1) {
+            const rawFrame = buffer.slice(0, separatorIndex);
+            buffer = buffer.slice(separatorIndex + 2);
+
+            const parsed = this.parseStreamFrame(rawFrame);
+            if (parsed.isDone) {
+              done = true;
+              break;
+            }
+            if (parsed.usage) {
+              usage = parsed.usage;
+            }
+            if (parsed.delta) {
+              accumulated += parsed.delta;
+              deltas.push(parsed.delta);
+            }
+            separatorIndex = buffer.indexOf('\n\n');
+          }
+
+          // Flush the collected deltas to the caller. Deltas are buffered per read so the inner frame
+          // loop stays synchronous; yielding here keeps order and lets the controller emit chunks live.
+          while (deltas.length > 0) {
+            yield deltas.shift() as string;
+          }
+        }
+
+        // Medium-2: some non-conformant proxies close the body right after the last data line without a
+        // trailing "\n\n" or [DONE]. Parse whatever is left in the buffer as a final frame so the last
+        // token is not dropped. Skip when the stream ended on an explicit [DONE] (done === true).
+        if (!done && buffer.trim().length > 0) {
+          const parsed = this.parseStreamFrame(buffer);
+          buffer = '';
           if (parsed.usage) {
             usage = parsed.usage;
           }
           if (parsed.delta) {
             accumulated += parsed.delta;
-            deltas.push(parsed.delta);
+            yield parsed.delta;
           }
-          separatorIndex = buffer.indexOf('\n\n');
         }
-
-        // Flush the collected deltas to the caller. Deltas are buffered per read so the inner frame
-        // loop stays synchronous; yielding here keeps order and lets the controller emit chunks live.
-        while (deltas.length > 0) {
-          yield deltas.shift() as string;
-        }
+      } finally {
+        // P2-2: release the upstream stream on EVERY exit path (success, CJK reject, empty, timeout,
+        // and consumer-driven .return() when the client disconnects). cancel() aborts the body read so
+        // the socket is freed; releaseLock() detaches the reader. Both are best-effort.
+        await reader.cancel().catch(() => undefined);
+        reader.releaseLock();
       }
 
       const renderedMarkdown = accumulated.trim();
       if (!renderedMarkdown) {
         throw new ProviderUnavailableError(emptyMessage);
       }
+      // Low-1 (known + acceptable): the CJK guard runs on the FULLY accumulated text, so any Han
+      // tokens were already streamed to the client as deltas before we reject here. A brief flash of
+      // invalid content on the client is possible; it is client-dependent and the assistant message is
+      // never persisted, so the durable record stays clean. A per-delta guard would add cost for a
+      // cosmetic gain, so we keep the accumulated-text guard.
       if (containsCjkText(renderedMarkdown)) {
         this.logger.warn('Nhà cung cấp OpenAI-compatible trả về nội dung chứa chữ Hán, từ chối.');
         throw new ProviderUnavailableError('Nhà cung cấp trả về nội dung không hợp lệ (chứa chữ Hán).');
@@ -303,6 +331,12 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
         'Yêu cầu nhà cung cấp OpenAI-compatible (stream) thất bại.',
         error instanceof Error ? error.stack : String(error),
       );
+      // Low-2: distinguish a caller-driven abort (client disconnect -> `signal` aborted) from a real
+      // per-request timeout. Only the timeout maps to ProviderTimeoutError (504). A client disconnect
+      // is not a provider fault, so it surfaces as a plain unavailable error and never as a 504.
+      if (signal?.aborted) {
+        throw new ProviderUnavailableError('Yêu cầu nhà cung cấp OpenAI-compatible bị hủy.');
+      }
       if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
         throw new ProviderTimeoutError('Nhà cung cấp OpenAI-compatible phản hồi quá thời gian chờ.');
       }

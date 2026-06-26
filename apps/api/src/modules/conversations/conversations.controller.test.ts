@@ -23,7 +23,14 @@ function createService(overrides: Partial<Record<keyof ConversationsService, unk
 }
 
 function createRequest(): AuthenticatedRequest {
-  return { ip: '127.0.0.1', requestId: 'req-1' } as unknown as AuthenticatedRequest;
+  // The streaming handler registers/removes a 'close' listener for client-disconnect aborts; the
+  // non-stream handlers ignore these. Stub on/off so both paths run without a real socket.
+  return {
+    ip: '127.0.0.1',
+    requestId: 'req-1',
+    on: vi.fn(),
+    off: vi.fn(),
+  } as unknown as AuthenticatedRequest;
 }
 
 async function expectBadRequest(promise: Promise<unknown>): Promise<void> {
@@ -234,5 +241,95 @@ describe('ConversationsController.appendMessageStream', () => {
     ]);
     expect(res.json).not.toHaveBeenCalled();
     expect(res.end).toHaveBeenCalledOnce();
+  });
+
+  // P2-1 (decision 0026): the controller must pass an AbortSignal into the service stream and trip it
+  // when the client disconnects (req/res 'close'), so the upstream fetch is cancelled and tokens stop.
+  function createStreamRequest(): {
+    request: AuthenticatedRequest;
+    fireClose: () => void;
+  } {
+    const closeHandlers: Array<() => void> = [];
+    const request = {
+      ip: '127.0.0.1',
+      requestId: 'req-1',
+      on: vi.fn((event: string, handler: () => void) => {
+        if (event === 'close') {
+          closeHandlers.push(handler);
+        }
+      }),
+    } as unknown as AuthenticatedRequest;
+    return {
+      request,
+      fireClose: () => closeHandlers.forEach((handler) => handler()),
+    };
+  }
+
+  it('passes an AbortSignal to the service and aborts it when the client disconnects mid-stream', async () => {
+    let capturedSignal: AbortSignal | undefined;
+    const { request, fireClose } = createStreamRequest();
+    // The service stream yields one delta, then waits; the test fires the client 'close' between the
+    // first and second pull, mirroring a disconnect. The controller must abort the captured signal.
+    let resolveSecond: (() => void) | undefined;
+    async function* gen(): AsyncGenerator<string, unknown, void> {
+      yield 'Xin ';
+      await new Promise<void>((resolve) => {
+        resolveSecond = resolve;
+      });
+      return ASSISTANT_MESSAGE;
+    }
+    const service = createService({
+      appendMessageAndGenerateStream: vi.fn((_user, _ip, _id, _input, signal?: AbortSignal) => {
+        capturedSignal = signal;
+        return gen();
+      }),
+    });
+    const controller = new ConversationsController(service);
+    const { res } = createResponse();
+
+    const pending = controller.appendMessageStream(
+      USER,
+      CONVERSATION_ID,
+      { content: 'Xin chào' },
+      request,
+      res as never,
+    );
+    // Let the generator emit the first delta and park on the pending promise.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(capturedSignal).toBeInstanceOf(AbortSignal);
+    expect(capturedSignal?.aborted).toBe(false);
+
+    fireClose();
+    expect(capturedSignal?.aborted).toBe(true);
+
+    // Unpark so the controller can finish and we can await cleanly.
+    resolveSecond?.();
+    await pending;
+    expect(request.on).toHaveBeenCalledWith('close', expect.any(Function));
+  });
+
+  it('does not leak a raw non-typed error message to the client (generic message instead)', async () => {
+    // A non-ApiError, non-ProviderError leaking an internal detail (e.g. a DSN with a password) on the
+    // first pull. A plain rejecting iterator models this without an empty generator body.
+    const service = createService({
+      appendMessageAndGenerateStream: vi.fn(() => ({
+        next: () => Promise.reject(new Error('connect ECONNREFUSED 10.0.0.5:5432 password=supersecret')),
+      })),
+    });
+    const controller = new ConversationsController(service);
+    const { res } = createResponse();
+
+    await controller.appendMessageStream(USER, CONVERSATION_ID, { content: 'Xin chào' }, createRequest(), res as never);
+
+    // Headers never flushed (error before first byte) -> JSON error. Message must be generic.
+    expect(res.status).toHaveBeenCalledWith(HttpStatus.BAD_GATEWAY);
+    const jsonArg = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]?.[0] as {
+      code: string;
+      message: string;
+    };
+    expect(jsonArg.code).toBe('PROVIDER_UNAVAILABLE');
+    expect(jsonArg.message).toBe('Đã xảy ra lỗi khi tạo nội dung. Vui lòng thử lại.');
+    expect(jsonArg.message).not.toContain('supersecret');
+    expect(jsonArg.message).not.toContain('ECONNREFUSED');
   });
 });

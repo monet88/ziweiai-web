@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, Post, Query, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Logger, Param, Post, Query, Req, Res } from '@nestjs/common';
 import {
   createConversationRequestSchema,
   createConversationMessageRequestSchema,
@@ -15,6 +15,8 @@ import { ConversationsService } from './services/conversations.service';
 @Controller('conversations')
 export class ConversationsController {
   constructor(private readonly conversationsService: ConversationsService) {}
+
+  private readonly logger = new Logger(ConversationsController.name);
 
   // Đồng nhất với VisionController: validate input bằng safeParse rồi ném ApiErrorHttpException
   // (INVALID_INPUT, thông điệp tiếng Việt) thay vì để Zod ném ZodError thô. Gom về một helper để
@@ -139,6 +141,15 @@ export class ConversationsController {
       headersFlushed = true;
     };
 
+    // P2-1 (decision 0026): abort the upstream provider fetch when the client disconnects so we stop
+    // burning tokens. The signal is threaded service -> provider; both the request and response 'close'
+    // events fire on disconnect, so listen on both (idempotent: AbortController.abort is a no-op once
+    // already aborted).
+    const abortController = new AbortController();
+    const onClientClose = () => abortController.abort();
+    request.on('close', onClientClose);
+    res.on?.('close', onClientClose);
+
     try {
       // US-027 (decision 0026): consume the REAL token stream from the service. The service runs all
       // gates (enabled -> entitlement 402 -> quota 429) and persists the user message BEFORE the first
@@ -151,13 +162,15 @@ export class ConversationsController {
         request.ip ?? 'unknown',
         parsedId,
         input,
+        abortController.signal,
       );
 
       let next = await generator.next();
       while (!next.done) {
         // Stop immediately if the client disconnected mid-stream: writing to a destroyed socket throws
-        // and there is no point pulling more tokens from the upstream provider.
-        if (res.destroyed) {
+        // and there is no point pulling more tokens from the upstream provider. .return() propagates
+        // down to the provider so it cancels the upstream fetch.
+        if (res.destroyed || abortController.signal.aborted) {
           await generator.return?.(undefined as never);
           break;
         }
@@ -167,7 +180,7 @@ export class ConversationsController {
         next = await generator.next();
       }
 
-      if (!res.destroyed) {
+      if (!res.destroyed && !abortController.signal.aborted) {
         // Headers may still be unsent if the stream produced zero deltas (defensive: providers reject
         // empty content upstream, but the contract still needs a `done` frame).
         ensureHeaders();
@@ -188,6 +201,8 @@ export class ConversationsController {
         send({ type: 'error', error: { code, message, requestId } });
       }
     } finally {
+      request.off?.('close', onClientClose);
+      res.off?.('close', onClientClose);
       res.end();
     }
   }
@@ -202,10 +217,17 @@ export class ConversationsController {
         message: shaped.message ?? 'Generation failed',
       };
     }
+    // Medium-1: a non-typed error (not ApiError/ProviderError) may carry internal detail (stack, DSN,
+    // credentials). Log it server-side for diagnosis but return a generic Vietnamese message so the
+    // raw text never reaches the client. Typed errors above keep their already-safe messages.
+    this.logger.error(
+      'Conversation stream failed with a non-typed error.',
+      error instanceof Error ? error.stack : String(error),
+    );
     return {
       status: HttpStatus.BAD_GATEWAY,
       code: 'PROVIDER_UNAVAILABLE',
-      message: error instanceof Error ? error.message : 'Generation failed',
+      message: 'Đã xảy ra lỗi khi tạo nội dung. Vui lòng thử lại.',
     };
   }
 }

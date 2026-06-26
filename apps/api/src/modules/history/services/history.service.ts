@@ -49,15 +49,21 @@ export class HistoryService {
     );
     const signedUrlByImagePath = new Map(signedUrlEntries);
 
-    // Observability: từng lỗi ký đã log per-item ở gateway (warn cho path-lạ, error cho ngoại lệ),
-    // nhưng một sự cố storage DIỆN RỘNG chỉ hiện ra dưới dạng nhiều dòng rời rạc, không có tín hiệu
-    // tổng. Đếm số path ký hỏng trên cả batch và log một dòng error khi CÓ lỗi — "ký hỏng N/M ảnh"
-    // biến outage hệ thống thành một sự kiện quan sát được (alert theo tỉ lệ), không chìm trong warn.
+    // Observability: từng lỗi ký đã log per-item ở gateway (warn cho path-lạ/ảnh đã xoá, error cho
+    // ngoại lệ). Tầng tổng này chỉ biết SỐ ĐẾM null, không biết từng null thuộc loại nào — nên mức log
+    // phải suy từ TỈ LỆ. Vài ảnh null giữa một batch nhiều ảnh là điều kiện dữ liệu BÌNH THƯỜNG (ảnh
+    // xoá thủ công, path cũ) → warn; chỉ khi CẢ batch (>1 ảnh) đều ký hỏng mới là tín hiệu sự cố
+    // storage diện rộng đáng báo động → error. Tránh việc một ảnh thiếu kích hoạt error ở mọi lần
+    // GET /history (nhiễu alert, không phân biệt được data bình thường với outage thật).
     const failedSignCount = signedUrlEntries.filter(([, signedUrl]) => signedUrl === null).length;
     if (failedSignCount > 0) {
-      this.logger.error(
-        `[history] ký signed URL ảnh vision thất bại ${failedSignCount}/${distinctImagePaths.length} (userId=${userId})`,
-      );
+      const message = `[history] ký signed URL ảnh vision thất bại ${failedSignCount}/${distinctImagePaths.length} (userId=${userId})`;
+      const isSystemicOutage = failedSignCount === distinctImagePaths.length && distinctImagePaths.length > 1;
+      if (isSystemicOutage) {
+        this.logger.error(message);
+      } else {
+        this.logger.warn(message);
+      }
     }
 
     const items = views.map((view) => {

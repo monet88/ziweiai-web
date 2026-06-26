@@ -11,7 +11,8 @@
     "typecheck": "svelte-kit sync && tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test --grep-invert @live",
+    "e2e:live": "playwright test --grep @live"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.84.0",

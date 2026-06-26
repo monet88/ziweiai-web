@@ -90,6 +90,29 @@ export class VisionAnalysisService {
     // Bọc trong try/catch không nuốt lỗi: persist hỏng vẫn trả kết quả cho người dùng (họ đã chờ LLM),
     // chỉ log cảnh báo — KHÔNG để lỗi ghi lịch sử biến một lượt vision thành công thành 5xx.
     const normalizedQuestion = question?.trim() ? question.trim() : null;
+    await this.persistVisionHistory({ user, kind, imagePath, normalizedQuestion, narrative, providerMetadata });
+
+    return visionAnalysisSchema.parse({ kind, imagePath, narrative });
+  }
+
+  // Hai bước ghi tuần tự (createVisionResult rồi createHistoryView) KHÔNG nằm trong một transaction —
+  // gateway dùng REST của Supabase nên không có transaction xuyên-bảng. Nếu bước history_views hỏng sau
+  // khi vision_results đã ghi, ta sẽ có row vision + ảnh sinh trắc mồ côi KHÔNG bao giờ hiện trong lịch
+  // sử (listHistory chỉ duyệt theo history_views) và cũng KHÔNG xoá được qua UI (deleteVisionResult dựa
+  // trên việc nó xuất hiện trong danh sách). Bù trừ thủ công (compensating rollback): gỡ row vision +
+  // ảnh đã upload để không để lại dữ liệu sinh trắc mồ côi. Toàn khối vẫn không ném ra ngoài — người
+  // dùng đã chờ LLM nên luôn nhận kết quả; chỉ log cảnh báo khi ghi/bù trừ lỗi.
+  private async persistVisionHistory(params: {
+    user: AuthenticatedUser;
+    kind: VisionKind;
+    imagePath: string;
+    normalizedQuestion: string | null;
+    narrative: string;
+    providerMetadata: Record<string, string>;
+  }): Promise<void> {
+    const { user, kind, imagePath, normalizedQuestion, narrative, providerMetadata } = params;
+
+    let visionResultId: string | null = null;
     try {
       const visionResult = await this.persistence.createVisionResult({
         ownerUserId: user.userId,
@@ -99,6 +122,7 @@ export class VisionAnalysisService {
         renderedMarkdown: narrative,
         providerMetadata,
       });
+      visionResultId = visionResult.id;
       await this.persistence.createHistoryView({
         ownerUserId: user.userId,
         chartSnapshotId: null,
@@ -109,9 +133,36 @@ export class VisionAnalysisService {
       this.logger.warn(
         `[vision.${kind}] persist lịch sử thất bại (kết quả vẫn trả về): ${error instanceof Error ? error.message : String(error)}`,
       );
+      // Bù trừ: nếu vision_results đã tạo nhưng history_views hỏng → row + ảnh sẽ mồ côi. Gỡ cả hai.
+      if (visionResultId) {
+        await this.rollbackOrphanedVisionResult(user.userId, visionResultId, imagePath, kind);
+      }
     }
+  }
 
-    return visionAnalysisSchema.parse({ kind, imagePath, narrative });
+  // Gỡ row vision + ảnh khi bước history_views hỏng. deleteVisionResult ở gateway xoá row (history_views
+  // cascade theo FK nếu có), deleteVisionImage gỡ file Storage. Mỗi bước bù trừ tự bọc lỗi: rollback hỏng
+  // KHÔNG được leo thang thành 5xx (kết quả LLM đã trả cho người dùng) — chỉ log để vận hành xử lý sau.
+  private async rollbackOrphanedVisionResult(
+    ownerUserId: string,
+    visionResultId: string,
+    imagePath: string,
+    kind: VisionKind,
+  ): Promise<void> {
+    try {
+      await this.persistence.deleteVisionResult(ownerUserId, visionResultId);
+    } catch (rollbackError) {
+      this.logger.error(
+        `[vision.${kind}] bù trừ xoá vision_results id=${visionResultId} thất bại (row mồ côi): ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`,
+      );
+    }
+    try {
+      await this.storageGateway.deleteVisionImage(imagePath);
+    } catch (rollbackError) {
+      this.logger.error(
+        `[vision.${kind}] bù trừ xoá ảnh path=${imagePath} thất bại (ảnh mồ côi): ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`,
+      );
+    }
   }
 
   // US-017 follow-up (decision 0023): quyền được quên. Xoá một mục vision của chính người dùng —

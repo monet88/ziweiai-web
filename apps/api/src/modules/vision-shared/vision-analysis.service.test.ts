@@ -190,6 +190,33 @@ describe('VisionAnalysisService', () => {
     // Kết quả vision vẫn trả về bình thường dù ghi lịch sử thất bại.
     expect(visionAnalysisSchema.safeParse(result).success).toBe(true);
     expect(result.imagePath).toBe('owner/req.png');
+    // createVisionResult hỏng ngay → chưa có row → KHÔNG bù trừ (không gọi xoá row/ảnh).
+    expect(persistence.deleteVisionResult).not.toHaveBeenCalled();
+    expect(storageGateway.deleteVisionImage).not.toHaveBeenCalled();
+  });
+
+  it('history_views hỏng sau khi vision_result đã tạo → bù trừ gỡ row + ảnh mồ côi (vẫn trả kết quả)', async () => {
+    // createVisionResult thành công NHƯNG createHistoryView hỏng → row vision + ảnh sẽ mồ côi
+    // (không hiện trong lịch sử, không xoá được qua UI). Bù trừ phải gỡ cả hai.
+    persistence.createHistoryView = vi.fn().mockRejectedValue(new Error('history insert failed'));
+    const result = await service.analyze(baseInput());
+
+    // Người dùng vẫn nhận kết quả LLM.
+    expect(visionAnalysisSchema.safeParse(result).success).toBe(true);
+    expect(result.imagePath).toBe('owner/req.png');
+    // Bù trừ: xoá đúng row vision vừa tạo + đúng ảnh đã upload.
+    expect(persistence.deleteVisionResult).toHaveBeenCalledWith(emailUser.userId, '33333333-3333-4333-8333-333333333333');
+    expect(storageGateway.deleteVisionImage).toHaveBeenCalledWith('owner/req.png');
+  });
+
+  it('bù trừ lỗi (xoá row/ảnh hỏng) KHÔNG leo thang thành 5xx — vẫn trả kết quả vision', async () => {
+    persistence.createHistoryView = vi.fn().mockRejectedValue(new Error('history insert failed'));
+    persistence.deleteVisionResult = vi.fn().mockRejectedValue(new Error('rollback row failed'));
+    storageGateway.deleteVisionImage = vi.fn().mockRejectedValue(new Error('rollback image failed'));
+
+    const result = await service.analyze(baseInput());
+    expect(visionAnalysisSchema.safeParse(result).success).toBe(true);
+    expect(result.imagePath).toBe('owner/req.png');
   });
 
   it('palm dùng cờ EXTENDED_SYSTEM_PALM_ENABLED riêng (Face bật không mở Palm)', async () => {

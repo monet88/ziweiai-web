@@ -816,12 +816,17 @@ export class SupabasePersistenceGateway {
           )
         : {};
 
+    // Trim-or-null: a row may store '' / whitespace; collapse it so the schema
+    // sees a non-empty string or null (never an empty string that fails min(1)).
+    const rawQuestion = row.question as string | null;
+    const trimmedQuestion = typeof rawQuestion === 'string' ? rawQuestion.trim() : null;
+
     return visionResultRecordSchema.parse({
       id: row.id,
       ownerUserId: row.owner_user_id,
       kind: row.kind,
       imagePath: row.image_path,
-      question: (row.question as string | null) ?? null,
+      question: trimmedQuestion && trimmedQuestion.length > 0 ? trimmedQuestion : null,
       renderedMarkdown: row.rendered_markdown,
       providerMetadata,
       createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),

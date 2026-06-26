@@ -61,16 +61,27 @@ export class VisionStorageGateway {
    * ảnh hỏng không được làm sập cả danh sách lịch sử.
    */
   async createSignedImageUrl(imagePath: string, expiresInSeconds = 3600): Promise<string | null> {
-    const { data, error } = await this.client.storage
-      .from(VISION_BUCKET)
-      .createSignedUrl(imagePath, expiresInSeconds);
+    try {
+      const { data, error } = await this.client.storage
+        .from(VISION_BUCKET)
+        .createSignedUrl(imagePath, expiresInSeconds);
 
-    if (error || !data?.signedUrl) {
-      this.logger.warn(`[vision.storage] ký URL thất bại path=${imagePath}: ${error?.message ?? 'no signedUrl'}`);
+      if (error || !data?.signedUrl) {
+        this.logger.warn(`[vision.storage] ký URL thất bại path=${imagePath}: ${error?.message ?? 'no signedUrl'}`);
+        return null;
+      }
+
+      return data.signedUrl;
+    } catch (error) {
+      // Ngoại lệ ngoài luồng (mạng, lỗi SDK không nằm trong `error` trả về) KHÔNG được làm sập cả
+      // danh sách lịch sử: HistoryService ký song song bằng Promise.all, một lần ký ném sẽ reject
+      // cả batch → GET /history 5xx. Nuốt ở đây và trả null như mọi lỗi ký khác — một ảnh hỏng chỉ
+      // mất đúng ảnh đó.
+      this.logger.warn(
+        `[vision.storage] ký URL ném ngoại lệ path=${imagePath}: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return null;
     }
-
-    return data.signedUrl;
   }
 
   /**

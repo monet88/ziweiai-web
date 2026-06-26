@@ -62,7 +62,7 @@ export function buildHydrationResultByScope(
     return map;
   }
 
-  const scopeKeyOf = (r: PersistedExplanationResult): string => r.providerMetadata?.palaceScope ?? 'overview';
+  const scopeKeyOf = (r: PersistedExplanationResult): string => r.providerMetadata?.palaceScope ?? OVERVIEW_SCOPE_KEY;
 
   // Pass 1: kind khớp tường minh (newest-first → record khớp đầu tiên là mới nhất, không ghi đè).
   for (const r of results) {

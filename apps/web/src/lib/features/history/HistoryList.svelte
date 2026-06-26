@@ -159,12 +159,16 @@
 
   // Signed URL ảnh vision chỉ sống ngắn hạn (~1h). Nếu tab mở lâu hơn thời hạn ký mà query
   // history chưa refetch, URL hết hạn → <img> load lỗi (markup vẫn có src nên nhánh imageUrl
-  // null KHÔNG bắt được). Thu thập id ảnh load hỏng lúc runtime để rơi về cùng placeholder
+  // null KHÔNG bắt được). Thu thập URL ảnh load hỏng lúc runtime để rơi về cùng placeholder
   // "ảnh không còn khả dụng" thay vì hiện icon ảnh vỡ.
-  const failedImageIds = new SvelteSet<string>();
+  //
+  // Khoá theo URL (không theo id): khi query refetch và ký URL mới, URL khác chuỗi cũ nên KHÔNG
+  // còn trong tập hỏng → ảnh tự thử lại. Khoá theo id sẽ "dính" vĩnh viễn, ẩn ảnh kể cả khi đã có
+  // URL mới hợp lệ, tới khi tải lại trang.
+  const failedImageUrls = new SvelteSet<string>();
 
-  function markImageFailed(id: string): void {
-    failedImageIds.add(id);
+  function markImageFailed(imageUrl: string): void {
+    failedImageUrls.add(imageUrl);
   }
 
   function goToDashboard(): void {
@@ -243,12 +247,15 @@
             {#if deleteErrorId === item.id}
               <p class="vision-delete-error" role="alert">{viCopy.history.visionDeleteFailed}</p>
             {/if}
-            {#if item.imageUrl && !failedImageIds.has(item.id)}
+            {#if item.imageUrl && !failedImageUrls.has(item.imageUrl)}
+              {@const imageUrl = item.imageUrl}
               <img
                 class="vision-image"
-                src={item.imageUrl}
+                src={imageUrl}
                 alt={viCopy.history.visionImageAlt}
-                onerror={() => markImageFailed(item.id)}
+                loading="lazy"
+                decoding="async"
+                onerror={() => markImageFailed(imageUrl)}
               />
             {:else}
               <p class="vision-image-missing">{viCopy.history.visionImageUnavailable}</p>

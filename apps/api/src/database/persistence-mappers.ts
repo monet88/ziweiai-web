@@ -170,14 +170,31 @@ export function toConversationMessageRecord(row: SupabaseRow): ConversationMessa
 }
 
 // Báo cáo năm là bản ghi nội bộ server (không phải public contract) nên map trực tiếp,
-// không qua zod schema như các record khác. `year` từ Postgres về dạng number sẵn.
+// không qua zod schema như các record khác. Vì thiếu lớp phòng vệ của zod, tự kiểm tra ở
+// đây để một row hỏng (cột null/undefined) ném lỗi rõ ràng thay vì lặng lẽ tạo
+// "null"/"undefined"/NaN.
+function requireString(value: unknown, column: string): string {
+  if (value === null || value === undefined) {
+    throw new Error(`toAnnualReportRecord: cột bắt buộc "${column}" bị thiếu (null/undefined)`);
+  }
+  return String(value);
+}
+
+function requireYear(value: unknown): number {
+  const year = Number(value);
+  if (!Number.isInteger(year)) {
+    throw new Error(`toAnnualReportRecord: cột "year" không phải số nguyên hợp lệ (nhận được: ${String(value)})`);
+  }
+  return year;
+}
+
 export function toAnnualReportRecord(row: SupabaseRow): AnnualReportRecord {
   return {
-    id: String(row.id),
-    ownerUserId: String(row.owner_user_id),
-    chartSnapshotId: String(row.chart_snapshot_id),
-    year: Number(row.year),
-    markdown: String(row.markdown),
+    id: requireString(row.id, 'id'),
+    ownerUserId: requireString(row.owner_user_id, 'owner_user_id'),
+    chartSnapshotId: requireString(row.chart_snapshot_id, 'chart_snapshot_id'),
+    year: requireYear(row.year),
+    markdown: requireString(row.markdown, 'markdown'),
     createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
   };
 }

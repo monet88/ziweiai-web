@@ -238,4 +238,30 @@ describe('toAnnualReportRecord', () => {
     expect(record.year).toBe(2026);
     expect(record.createdAt).toBe('2026-06-07T11:17:21Z');
   });
+
+  it('throws when a required string column is null/undefined', () => {
+    expect(() =>
+      toAnnualReportRecord({
+        id: null,
+        owner_user_id: OWNER,
+        chart_snapshot_id: SNAPSHOT_ID,
+        year: 2026,
+        markdown: '## Báo cáo năm',
+        created_at: null,
+      }),
+    ).toThrow(/id/);
+  });
+
+  it('throws when year is not a valid integer', () => {
+    expect(() =>
+      toAnnualReportRecord({
+        id: 123,
+        owner_user_id: OWNER,
+        chart_snapshot_id: SNAPSHOT_ID,
+        year: 'not-a-year',
+        markdown: '## Báo cáo năm',
+        created_at: null,
+      }),
+    ).toThrow(/year/);
+  });
 });

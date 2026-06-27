@@ -1,0 +1,77 @@
+name: CI
+
+# Hermetic quality gate: lint + typecheck + unit tests + build across the
+# pnpm/turbo workspace. No secrets required — apps/api env schema has safe
+# defaults and web unit tests stub $env, so this runs on every PR.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Non-secret placeholders so SvelteKit's `svelte-kit sync` generates the
+    # `$env/static/public` typings (it only declares PUBLIC_* vars present at
+    # sync time). Values are irrelevant to typecheck/build validation — the real
+    # PUBLIC_* are baked on the prod box at deploy time. Keeps this job hermetic.
+    env:
+      PUBLIC_API_BASE_URL: http://localhost:3000
+      PUBLIC_SUPABASE_URL: http://localhost:54321
+      PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Vite/esbuild postinstall is blocked by pnpm by default; the build needs
+      # esbuild's native binary (same step the prod deploy runs).
+      - name: Rebuild esbuild native binary
+        run: pnpm rebuild esbuild
+
+      # Turbo caches task outputs between runs keyed on inputs.
+      - name: Cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm turbo run typecheck
+
+      - name: Test
+        run: pnpm turbo run test
+
+      - name: Build
+        run: pnpm turbo run build
+
+      - name: Security audit (high+)
+        run: pnpm audit --audit-level=high
+        continue-on-error: true

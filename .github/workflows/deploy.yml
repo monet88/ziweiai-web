@@ -1,0 +1,63 @@
+name: Deploy
+
+# Auto-deploy to the single AWS Lightsail prod box on merge to main. Runs the
+# exact update flow from docs/deploy/aws-lightsail.md over SSH. Gated behind the
+# `production` GitHub Environment so a required reviewer can be added there to
+# turn this into a manual approval step without touching this file.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://tuvi.monet.uno
+    steps:
+      - name: Deploy over SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SSH_PRIVATE_KEY:-}" ] || [ -z "${SSH_HOST:-}" ] || [ -z "${SSH_USER:-}" ]; then
+            echo "::error::Missing DEPLOY_SSH_KEY / DEPLOY_HOST / DEPLOY_USER secrets."
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${SSH_HOST}" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/deploy_key "${SSH_USER}@${SSH_HOST}" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          cd ~/ziweiai-web
+          git pull --ff-only
+          pnpm install --frozen-lockfile
+          pnpm rebuild esbuild
+          pnpm turbo run build
+          pm2 restart ziwei-api --update-env
+          sudo systemctl reload caddy
+          REMOTE
+
+      - name: Verify live endpoints
+        run: |
+          set -euo pipefail
+          web=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 https://tuvi.monet.uno/)
+          api=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 https://api.tuvi.monet.uno/health)
+          echo "WEB=$web API=$api"
+          if [ "$web" != "200" ] || [ "$api" != "200" ]; then
+            echo "::error::Post-deploy health check failed (web=$web api=$api)."
+            exit 1
+          fi

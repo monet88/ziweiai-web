@@ -15,17 +15,19 @@ const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 
 // Backlog #21: mỗi worker dùng email test riêng (global-setup provision w0..wN-1 + user dùng
 // chung), nên va chạm quota/rate-limit per-user — nguyên nhân gốc buộc workers:1 — đã được gỡ.
-// Hạ tầng song song hoá đã sẵn sàng, nhưng việc bật song song thật cần chứng minh xanh trên
-// Supabase Cloud + mạng thật (không chạy được trong môi trường implement này). Vì vậy mặc định
-// vẫn 1 worker; nâng qua env E2E_WORKERS (vd E2E_WORKERS=4) khi đã verify được phiên live xanh —
-// không cần đổi code. fullyParallel bám theo: chỉ bật khi chạy >1 worker.
+// Đã verify song song hoá xanh trên Supabase Cloud + provider thật (2026-06-27): bộ default
+// 41/41 ở 4 workers (53s), bộ @live 7/7 ở 4 workers (36s) — 4 user đua nhau không va chạm
+// quota/rate-limit. Vì vậy mặc định nâng lên 4 worker; tùy môi trường (CI ít CPU, mạng yếu)
+// có thể hạ qua env E2E_WORKERS (vd E2E_WORKERS=1) mà không cần đổi code. fullyParallel bám
+// theo: chỉ bật khi chạy >1 worker.
+const DEFAULT_E2E_WORKERS = 4;
 const workerCount = (() => {
   const raw = process.env.E2E_WORKERS;
   if (raw === undefined || raw.trim() === '') {
-    return 1;
+    return DEFAULT_E2E_WORKERS;
   }
   const parsed = Number.parseInt(raw, 10);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_E2E_WORKERS;
 })();
 
 // Nhóm @live (pnpm e2e:live) gọi LLM thật. Một số feature cần cờ server bật mới sinh được kết quả
@@ -54,8 +56,8 @@ const isLiveRun = cliArgs.some((arg, index) => {
 
 export default defineConfig({
   testDir: './tests/e2e',
-  // Luận giải AI gọi provider thật (mạng) → cho mỗi test tối đa 90s. Mặc định 1 worker; khi
-  // bật song song (E2E_WORKERS>1) mỗi worker có user riêng nên không đua quota/rate-limit per-user.
+  // Luận giải AI gọi provider thật (mạng) → cho mỗi test tối đa 90s. Mặc định 4 worker (xem
+  // DEFAULT_E2E_WORKERS); mỗi worker có user riêng nên không đua quota/rate-limit per-user.
   timeout: 90_000,
   expect: { timeout: 15_000 },
   fullyParallel: workerCount > 1,

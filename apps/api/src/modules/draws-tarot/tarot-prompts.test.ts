@@ -52,4 +52,33 @@ describe('buildTarotReadingPrompt', () => {
     expect(prompt).toContain('[Kết quả có thể tới]');
     expect(prompt).toContain('Phân tích quan hệ GIỮA các lá');
   });
+
+  // Backlog #24: bốn kiểu trải bài mới (single/diamond/moon/horseshoe) thêm vào SPREAD_POSITIONS +
+  // SPREAD_LABELS_VI nhưng chưa có test riêng. Một vòng parameterized chốt: prompt gắn đúng nhãn kiểu
+  // trải, dùng đúng nhãn vị trí đầu/cuối theo số lá, không lẫn chữ Hán, và bật quy tắc quan hệ giữa
+  // các lá cho mọi trải nhiều lá — bắt lỗi lệch nhãn vị trí + thiếu quy tắc đa lá khi thêm spread.
+  const swordRanks = ['ace', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+  const buildCards = (count: number): (TarotCardDraw & { position: number })[] =>
+    swordRanks.slice(0, count).map((rank, index) => card(`swords_${rank}`, `Kiếm ${rank}`, false, index));
+
+  const spreadCases = [
+    { spread: 'single' as const, count: 1, label: 'trải bài một lá', first: 'Thông điệp cốt lõi', last: 'Thông điệp cốt lõi' },
+    { spread: 'three-card' as const, count: 3, label: 'trải bài ba lá', first: 'Quá khứ', last: 'Tương lai' },
+    { spread: 'diamond' as const, count: 4, label: 'trải bài kim cương (4 lá)', first: 'Tình hình hiện tại', last: 'Kết quả hướng tới' },
+    { spread: 'moon' as const, count: 4, label: 'trải bài tuần trăng (4 lá)', first: 'Trăng non - khởi đầu', last: 'Trăng tối - chuyển hóa' },
+    { spread: 'horseshoe' as const, count: 7, label: 'trải bài móng ngựa (7 lá)', first: 'Quá khứ', last: 'Kết quả có thể tới' },
+    { spread: 'celtic-cross' as const, count: 10, label: 'trải bài Celtic Cross (10 lá)', first: 'Cốt lõi vấn đề', last: 'Kết quả có thể tới' },
+  ];
+
+  it.each(spreadCases)('$spread: nhãn kiểu trải + nhãn vị trí đầu/cuối + không chữ Hán', ({ spread, count, label, first, last }) => {
+    const prompt = buildTarotReadingPrompt('Câu hỏi mẫu', spread, buildCards(count));
+    expect(prompt).toContain(label);
+    expect(prompt).toContain(`[${first}]`);
+    expect(prompt).toContain(`[${last}]`);
+    expect(HAN_TEXT_PATTERN.test(prompt)).toBe(false);
+    // Quy tắc luận quan hệ giữa các lá chỉ áp cho trải nhiều lá; trải một lá không kích hoạt.
+    if (count > 1) {
+      expect(prompt).toContain('Phân tích quan hệ GIỮA các lá');
+    }
+  });
 });

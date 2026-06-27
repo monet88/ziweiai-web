@@ -396,3 +396,22 @@ test:release
 ```
 
 Agents must not claim these commands pass until they exist and have been run.
+
+## Proof Flag Semantics (decision 0025)
+
+The matrix proof flags (`unit` / `integration` / `e2e` / `platform`) are numeric
+`0|1`. A `0` is ambiguous on its own: it means EITHER "N/A by design" OR "not yet
+proven". The CLI has no per-axis N/A marker, so the story's own Validation table is
+authoritative for which axes are expected.
+
+Convention (decision 0025):
+
+- The story Validation table marks an axis `n/a` / `-` when that axis does not apply
+  by design (for example a prompt-only change has no e2e axis).
+- When an axis is N/A by design, the story `evidence` string must say so, so the
+  matrix `0` is not misread as test debt.
+- A `0` without an N/A note in the Validation table means the axis is genuinely
+  unproven and is real work remaining.
+
+Do not flip a flag to `1` to make the matrix look complete; flip it only after the
+matching validation has actually run green.

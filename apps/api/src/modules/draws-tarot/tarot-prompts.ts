@@ -16,7 +16,19 @@ type DrawnCard = TarotCardDraw & { position: number };
 // three-card: Quá khứ / Hiện tại / Tương lai (đọc chung, phổ biến nhất).
 // celtic-cross: 10 vị trí Celtic Cross kinh điển, dịch Việt.
 const SPREAD_POSITIONS: Record<TarotSpread, readonly string[]> = {
+  single: ['Thông điệp cốt lõi'],
   'three-card': ['Quá khứ', 'Hiện tại', 'Tương lai'],
+  diamond: ['Tình hình hiện tại', 'Trở ngại', 'Lời khuyên', 'Kết quả hướng tới'],
+  moon: ['Trăng non - khởi đầu', 'Trăng tròn - cao trào', 'Trăng khuyết - buông bỏ', 'Trăng tối - chuyển hóa'],
+  horseshoe: [
+    'Quá khứ',
+    'Hiện tại',
+    'Ảnh hưởng ẩn',
+    'Trở ngại',
+    'Thái độ người xung quanh',
+    'Điều nên làm',
+    'Kết quả có thể tới',
+  ],
   'celtic-cross': [
     'Cốt lõi vấn đề',
     'Thử thách đang cản trở',
@@ -31,8 +43,19 @@ const SPREAD_POSITIONS: Record<TarotSpread, readonly string[]> = {
   ],
 } as const;
 
+// Nhan tieng Viet cho moi kieu trai bai. Dung chung cho prompt builder + fallback
+// narrative ben service de hai ben khong lech khi them spread moi.
+export const SPREAD_LABELS_VI: Record<TarotSpread, string> = {
+  single: 'trải bài một lá',
+  'three-card': 'trải bài ba lá',
+  diamond: 'trải bài kim cương (4 lá)',
+  moon: 'trải bài tuần trăng (4 lá)',
+  horseshoe: 'trải bài móng ngựa (7 lá)',
+  'celtic-cross': 'trải bài Celtic Cross (10 lá)',
+};
+
 function spreadLabel(spread: TarotSpread): string {
-  return spread === 'celtic-cross' ? 'trải bài Celtic Cross (10 lá)' : 'trải bài ba lá';
+  return SPREAD_LABELS_VI[spread];
 }
 
 function describeCard(card: DrawnCard, spread: TarotSpread): string {

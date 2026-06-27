@@ -23,7 +23,14 @@ function createService(overrides: Partial<Record<keyof ConversationsService, unk
 }
 
 function createRequest(): AuthenticatedRequest {
-  return { ip: '127.0.0.1', requestId: 'req-1' } as unknown as AuthenticatedRequest;
+  // The streaming handler registers/removes a 'close' listener for client-disconnect aborts; the
+  // non-stream handlers ignore these. Stub on/off so both paths run without a real socket.
+  return {
+    ip: '127.0.0.1',
+    requestId: 'req-1',
+    on: vi.fn(),
+    off: vi.fn(),
+  } as unknown as AuthenticatedRequest;
 }
 
 async function expectBadRequest(promise: Promise<unknown>): Promise<void> {
@@ -104,5 +111,263 @@ describe('ConversationsController input validation', () => {
       );
       expect(service.appendMessageAndGenerate).not.toHaveBeenCalled();
     });
+  });
+});
+
+// US-027 (decision 0026): the streaming endpoint consumes a REAL async iterator from the service
+// (appendMessageAndGenerateStream), emits each delta as an SSE `chunk` frame, then a `done` frame
+// with the persisted message. A gate/error firing BEFORE the first byte must return a normal JSON
+// error with the correct status (headers not yet sent).
+describe('ConversationsController.appendMessageStream', () => {
+  function createResponse() {
+    const writes: string[] = [];
+    const headers: Record<string, string> = {};
+    const closeHandlers: Array<() => void> = [];
+    const res = {
+      headersSent: false,
+      destroyed: false,
+      writableEnded: false,
+      statusCode: 200,
+      setHeader: vi.fn((key: string, value: string) => {
+        headers[key] = value;
+      }),
+      flushHeaders: vi.fn(() => {
+        res.headersSent = true;
+      }),
+      write: vi.fn((chunk: string) => {
+        writes.push(chunk);
+        return true;
+      }),
+      status: vi.fn((code: number) => {
+        res.statusCode = code;
+        return res;
+      }),
+      json: vi.fn(),
+      on: vi.fn((event: string, handler: () => void) => {
+        if (event === 'close') {
+          closeHandlers.push(handler);
+        }
+      }),
+      off: vi.fn(),
+      end: vi.fn(() => {
+        // Mirror Node: end() sets writableEnded before the eventual 'close'. The disconnect guard
+        // relies on this so a normal end() is not mistaken for a client disconnect.
+        res.writableEnded = true;
+      }),
+    };
+    const fireClose = () => closeHandlers.forEach((handler) => handler());
+    return { res, writes, headers, fireClose };
+  }
+
+  function parseSseFrames(writes: string[]): unknown[] {
+    return writes
+      .join('')
+      .split('\n\n')
+      .filter((frame) => frame.startsWith('data: '))
+      .map((frame) => JSON.parse(frame.slice('data: '.length)));
+  }
+
+  const ASSISTANT_MESSAGE = {
+    id: '77777777-7777-4777-8777-777777777777',
+    ownerUserId: USER.userId,
+    conversationId: CONVERSATION_ID,
+    role: 'assistant',
+    content: 'Xin chao ban',
+    quickPromptKey: null,
+    providerName: 'openai-compat',
+    providerMetadata: { provider: 'openai-compat' },
+    createdAt: '2026-06-26T03:00:00.000Z',
+  };
+
+  function streamingService(generator: () => AsyncGenerator<string, unknown, void>) {
+    return createService({
+      appendMessageAndGenerateStream: vi.fn(() => generator()),
+    });
+  }
+
+  it('emits real chunk frames per delta then a done frame with the persisted message', async () => {
+    async function* gen(): AsyncGenerator<string, unknown, void> {
+      yield 'Xin ';
+      yield 'chao ';
+      yield 'ban';
+      return ASSISTANT_MESSAGE;
+    }
+    const service = streamingService(gen);
+    const controller = new ConversationsController(service);
+    const { res, writes } = createResponse();
+
+    await controller.appendMessageStream(USER, CONVERSATION_ID, { content: 'Xin chào' }, createRequest(), res as never);
+
+    expect(res.flushHeaders).toHaveBeenCalledOnce();
+    const frames = parseSseFrames(writes);
+    expect(frames).toEqual([
+      { type: 'chunk', delta: 'Xin ' },
+      { type: 'chunk', delta: 'chao ' },
+      { type: 'chunk', delta: 'ban' },
+      { type: 'done', message: ASSISTANT_MESSAGE },
+    ]);
+    expect(res.end).toHaveBeenCalledOnce();
+  });
+
+  it('returns a JSON error with the typed status when a gate fires before the first byte', async () => {
+    // The gate throws before any token is produced (mirrors entitlement/quota failures): the service
+    // generator rejects on the first `.next()`, so headers are never flushed. A plain rejecting
+    // iterator models this without an empty generator body.
+    const service = createService({
+      appendMessageAndGenerateStream: vi.fn(() => ({
+        next: () =>
+          Promise.reject(
+            new ApiErrorHttpException(HttpStatus.PAYMENT_REQUIRED, 'PAYMENT_REQUIRED', 'Cần gói trả phí.'),
+          ),
+      })),
+    });
+    const controller = new ConversationsController(service);
+    const { res } = createResponse();
+
+    await controller.appendMessageStream(USER, CONVERSATION_ID, { content: 'Xin chào' }, createRequest(), res as never);
+
+    expect(res.flushHeaders).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(HttpStatus.PAYMENT_REQUIRED);
+    expect(res.json).toHaveBeenCalledWith({
+      code: 'PAYMENT_REQUIRED',
+      message: 'Cần gói trả phí.',
+      requestId: 'req-1',
+    });
+  });
+
+  it('surfaces an SSE error frame when the provider fails AFTER the stream opened', async () => {
+    async function* gen(): AsyncGenerator<string, unknown, void> {
+      yield 'Xin ';
+      throw new ApiErrorHttpException(HttpStatus.BAD_GATEWAY, 'PROVIDER_UNAVAILABLE', 'Đứt giữa chừng.');
+    }
+    const service = streamingService(gen);
+    const controller = new ConversationsController(service);
+    const { res, writes } = createResponse();
+
+    await controller.appendMessageStream(USER, CONVERSATION_ID, { content: 'Xin chào' }, createRequest(), res as never);
+
+    expect(res.flushHeaders).toHaveBeenCalledOnce();
+    const frames = parseSseFrames(writes);
+    expect(frames).toEqual([
+      { type: 'chunk', delta: 'Xin ' },
+      { type: 'error', error: { code: 'PROVIDER_UNAVAILABLE', message: 'Đứt giữa chừng.', requestId: 'req-1' } },
+    ]);
+    expect(res.json).not.toHaveBeenCalled();
+    expect(res.end).toHaveBeenCalledOnce();
+  });
+
+  // US-027 + backlog #34 (lossless client-disconnect): the controller drives the provider stream to
+  // completion so the service ALWAYS persists the assistant message, even if the client disconnects
+  // mid-stream. On a real disconnect (res.destroyed) it aborts the signal so the provider stops
+  // reading upstream (token burn stops) — but the provider returns the accumulated partial text
+  // losslessly, so draining the generator still lets the service persist what the user already saw.
+  // We poll res.destroyed in the loop instead of listening on the 'close' event: that event misfires
+  // mid-stream under Node/Express, and a spurious abort there would have dropped the reply. With the
+  // lossless provider, the worst case is a truncated-but-persisted answer, never a lost one.
+  it('aborts the signal on client disconnect but still drains to completion so persist wins', async () => {
+    let consumedToEnd = false;
+    let capturedSignal: AbortSignal | undefined;
+    async function* gen(): AsyncGenerator<string, unknown, void> {
+      yield 'Xin ';
+      yield 'chào';
+      consumedToEnd = true;
+      return ASSISTANT_MESSAGE;
+    }
+    const service = createService({
+      appendMessageAndGenerateStream: vi.fn((_user, _ip, _id, _input, signal?: AbortSignal) => {
+        capturedSignal = signal;
+        return gen();
+      }),
+    });
+    const controller = new ConversationsController(service);
+    const { res, writes } = createResponse();
+    // Simulate a dead client socket: writes are no-ops and the socket reports destroyed.
+    (res as { destroyed: boolean }).destroyed = true;
+
+    await controller.appendMessageStream(
+      USER,
+      CONVERSATION_ID,
+      { content: 'Xin chào' },
+      createRequest(),
+      res as never,
+    );
+
+    // The signal was passed and tripped because the socket is dead (upstream token burn stops).
+    expect(capturedSignal).toBeInstanceOf(AbortSignal);
+    expect(capturedSignal?.aborted).toBe(true);
+    // The generator was still driven to its return value (service persisted), not abandoned.
+    expect(consumedToEnd).toBe(true);
+    // Nothing was written to the dead socket, and res.end() is skipped on a destroyed socket.
+    expect(writes).toEqual([]);
+    expect(res.end).not.toHaveBeenCalled();
+  });
+
+  it('aborts on a disconnect that fires BEFORE the first token (slow/hung opening pull)', async () => {
+    // Models a client that goes away while the provider is still producing its first token. The loop
+    // only polls res.destroyed BETWEEN deltas, so without the opening-window 'close' listener the
+    // abort would not fire until a token arrived or the provider timed out. The listener must trip the
+    // signal as soon as 'close' fires, while the first pull is still pending.
+    let capturedSignal: AbortSignal | undefined;
+    let releaseFirstPull: (() => void) | undefined;
+    const firstPullGate = new Promise<void>((resolve) => {
+      releaseFirstPull = resolve;
+    });
+    async function* gen(): AsyncGenerator<string, unknown, void> {
+      // Block on the first token until the test releases the gate (after firing 'close').
+      await firstPullGate;
+      return ASSISTANT_MESSAGE;
+    }
+    const service = createService({
+      appendMessageAndGenerateStream: vi.fn((_user, _ip, _id, _input, signal?: AbortSignal) => {
+        capturedSignal = signal;
+        return gen();
+      }),
+    });
+    const controller = new ConversationsController(service);
+    const { res, fireClose } = createResponse();
+
+    const handled = controller.appendMessageStream(
+      USER,
+      CONVERSATION_ID,
+      { content: 'Xin chào' },
+      createRequest(),
+      res as never,
+    );
+
+    // Let the handler reach its first `await generator.next()`, then the client disconnects.
+    await Promise.resolve();
+    expect(capturedSignal?.aborted).toBe(false);
+    (res as { destroyed: boolean }).destroyed = true;
+    fireClose();
+    // The opening-window listener tripped the signal immediately, without waiting for a token.
+    expect(capturedSignal?.aborted).toBe(true);
+
+    releaseFirstPull?.();
+    await handled;
+  });
+
+  it('does not leak a raw non-typed error message to the client (generic message instead)', async () => {
+    // A non-ApiError, non-ProviderError leaking an internal detail (e.g. a DSN with a password) on the
+    // first pull. A plain rejecting iterator models this without an empty generator body.
+    const service = createService({
+      appendMessageAndGenerateStream: vi.fn(() => ({
+        next: () => Promise.reject(new Error('connect ECONNREFUSED 10.0.0.5:5432 password=supersecret')),
+      })),
+    });
+    const controller = new ConversationsController(service);
+    const { res } = createResponse();
+
+    await controller.appendMessageStream(USER, CONVERSATION_ID, { content: 'Xin chào' }, createRequest(), res as never);
+
+    // Headers never flushed (error before first byte) -> JSON error. Message must be generic.
+    expect(res.status).toHaveBeenCalledWith(HttpStatus.BAD_GATEWAY);
+    const jsonArg = (res.json as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]?.[0] as {
+      code: string;
+      message: string;
+    };
+    expect(jsonArg.code).toBe('PROVIDER_UNAVAILABLE');
+    expect(jsonArg.message).toBe('Đã xảy ra lỗi khi tạo nội dung. Vui lòng thử lại.');
+    expect(jsonArg.message).not.toContain('supersecret');
+    expect(jsonArg.message).not.toContain('ECONNREFUSED');
   });
 });

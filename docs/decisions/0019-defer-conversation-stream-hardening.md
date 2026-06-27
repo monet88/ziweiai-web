@@ -4,7 +4,10 @@ Date: 2026-06-25
 
 ## Status
 
-Accepted
+Superseded by 0026 (2026-06-26): the activation condition (real provider
+streaming) is now being implemented under backlog #28 / US-027. The deferral
+reasoning below remains the historical record of why fake-chunk hardening was
+not built at the time.
 
 ## Context
 

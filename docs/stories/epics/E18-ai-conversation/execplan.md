@@ -248,6 +248,100 @@ Files dự kiến:
 
 Validation: `pnpm lint` + `turbo typecheck` + `turbo test` + `pnpm -F @ziweiai/web build` xanh; spot check `\p{Script=Han}` scan KHÔNG match label conversation UI.
 
+## Progress
+
+> Nguồn sự thật của proof là harness (`scripts/bin/harness-cli.exe query matrix`),
+> KHÔNG phải mục này. Tại thời điểm cập nhật: US-018 = `implemented`, proof
+> `unit/integration/e2e/platform = 1/1/1/1`, PR #16 (`feat/us-018-ai-assistant-sse`)
+> còn OPEN — CHƯA merge. Mục Progress dưới đây chỉ tường thuật để một agent mất
+> context có thể nối lại; khi lệch với harness thì harness thắng.
+
+- [x] (2026-06-24 16:03Z) P-merge: hợp nhất `main` vào nhánh US-018, main thắng ở
+  vùng refactor, chỉ layer thêm code conversation/SSE (commit `cf9cc29`).
+- [x] (2026-06-17/18) P0–P5: env + 2 cờ + 2 quota, migration 2 bảng + RLS,
+  contracts conversation/message/quick-prompt, module backend + SSE, transport
+  web viết tay, UI panel + quick prompts. (Cài đặt gốc landed quanh `882c465`
+  2026-06-18; timestamp per-file sớm hơn không tái dựng chính xác được từ log
+  hiện có — đừng bịa mốc.)
+- [x] (2026-06-24 16:09Z) Đồng bộ quota hội thoại với store đếm bền của US-013,
+  bỏ `anonDailyIpBuckets`, dùng `DailyQuotaExceededError` có kiểu (commit
+  `5043cf3`).
+- [x] (2026-06-24 17:09Z) Review-fix vòng 1 (gemini/cubic/codex): thứ tự header
+  SSE, P1 whitespace-delta, real IP, typed quota mapping, lọc dangling turn,
+  bản migration, cleanup stream + restore input ở web (commit `47c6905`).
+- [x] (2026-06-25 02:03Z) Review-fix vòng 2 (gemini/codex): entitlement gate
+  TRƯỚC quota, preprocess env empty-string, guard `res.destroyed` cho SSE,
+  optimistic rollback `slice(0,-2)`, gỡ effect chết (commit `9026956`).
+- [x] (2026-06-25 02:58Z) Review-fix: chunking SSE, quick prompts, thứ tự
+  migration, quotas (commit `deb2837`).
+- [x] (2026-06-25 05:43Z) Xử lý nốt findings của code-reviewer-pro trên PR #16
+  (commit `6c9d4aa`).
+- [x] (2026-06-25 10:15Z) P6: thêm coverage E2E cho US-018 (cùng mẻ với US-010/
+  013/014/017i-j/022) (commit `50e9c0c`).
+- [x] (2026-06-25 04:17Z) P7 (phần docs/decision): defer stream hardening sang
+  backlog #28 + ADR `0019` (commits `f58fce4`, `9630885`).
+- [ ] Đóng story (còn lại): merge PR #16, giữ `AI_CONVERSATION_ENABLED=false` ở
+  prod, smoke ở stg với 1 conversation thật chạy đủ 3 lượt (điều kiện đóng nêu ở
+  `Goal`). Hiện chưa thực hiện vì PR vẫn open.
+
+## Surprises & Discoveries
+
+- Observation: `z.stringbool` xử lý chuỗi rỗng `''` không như kỳ vọng cho cờ env,
+  cần preprocess empty-string để default `false` không bị lật.
+  Evidence: review-fix "env empty-string preprocess" trong commit `9026956`.
+- Observation: Khi client đóng connection giữa stream, ghi tiếp vào response đã
+  hủy gây lỗi; phải guard `res.destroyed` trước mỗi lần ghi chunk.
+  Evidence: "res.destroyed SSE guard", commit `9026956`.
+- Observation: Rollback optimistic phải cắt đúng cặp user+assistant cuối
+  (`slice(0,-2)`), không chỉ 1 phần tử, nếu không message list lệch.
+  Evidence: commit `9026956`.
+- Observation: Chunking SSE phát sinh P1 sai lệch whitespace giữa các delta khi
+  ghép lại ở client.
+  Evidence: "whitespace-delta P1", commit `47c6905`.
+- Observation: Vì kiến trúc ban đầu emit "fake chunk" (provider chưa stream
+  thật), đặc tả abort/timeout/retry cho stream KHÔNG mang lại giá trị quan sát
+  được, nên defer thay vì cài cho có.
+  Evidence: commit `f58fce4` + ADR `0019`.
+
+## Decision Log
+
+- Decision: Defer stream hardening (abort/timeout/retry) ra khỏi US-018, đưa vào
+  backlog #28.
+  Rationale: Provider mới emit fake-chunk nên lifecycle-safety chưa kiểm chứng
+  được; cài lúc này là code chết. Quyết định bền vững ghi ở `docs/decisions/0019`.
+  Date/Author: 2026-06-25 / claude (commits `f58fce4`, `9630885`).
+- Decision: Quota hội thoại dùng chung store đếm bền của US-013 thay vì bucket
+  in-memory riêng.
+  Rationale: Tránh trùng cơ chế đếm và mất số liệu khi restart; thống nhất với
+  `DailyQuotaExceededError` có kiểu.
+  Date/Author: 2026-06-24 / claude (commit `5043cf3`).
+- Decision: Áp entitlement (AI gate) TRƯỚC quota trên mỗi `POST /messages`.
+  Rationale: Khớp hard gate trong `Risk Classification`; không tiêu quota khi
+  feature/entitlement đã chặn.
+  Date/Author: 2026-06-25 / claude (commit `9026956`).
+- Decision: Merge `main` vào nhánh — main thắng ở vùng refactor dùng chung, chỉ
+  layer thêm code conversation/SSE.
+  Rationale: Không để PR cũ ghi đè refactor mới hơn ở `main`.
+  Date/Author: 2026-06-24 / claude (commit `cf9cc29`).
+- Note (sau US-018): ADR `0019` (defer) về sau bị thay thế bởi ADR `0026` qua
+  story US-027 khi streaming provider thật được triển khai (backlog #28). Ghi lại
+  ở đây để truy vết; chi tiết durable nằm ở `docs/decisions/`.
+
+## Outcomes & Retrospective
+
+Đã triển khai trọn P0–P7: 2 cờ + 2 quota, migration 2 bảng + RLS owner-only, 3
+contracts, module backend 3 endpoint + SSE, transport web viết tay, UI panel +
+quick prompts, E2E mock LLM, và docs/decision. Harness ghi US-018 `implemented`
+với proof `1/1/1/1`.
+
+So với `Goal`: phần "6 phase implemented" đạt, nhưng điều kiện đóng story ("merged
+thành công + cờ giữ `false` ở prod + smoke stg 3 lượt") CHƯA hoàn tất vì PR #16
+còn open. Đây là khoảng cách còn lại, không phải việc đã xong.
+
+Bài học: chốt sớm rằng stream hardening không có giá trị quan sát khi provider
+còn fake-chunk đã tránh được code chết; phần streaming thật được tách đúng sang
+US-027 + ADR `0026` thay vì nhồi vào US-018.
+
 ## Stop Conditions
 
 Pause for human confirmation if:

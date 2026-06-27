@@ -71,6 +71,9 @@ importers:
       rxjs:
         specifier: ^7.8.2
         version: 7.8.2
+      tyme4ts:
+        specifier: ^1.5.2
+        version: 1.5.2
       zod:
         specifier: ^4.1.12
         version: 4.4.3
@@ -2755,6 +2758,9 @@ packages:
   turbo@2.9.16:
     resolution: {integrity: sha512-NqgRQy6j6dPYcdSdv0q1g9QsZg7SWg87RERM8otw/1AtKU2yTFVClOM7cbwKzOonZr/Ek1blTBucw64L9H0Bwg==}
     hasBin: true
+
+  tyme4ts@1.5.2:
+    resolution: {integrity: sha512-vVAjUv1ieXleS7hCOgjAoHaZ0BdNJIza0uDOhXNpndegqWQh9ytKMR0fjkG869yqLtpXAHnzNSouBg28nrIaAg==}
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -5550,6 +5556,8 @@ snapshots:
       '@turbo/linux-arm64': 2.9.16
       '@turbo/windows-64': 2.9.16
       '@turbo/windows-arm64': 2.9.16
+
+  tyme4ts@1.5.2: {}
 
   type-check@0.4.0:
     dependencies:

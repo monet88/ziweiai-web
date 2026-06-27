@@ -27,6 +27,10 @@ import {
   pairingSnapshotSchema,
   visionAnalysisSchema,
   tarotDrawSchema,
+  lenormandDrawSchema,
+  dreamInterpretationSchema,
+  stickDrawSchema,
+  almanacSelectionSchema,
   type AnnualReportResponse,
   type ChartDetailResponse,
   type ConversationDetailResponse,
@@ -57,6 +61,12 @@ import {
   type VisionKind,
   type TarotDraw,
   type TarotSpread,
+  type LenormandDraw,
+  type LenormandSpread,
+  type DreamInterpretation,
+  type StickDraw,
+  type AlmanacSelection,
+  type AlmanacTopic,
 } from '@ziweiai/contracts';
 import { fetchJson, fetchMultipart, fetchNoContent } from './fetch-json';
 import { env } from '$lib/env';
@@ -380,7 +390,82 @@ export function drawTarot(
   });
 }
 
+/**
+ * US-037: POST /draws/lenormand — Bearer (anon được phép, theo backend, đồng bộ tarot). Gửi câu
+ * hỏi + kiểu trải bài (+ seed tuỳ chọn). Rút lá deterministic server-side; bài đọc do LLM sinh.
+ * Response parse qua lenormandDrawSchema — sai shape → throw, không trust raw.
+ */
+export function drawLenormand(
+  token: string,
+  params: { question: string; spread: LenormandSpread; seed?: string },
+): Promise<LenormandDraw> {
+  return fetchJson('/draws/lenormand', lenormandDrawSchema, {
+    method: 'POST',
+    token,
+      body: {
+        question: params.question,
+        spread: params.spread,
+        ...(params.seed ? { seed: params.seed } : {}),
+      },
+    });
+  }
+
+/**
+ * US-038: POST /dreams/interpret — Bearer (anon được phép, theo backend). Gửi mô tả giấc mơ; service
+ * khớp biểu tượng theo từ khóa rồi LLM luận giải. Response parse qua dreamInterpretationSchema.
+ */
+export function interpretDream(
+  token: string,
+  params: { dream: string },
+): Promise<DreamInterpretation> {
+  return fetchJson('/dreams/interpret', dreamInterpretationSchema, {
+    method: 'POST',
+    token,
+    body: { dream: params.dream },
+  });
+}
+
+/**
+ * US-039: POST /draws/stick — Bearer (anon được phép, theo backend). Gửi câu hỏi (+ seed tuỳ chọn);
+ * rút 1 trong 100 quẻ xăm deterministic server-side; bài luận do LLM sinh. Response parse qua
+ * stickDrawSchema — sai shape → throw, không trust raw.
+ */
+export function drawStick(
+  token: string,
+  params: { question: string; seed?: string },
+): Promise<StickDraw> {
+  return fetchJson('/draws/stick', stickDrawSchema, {
+    method: 'POST',
+    token,
+    body: {
+      question: params.question,
+      ...(params.seed ? { seed: params.seed } : {}),
+    },
+  });
+}
+
+/**
+ * US-040: POST /almanac/select — Bearer (anon được phép, theo backend). Gửi chủ đề + khoảng ngày;
+ * service dùng tyme4ts tính lịch rồi chấm điểm chọn ngày, bài luận do LLM sinh. Response parse qua
+ * almanacSelectionSchema — sai shape → throw, không trust raw.
+ */
+export function selectAlmanac(
+  token: string,
+  params: { topic: AlmanacTopic; startDate: string; endDate: string },
+): Promise<AlmanacSelection> {
+  return fetchJson('/almanac/select', almanacSelectionSchema, {
+    method: 'POST',
+    token,
+    body: {
+      topic: params.topic,
+      startDate: params.startDate,
+      endDate: params.endDate,
+    },
+  });
+}
+
 /** US-016: vận hạn deterministic theo (chartId, asOf) → cache TanStack dài. */
+
 export const DAILY_FORTUNE_QUERY_STALE_MS = 60 * 60 * 1000;
 export const MONTHLY_FORTUNE_QUERY_STALE_MS = 6 * 60 * 60 * 1000;
 export const ANNUAL_REPORT_QUERY_STALE_MS = 24 * 60 * 60 * 1000;

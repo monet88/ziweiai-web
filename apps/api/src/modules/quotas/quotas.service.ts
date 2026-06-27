@@ -96,6 +96,46 @@ export class QuotasService {
   }
 
   /**
+   * Quota cho lượt rút Lenormand / Giải mộng / Xin xăm (US-037/038/039, backlog #45/#42/#47).
+   *
+   * Cùng khuôn Tarot: ba hệ B6 này sinh diễn giải qua đường AI nhưng KHÔNG ghi `explanation_request`
+   * row, nên đếm qua `QuotaCounterStore`. Mỗi lượt tăng đếm cho cả user thường lẫn anon (anon đếm
+   * theo IP để chống reset phiên). Dùng chung trần `API_EXPLANATIONS_PER_DAY_PER_USER`. Mỗi hệ có
+   * namespace counter riêng để hạn mức không trộn lẫn giữa các hệ.
+   */
+  async assertCanCreateLenormandDraw(userId: string, ipAddress: string, isAnonymous = false): Promise<void> {
+    await this.assertB6DrawQuota('lenormand-draw', userId, ipAddress, isAnonymous);
+  }
+
+  async assertCanCreateDreamReading(userId: string, ipAddress: string, isAnonymous = false): Promise<void> {
+    await this.assertB6DrawQuota('dream-reading', userId, ipAddress, isAnonymous);
+  }
+
+  async assertCanCreateStickDraw(userId: string, ipAddress: string, isAnonymous = false): Promise<void> {
+    await this.assertB6DrawQuota('stick-draw', userId, ipAddress, isAnonymous);
+  }
+
+  async assertCanCreateAlmanacSelection(userId: string, ipAddress: string, isAnonymous = false): Promise<void> {
+    await this.assertB6DrawQuota('almanac-selection', userId, ipAddress, isAnonymous);
+  }
+
+  private async assertB6DrawQuota(
+    namespace: string,
+    userId: string,
+    ipAddress: string,
+    isAnonymous: boolean,
+  ): Promise<void> {
+    this.assertSlidingWindow(this.ipBuckets, `ip:${ipAddress}`, apiEnv.API_REQUESTS_PER_MINUTE_PER_IP, 60_000);
+    this.assertSlidingWindow(this.userBuckets, `user:${userId}`, apiEnv.API_REQUESTS_PER_MINUTE_PER_USER, 60_000);
+
+    const dayKey = utcDayKey(Date.now());
+    const counterKey = isAnonymous
+      ? `${namespace}:ip:${ipAddress}:${dayKey}`
+      : `${namespace}:user:${userId}:${dayKey}`;
+    await this.assertAnonDailyQuota(counterKey, apiEnv.API_EXPLANATIONS_PER_DAY_PER_USER, 'Daily explanation quota exceeded.');
+  }
+
+  /**
    * Quota cho lượt làm trắc nghiệm MBTI (US-017b).
    *
    * Giống Tarot: MBTI sinh diễn giải qua đường AI nhưng KHÔNG ghi `explanation_request` row,

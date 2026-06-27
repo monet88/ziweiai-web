@@ -1,0 +1,3 @@
+# Cache resume cua tung job dich (artifact staging, trung noi dung voi *.vi.json).
+# Chi commit dataset Viet *.vi.json; cache la trung gian de resume khi dich do dang.
+*.cache.json

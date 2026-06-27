@@ -22,6 +22,7 @@
     "@ziweiai/core": "workspace:*",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "tyme4ts": "^1.5.2",
     "zod": "^4.1.12"
   },
   "devDependencies": {

@@ -16,6 +16,7 @@ import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
 import { apiEnv } from '../../../config/env';
 import { QuotasService } from '../../quotas/quotas.service';
+import { throwQuotaRateLimited } from '../../quotas/quota-http';
 import {
   createChartResponseSchema,
   horoscopeResponseSchema,
@@ -185,7 +186,7 @@ export class ChartsService {
     try {
       await this.quotasService.assertCanCreateChart(userId, ipAddress, isAnonymous);
     } catch (error) {
-      throw new ApiErrorHttpException(HttpStatus.TOO_MANY_REQUESTS, 'RATE_LIMITED', error instanceof Error ? error.message : 'Đã vượt hạn mức lập lá số.');
+      throwQuotaRateLimited(error, 'Đã vượt hạn mức lập lá số.');
     }
   }
 

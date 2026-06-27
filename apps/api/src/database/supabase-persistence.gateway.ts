@@ -1,15 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { Inject, Injectable } from '@nestjs/common';
+import { type SupabaseClient } from '@supabase/supabase-js';
 import {
-  birthProfileRecordSchema,
-  chartSnapshotRecordSchema,
-  explanationRequestRecordSchema,
-  explanationResultRecordSchema,
-  visionResultRecordSchema,
-  historyViewRecordSchema,
-  conversationRecordSchema,
-  conversationMessageRecordSchema,
-  divinationContextRecordSchema,
   type BirthInput,
   type BirthProfileRecord,
   type ChartSnapshot,
@@ -27,35 +18,34 @@ import {
   type DivinationContextRecord,
   type DivinationPurposeKey,
 } from '@ziweiai/contracts';
-import { apiEnv } from '../config/env';
-import { normalizePostgresTimestamp } from './postgres-timestamp';
+import { SUPABASE_CLIENT } from './supabase-client';
+import {
+  type AnnualReportRecord,
+  type SupabaseRow,
+  toAnnualReportRecord,
+  toBirthProfileRecord,
+  toChartSnapshotRecord,
+  toConversationMessageRecord,
+  toConversationRecord,
+  toDivinationContextRecord,
+  toExplanationRequestRecord,
+  toExplanationResultRecord,
+  toHistoryViewRecord,
+  toVisionResultRecord,
+} from './persistence-mappers';
 
-type SupabaseRow = Record<string, unknown>;
+export type { AnnualReportRecord } from './persistence-mappers';
 
 // Trần phòng thủ cho danh sách hội thoại theo một lá số (listConversationsForChart). Query không có
 // pagination/cursor; con số này đủ rộng cho mọi ca thực tế nhưng chặn payload vô hạn nếu một lá số
 // bị tạo bất thường nhiều hội thoại. Kết quả newest-first nên trần cắt bỏ hội thoại cũ nhất.
 const MAX_CONVERSATIONS_PER_CHART = 200;
 
-/** Bản ghi cache báo cáo năm (US-016). Không phải public contract — chỉ dùng nội bộ server. */
-export interface AnnualReportRecord {
-  id: string;
-  ownerUserId: string;
-  chartSnapshotId: string;
-  year: number;
-  markdown: string;
-  createdAt: string | null;
-}
-
 @Injectable()
 export class SupabasePersistenceGateway {
-  private readonly client: SupabaseClient;
-
-  constructor() {
-    this.client = createClient(apiEnv.SUPABASE_URL, apiEnv.SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-  }
+  // Client được inject qua DI (SUPABASE_CLIENT) thay vì tự `createClient` trong constructor: dời
+  // seam ra khỏi gateway để test có thể cấp một client thay thế qua interface (Stage A của #38).
+  constructor(@Inject(SUPABASE_CLIENT) private readonly client: SupabaseClient) {}
 
   async findLatestBirthProfileByInputHash(ownerUserId: string, inputHashDigest: string): Promise<BirthProfileRecord | null> {
     const { data, error } = await this.client
@@ -67,7 +57,7 @@ export class SupabasePersistenceGateway {
       .order('created_at', { ascending: false })
       .limit(1);
     this.throwIfError(error);
-    return data && data[0] ? this.toBirthProfileRecord(data[0]) : null;
+    return data && data[0] ? toBirthProfileRecord(data[0]) : null;
   }
 
   async createBirthProfile(params: {
@@ -98,7 +88,7 @@ export class SupabasePersistenceGateway {
       .select('*')
       .single();
     this.throwIfError(error);
-    return this.toBirthProfileRecord(data);
+    return toBirthProfileRecord(data);
   }
 
   async findChartSnapshotByDedupeKey(ownerUserId: string, snapshotDedupeKey: string): Promise<ChartSnapshotRecord | null> {
@@ -109,7 +99,7 @@ export class SupabasePersistenceGateway {
       .eq('snapshot_dedupe_key', snapshotDedupeKey)
       .maybeSingle();
     this.throwIfError(error);
-    return data ? this.toChartSnapshotRecord(data) : null;
+    return data ? toChartSnapshotRecord(data) : null;
   }
 
   async findChartSnapshotById(ownerUserId: string, chartSnapshotId: string): Promise<ChartSnapshotRecord | null> {
@@ -120,7 +110,7 @@ export class SupabasePersistenceGateway {
       .eq('id', chartSnapshotId)
       .maybeSingle();
     this.throwIfError(error);
-    return data ? this.toChartSnapshotRecord(data) : null;
+    return data ? toChartSnapshotRecord(data) : null;
   }
 
   async findChartSnapshotsByIds(ownerUserId: string, chartSnapshotIds: string[]): Promise<Record<string, ChartSnapshotRecord>> {
@@ -138,7 +128,7 @@ export class SupabasePersistenceGateway {
 
     return Object.fromEntries(
       (data ?? []).map((row: SupabaseRow) => {
-        const record = this.toChartSnapshotRecord(row);
+        const record = toChartSnapshotRecord(row);
         return [record.id, record];
       }),
     );
@@ -168,7 +158,7 @@ export class SupabasePersistenceGateway {
       .select('*')
       .single();
     this.throwIfError(error);
-    return this.toChartSnapshotRecord(data);
+    return toChartSnapshotRecord(data);
   }
 
   async createDivinationContext(params: {
@@ -192,7 +182,7 @@ export class SupabasePersistenceGateway {
       .select('*')
       .single();
     this.throwIfError(error);
-    return this.toDivinationContextRecord(data);
+    return toDivinationContextRecord(data);
   }
 
   async findDivinationContextBySnapshotId(
@@ -208,7 +198,7 @@ export class SupabasePersistenceGateway {
       .limit(1)
       .maybeSingle();
     this.throwIfError(error);
-    return data ? this.toDivinationContextRecord(data) : null;
+    return data ? toDivinationContextRecord(data) : null;
   }
 
   async findDivinationContextsByChartIds(
@@ -230,7 +220,7 @@ export class SupabasePersistenceGateway {
     // Keep the latest context per snapshot (rows arrive newest-first; first wins).
     const byChartId: Record<string, DivinationContextRecord> = {};
     for (const row of data ?? []) {
-      const record = this.toDivinationContextRecord(row);
+      const record = toDivinationContextRecord(row);
       if (!byChartId[record.chartSnapshotId]) {
         byChartId[record.chartSnapshotId] = record;
       }
@@ -246,7 +236,7 @@ export class SupabasePersistenceGateway {
       .eq('idempotency_key', idempotencyKey)
       .maybeSingle();
     this.throwIfError(error);
-    return data ? this.toExplanationRequestRecord(data) : null;
+    return data ? toExplanationRequestRecord(data) : null;
   }
 
   async createExplanationRequest(params: {
@@ -271,7 +261,7 @@ export class SupabasePersistenceGateway {
       .select('*')
       .single();
     this.throwIfError(error);
-    return this.toExplanationRequestRecord(data);
+    return toExplanationRequestRecord(data);
   }
 
   async updateExplanationRequest(params: {
@@ -296,7 +286,7 @@ export class SupabasePersistenceGateway {
       .select('*')
       .single();
     this.throwIfError(error);
-    return this.toExplanationRequestRecord(data);
+    return toExplanationRequestRecord(data);
   }
 
   // Claim nguyên tử bằng compare-and-swap theo VERSION (updated_at), không chỉ theo state.
@@ -331,7 +321,7 @@ export class SupabasePersistenceGateway {
       .select('*')
       .maybeSingle();
     this.throwIfError(error);
-    return data ? this.toExplanationRequestRecord(data) : null;
+    return data ? toExplanationRequestRecord(data) : null;
   }
 
   async findExplanationResultByRequestId(ownerUserId: string, requestId: string): Promise<ExplanationResultRecord | null> {
@@ -342,7 +332,7 @@ export class SupabasePersistenceGateway {
       .eq('explanation_request_id', requestId)
       .maybeSingle();
     this.throwIfError(error);
-    return data ? this.toExplanationResultRecord(data) : null;
+    return data ? toExplanationResultRecord(data) : null;
   }
 
   async listExplanationResultsForChart(ownerUserId: string, chartSnapshotId: string): Promise<ExplanationResultRecord[]> {
@@ -353,7 +343,7 @@ export class SupabasePersistenceGateway {
       .eq('chart_snapshot_id', chartSnapshotId)
       .order('created_at', { ascending: false });
     this.throwIfError(error);
-    return (data ?? []).map((row: SupabaseRow) => this.toExplanationResultRecord(row));
+    return (data ?? []).map((row: SupabaseRow) => toExplanationResultRecord(row));
   }
 
   async findLatestExplanationResultForChart(ownerUserId: string, chartSnapshotId: string): Promise<ExplanationResultRecord | null> {
@@ -366,7 +356,7 @@ export class SupabasePersistenceGateway {
       .limit(1)
       .maybeSingle();
     this.throwIfError(error);
-    return data ? this.toExplanationResultRecord(data) : null;
+    return data ? toExplanationResultRecord(data) : null;
   }
 
   async findLatestExplanationResultsForCharts(ownerUserId: string, chartSnapshotIds: string[]): Promise<Record<string, ExplanationResultRecord>> {
@@ -386,7 +376,7 @@ export class SupabasePersistenceGateway {
 
     const latestByChartId: Record<string, ExplanationResultRecord> = {};
     for (const row of data ?? []) {
-      const record = this.toExplanationResultRecord(row as SupabaseRow);
+      const record = toExplanationResultRecord(row as SupabaseRow);
       if (!latestByChartId[record.chartSnapshotId]) {
         latestByChartId[record.chartSnapshotId] = record;
       }
@@ -403,7 +393,7 @@ export class SupabasePersistenceGateway {
       .eq('id', explanationResultId)
       .maybeSingle();
     this.throwIfError(error);
-    return data ? this.toExplanationResultRecord(data) : null;
+    return data ? toExplanationResultRecord(data) : null;
   }
 
   async findExplanationResultsByIds(ownerUserId: string, explanationResultIds: string[]): Promise<Record<string, ExplanationResultRecord>> {
@@ -421,7 +411,7 @@ export class SupabasePersistenceGateway {
 
     return Object.fromEntries(
       (data ?? []).map((row: SupabaseRow) => {
-        const record = this.toExplanationResultRecord(row);
+        const record = toExplanationResultRecord(row);
         return [record.id, record];
       }),
     );
@@ -448,7 +438,7 @@ export class SupabasePersistenceGateway {
       .select('*')
       .single();
     this.throwIfError(error);
-    return this.toExplanationResultRecord(data);
+    return toExplanationResultRecord(data);
   }
 
   async createHistoryView(params: {
@@ -468,7 +458,7 @@ export class SupabasePersistenceGateway {
       .select('*')
       .single();
     this.throwIfError(error);
-    return this.toHistoryViewRecord(data);
+    return toHistoryViewRecord(data);
   }
 
   // US-017 follow-up (decision 0023): persist a vision reading (Xem Tướng / Xem Tay).
@@ -495,7 +485,7 @@ export class SupabasePersistenceGateway {
       .select('*')
       .single();
     this.throwIfError(error);
-    return this.toVisionResultRecord(data);
+    return toVisionResultRecord(data);
   }
 
   async findVisionResultsByIds(ownerUserId: string, visionResultIds: string[]): Promise<Record<string, VisionResultRecord>> {
@@ -513,7 +503,7 @@ export class SupabasePersistenceGateway {
 
     return Object.fromEntries(
       (data ?? []).map((row: SupabaseRow) => {
-        const record = this.toVisionResultRecord(row);
+        const record = toVisionResultRecord(row);
         return [record.id, record];
       }),
     );
@@ -527,7 +517,7 @@ export class SupabasePersistenceGateway {
       .eq('id', visionResultId)
       .maybeSingle();
     this.throwIfError(error);
-    return data ? this.toVisionResultRecord(data) : null;
+    return data ? toVisionResultRecord(data) : null;
   }
 
   // US-017 follow-up (decision 0023): right-to-be-forgotten. Drop the vision row; the
@@ -550,7 +540,7 @@ export class SupabasePersistenceGateway {
       .order('viewed_at', { ascending: false })
       .limit(limit);
     this.throwIfError(error);
-    return (data ?? []).map((row: SupabaseRow) => this.toHistoryViewRecord(row));
+    return (data ?? []).map((row: SupabaseRow) => toHistoryViewRecord(row));
   }
 
   async countChartSnapshotsSince(ownerUserId: string, sinceIso: string): Promise<number> {
@@ -589,7 +579,7 @@ export class SupabasePersistenceGateway {
       .select('*')
       .single();
     this.throwIfError(error);
-    return this.toConversationRecord(data);
+    return toConversationRecord(data);
   }
 
   async listConversationsForChart(ownerUserId: string, chartSnapshotId: string): Promise<ConversationRecord[]> {
@@ -604,7 +594,7 @@ export class SupabasePersistenceGateway {
       // về payload không giới hạn. Newest-first nên trần cắt bỏ các hội thoại cũ nhất, không cắt mới.
       .limit(MAX_CONVERSATIONS_PER_CHART);
     this.throwIfError(error);
-    return (data ?? []).map((row: SupabaseRow) => this.toConversationRecord(row));
+    return (data ?? []).map((row: SupabaseRow) => toConversationRecord(row));
   }
 
   async findConversationById(ownerUserId: string, conversationId: string): Promise<ConversationRecord | null> {
@@ -615,7 +605,7 @@ export class SupabasePersistenceGateway {
       .eq('id', conversationId)
       .maybeSingle();
     this.throwIfError(error);
-    return data ? this.toConversationRecord(data) : null;
+    return data ? toConversationRecord(data) : null;
   }
 
   async createConversationMessage(params: {
@@ -641,7 +631,7 @@ export class SupabasePersistenceGateway {
       .select('*')
       .single();
     this.throwIfError(error);
-    return this.toConversationMessageRecord(data);
+    return toConversationMessageRecord(data);
   }
 
   async listRecentConversationMessages(ownerUserId: string, conversationId: string, limit: number): Promise<ConversationMessageRecord[]> {
@@ -653,7 +643,7 @@ export class SupabasePersistenceGateway {
       .order('created_at', { ascending: false })
       .limit(limit);
     this.throwIfError(error);
-    const records = (data ?? []).map((row: SupabaseRow) => this.toConversationMessageRecord(row));
+    const records = (data ?? []).map((row: SupabaseRow) => toConversationMessageRecord(row));
     // Reverse to chronological order (oldest of the recent window first)
     return records.reverse();
   }
@@ -689,7 +679,7 @@ export class SupabasePersistenceGateway {
       .eq('year', year)
       .maybeSingle();
     this.throwIfError(error);
-    return data ? this.toAnnualReportRecord(data) : null;
+    return data ? toAnnualReportRecord(data) : null;
   }
 
   /**
@@ -726,167 +716,7 @@ export class SupabasePersistenceGateway {
       throw new Error('Không thể ghi báo cáo năm do xung đột ghi đồng thời. Vui lòng thử lại.');
     }
     this.throwIfError(error);
-    return this.toAnnualReportRecord(data);
-  }
-
-  private toBirthProfileRecord(row: SupabaseRow): BirthProfileRecord {
-    return birthProfileRecordSchema.parse({
-      id: row.id,
-      ownerUserId: row.owner_user_id,
-      isActive: row.is_active,
-      rawBirthInput: row.raw_birth_input_json,
-      normalizedBirth: row.normalized_birth_json,
-      inputHashDigest: row.input_hash_digest,
-      retentionMode: row.retention_mode,
-      deletedAt: normalizePostgresTimestamp(row.deleted_at as string | null | undefined),
-    });
-  }
-
-  private toChartSnapshotRecord(row: SupabaseRow): ChartSnapshotRecord {
-    return chartSnapshotRecordSchema.parse({
-      id: row.id,
-      ownerUserId: row.owner_user_id,
-      birthProfileId: row.birth_profile_id,
-      chartSystem: row.chart_system,
-      snapshotDedupeKey: row.snapshot_dedupe_key,
-      snapshot: row.chart_snapshot_json,
-      inputHashDigest: row.input_hash_digest,
-      confidenceLevel: row.confidence_level,
-      createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
-    });
-  }
-
-  private toDivinationContextRecord(row: SupabaseRow): DivinationContextRecord {
-    return divinationContextRecordSchema.parse({
-      id: row.id,
-      ownerUserId: row.owner_user_id,
-      chartSnapshotId: row.chart_snapshot_id,
-      question: row.question,
-      purposeKey: row.purpose_key,
-      purposeCustom: row.purpose_custom ?? null,
-      castAt: normalizePostgresTimestamp(row.cast_at as string | null | undefined),
-      createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
-    });
-  }
-
-  private toExplanationRequestRecord(row: SupabaseRow): ExplanationRequestRecord {
-    return explanationRequestRecordSchema.parse({
-      id: row.id,
-      ownerUserId: row.owner_user_id,
-      chartSnapshotId: row.chart_snapshot_id,
-      idempotencyKey: row.idempotency_key,
-      requestState: row.request_state,
-      providerName: row.provider_name,
-      promptStorageMode: row.prompt_storage_mode,
-      failureRetainsUntil: normalizePostgresTimestamp(row.failure_retains_until as string | null | undefined),
-      createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
-      updatedAt: normalizePostgresTimestamp(row.updated_at as string | null | undefined),
-    });
-  }
-
-  private toExplanationResultRecord(row: SupabaseRow): ExplanationResultRecord {
-    const providerMetadataRow = row.provider_metadata;
-    const providerMetadata =
-      providerMetadataRow && typeof providerMetadataRow === 'object'
-        ? Object.fromEntries(
-            Object.entries(providerMetadataRow as Record<string, unknown>).map(([key, value]) => [key, String(value)]),
-          )
-        : {};
-
-    return explanationResultRecordSchema.parse({
-      id: row.id,
-      ownerUserId: row.owner_user_id,
-      explanationRequestId: row.explanation_request_id,
-      chartSnapshotId: row.chart_snapshot_id,
-      cacheScope: row.cache_scope,
-      renderedMarkdown: row.rendered_markdown,
-      providerMetadata,
-      createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
-    });
-  }
-
-  private toHistoryViewRecord(row: SupabaseRow): HistoryViewRecord {
-    return historyViewRecordSchema.parse({
-      id: row.id,
-      ownerUserId: row.owner_user_id,
-      chartSnapshotId: row.chart_snapshot_id,
-      explanationResultId: row.explanation_result_id,
-      visionResultId: row.vision_result_id ?? null,
-      viewedAt: normalizePostgresTimestamp(row.viewed_at as string | null | undefined),
-    });
-  }
-
-  private toVisionResultRecord(row: SupabaseRow): VisionResultRecord {
-    const providerMetadataRow = row.provider_metadata;
-    const providerMetadata =
-      providerMetadataRow && typeof providerMetadataRow === 'object'
-        ? Object.fromEntries(
-            Object.entries(providerMetadataRow as Record<string, unknown>).map(([key, value]) => [key, String(value)]),
-          )
-        : {};
-
-    // Trim-or-null: a row may store '' / whitespace; collapse it so the schema
-    // sees a non-empty string or null (never an empty string that fails min(1)).
-    const rawQuestion = row.question as string | null;
-    const trimmedQuestion = typeof rawQuestion === 'string' ? rawQuestion.trim() : null;
-
-    return visionResultRecordSchema.parse({
-      id: row.id,
-      ownerUserId: row.owner_user_id,
-      kind: row.kind,
-      imagePath: row.image_path,
-      question: trimmedQuestion && trimmedQuestion.length > 0 ? trimmedQuestion : null,
-      renderedMarkdown: row.rendered_markdown,
-      providerMetadata,
-      createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
-    });
-  }
-
-  private toConversationRecord(row: SupabaseRow): ConversationRecord {
-    return conversationRecordSchema.parse({
-      id: row.id,
-      ownerUserId: row.owner_user_id,
-      chartSnapshotId: row.chart_snapshot_id,
-      title: row.title ?? null,
-      status: row.status,
-      createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
-      updatedAt: normalizePostgresTimestamp(row.updated_at as string | null | undefined),
-    });
-  }
-
-  private toConversationMessageRecord(row: SupabaseRow): ConversationMessageRecord {
-    const providerMetadataRow = row.provider_metadata;
-    const providerMetadata =
-      providerMetadataRow && typeof providerMetadataRow === 'object'
-        ? Object.fromEntries(
-            Object.entries(providerMetadataRow as Record<string, unknown>).map(([key, value]) => [key, String(value)]),
-          )
-        : {};
-
-    return conversationMessageRecordSchema.parse({
-      id: row.id,
-      ownerUserId: row.owner_user_id,
-      conversationId: row.conversation_id,
-      role: row.role,
-      content: row.content,
-      quickPromptKey: row.quick_prompt_key ?? null,
-      providerName: row.provider_name ?? null,
-      providerMetadata,
-      createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
-    });
-  }
-
-  // Báo cáo năm là bản ghi nội bộ server (không phải public contract) nên map trực tiếp,
-  // không qua zod schema như các record khác. `year` từ Postgres về dạng number sẵn.
-  private toAnnualReportRecord(row: SupabaseRow): AnnualReportRecord {
-    return {
-      id: String(row.id),
-      ownerUserId: String(row.owner_user_id),
-      chartSnapshotId: String(row.chart_snapshot_id),
-      year: Number(row.year),
-      markdown: String(row.markdown),
-      createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
-    };
+    return toAnnualReportRecord(data);
   }
 
   private throwIfError(error: { message: string } | null): void {

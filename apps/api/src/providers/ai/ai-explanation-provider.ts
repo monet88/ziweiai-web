@@ -1,4 +1,4 @@
-import type { ChartSnapshot, ConversationMessageRecord, ExplanationContext, PalaceScope, QuickPromptKey } from '@ziweiai/contracts';
+import type { ChartSnapshot, ChartSystem, ConversationMessageRecord, ExplanationContext, PalaceScope, QuickPromptKey } from '@ziweiai/contracts';
 import * as ziweiCore from '@ziweiai/core';
 import { buildBaziExplanationPrompt } from './build-bazi-explanation-prompt';
 import { buildMangpaiExplanationPrompt } from './build-mangpai-explanation-prompt';
@@ -211,6 +211,41 @@ function formatHoroscopeItem(item: {
   return `${formatStringValue(item.heavenlyStemKey)} ${formatStringValue(item.earthlyBranchKey)}; cung: ${palaces}; tứ hóa: ${mutagens}`;
 }
 
+// Payload đã qua guard: chartSnapshot + explanationContext chắc chắn hiện diện (đường text). Các
+// builder theo hệ và luồng overview legacy dùng kiểu này để khỏi lặp lại optional-check.
+type SnapshotPromptPayload = ExplanationPromptPayload & {
+  chartSnapshot: ChartSnapshot;
+  explanationContext: ExplanationContext;
+};
+
+// Registry dựng prompt theo chartSystem. Thêm một hệ = thêm một entry, KHÔNG sửa hàm dispatch.
+// Thứ tự định tuyến giữ nguyên hành vi if-chain cũ:
+//  - ba-zi / mangpai: prompt riêng (mangpai có lớp luận riêng trên nền Bát Tự — US-017d).
+//  - 4 hệ bói theo thời gian: kèm divinationInquiry (US-025, decision 0021).
+//  - zi-wei-dou-shu: có palaceScope → prompt theo cung/vận hạn (Phase 5), giữ explanationKind để AI
+//    bám đúng mục (love→spousePalace, career→careerPalace...); không có palaceScope → overview legacy.
+//  - Hệ không có entry (hoặc Ziwei không palaceScope) → buildLegacyOverviewPrompt.
+const PROMPT_BUILDERS: Partial<Record<ChartSystem, (payload: SnapshotPromptPayload) => string>> = {
+  'ba-zi': (payload) => buildBaziExplanationPrompt(payload.chartSnapshot, payload.explanationKind),
+  mangpai: (payload) => buildMangpaiExplanationPrompt(payload.chartSnapshot, payload.explanationKind),
+  'mei-hua-yi-shu': (payload) =>
+    buildMeihuaExplanationPrompt(payload.chartSnapshot, payload.explanationKind, payload.divinationInquiry),
+  'liu-yao': (payload) =>
+    buildLiuyaoExplanationPrompt(payload.chartSnapshot, payload.explanationKind, payload.divinationInquiry),
+  'da-liu-ren': (payload) =>
+    buildDaliurenExplanationPrompt(payload.chartSnapshot, payload.explanationKind, payload.divinationInquiry),
+  'qi-men-dun-jia': (payload) =>
+    buildQimenExplanationPrompt(payload.chartSnapshot, payload.explanationKind, payload.divinationInquiry),
+  'zi-wei-dou-shu': (payload) =>
+    payload.palaceScope
+      ? buildPalaceExplanationPrompt(
+          payload.chartSnapshot as ChartSnapshot & { chartSystem: 'zi-wei-dou-shu' },
+          payload.palaceScope,
+          payload.explanationKind,
+        )
+      : buildLegacyOverviewPrompt(payload),
+};
+
 export function buildExplanationPrompt(payload: ExplanationPromptPayload): string {
   // US-017e: chartSnapshot/explanationContext giờ optional (đường vision không có lá số). Hàm này
   // CHỈ được gọi khi không có promptOverride; mọi đường text đều kèm đủ hai field. Guard để type-sound
@@ -218,45 +253,13 @@ export function buildExplanationPrompt(payload: ExplanationPromptPayload): strin
   if (!payload.chartSnapshot || !payload.explanationContext) {
     throw new Error('buildExplanationPrompt yêu cầu chartSnapshot + explanationContext; đường vision phải dùng promptOverride.');
   }
-  if (payload.chartSnapshot.chartSystem === 'ba-zi') {
-    return buildBaziExplanationPrompt(payload.chartSnapshot, payload.explanationKind);
-  }
 
-  // US-017d: Mạnh Phái dựng trên Bát Tự nhưng có lớp luận riêng (snapshot.mangpai). Phải route
-  // TRƯỚC nhánh fallback overview, nếu không khối mangpai bị bỏ qua (P2 review PR #27).
-  if (payload.chartSnapshot.chartSystem === 'mangpai') {
-    return buildMangpaiExplanationPrompt(payload.chartSnapshot, payload.explanationKind);
-  }
+  const snapshotPayload = payload as SnapshotPromptPayload;
+  const builder = PROMPT_BUILDERS[snapshotPayload.chartSnapshot.chartSystem];
+  return builder ? builder(snapshotPayload) : buildLegacyOverviewPrompt(snapshotPayload);
+}
 
-  if (payload.chartSnapshot.chartSystem === 'mei-hua-yi-shu') {
-    return buildMeihuaExplanationPrompt(payload.chartSnapshot, payload.explanationKind, payload.divinationInquiry);
-  }
-
-  if (payload.chartSnapshot.chartSystem === 'liu-yao') {
-    return buildLiuyaoExplanationPrompt(payload.chartSnapshot, payload.explanationKind, payload.divinationInquiry);
-  }
-
-  if (payload.chartSnapshot.chartSystem === 'da-liu-ren') {
-    return buildDaliurenExplanationPrompt(payload.chartSnapshot, payload.explanationKind, payload.divinationInquiry);
-  }
-
-  if (payload.chartSnapshot.chartSystem === 'qi-men-dun-jia') {
-    return buildQimenExplanationPrompt(payload.chartSnapshot, payload.explanationKind, payload.divinationInquiry);
-  }
-
-  // Luận giải theo từng cung/vận hạn (Phase 5) chỉ áp dụng cho Tử Vi; các hệ khác
-  // hoặc luồng overview cũ vẫn dùng prompt tổng quan bên dưới.
-  if (payload.palaceScope && payload.chartSnapshot.chartSystem === 'zi-wei-dou-shu') {
-    // Preserve explanationKind even for per-palace (P2 from review).
-    // The palace-specific prompt now receives the requested kind so the AI can tailor
-    // (e.g. "love" reading focused on spousePalace, "career" on careerPalace, etc.).
-    return buildPalaceExplanationPrompt(
-      payload.chartSnapshot as ChartSnapshot & { chartSystem: 'zi-wei-dou-shu' },
-      payload.palaceScope,
-      payload.explanationKind,
-    );
-  }
-
+function buildLegacyOverviewPrompt(payload: SnapshotPromptPayload): string {
   const palaceSummary = payload.chartSnapshot.palaces
     .map((palace) =>
       `${formatStringValue(

@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { mbtiResultSchema, type AuthenticatedUser, type MbtiAnswer, type MbtiResult } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
+import { throwQuotaRateLimited } from '../quotas/quota-http';
 import { assertCanUseAiExplanation } from '../../common/entitlement/ai-entitlement.guard';
 import { apiEnv } from '../../config/env';
 import { QuotasService } from '../quotas/quotas.service';
@@ -43,11 +44,7 @@ export class QuizzesMbtiService {
     try {
       await this.quotasService.assertCanCreateMbtiQuiz(userId, ipAddress, isAnonymous);
     } catch (error) {
-      throw new ApiErrorHttpException(
-        HttpStatus.TOO_MANY_REQUESTS,
-        'RATE_LIMITED',
-        error instanceof Error ? error.message : 'Đã vượt hạn mức làm trắc nghiệm MBTI.',
-      );
+      throwQuotaRateLimited(error, 'Đã vượt hạn mức làm trắc nghiệm MBTI.');
     }
   }
 

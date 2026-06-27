@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateAlmanacSelection, AlmanacEngineError } from './almanac-engine';
+import { generateAlmanacSelection, AlmanacEngineError, AlmanacVocabError } from './almanac-engine';
 import { ALMANAC_VOCAB } from './data/almanac-vocab-data';
 
 // Pattern Han/CJK đồng bộ scripts/translate/core.ts: chốt bất biến "0 chữ Hán lọt ra ngoài engine".
@@ -99,5 +99,14 @@ describe('generateAlmanacSelection (US-040)', () => {
     expect(values.length).toBeGreaterThan(0);
     const dirty = values.filter((value) => CJK_TEXT_PATTERN.test(value));
     expect(dirty).toEqual([]);
+  });
+
+  it('AlmanacVocabError tách hẳn khỏi AlmanacEngineError (không bị gộp vào nhánh 400)', () => {
+    // Bất biến phân loại lỗi: Han-gate thiếu mục từ điển là defect dữ liệu nội bộ (→ 500), KHÔNG
+    // phải lỗi input (→ 400). Service chỉ bắt AlmanacEngineError; nếu AlmanacVocabError vô tình kế
+    // thừa AlmanacEngineError thì sẽ bị map nhầm thành 400. Khóa lại quan hệ kế thừa ở đây.
+    const vocabError = new AlmanacVocabError('thiếu mục');
+    expect(vocabError).toBeInstanceOf(AlmanacVocabError);
+    expect(vocabError).not.toBeInstanceOf(AlmanacEngineError);
   });
 });

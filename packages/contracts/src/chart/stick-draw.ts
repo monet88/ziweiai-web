@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // US-039 (backlog #47): hệ Xin xăm — endpoint riêng POST /draws/stick + schema riêng + cờ
-// EXTENDED_SYSTEM_STICK_ENABLED. KHÔNG nhồi vào chartSystems enum (giữ invariant nhãn 12 hệ +
+// EXTENDED_SYSTEM_STICKS_ENABLED. KHÔNG nhồi vào chartSystems enum (giữ invariant nhãn 12 hệ +
 // no-han test + render registry). Khuôn "rút + AI luận" giống tarot/lenormand: rút 1 trong 100
 // quẻ xăm deterministic theo seed; bộ quẻ (đã dịch sẵn qua pipeline B6-0) đính kèm + LLM luận giải
 // theo câu hỏi. Dữ liệu quẻ giàu cấu trúc (giải theo lĩnh vực + theo tuổi/giới) nên schema phản

@@ -21,11 +21,14 @@ bo (.ref/mingyu/.../almanac.ts) dung thu vien tyme4ts (6tail) de tinh.
    vao apps/api. Math cua thu vien GIU NGUYEN, khong sua noi bo.
 
 2. Viet hoa = lop OVERLAY, khong dong vao thu vien. tyme4ts xuat ra mot tap tu
-   vung Han HUU HAN (538 chuoi unique: nghi 108, ky 79, than sat 142, 12 truc,
-   12 sao hoang dao, 28 sao, 9 sao, Banh To 60, can chi 60, sinh tieu 12, dia
-   chi 12, huong sat 4). Thu hoach toan bo tu vung nay bang cach chay thu vien
+   vung Han HUU HAN. Tong theo tung nhom la ~538 (nghi 108, ky 79, than sat 142,
+   12 truc, 12 sao hoang dao, 28 sao, 9 sao, Banh To 60, can chi 60, sinh tieu 12,
+   dia chi 12, huong sat 4) nhung do cac nhom trung nhau (vd than sat va 12 sao
+   hoang dao deu co 青龙/白虎/天德), bang tra commit thuc te la 459 chuoi unique
+   (harvest 2000-2040). Da kiem: bang nay phu kin 0 thieu tren toan dai 1900-2100.
+   Thu hoach toan bo tu vung nay bang cach chay thu vien
    qua dai ngay nhieu nam, gom chuoi Han, dich MOT LAN qua pipeline B6-0
-   (scripts/translate, US-033) -> bang tra Han->Viet commit kem (du lieu cua ta).
+    (scripts/translate, US-033) -> bang tra Han->Viet commit kem (du lieu cua ta).
    Module wrapper map moi output cua thu vien qua bang truoc khi roi module;
    Han-gate fail-fast neu gap bat ky chuoi chua dich.
 

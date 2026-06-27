@@ -45,13 +45,19 @@ const WEEKDAYS_VI = [
 
 const MAX_RANGE_DAYS = 31;
 
+// Lỗi đầu vào người dùng (khoảng ngày sai định dạng/đảo ngược/vượt trần) → service map sang 400.
 export class AlmanacEngineError extends Error {}
+
+// Lỗi defect dữ liệu nội bộ: bảng tra overlay thiếu một chuỗi Hán mà tyme4ts sinh ra. KHÔNG phải lỗi
+// input — đây là sự cố cấu hình/dữ liệu của hệ thống, phải propagate thành 500 INTERNAL_ERROR (không
+// đổ lỗi cho client). Tách hẳn khỏi AlmanacEngineError để service không gộp nhầm vào nhánh 400.
+export class AlmanacVocabError extends Error {}
 
 // Han-gate: tra một chuỗi Hán qua bảng overlay. Thiếu -> ném (chặn chữ Hán lọt ra ngoài).
 function toVi(han: string): string {
   const vi = ALMANAC_VOCAB[han];
   if (vi === undefined) {
-    throw new AlmanacEngineError(`Bảng tra Hoàng lịch thiếu bản dịch cho "${han}" (chạy lại job almanac-vocab).`);
+    throw new AlmanacVocabError(`Bảng tra Hoàng lịch thiếu bản dịch cho "${han}" (chạy lại job almanac-vocab).`);
   }
   return vi;
 }

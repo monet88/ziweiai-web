@@ -59,8 +59,10 @@ export class AlmanacService {
     });
   }
 
-  // Lỗi engine (khoảng ngày sai, bảng tra thiếu mục) → 400 INVALID_INPUT thay vì 500: đây là lỗi
-  // đầu vào/cấu hình dữ liệu, không phải sự cố hệ thống bất ngờ.
+  // Chỉ lỗi đầu vào của engine (khoảng ngày sai/đảo ngược, định dạng ngày, vượt trần) → 400
+  // INVALID_INPUT. AlmanacVocabError (Han-gate thiếu mục từ điển) là defect dữ liệu nội bộ, KHÔNG
+  // phải lỗi người dùng: để nó propagate xuống ApiErrorFilter → 500 INTERNAL_ERROR thay vì đổ lỗi
+  // 400 cho client.
   private runEngine(params: {
     topic: AlmanacTopic;
     topicLabel: string;

@@ -1,9 +1,17 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadWorkspaceEnvFile } from './env';
 
 describe('loadWorkspaceEnvFile', () => {
   const originalLoadEnvFile = process.loadEnvFile;
+
+  // Build paths through `path` so the test is OS-portable: the function walks up via
+  // path.dirname/path.join, which use POSIX separators on Linux CI and `\` on Windows.
+  // Hardcoded `F:\...` literals only resolved correctly on Windows and broke under CI.
+  const repoRoot = path.resolve(path.sep === '\\' ? 'F:\\CodeBase\\ziweiai' : '/tmp/ziweiai');
+  const apiDir = path.join(repoRoot, 'apps', 'api');
+  const rootEnvFile = path.join(repoRoot, '.env');
 
   afterEach(() => {
     vi.restoreAllMocks();
@@ -15,12 +23,12 @@ describe('loadWorkspaceEnvFile', () => {
   it('nạp file .env gần nhất khi runtime khởi động từ thư mục package con', () => {
     const loadEnvFile = vi.fn();
     process.loadEnvFile = loadEnvFile;
-    vi.spyOn(fs, 'existsSync').mockImplementation((candidate) => String(candidate) === 'F:\\CodeBase\\ziweiai\\.env');
+    vi.spyOn(fs, 'existsSync').mockImplementation((candidate) => String(candidate) === rootEnvFile);
 
-    const envPath = loadWorkspaceEnvFile(['F:\\CodeBase\\ziweiai\\apps\\api']);
+    const envPath = loadWorkspaceEnvFile([apiDir]);
 
-    expect(envPath).toBe('F:\\CodeBase\\ziweiai\\.env');
-    expect(loadEnvFile).toHaveBeenCalledWith('F:\\CodeBase\\ziweiai\\.env');
+    expect(envPath).toBe(rootEnvFile);
+    expect(loadEnvFile).toHaveBeenCalledWith(rootEnvFile);
   });
 
   it('trả null khi không tìm thấy .env trong các thư mục cha', () => {
@@ -28,7 +36,7 @@ describe('loadWorkspaceEnvFile', () => {
     process.loadEnvFile = loadEnvFile;
     vi.spyOn(fs, 'existsSync').mockReturnValue(false);
 
-    const envPath = loadWorkspaceEnvFile(['F:\\CodeBase\\ziweiai\\apps\\api']);
+    const envPath = loadWorkspaceEnvFile([apiDir]);
 
     expect(envPath).toBeNull();
     expect(loadEnvFile).not.toHaveBeenCalled();

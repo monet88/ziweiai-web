@@ -312,10 +312,27 @@ describe('ConversationsController.appendMessageStream', () => {
     const firstPullGate = new Promise<void>((resolve) => {
       releaseFirstPull = resolve;
     });
-    async function* gen(): AsyncGenerator<string, unknown, void> {
-      // Block on the first token until the test releases the gate (after firing 'close').
-      await firstPullGate;
-      return ASSISTANT_MESSAGE;
+    // A manual async iterator (not a generator) models a provider whose first pull blocks until
+    // the gate is released and then returns the assistant message without ever yielding a delta.
+    // Authored as a plain iterator to avoid an empty `yield`-less generator body (require-yield).
+    function gen(): AsyncGenerator<string, unknown, void> {
+      const iterator: AsyncGenerator<string, unknown, void> = {
+        async next() {
+          // Block on the first token until the test releases the gate (after firing 'close').
+          await firstPullGate;
+          return { value: ASSISTANT_MESSAGE, done: true };
+        },
+        async return(value) {
+          return { value, done: true };
+        },
+        async throw(error) {
+          throw error;
+        },
+        [Symbol.asyncIterator]() {
+          return iterator;
+        },
+      };
+      return iterator;
     }
     const service = createService({
       appendMessageAndGenerateStream: vi.fn((_user, _ip, _id, _input, signal?: AbortSignal) => {

@@ -1,0 +1,112 @@
+name: E2E
+
+# Playwright E2E is NOT hermetic: global-setup provisions Supabase users via
+# anon signUp and the API verifies real Supabase JWTs, so this needs secrets.
+# It runs on push to main and nightly, not on every PR (keeps PR feedback fast
+# and avoids hammering the shared Supabase Cloud project). The @live suite
+# (burns real LLM tokens) stays manual via workflow_dispatch input.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 18 * * *" # 01:00 Asia/Saigon
+  workflow_dispatch:
+    inputs:
+      run_live:
+        description: "Also run @live suite (calls real LLM providers, burns tokens)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Rebuild esbuild native binary
+        run: pnpm rebuild esbuild
+
+      - name: Install Playwright browser
+        run: pnpm --filter @ziweiai/web exec playwright install --with-deps chromium
+
+      # Single root .env for the whole workspace (svelte build bakes PUBLIC_*,
+      # api walk-up reads the secrets, test-user loadEnvFile finds it). Secrets
+      # are masked in logs by Actions; never printed here.
+      - name: Write root .env from secrets
+        env:
+          PUBLIC_API_BASE_URL: ${{ secrets.E2E_PUBLIC_API_BASE_URL }}
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+        run: |
+          set -euo pipefail
+          {
+            echo "PUBLIC_API_BASE_URL=${PUBLIC_API_BASE_URL:-http://localhost:3000}"
+            echo "PUBLIC_SUPABASE_URL=${PUBLIC_SUPABASE_URL}"
+            echo "PUBLIC_SUPABASE_ANON_KEY=${PUBLIC_SUPABASE_ANON_KEY}"
+            echo "SUPABASE_URL=${SUPABASE_URL}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
+            echo "SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}"
+          } > .env
+          if [ -z "${PUBLIC_SUPABASE_URL}" ] || [ -z "${PUBLIC_SUPABASE_ANON_KEY}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
+            echo "::error::Missing required Supabase secrets for E2E."
+            exit 1
+          fi
+
+      - name: Build workspace
+        run: pnpm turbo run build
+
+      # 2 workers in CI: shared Supabase Cloud + limited runner CPU. The config
+      # reads E2E_WORKERS without code changes (default is 4 for local).
+      - name: Run E2E (default suite, stubbed LLM)
+        env:
+          CI: "true"
+          E2E_WORKERS: "2"
+        run: pnpm --filter @ziweiai/web e2e
+
+      - name: Run E2E (@live suite, real LLM)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_live }}
+        env:
+          CI: "true"
+          E2E_WORKERS: "2"
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DEEPSEEK_MODEL: ${{ secrets.DEEPSEEK_MODEL }}
+          OPENAI_COMPAT_API_KEY: ${{ secrets.OPENAI_COMPAT_API_KEY }}
+          OPENAI_COMPAT_BASE_URL: ${{ secrets.OPENAI_COMPAT_BASE_URL }}
+          OPENAI_COMPAT_MODEL: ${{ secrets.OPENAI_COMPAT_MODEL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+        run: pnpm --filter @ziweiai/web e2e:live
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

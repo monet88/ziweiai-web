@@ -149,6 +149,27 @@ export class ConversationsController {
     // the loop on the real socket state — NOT the 'close' event, which fires while the response is
     // still writable under Node/Express and previously caused spurious aborts that lost the reply.
     const abortController = new AbortController();
+    // Pre-first-token disconnect guard. The loop below polls res.destroyed BETWEEN deltas, so a client
+    // that disconnects during a slow or hung first-token pull would not be noticed until a token finally
+    // arrives or the provider times out — holding the request and burning upstream work meanwhile. We
+    // listen for 'close' ONLY for this opening window: nothing is accumulated yet, so an abort here can
+    // never truncate a reply the user saw. Once the first delta arrives we disarm it and hand back to
+    // the res.destroyed poll, because the 'close' event misfires mid-stream under Node/Express and a
+    // spurious abort there previously dropped the reply (backlog #34).
+    const onPreStreamClose = () => {
+      if (!abortController.signal.aborted) {
+        abortController.abort();
+      }
+    };
+    let preStreamGuardArmed = false;
+    const disarmPreStreamGuard = () => {
+      if (preStreamGuardArmed) {
+        res.off('close', onPreStreamClose);
+        preStreamGuardArmed = false;
+      }
+    };
+    res.on('close', onPreStreamClose);
+    preStreamGuardArmed = true;
     try {
       // The service runs all gates (enabled -> entitlement 402 -> quota 429) and persists the user
       // message BEFORE the first delta, so any failure up to here throws before a byte is sent. Each
@@ -173,6 +194,9 @@ export class ConversationsController {
             abortController.abort();
           }
         } else {
+          // First delta committed: streaming has started, so the opening-window guard is no longer
+          // needed (and would misfire mid-stream). Disarm it and rely on the res.destroyed poll above.
+          disarmPreStreamGuard();
           // The first delta is the safe point to commit headers: generation has started successfully.
           ensureHeaders();
           send({ type: 'chunk', delta: next.value });
@@ -193,14 +217,22 @@ export class ConversationsController {
       const requestId = request.requestId ?? null;
       const { status, code, message } = this.resolveStreamError(error);
 
-      if (!res.headersSent) {
+      if (res.destroyed) {
+        // Client already gone: the socket is dead, so any write (JSON status OR SSE frame) would
+        // throw ERR_STREAM_WRITE_AFTER_END. Skip writing entirely; the error is already logged in
+        // resolveStreamError for non-typed faults. Guarding the WHOLE block (not just the SSE arm)
+        // covers the pre-stream path too: a disconnect before the first byte leaves headersSent
+        // false AND destroyed true, where res.status().json() would still crash.
+      } else if (!res.headersSent) {
         // Stream never started — respond with a normal JSON error the client already understands.
         res.status(status).json({ code, message, requestId });
-      } else if (!res.destroyed) {
+      } else {
         // Stream already open — the status is locked; surface the error as an SSE error frame.
         send({ type: 'error', error: { code, message, requestId } });
       }
     } finally {
+      // Drop the opening-window listener on every exit path (it is a no-op once already disarmed).
+      disarmPreStreamGuard();
       if (!res.destroyed) {
         res.end();
       }

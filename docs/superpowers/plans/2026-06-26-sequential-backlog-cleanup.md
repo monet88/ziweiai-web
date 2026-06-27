@@ -97,7 +97,7 @@ Constraint: prompt text only, Vietnamese, ZERO Han characters (the provider alre
 ```ts
 import { describe, expect, it } from 'vitest';
 import { buildBaziExplanationPrompt } from './build-bazi-explanation-prompt';
-import { CJK_TEXT_PATTERN } from '@ziweiai/contracts';
+import { CJK_TEXT_PATTERN } from '@ziweiai/core';
 
 describe('buildBaziExplanationPrompt', () => {
   it('asks for structured sections and contains no Han', () => {
@@ -115,7 +115,9 @@ Expected: PASS now (asserts current behavior) or FAIL if you tightened the asser
 
 - [ ] **Step 3: Upgrade prompt copy**
 
-Enrich both builders: explicit reasoning order (day master -> ten gods -> hidden stems -> na yin for Bazi; palace -> stars -> brightness -> mutagen for Ziwei), explicit section headers, a "no Han" reminder already present, and a length target. Keep all keys translated via `translateBaziKey`/`translateZiweiKey`.
+> STALE (2026-06-27): this upgrade already shipped. `buildBaziExplanationPrompt.ts` already emits the mandated reasoning order (day master -> ten gods -> hidden stems -> na yin) plus the `## Tổng quan / ## Điểm mạnh / ## Điểm cần lưu ý / ## Gợi ý hành động` section headers; `buildPalaceExplanationPrompt.ts` carries the Ziwei equivalent. Verify with `pnpm -F @ziweiai/api test build-bazi-explanation-prompt` before touching copy; treat this step as a no-op unless the assertions reveal a real gap.
+
+Originally: enrich both builders with explicit reasoning order (day master -> ten gods -> hidden stems -> na yin for Bazi; palace -> stars -> brightness -> mutagen for Ziwei), explicit section headers, a "no Han" reminder already present, and a length target. Keep all keys translated via `translateBaziKey`/`translateZiweiKey`.
 
 - [ ] **Step 4: Run api tests + Han guard**
 
@@ -176,8 +178,9 @@ This lands before #24/#29 web work so those features can carry component-level u
 
 - [ ] **Step 1: Add dev deps (pinned)**
 
-Run: `pnpm -F @ziweiai/web add -D @testing-library/svelte@^5 @testing-library/jest-dom@^6`
-Expected: package.json devDependencies updated; single versions.
+> STALE (2026-06-27): both deps are already in `apps/web/package.json` devDependencies (`@testing-library/svelte@^5.4.2`, `@testing-library/jest-dom@^6.9.1`) and `src/test/setup-testing-library.ts` is already wired into `vitest.config.ts`. Skip the install; confirm with `pnpm -F @ziweiai/web ls @testing-library/svelte @testing-library/jest-dom` and only re-add if a dep is genuinely missing.
+
+Originally: `pnpm -F @ziweiai/web add -D @testing-library/svelte@^5 @testing-library/jest-dom@^6` (package.json devDependencies updated; single versions).
 
 - [ ] **Step 2: Write one passing component test**
 
@@ -219,20 +222,22 @@ git commit -m "chore(web): add @testing-library/svelte + first component test (b
 - Modify: `apps/api/src/modules/draws-tarot/tarot-prompts.ts` (per-spread framing)
 - Modify: `apps/web/src/lib/features/tarot/*` + `/tarot` route (spread radiogroup options)
 
-Current enum: `['three-card', 'celtic-cross']`. Add `single`, `diamond`, `moon`, `horseshoe` with their card counts (1 / 4 / 4 / 5 — confirm intended counts before coding).
+> STALE (2026-06-27): the schema already contains ALL six spreads. `packages/contracts/src/chart/tarot-draw.ts` `tarotSpreadSchema` is `['single', 'three-card', 'diamond', 'moon', 'horseshoe', 'celtic-cross']` with card counts `single:1, three-card:3, diamond:4, moon:4, horseshoe:7, celtic-cross:10`, and `tarot-prompts.ts` already has `SPREAD_POSITIONS` + `SPREAD_LABELS_VI` for every spread (note horseshoe is 7, not 5). The enum/count work below is a no-op; this task is effectively the WEB radiogroup + any remaining route wiring only.
 
-- [ ] **Step 1: Failing contract test for new spread values**
+Originally assumed enum: `['three-card', 'celtic-cross']`, to add `single`, `diamond`, `moon`, `horseshoe`.
 
-Add cases asserting the schema accepts the four new spreads and the draw request validates with matching card counts.
+- [ ] **Step 1: Confirm contract coverage for the spread values**
+
+The four spreads already live in `tarotSpreadSchema` with card counts in `TAROT_SPREAD_CARD_COUNTS` (1 / 3 / 4 / 4 / 7 / 10). Confirm `us017-schemas.test.ts` asserts the schema accepts every spread and the draw request validates with matching card counts; add any missing case.
 
 - [ ] **Step 2: Run contracts test**
 
 Run: `pnpm -F @ziweiai/contracts test`
-Expected: FAIL (enum rejects new values).
+Expected: PASS (schema already accepts the values). Only fails if you tighten an assertion ahead of a gap.
 
-- [ ] **Step 3: Extend enum + service card-count map + prompt framing**
+- [ ] **Step 3: Verify service card-count map + prompt framing**
 
-Wire the new spreads end-to-end. Keep `pnpm why zod` single-version.
+`SPREAD_POSITIONS` + `SPREAD_LABELS_VI` in `tarot-prompts.ts` and the service card-count map already cover all six spreads; the parameterized loop in `tarot-prompts.test.ts` pins per-spread labels. Spot-check for drift only — no enum extension is needed. Keep `pnpm why zod` single-version.
 
 - [ ] **Step 4: Web radiogroup + e2e**
 

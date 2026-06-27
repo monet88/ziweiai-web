@@ -302,6 +302,50 @@ describe('ConversationsController.appendMessageStream', () => {
     expect(res.end).not.toHaveBeenCalled();
   });
 
+  it('aborts on a disconnect that fires BEFORE the first token (slow/hung opening pull)', async () => {
+    // Models a client that goes away while the provider is still producing its first token. The loop
+    // only polls res.destroyed BETWEEN deltas, so without the opening-window 'close' listener the
+    // abort would not fire until a token arrived or the provider timed out. The listener must trip the
+    // signal as soon as 'close' fires, while the first pull is still pending.
+    let capturedSignal: AbortSignal | undefined;
+    let releaseFirstPull: (() => void) | undefined;
+    const firstPullGate = new Promise<void>((resolve) => {
+      releaseFirstPull = resolve;
+    });
+    async function* gen(): AsyncGenerator<string, unknown, void> {
+      // Block on the first token until the test releases the gate (after firing 'close').
+      await firstPullGate;
+      return ASSISTANT_MESSAGE;
+    }
+    const service = createService({
+      appendMessageAndGenerateStream: vi.fn((_user, _ip, _id, _input, signal?: AbortSignal) => {
+        capturedSignal = signal;
+        return gen();
+      }),
+    });
+    const controller = new ConversationsController(service);
+    const { res, fireClose } = createResponse();
+
+    const handled = controller.appendMessageStream(
+      USER,
+      CONVERSATION_ID,
+      { content: 'Xin chào' },
+      createRequest(),
+      res as never,
+    );
+
+    // Let the handler reach its first `await generator.next()`, then the client disconnects.
+    await Promise.resolve();
+    expect(capturedSignal?.aborted).toBe(false);
+    (res as { destroyed: boolean }).destroyed = true;
+    fireClose();
+    // The opening-window listener tripped the signal immediately, without waiting for a token.
+    expect(capturedSignal?.aborted).toBe(true);
+
+    releaseFirstPull?.();
+    await handled;
+  });
+
   it('does not leak a raw non-typed error message to the client (generic message instead)', async () => {
     // A non-ApiError, non-ProviderError leaking an internal detail (e.g. a DSN with a password) on the
     // first pull. A plain rejecting iterator models this without an empty generator body.

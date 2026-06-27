@@ -26,8 +26,18 @@ const workerCount = (() => {
   if (raw === undefined || raw.trim() === '') {
     return DEFAULT_E2E_WORKERS;
   }
-  const parsed = Number.parseInt(raw, 10);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_E2E_WORKERS;
+  // parseInt silently accepts trailing garbage ("4abc" -> 4) and truncates floats ("3.5" -> 3),
+  // so a typo would quietly run the wrong worker count. Require a pure positive integer and fail
+  // loudly otherwise, so the misconfiguration surfaces instead of hiding behind a wrong default.
+  const trimmed = raw.trim();
+  if (!/^[0-9]+$/.test(trimmed)) {
+    throw new Error(`E2E_WORKERS must be a positive integer, received "${raw}".`);
+  }
+  const parsed = Number.parseInt(trimmed, 10);
+  if (parsed <= 0) {
+    throw new Error(`E2E_WORKERS must be greater than 0, received "${raw}".`);
+  }
+  return parsed;
 })();
 
 // Nhóm @live (pnpm e2e:live) gọi LLM thật. Một số feature cần cờ server bật mới sinh được kết quả

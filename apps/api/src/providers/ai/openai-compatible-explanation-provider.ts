@@ -238,30 +238,35 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
       let usage: OpenAiCompatibleStreamChunk['usage'];
       let done = false;
 
-      // Yield deltas as frames complete. SSE frames are separated by a blank line ("\n\n"); a single
-      // JSON payload can be split across reads, so we keep a buffer and only consume complete frames.
-        const deltas: string[] = [];
-        try {
-          while (!done) {
-            let value: Uint8Array | undefined;
-            let streamDone = false;
-            try {
-              ({ value, done: streamDone } = await reader.read());
-            } catch (readError) {
-              // Backlog #34 (lossless client-disconnect): if the CALLER signal aborted (client went
-              // away) mid-read, stop gracefully and KEEP the text accumulated so far so the service can
-              // still persist the partial reply the user already saw. The upstream fetch is cancelled
-              // (token burn stops) but nothing is lost. A timeout-only abort is a genuine failure, so
-              // only swallow the read error when the caller signal is the one that fired.
-              if (signal?.aborted) {
-                break;
-              }
-              throw readError;
-            }
-            if (streamDone) {
+      // Yield deltas as frames complete. SSE frames are separated by a blank line; a single JSON
+      // payload can be split across reads, so we keep a buffer and only consume complete frames.
+      // Upstreams may delimit with CRLF ("\r\n\r\n") instead of LF ("\n\n"); we strip raw CR on
+      // decode so frame splitting on "\n\n" works for both. CR has no semantic role here (JSON
+      // escapes control chars as "\\r", so raw CR only appears as line endings), and stripping it
+      // per-decode is robust even when a "\r\n" pair is split across two reads.
+      const deltas: string[] = [];
+      try {
+        while (!done) {
+          let value: Uint8Array | undefined;
+          let streamDone = false;
+          try {
+            ({ value, done: streamDone } = await reader.read());
+          } catch (readError) {
+            // Backlog #34 (lossless client-disconnect): if the CALLER signal aborted (client went
+            // away) mid-read, stop gracefully and KEEP the text accumulated so far so the service can
+            // still persist the partial reply the user already saw. The upstream fetch is cancelled
+            // (token burn stops) but nothing is lost. A timeout-only abort is a genuine failure, so
+            // only swallow the read error when the caller signal is the one that fired.
+            if (signal?.aborted) {
               break;
             }
-            buffer += decoder.decode(value, { stream: true });
+            throw readError;
+          }
+          if (streamDone) {
+            break;
+          }
+          // Strip raw CR so frame splitting on "\n\n" recognizes CRLF-delimited ("\r\n\r\n") streams.
+          buffer += decoder.decode(value, { stream: true }).replace(/\r/g, '');
 
           let separatorIndex = buffer.indexOf('\n\n');
           while (separatorIndex !== -1) {

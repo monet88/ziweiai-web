@@ -139,7 +139,7 @@
                 alt={model.imageFile?.name ?? copy.uploadLabel}
               />
               {#if kind === 'palm'}
-                <PalmLandmarkOverlay image={previewImg} label={copy.overlayLabel} />
+                <PalmLandmarkOverlay image={previewImg} src={previewUrl} label={copy.overlayLabel} />
               {/if}
             </div>
             <figcaption class="preview-bar">

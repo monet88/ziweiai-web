@@ -6,8 +6,12 @@
 // luồng upload + luận giải Xem Tay không phụ thuộc lớp phủ này.
 import type { NormalizedLandmark } from './palm-overlay-geometry';
 
-const WASM_BASE_URL =
-  'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm';
+// Phải KHỚP version "@mediapipe/tasks-vision" trong apps/web/package.json: wasm tải từ CDN theo
+// đúng version đã cài, nếu lệch thì wasm/glue-code có thể không tương thích với module import động.
+// palm-landmark-detector.version.test.ts chốt bất biến này (đọc version thật từ node_modules) để
+// một lần bump dependency mà quên sửa đây sẽ fail test thay vì vỡ âm thầm lúc chạy.
+export const MEDIAPIPE_TASKS_VISION_VERSION = '0.10.35';
+const WASM_BASE_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_TASKS_VISION_VERSION}/wasm`;
 const HAND_LANDMARKER_MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 

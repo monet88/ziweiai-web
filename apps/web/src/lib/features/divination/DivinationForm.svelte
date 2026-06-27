@@ -186,7 +186,7 @@
                   <span
                     class="coin"
                     class:head={face}
-                    style={`--coin-delay: ${coinIndex * 70}ms`}
+                    style={`--coin-delay: ${index * 90 + coinIndex * 70}ms`}
                   >{coinLabel(face)}</span>
                 {/each}
               {/key}

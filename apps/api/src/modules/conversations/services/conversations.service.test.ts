@@ -358,4 +358,69 @@ describe('ConversationsService.appendMessageAndGenerateStream', () => {
     expect(createConversationMessage).toHaveBeenCalledTimes(1);
     expect(createConversationMessage.mock.calls[0]?.[0]).toMatchObject({ role: 'user' });
   });
+
+  it('falls back to the non-stream chain when the streaming head fails BEFORE the first delta', async () => {
+    // Streaming failover: resolveStreamingProvider returns a SINGLE provider (no chain walk). If that
+    // head dies before emitting any byte, no delta has reached the client, so the service must retry
+    // via the non-stream generate() which DOES walk openai-compat -> deepseek -> gemini. Without this
+    // a transient first-token failure would surface as an error instead of failing over.
+    const providerReturn = vi.fn(async () => ({ value: undefined, done: true }) as IteratorReturnResult<undefined>);
+    const providerIterator = {
+      next: vi.fn(async () => {
+        const { ProviderUnavailableError } = await import('../../../providers/ai/provider-errors');
+        throw new ProviderUnavailableError('streaming head down at first token');
+      }),
+      return: providerReturn,
+      [Symbol.asyncIterator]() {
+        return this;
+      },
+    };
+    const streamProvider = { generateConversationStream: vi.fn(() => providerIterator) };
+    const { service, conversationRouter, createConversationMessage } = buildStreamingService(streamProvider);
+
+    const { deltas, result } = await drain(
+      service.appendMessageAndGenerateStream(emailUser, '127.0.0.1', CONVERSATION_ID, {
+        content: 'Xin chào',
+        providerPreference: 'auto',
+      }),
+    );
+
+    // Streaming head torn down, non-stream chain used, full text emitted as a single delta.
+    expect(providerReturn).toHaveBeenCalledOnce();
+    expect(conversationRouter.generate).toHaveBeenCalledTimes(1);
+    expect(deltas).toEqual(['non-stream full text']);
+    expect(createConversationMessage).toHaveBeenCalledTimes(2);
+    expect(createConversationMessage.mock.calls[1]?.[0]).toMatchObject({
+      role: 'assistant',
+      content: 'non-stream full text',
+    });
+    expect((result as { id: string }).id).toBe(ASSISTANT_RECORD.id);
+  });
+
+  it('does NOT fail over once a delta has been emitted (mid-stream failure stays an error)', async () => {
+    // Past the first delta the client is committed to this provider (lossless contract forbids
+    // restarting), so a mid-stream failure must propagate as an error, never silently switch provider.
+    const streamProvider = {
+      generateConversationStream: vi.fn(() => providerStream(['Xin ', 'chao'], 2)),
+    };
+    const { service, conversationRouter, createConversationMessage } = buildStreamingService(streamProvider);
+
+    const generator = service.appendMessageAndGenerateStream(emailUser, '127.0.0.1', CONVERSATION_ID, {
+      content: 'Xin chào',
+      providerPreference: 'auto',
+    });
+    await expect(
+      (async () => {
+        let next = await generator.next();
+        while (!next.done) {
+          next = await generator.next();
+        }
+      })(),
+    ).rejects.toBeInstanceOf(ApiErrorHttpException);
+
+    // No failover after a delta: the non-stream chain is never touched, no assistant message persisted.
+    expect(conversationRouter.generate).not.toHaveBeenCalled();
+    expect(createConversationMessage).toHaveBeenCalledTimes(1);
+    expect(createConversationMessage.mock.calls[0]?.[0]).toMatchObject({ role: 'user' });
+  });
 });

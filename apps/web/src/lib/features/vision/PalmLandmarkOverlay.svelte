@@ -14,11 +14,14 @@
   interface Props {
     /** Ảnh preview đã render (object-fit: contain). Overlay khớp đúng vùng letterbox của ảnh này. */
     image: HTMLImageElement | null;
+    /** Nguồn ảnh hiện tại. Cùng một <img> bị gán src mới (đổi tệp) thì phải nhận diện lại — vì
+     * tham chiếu phần tử KHÔNG đổi, $effect cần phụ thuộc src để re-run, tránh vẽ landmark ảnh cũ. */
+    src: string | null;
     /** Nhãn mô tả lớp phủ cho công nghệ hỗ trợ tiếp cận (tiếng Việt). */
     label: string;
   }
 
-  let { image, label }: Props = $props();
+  let { image, src, label }: Props = $props();
 
   let landmarks = $state<NormalizedLandmark[] | null>(null);
   let containerWidth = $state(0);
@@ -30,10 +33,12 @@
   // Cờ cancelled chặn cập nhật state khi ảnh đã đổi giữa chừng (tránh vẽ landmark của ảnh cũ).
   $effect(() => {
     const el = image;
+    // Đọc src để $effect phụ thuộc nó: cùng một phần tử <img> nhưng src đổi vẫn kích hoạt nhận diện lại.
+    const currentSrc = src;
     landmarks = null;
     naturalWidth = 0;
     naturalHeight = 0;
-    if (!el) return;
+    if (!el || !currentSrc) return;
 
     let cancelled = false;
 
@@ -49,7 +54,7 @@
       }
     };
 
-    if (el.complete && el.naturalWidth > 0) {
+    if (el.complete && el.naturalWidth > 0 && el.currentSrc.length > 0) {
       void run();
     } else {
       el.addEventListener('load', run, { once: true });

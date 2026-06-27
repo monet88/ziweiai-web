@@ -126,7 +126,33 @@ export class ConversationsService {
       let providerDone = false;
       let providerResult: ConversationProviderResult;
       try {
-        let next = await generator.next();
+        // Streaming failover: the streaming head is a SINGLE provider (resolveStreamingProvider does
+        // not walk the chain). If it fails BEFORE emitting any delta, no byte has reached the client
+        // yet, so we can safely fall back to the non-stream generate() which DOES walk the whole
+        // provider chain (openai-compat -> deepseek -> gemini). Once the first delta is yielded we are
+        // committed to this provider (the lossless contract forbids restarting mid-stream), so the
+        // fallback boundary is strictly the very first next() call.
+        let next: IteratorResult<string, ConversationProviderResult>;
+        try {
+          next = await generator.next();
+        } catch (firstChunkError) {
+          // A consumer-driven abort (client disconnect) must NOT trigger failover: it is not a
+          // provider fault and there is no client left to serve. Re-throw so the catch below maps it.
+          if (signal?.aborted) {
+            throw firstChunkError;
+          }
+          await generator.return?.(undefined as never).catch(() => undefined);
+          // Mark the provider settled so the outer finally does not re-call .return() on it.
+          providerDone = true;
+          this.logger.warn('Streaming provider failed before first delta; falling back to non-stream chain.');
+          const fallbackResult = await this.conversationRouter.generate(input.providerPreference, promptPayload);
+          if (fallbackResult.renderedMarkdown.length > 0) {
+            yield fallbackResult.renderedMarkdown;
+          }
+          const fallbackMessage = await this.persistAssistantMessage(user.userId, conversationId, fallbackResult);
+          this.logger.log('Conversation generation completed', { userId: user.userId, conversationId });
+          return fallbackMessage;
+        }
         while (!next.done) {
           yield next.value;
           next = await generator.next();

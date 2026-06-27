@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, Post, Query, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Logger, Param, Post, Query, Req, Res } from '@nestjs/common';
 import {
   createConversationRequestSchema,
   createConversationMessageRequestSchema,
@@ -15,6 +15,8 @@ import { ConversationsService } from './services/conversations.service';
 @Controller('conversations')
 export class ConversationsController {
   constructor(private readonly conversationsService: ConversationsService) {}
+
+  private readonly logger = new Logger(ConversationsController.name);
 
   // Đồng nhất với VisionController: validate input bằng safeParse rồi ném ApiErrorHttpException
   // (INVALID_INPUT, thông điệp tiếng Việt) thay vì để Zod ném ZodError thô. Gom về một helper để
@@ -122,37 +124,92 @@ export class ConversationsController {
       res.write(`data: ${JSON.stringify(validated)}\n\n`);
     };
 
-    try {
-      // Persist user message + generate assistant (full text); stream chunks if provider supports.
-      // Current providers return full text; simulate chunking for contract compatibility.
-      const { fullText, assistantMessage } = await this.conversationsService.appendMessageAndGenerate(
-        currentUser,
-        request.ip ?? 'unknown',
-        parsedId,
-        input,
-      );
-
-      // Flush SSE headers ONLY after generation succeeds. Flushing earlier sends a 200 status, so a
-      // later failure can no longer set the real HTTP status (ERR_HTTP_HEADERS_SENT). With this order,
-      // a pre-stream failure returns a clean JSON error with the correct status (catch branch below).
+    // Flush SSE headers lazily: only once the first byte is ready to go out. Flushing earlier would
+    // lock a 200 status, so a gate/provider error firing BEFORE any token could no longer set the
+    // real HTTP status. With this guard, a pre-stream failure (entitlement 402, quota 429, feature
+    // flag 403, provider error before the first delta) still lands in the catch branch with headers
+    // unsent and returns a clean JSON error.
+    let headersFlushed = false;
+    const ensureHeaders = () => {
+      if (headersFlushed) {
+        return;
+      }
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
       res.flushHeaders?.();
+      headersFlushed = true;
+    };
 
-      // Naive chunking to satisfy stream contract (word-by-word-ish). Real streaming can replace this later.
-      const words = fullText.split(/(\s+)/);
-      for (const w of words) {
-        // Stop immediately if the client disconnected mid-stream: writing to a destroyed socket
-        // throws and wastes the artificial per-chunk delay below.
-        if (res.destroyed) break;
-        if (!w) continue;
-        send({ type: 'chunk', delta: w });
-        // small delay to make stream observable in dev; harmless in prod
-        await new Promise((r) => setTimeout(r, 5));
+    // US-027 (decision 0026) + backlog #34 (lossless client-disconnect): abort the upstream provider
+    // fetch when the client goes away so we stop burning tokens, WITHOUT ever dropping the reply the
+    // user already saw. The signal is threaded to the service -> provider; on abort the provider stops
+    // reading upstream and returns the text accumulated so far (it does NOT throw), so the service
+    // still persists the partial assistant message. The disconnect signal is res.destroyed, polled in
+    // the loop on the real socket state — NOT the 'close' event, which fires while the response is
+    // still writable under Node/Express and previously caused spurious aborts that lost the reply.
+    const abortController = new AbortController();
+    // Pre-first-token disconnect guard. The loop below polls res.destroyed BETWEEN deltas, so a client
+    // that disconnects during a slow or hung first-token pull would not be noticed until a token finally
+    // arrives or the provider times out — holding the request and burning upstream work meanwhile. We
+    // listen for 'close' ONLY for this opening window: nothing is accumulated yet, so an abort here can
+    // never truncate a reply the user saw. Once the first delta arrives we disarm it and hand back to
+    // the res.destroyed poll, because the 'close' event misfires mid-stream under Node/Express and a
+    // spurious abort there previously dropped the reply (backlog #34).
+    const onPreStreamClose = () => {
+      if (!abortController.signal.aborted) {
+        abortController.abort();
+      }
+    };
+    let preStreamGuardArmed = false;
+    const disarmPreStreamGuard = () => {
+      if (preStreamGuardArmed) {
+        res.off('close', onPreStreamClose);
+        preStreamGuardArmed = false;
+      }
+    };
+    res.on('close', onPreStreamClose);
+    preStreamGuardArmed = true;
+    try {
+      // The service runs all gates (enabled -> entitlement 402 -> quota 429) and persists the user
+      // message BEFORE the first delta, so any failure up to here throws before a byte is sent. Each
+      // delta becomes a `chunk` frame; the generator's return value is the persisted assistant message
+      // for the `done` frame. When no provider supports streaming, the service falls back to non-stream
+      // generation and emits the full text as a single delta, preserving the chunk -> done contract.
+      const generator = this.conversationsService.appendMessageAndGenerateStream(
+        currentUser,
+        request.ip ?? 'unknown',
+        parsedId,
+        input,
+        abortController.signal,
+      );
+
+      let next = await generator.next();
+      while (!next.done) {
+        if (res.destroyed) {
+          // Client gone: abort the upstream fetch so the provider stops pulling tokens. The provider
+          // returns the accumulated text (lossless), so we keep draining the generator to its return
+          // value and let the service persist the partial reply. We just stop writing to the dead socket.
+          if (!abortController.signal.aborted) {
+            abortController.abort();
+          }
+        } else {
+          // First delta committed: streaming has started, so the opening-window guard is no longer
+          // needed (and would misfire mid-stream). Disarm it and rely on the res.destroyed poll above.
+          disarmPreStreamGuard();
+          // The first delta is the safe point to commit headers: generation has started successfully.
+          ensureHeaders();
+          send({ type: 'chunk', delta: next.value });
+        }
+        next = await generator.next();
       }
 
-      send({ type: 'done', message: assistantMessage });
+      if (!res.destroyed) {
+        // Headers may still be unsent if the stream produced zero deltas (defensive: providers reject
+        // empty content upstream, but the contract still needs a `done` frame).
+        ensureHeaders();
+        send({ type: 'done', message: next.value });
+      }
     } catch (error) {
       // Known failures arrive as ApiErrorHttpException (typed code + status) from the service: quota
       // (429 RATE_LIMITED), feature flag (403 FEATURE_DISABLED), provider timeout/unavailable, etc.
@@ -160,7 +217,13 @@ export class ConversationsController {
       const requestId = request.requestId ?? null;
       const { status, code, message } = this.resolveStreamError(error);
 
-      if (!res.headersSent) {
+      if (res.destroyed) {
+        // Client already gone: the socket is dead, so any write (JSON status OR SSE frame) would
+        // throw ERR_STREAM_WRITE_AFTER_END. Skip writing entirely; the error is already logged in
+        // resolveStreamError for non-typed faults. Guarding the WHOLE block (not just the SSE arm)
+        // covers the pre-stream path too: a disconnect before the first byte leaves headersSent
+        // false AND destroyed true, where res.status().json() would still crash.
+      } else if (!res.headersSent) {
         // Stream never started — respond with a normal JSON error the client already understands.
         res.status(status).json({ code, message, requestId });
       } else {
@@ -168,7 +231,11 @@ export class ConversationsController {
         send({ type: 'error', error: { code, message, requestId } });
       }
     } finally {
-      res.end();
+      // Drop the opening-window listener on every exit path (it is a no-op once already disarmed).
+      disarmPreStreamGuard();
+      if (!res.destroyed) {
+        res.end();
+      }
     }
   }
 
@@ -182,10 +249,17 @@ export class ConversationsController {
         message: shaped.message ?? 'Generation failed',
       };
     }
+    // Medium-1: a non-typed error (not ApiError/ProviderError) may carry internal detail (stack, DSN,
+    // credentials). Log it server-side for diagnosis but return a generic Vietnamese message so the
+    // raw text never reaches the client. Typed errors above keep their already-safe messages.
+    this.logger.error(
+      'Conversation stream failed with a non-typed error.',
+      error instanceof Error ? error.stack : String(error),
+    );
     return {
       status: HttpStatus.BAD_GATEWAY,
       code: 'PROVIDER_UNAVAILABLE',
-      message: error instanceof Error ? error.message : 'Generation failed',
+      message: 'Đã xảy ra lỗi khi tạo nội dung. Vui lòng thử lại.',
     };
   }
 }

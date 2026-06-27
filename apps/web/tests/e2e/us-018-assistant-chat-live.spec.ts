@@ -88,6 +88,13 @@ test('US-018 LIVE @live: chat thật qua SSE → user + assistant message persis
     .toBeGreaterThan(10);
   await shot(page, '01-chat-streamed');
 
+  // Wait for the stream to COMPLETE before reading the DB. Under real provider streaming the server
+  // persists the assistant message and only then emits the `done` frame; the client re-enables the
+  // composer (isGenerating=false) after consuming `done`. Reading the DB right after the first tokens
+  // appear races the persist (the assistant row is written at stream end), so gate on completion: the
+  // composer becoming editable again is the client-visible signal that `done` arrived.
+  await expect(composer).toBeEnabled({ timeout: 90_000 });
+
   const transcript = await assistantSection.innerText();
   expect(CJK_TEXT_PATTERN.test(transcript), 'Hội thoại không được rò chữ Hán').toBe(false);
 

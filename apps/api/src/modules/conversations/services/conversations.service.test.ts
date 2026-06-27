@@ -132,3 +132,295 @@ describe('ConversationsService.listConversationsForChart', () => {
     expect(result.items.map((c) => c.id)).toEqual([ID_NEWER, ID_OLDER]);
   });
 });
+
+// US-027 (decision 0026): real provider token streaming. The streaming generate runs the SAME gate
+// order as the non-stream path (enabled -> entitlement 402 -> quota 429 -> persist user) BEFORE any
+// token flows, yields deltas, and persists the assistant message ONLY after the stream completes.
+describe('ConversationsService.appendMessageAndGenerateStream', () => {
+  const originalConversationEnabled = apiEnv.AI_CONVERSATION_ENABLED;
+  const originalFreeForAll = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
+
+  // A snapshot shaped just enough for buildExplanationContext + the (non-divination) inquiry skip.
+  const SNAPSHOT = {
+    chartSystem: 'zi-wei-dou-shu',
+    calculationConfidence: {
+      level: 'medium',
+      reasons: ['MANUAL_TIMEZONE'],
+      visibleMessageKey: 'birth.time.verified',
+      blocksExactReading: false,
+    },
+    ruleSource: { canonicalLibrary: { name: 'iztro', version: '2.0.0' } },
+  };
+
+  const ASSISTANT_RECORD = {
+    id: '77777777-7777-4777-8777-777777777777',
+    ownerUserId: emailUser.userId,
+    conversationId: CONVERSATION_ID,
+    role: 'assistant',
+    content: 'placeholder',
+    quickPromptKey: null,
+    providerName: 'openai-compat',
+    providerMetadata: { provider: 'openai-compat' },
+    createdAt: '2026-06-26T03:00:00.000Z',
+  };
+
+  async function* providerStream(
+    chunks: string[],
+    failAfter?: number,
+  ): AsyncGenerator<string, { renderedMarkdown: string; providerMetadata: Record<string, string> }, void> {
+    let emitted = 0;
+    for (const chunk of chunks) {
+      yield chunk;
+      emitted += 1;
+      if (failAfter !== undefined && emitted >= failAfter) {
+        const { ProviderUnavailableError } = await import('../../../providers/ai/provider-errors');
+        throw new ProviderUnavailableError('upstream blew up mid-stream');
+      }
+    }
+    return { renderedMarkdown: chunks.join(''), providerMetadata: { provider: 'openai-compat' } };
+  }
+
+  async function drain(
+    generator: AsyncGenerator<string, unknown, void>,
+  ): Promise<{ deltas: string[]; result: unknown }> {
+    const deltas: string[] = [];
+    let next = await generator.next();
+    while (!next.done) {
+      deltas.push(next.value as string);
+      next = await generator.next();
+    }
+    return { deltas, result: next.value };
+  }
+
+  function buildStreamingService(streamProvider: unknown | null) {
+    const createConversationMessage = vi
+      .fn()
+      .mockResolvedValue({ ...ASSISTANT_RECORD });
+    const persistenceGateway = {
+      findConversationById: vi.fn().mockResolvedValue({ id: CONVERSATION_ID, chartSnapshotId: 'chart-1' }),
+      findChartSnapshotById: vi.fn().mockResolvedValue({ snapshot: SNAPSHOT }),
+      listRecentConversationMessages: vi.fn().mockResolvedValue([]),
+      createConversationMessage,
+    };
+    const quotasService = { assertCanCreateConversationMessage: vi.fn().mockResolvedValue(undefined) };
+    const conversationRouter = {
+      generate: vi.fn().mockResolvedValue({
+        renderedMarkdown: 'non-stream full text',
+        providerMetadata: { provider: 'gemini' },
+      }),
+      resolveStreamingProvider: vi.fn().mockReturnValue(streamProvider),
+    };
+    const service = new ConversationsService(
+      persistenceGateway as unknown as SupabasePersistenceGateway,
+      quotasService as unknown as QuotasService,
+      conversationRouter as unknown as ConversationProviderRouter,
+    );
+    return { service, persistenceGateway, quotasService, conversationRouter, createConversationMessage };
+  }
+
+  beforeEach(() => {
+    apiEnv.AI_CONVERSATION_ENABLED = true;
+    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
+  });
+
+  afterEach(() => {
+    apiEnv.AI_CONVERSATION_ENABLED = originalConversationEnabled;
+    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = originalFreeForAll;
+    vi.restoreAllMocks();
+  });
+
+  it('blocks with PAYMENT_REQUIRED before quota / persist / streaming when the AI gate is closed', async () => {
+    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
+    const { service, quotasService, conversationRouter, createConversationMessage } = buildStreamingService({
+      generateConversationStream: vi.fn(),
+    });
+
+    try {
+      await service
+        .appendMessageAndGenerateStream(emailUser, '127.0.0.1', CONVERSATION_ID, {
+          content: 'Xin chào',
+          providerPreference: 'auto',
+        })
+        .next();
+      throw new Error('expected gate to throw');
+    } catch (error) {
+      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'PAYMENT_REQUIRED');
+    }
+    expect(quotasService.assertCanCreateConversationMessage).not.toHaveBeenCalled();
+    expect(conversationRouter.resolveStreamingProvider).not.toHaveBeenCalled();
+    expect(createConversationMessage).not.toHaveBeenCalled();
+  });
+
+  it('persists the user message, streams deltas, then persists the assistant message after completion', async () => {
+    const streamProvider = {
+      generateConversationStream: vi.fn(() => providerStream(['Xin ', 'chao ', 'ban'])),
+    };
+    const { service, persistenceGateway, createConversationMessage } = buildStreamingService(streamProvider);
+
+    const { deltas, result } = await drain(
+      service.appendMessageAndGenerateStream(emailUser, '127.0.0.1', CONVERSATION_ID, {
+        content: 'Xin chào',
+        providerPreference: 'auto',
+      }),
+    );
+
+    expect(deltas).toEqual(['Xin ', 'chao ', 'ban']);
+    // user persisted first, assistant persisted last (full accumulated text + provider metadata).
+    expect(createConversationMessage).toHaveBeenCalledTimes(2);
+    expect(createConversationMessage.mock.calls[0]?.[0]).toMatchObject({ role: 'user', content: 'Xin chào' });
+    expect(createConversationMessage.mock.calls[1]?.[0]).toMatchObject({
+      role: 'assistant',
+      content: 'Xin chao ban',
+      providerName: 'openai-compat',
+    });
+    expect((result as { id: string }).id).toBe(ASSISTANT_RECORD.id);
+    expect(persistenceGateway.listRecentConversationMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT persist an assistant message when the provider errors mid-stream', async () => {
+    const streamProvider = {
+      generateConversationStream: vi.fn(() => providerStream(['Xin ', 'chao'], 2)),
+    };
+    const { service, createConversationMessage } = buildStreamingService(streamProvider);
+
+    const generator = service.appendMessageAndGenerateStream(emailUser, '127.0.0.1', CONVERSATION_ID, {
+      content: 'Xin chào',
+      providerPreference: 'auto',
+    });
+
+    const collected: string[] = [];
+    await expect(
+      (async () => {
+        let next = await generator.next();
+        while (!next.done) {
+          collected.push(next.value as string);
+          next = await generator.next();
+        }
+      })(),
+    ).rejects.toBeInstanceOf(ApiErrorHttpException);
+
+    expect(collected).toEqual(['Xin ', 'chao']);
+    // Only the user message was persisted; the partial assistant text is dropped.
+    expect(createConversationMessage).toHaveBeenCalledTimes(1);
+    expect(createConversationMessage.mock.calls[0]?.[0]).toMatchObject({ role: 'user' });
+  });
+
+  it('falls back to the non-stream path and emits the full text as one chunk when no provider streams', async () => {
+    const { service, conversationRouter, createConversationMessage } = buildStreamingService(null);
+
+    const { deltas, result } = await drain(
+      service.appendMessageAndGenerateStream(emailUser, '127.0.0.1', CONVERSATION_ID, {
+        content: 'Xin chào',
+        providerPreference: 'deepseek',
+      }),
+    );
+
+    expect(conversationRouter.generate).toHaveBeenCalledTimes(1);
+    expect(deltas).toEqual(['non-stream full text']);
+    expect(createConversationMessage).toHaveBeenCalledTimes(2);
+    expect(createConversationMessage.mock.calls[1]?.[0]).toMatchObject({
+      role: 'assistant',
+      content: 'non-stream full text',
+    });
+    expect((result as { id: string }).id).toBe(ASSISTANT_RECORD.id);
+  });
+
+  it('propagates .return() to the provider iterator when the consumer stops early (client disconnect)', async () => {
+    // P2-1: when the controller aborts mid-stream (client disconnect), calling .return() on the
+    // service generator must flow down to the provider iterator's .return() so the upstream fetch is
+    // cancelled and no more tokens are billed. A hand-rolled iterator records the .return() call.
+    const providerReturn = vi.fn(async () => ({ value: undefined, done: true }) as IteratorReturnResult<undefined>);
+    let pulls = 0;
+    const providerIterator = {
+      next: vi.fn(async () => {
+        pulls += 1;
+        return { value: `tok-${pulls}`, done: false } as IteratorYieldResult<string>;
+      }),
+      return: providerReturn,
+      [Symbol.asyncIterator]() {
+        return this;
+      },
+    };
+    const streamProvider = { generateConversationStream: vi.fn(() => providerIterator) };
+    const { service, createConversationMessage } = buildStreamingService(streamProvider);
+
+    const generator = service.appendMessageAndGenerateStream(emailUser, '127.0.0.1', CONVERSATION_ID, {
+      content: 'Xin chào',
+      providerPreference: 'auto',
+    });
+
+    const first = await generator.next();
+    expect(first.value).toBe('tok-1');
+    await generator.return(undefined as never);
+
+    expect(providerReturn).toHaveBeenCalledOnce();
+    // No assistant message is persisted on an early disconnect — the stream never completed.
+    expect(createConversationMessage).toHaveBeenCalledTimes(1);
+    expect(createConversationMessage.mock.calls[0]?.[0]).toMatchObject({ role: 'user' });
+  });
+
+  it('falls back to the non-stream chain when the streaming head fails BEFORE the first delta', async () => {
+    // Streaming failover: resolveStreamingProvider returns a SINGLE provider (no chain walk). If that
+    // head dies before emitting any byte, no delta has reached the client, so the service must retry
+    // via the non-stream generate() which DOES walk openai-compat -> deepseek -> gemini. Without this
+    // a transient first-token failure would surface as an error instead of failing over.
+    const providerReturn = vi.fn(async () => ({ value: undefined, done: true }) as IteratorReturnResult<undefined>);
+    const providerIterator = {
+      next: vi.fn(async () => {
+        const { ProviderUnavailableError } = await import('../../../providers/ai/provider-errors');
+        throw new ProviderUnavailableError('streaming head down at first token');
+      }),
+      return: providerReturn,
+      [Symbol.asyncIterator]() {
+        return this;
+      },
+    };
+    const streamProvider = { generateConversationStream: vi.fn(() => providerIterator) };
+    const { service, conversationRouter, createConversationMessage } = buildStreamingService(streamProvider);
+
+    const { deltas, result } = await drain(
+      service.appendMessageAndGenerateStream(emailUser, '127.0.0.1', CONVERSATION_ID, {
+        content: 'Xin chào',
+        providerPreference: 'auto',
+      }),
+    );
+
+    // Streaming head torn down, non-stream chain used, full text emitted as a single delta.
+    expect(providerReturn).toHaveBeenCalledOnce();
+    expect(conversationRouter.generate).toHaveBeenCalledTimes(1);
+    expect(deltas).toEqual(['non-stream full text']);
+    expect(createConversationMessage).toHaveBeenCalledTimes(2);
+    expect(createConversationMessage.mock.calls[1]?.[0]).toMatchObject({
+      role: 'assistant',
+      content: 'non-stream full text',
+    });
+    expect((result as { id: string }).id).toBe(ASSISTANT_RECORD.id);
+  });
+
+  it('does NOT fail over once a delta has been emitted (mid-stream failure stays an error)', async () => {
+    // Past the first delta the client is committed to this provider (lossless contract forbids
+    // restarting), so a mid-stream failure must propagate as an error, never silently switch provider.
+    const streamProvider = {
+      generateConversationStream: vi.fn(() => providerStream(['Xin ', 'chao'], 2)),
+    };
+    const { service, conversationRouter, createConversationMessage } = buildStreamingService(streamProvider);
+
+    const generator = service.appendMessageAndGenerateStream(emailUser, '127.0.0.1', CONVERSATION_ID, {
+      content: 'Xin chào',
+      providerPreference: 'auto',
+    });
+    await expect(
+      (async () => {
+        let next = await generator.next();
+        while (!next.done) {
+          next = await generator.next();
+        }
+      })(),
+    ).rejects.toBeInstanceOf(ApiErrorHttpException);
+
+    // No failover after a delta: the non-stream chain is never touched, no assistant message persisted.
+    expect(conversationRouter.generate).not.toHaveBeenCalled();
+    expect(createConversationMessage).toHaveBeenCalledTimes(1);
+    expect(createConversationMessage.mock.calls[0]?.[0]).toMatchObject({ role: 'user' });
+  });
+});

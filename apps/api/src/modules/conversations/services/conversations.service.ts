@@ -17,6 +17,10 @@ import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { apiEnv } from '../../../config/env';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import { ConversationProviderRouter } from '../../../providers/ai/conversation-provider-router';
+import type {
+  ConversationPromptPayload,
+  ConversationProviderResult,
+} from '../../../providers/ai/ai-explanation-provider';
 import { resolveDivinationInquiry } from '../../../providers/ai/divination-inquiry';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../../providers/ai/provider-errors';
 import { DailyQuotaExceededError, RateLimitWindowError } from '../../quotas/quota-errors';
@@ -59,6 +63,134 @@ export class ConversationsService {
     conversationId: string,
     input: CreateConversationMessageRequest,
   ): Promise<{ assistantMessage: ConversationMessageRecord; fullText: string }> {
+    const prepared = await this.prepareGenerationTurn(user, ipAddress, conversationId, input);
+    const { promptPayload } = prepared;
+
+    try {
+      const providerResult = await this.conversationRouter.generate(input.providerPreference, promptPayload);
+
+      const assistantMessage = await this.persistAssistantMessage(user.userId, conversationId, providerResult);
+
+      this.logger.log('Conversation generation completed', {
+        userId: user.userId,
+        conversationId,
+      });
+
+      return {
+        assistantMessage,
+        fullText: providerResult.renderedMarkdown,
+      };
+    } catch (error) {
+      throw this.mapProviderError(error);
+    }
+  }
+
+  // US-027 (decision 0026): real provider token streaming. Runs the SAME gate order as
+  // appendMessageAndGenerate (enabled -> entitlement 402 -> quota 429 -> persist user) BEFORE any
+  // token flows, yields deltas as they arrive, and persists the assistant message ONLY after the
+  // stream completes. On a provider error mid-stream nothing is persisted for the assistant turn, so
+  // a failed generation never leaves a partial reply in the conversation. When no provider in the
+  // resolved chain supports streaming, it falls back to the non-stream generate and emits the full
+  // text as a single delta so the SSE contract (chunk -> done) is preserved.
+  async *appendMessageAndGenerateStream(
+    user: AuthenticatedUser,
+    ipAddress: string,
+    conversationId: string,
+    input: CreateConversationMessageRequest,
+    signal?: AbortSignal,
+  ): AsyncGenerator<string, ConversationMessageRecord, void> {
+    const prepared = await this.prepareGenerationTurn(user, ipAddress, conversationId, input);
+    const { promptPayload } = prepared;
+
+    const streamingProvider = this.conversationRouter.resolveStreamingProvider(input.providerPreference);
+
+    try {
+      if (!streamingProvider) {
+        // Fallback: provider chain has no streaming-capable head. Generate the full text the old way
+        // and emit it as one chunk so the client still gets chunk -> done.
+        const providerResult = await this.conversationRouter.generate(input.providerPreference, promptPayload);
+        if (providerResult.renderedMarkdown.length > 0) {
+          yield providerResult.renderedMarkdown;
+        }
+        const assistantMessage = await this.persistAssistantMessage(user.userId, conversationId, providerResult);
+        this.logger.log('Conversation generation completed', { userId: user.userId, conversationId });
+        return assistantMessage;
+      }
+
+      const generator = streamingProvider.generateConversationStream(promptPayload, signal);
+      // P2-1 (decision 0026): drive the provider iterator inside try/finally so a consumer-side
+      // .return() (controller aborting on client disconnect) propagates DOWN to the provider via
+      // generator.return(). That lets the provider's own finally cancel the upstream fetch and stop
+      // burning tokens. Without this, returning from THIS generator would not forward .return() to a
+      // generator we drive manually with .next().
+      let providerDone = false;
+      let providerResult: ConversationProviderResult;
+      try {
+        // Streaming failover: the streaming head is a SINGLE provider (resolveStreamingProvider does
+        // not walk the chain). If it fails BEFORE emitting any delta, no byte has reached the client
+        // yet, so we can safely fall back to the non-stream generate() which DOES walk the whole
+        // provider chain (openai-compat -> deepseek -> gemini). Once the first delta is yielded we are
+        // committed to this provider (the lossless contract forbids restarting mid-stream), so the
+        // fallback boundary is strictly the very first next() call.
+        let next: IteratorResult<string, ConversationProviderResult>;
+        try {
+          next = await generator.next();
+        } catch (firstChunkError) {
+          // A consumer-driven abort (client disconnect) must NOT trigger failover: it is not a
+          // provider fault and there is no client left to serve. Re-throw so the catch below maps it.
+          if (signal?.aborted) {
+            throw firstChunkError;
+          }
+          await generator.return?.(undefined as never).catch(() => undefined);
+          // Mark the provider settled so the outer finally does not re-call .return() on it.
+          providerDone = true;
+          this.logger.warn('Streaming provider failed before first delta; falling back to non-stream chain.');
+          const fallbackResult = await this.conversationRouter.generate(input.providerPreference, promptPayload);
+          if (fallbackResult.renderedMarkdown.length > 0) {
+            yield fallbackResult.renderedMarkdown;
+          }
+          const fallbackMessage = await this.persistAssistantMessage(user.userId, conversationId, fallbackResult);
+          this.logger.log('Conversation generation completed', { userId: user.userId, conversationId });
+          return fallbackMessage;
+        }
+        while (!next.done) {
+          yield next.value;
+          next = await generator.next();
+        }
+        providerDone = true;
+        providerResult = next.value;
+      } finally {
+        if (!providerDone) {
+          // Consumer stopped early (or an error broke the loop): tell the provider to tear down its
+          // upstream stream. Best-effort; a rejection here must not mask the original outcome.
+          try {
+            await generator.return?.(undefined as never);
+          } catch {
+            // Ignore teardown errors; the original outcome (return value or thrown error) wins.
+          }
+        }
+      }
+
+      // Persist the assistant message ONLY after the stream finished cleanly (full accumulated text +
+      // provider metadata). Errors above throw before reaching this point, so a partial reply is never
+      // written.
+      const assistantMessage = await this.persistAssistantMessage(user.userId, conversationId, providerResult);
+      this.logger.log('Conversation generation completed', { userId: user.userId, conversationId });
+      return assistantMessage;
+    } catch (error) {
+      throw this.mapProviderError(error);
+    }
+  }
+
+  // Shared gate + user-persist preamble for both the stream and non-stream paths. Keeps the gate
+  // ordering identical: enabled flag -> NOT_FOUND checks -> entitlement (402) -> quota (429) ->
+  // persist user message. Returns the fully-built conversation prompt payload for the provider call.
+  private async prepareGenerationTurn(
+    user: AuthenticatedUser,
+    ipAddress: string,
+    conversationId: string,
+    input: CreateConversationMessageRequest,
+  ): Promise<{ promptPayload: ConversationPromptPayload }> {
     this.assertConversationEnabled();
 
     const conversation = await this.persistenceGateway.findConversationById(user.userId, conversationId);
@@ -128,44 +260,46 @@ export class ConversationsService {
       quickPromptKey: input.quickPromptKey ?? null,
     });
 
-    try {
-      const providerResult = await this.conversationRouter.generate(input.providerPreference, {
+    return {
+      promptPayload: {
         chartSnapshot: chartRecord.snapshot,
         explanationContext,
         messages: previousMessages,
         userMessage: userContent,
         quickPromptKey: input.quickPromptKey,
         divinationInquiry,
-      });
+      },
+    };
+  }
 
-      const assistantMessage = await this.persistenceGateway.createConversationMessage({
-        ownerUserId: user.userId,
-        conversationId,
-        role: 'assistant',
-        content: providerResult.renderedMarkdown,
-        quickPromptKey: null,
-        providerName: providerResult.providerMetadata.provider ?? null,
-        providerMetadata: providerResult.providerMetadata,
-      });
+  // Persist a completed assistant turn. Shared by stream + non-stream so the persisted shape stays
+  // single-sourced (content + provider name + provider metadata).
+  private async persistAssistantMessage(
+    userId: string,
+    conversationId: string,
+    providerResult: ConversationProviderResult,
+  ): Promise<ConversationMessageRecord> {
+    return this.persistenceGateway.createConversationMessage({
+      ownerUserId: userId,
+      conversationId,
+      role: 'assistant',
+      content: providerResult.renderedMarkdown,
+      quickPromptKey: null,
+      providerName: providerResult.providerMetadata.provider ?? null,
+      providerMetadata: providerResult.providerMetadata,
+    });
+  }
 
-      this.logger.log('Conversation generation completed', {
-        userId: user.userId,
-        conversationId,
-      });
-
-      return {
-        assistantMessage,
-        fullText: providerResult.renderedMarkdown,
-      };
-    } catch (error) {
-      if (error instanceof ProviderTimeoutError) {
-        throw new ApiErrorHttpException(HttpStatus.GATEWAY_TIMEOUT, 'PROVIDER_TIMEOUT', error.message);
-      }
-      if (error instanceof ProviderUnavailableError) {
-        throw new ApiErrorHttpException(HttpStatus.BAD_GATEWAY, 'PROVIDER_UNAVAILABLE', error.message);
-      }
-      throw error;
+  // Map provider-layer errors to typed API errors (timeout -> 504, unavailable -> 502). Anything else
+  // (incl. ApiErrorHttpException already thrown by the gates) propagates unchanged.
+  private mapProviderError(error: unknown): unknown {
+    if (error instanceof ProviderTimeoutError) {
+      return new ApiErrorHttpException(HttpStatus.GATEWAY_TIMEOUT, 'PROVIDER_TIMEOUT', error.message);
     }
+    if (error instanceof ProviderUnavailableError) {
+      return new ApiErrorHttpException(HttpStatus.BAD_GATEWAY, 'PROVIDER_UNAVAILABLE', error.message);
+    }
+    return error;
   }
 
   // List conversations bound to a chart (newest-first). Verify chart ownership first so an

@@ -69,3 +69,4 @@ docs/deploy/lightsail-ssh-key.txt
 # Root agent instruction files (local-only, not per-folder AGENTS.md).
 /CLAUDE.md
 /AGENTS.md
+AGENTS.md.orig.bak

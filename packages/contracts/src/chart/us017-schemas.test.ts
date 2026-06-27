@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { pairingSnapshotSchema } from './pairing-snapshot';
-import { tarotDrawSchema } from './tarot-draw';
+import { tarotDrawSchema, tarotSpreadSchema, TAROT_SPREAD_CARD_COUNTS } from './tarot-draw';
 import { visionAnalysisSchema } from './vision-analysis';
 import { mangpaiChartSchema } from './chart-snapshot';
 import { mbtiResultSchema, mbtiAnswerSchema } from '../quizzes/mbti-result';
@@ -102,6 +102,38 @@ describe('US-017 new schemas parse/reject', () => {
   it('tarotDrawSchema rejects empty question', () => {
     const bad = { question: '', spread: 'three-card', cards: [{ id: 'c1', name: 'Card', reversed: false, position: 0 }], narrative: 'ok' };
     expect(tarotDrawSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it('tarotSpreadSchema accepts all six spreads incl. new ones', () => {
+    for (const spread of ['single', 'three-card', 'diamond', 'moon', 'horseshoe', 'celtic-cross']) {
+      expect(tarotSpreadSchema.safeParse(spread).success).toBe(true);
+    }
+    expect(tarotSpreadSchema.safeParse('unknown-spread').success).toBe(false);
+  });
+
+  it('TAROT_SPREAD_CARD_COUNTS maps every spread to a positive card count', () => {
+    expect(TAROT_SPREAD_CARD_COUNTS).toEqual({
+      single: 1,
+      'three-card': 3,
+      diamond: 4,
+      moon: 4,
+      horseshoe: 7,
+      'celtic-cross': 10,
+    });
+    // Key set must match the enum exactly so service draw count never falls through.
+    expect(Object.keys(TAROT_SPREAD_CARD_COUNTS).sort()).toEqual(
+      [...tarotSpreadSchema.options].sort(),
+    );
+  });
+
+  it('tarotDrawSchema parses a single-card draw', () => {
+    const ok = {
+      question: 'Hom nay nen tap trung dieu gi?',
+      spread: 'single',
+      cards: [{ id: 'major_00', name: 'Ga Kho', reversed: false, position: 0 }],
+      narrative: 'Mot la goi y.',
+    };
+    expect(tarotDrawSchema.safeParse(ok).success).toBe(true);
   });
 
   it('visionAnalysisSchema accepts face + traits', () => {

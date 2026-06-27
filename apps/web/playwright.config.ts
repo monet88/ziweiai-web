@@ -13,6 +13,33 @@ const API_ORIGIN = `http://localhost:${API_PORT}`;
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 
+// Backlog #21: mỗi worker dùng email test riêng (global-setup provision w0..wN-1 + user dùng
+// chung), nên va chạm quota/rate-limit per-user — nguyên nhân gốc buộc workers:1 — đã được gỡ.
+// Đã verify song song hoá xanh trên Supabase Cloud + provider thật (2026-06-27): bộ default
+// 41/41 ở 4 workers (53s), bộ @live 7/7 ở 4 workers (36s) — 4 user đua nhau không va chạm
+// quota/rate-limit. Vì vậy mặc định nâng lên 4 worker; tùy môi trường (CI ít CPU, mạng yếu)
+// có thể hạ qua env E2E_WORKERS (vd E2E_WORKERS=1) mà không cần đổi code. fullyParallel bám
+// theo: chỉ bật khi chạy >1 worker.
+const DEFAULT_E2E_WORKERS = 4;
+const workerCount = (() => {
+  const raw = process.env.E2E_WORKERS;
+  if (raw === undefined || raw.trim() === '') {
+    return DEFAULT_E2E_WORKERS;
+  }
+  // parseInt silently accepts trailing garbage ("4abc" -> 4) and truncates floats ("3.5" -> 3),
+  // so a typo would quietly run the wrong worker count. Require a pure positive integer and fail
+  // loudly otherwise, so the misconfiguration surfaces instead of hiding behind a wrong default.
+  const trimmed = raw.trim();
+  if (!/^[0-9]+$/.test(trimmed)) {
+    throw new Error(`E2E_WORKERS must be a positive integer, received "${raw}".`);
+  }
+  const parsed = Number.parseInt(trimmed, 10);
+  if (parsed <= 0) {
+    throw new Error(`E2E_WORKERS must be greater than 0, received "${raw}".`);
+  }
+  return parsed;
+})();
+
 // Nhóm @live (pnpm e2e:live) gọi LLM thật. Một số feature cần cờ server bật mới sinh được kết quả
 // thật — cụ thể báo cáo năm (AI_ANNUAL_REPORT_ENABLED, mặc định tắt ở mọi nơi để tránh đốt token).
 // webServer khởi động MỘT lần với env tĩnh nên phải quyết cờ tại đây: phát hiện chế độ live qua argv
@@ -39,12 +66,12 @@ const isLiveRun = cliArgs.some((arg, index) => {
 
 export default defineConfig({
   testDir: './tests/e2e',
-  // Luận giải AI gọi provider thật (mạng) → cho mỗi test tối đa 90s; toàn bộ flow 1 worker
-  // để không đua nhau tạo lá số trùng và tránh rate-limit per-user của api.
+  // Luận giải AI gọi provider thật (mạng) → cho mỗi test tối đa 90s. Mặc định 4 worker (xem
+  // DEFAULT_E2E_WORKERS); mỗi worker có user riêng nên không đua quota/rate-limit per-user.
   timeout: 90_000,
   expect: { timeout: 15_000 },
-  fullyParallel: false,
-  workers: 1,
+  fullyParallel: workerCount > 1,
+  workers: workerCount,
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: [['list']],
@@ -71,10 +98,11 @@ export default defineConfig({
       stderr: 'pipe',
       env: {
         API_CORS_ORIGINS: `${WEB_ORIGIN},${API_ORIGIN}`,
-        // E2E chạy nhiều spec tuần tự dưới MỘT user test dùng chung + store quota in-memory
-        // (per-process), nên trần chống-lạm-dụng mặc định (charts 20/ngày, 30 req/phút...) bị
-        // cộng dồn và chặn các spec cuối (US-009/US-015...). Nâng cao cho riêng tiến trình api
-        // e2e — KHÔNG nới lỏng sản phẩm: hành vi quota được kiểm riêng ở US-013.
+        // E2E chạy nhiều spec dưới ít user test + store quota in-memory (per-process), nên trần
+        // chống-lạm-dụng mặc định (charts 20/ngày, 30 req/phút...) bị cộng dồn và chặn các spec
+        // cuối (US-009/US-015...). Backlog #21 tách user theo worker giúp giảm dồn per-user, nhưng
+        // vẫn nâng trần cho riêng tiến trình api e2e — KHÔNG nới lỏng sản phẩm: hành vi quota được
+        // kiểm riêng ở US-013.
         API_REQUESTS_PER_MINUTE_PER_IP: '100000',
         API_REQUESTS_PER_MINUTE_PER_USER: '100000',
         API_CHARTS_PER_DAY_PER_USER: '100000',

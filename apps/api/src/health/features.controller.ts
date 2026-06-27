@@ -10,6 +10,10 @@ export interface FeaturesStatus {
   mbti: boolean;
   face: boolean;
   palm: boolean;
+  // B6 net-new systems (US-037/038/039)
+  lenormand: boolean;
+  dream: boolean;
+  sticks: boolean;
 }
 
 @Controller('features')
@@ -24,6 +28,9 @@ export class FeaturesController {
       mbti: apiEnv.EXTENDED_SYSTEM_MBTI_ENABLED,
       face: apiEnv.EXTENDED_SYSTEM_FACE_ENABLED,
       palm: apiEnv.EXTENDED_SYSTEM_PALM_ENABLED,
+      lenormand: apiEnv.EXTENDED_SYSTEM_LENORMAND_ENABLED,
+      dream: apiEnv.EXTENDED_SYSTEM_DREAM_ENABLED,
+      sticks: apiEnv.EXTENDED_SYSTEM_STICKS_ENABLED,
     };
   }
 }

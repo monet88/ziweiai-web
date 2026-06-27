@@ -115,6 +115,12 @@ export const apiEnvSchema = z.object({
   EXTENDED_SYSTEM_FACE_ENABLED: z.stringbool().default(false),
   EXTENDED_SYSTEM_PALM_ENABLED: z.stringbool().default(false),
 
+  // B6 (backlog #26 decomposition): net-new divination systems, each its own flag (default false).
+  // Same fail-closed pattern as US-017: feature exists in code but stays off until explicitly enabled.
+  EXTENDED_SYSTEM_LENORMAND_ENABLED: z.stringbool().default(false),
+  EXTENDED_SYSTEM_DREAM_ENABLED: z.stringbool().default(false),
+  EXTENDED_SYSTEM_STICKS_ENABLED: z.stringbool().default(false),
+
   // Separate daily quota for vision (face/palm) — vision is much more expensive
   API_VISION_REQUESTS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(5),
 

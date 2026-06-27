@@ -10,6 +10,7 @@ compact router; load only the doc that matches the task at hand.
 | `commands.md` | Running build / test / lint / typecheck / dev commands |
 | `web-boundaries.md` | Writing/editing `apps/web`, adding web imports, displaying labels/star names, handling chart snapshots, calling the API, parsing responses, env/secrets, or rewriting React/Expo into `.svelte` |
 | `architecture-changes.md` | Changing architecture, a boundary, a naming contract, or an invariant; or when code diverges from docs/SPEC |
+| `execplans.md` | Authoring or maintaining an `execplan.md` (living design doc) for a complex feature or significant refactor — Progress / Surprises / Decision Log / Outcomes that survive context loss |
 | `deploy.md` | Deploying, redeploying, shipping to production, or SSHing into the prod host |
 
 Keep this folder in sync with the root entrypoint when rules change.

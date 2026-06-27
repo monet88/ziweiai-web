@@ -10,7 +10,7 @@ and `@ziweiai/core` (all `workspace:*`).
 - `src/main.ts` - bootstrap; `src/app.module.ts` - root module wiring.
 - `src/modules/*` - feature modules (one folder per domain): `auth`,
   `charts`, `draws-tarot`, `explanations`, `fortune`, `history`, `pairings`,
-  `quizzes-mbti`, `quotas`, `vision-face`, `vision-palm`, `vision-shared`.
+  `quizzes-mbti`, `quotas`, `vision-shared`.
 - `src/providers/ai` - AI explanation providers and prompt builders
   (`*-explanation-provider.ts`, `build-*-prompt.ts`, router + system prompt).
 - `src/database` - Supabase persistence gateway, idempotency, ownership,

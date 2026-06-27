@@ -7,6 +7,7 @@ import {
   type MonthlyFortuneResponse,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
+import { throwQuotaRateLimited } from '../../quotas/quota-http';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import { QuotasService } from '../../quotas/quotas.service';
 import { HoroscopeEngineAdapter } from './horoscope-engine.adapter';
@@ -56,7 +57,7 @@ export class FortuneService {
     try {
       await this.quotasService.assertCanCreateChart(user.userId, ipAddress, user.email === null);
     } catch (error) {
-      throw new ApiErrorHttpException(HttpStatus.TOO_MANY_REQUESTS, 'RATE_LIMITED', error instanceof Error ? error.message : 'Đã vượt hạn mức.');
+      throwQuotaRateLimited(error, 'Đã vượt hạn mức.');
     }
 
     const chartRecord = await this.persistenceGateway.findChartSnapshotById(user.userId, chartId);

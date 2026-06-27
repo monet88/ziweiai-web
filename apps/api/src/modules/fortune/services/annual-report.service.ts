@@ -7,6 +7,7 @@ import {
   type ChartSnapshot,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
+import { throwQuotaRateLimited } from '../../quotas/quota-http';
 import { assertAnnualReportEnabled, assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
 import { apiEnv } from '../../../config/env';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
@@ -52,7 +53,7 @@ export class AnnualReportService {
       await this.quotasService.assertCanCreateAnnualReport(user.userId, ipAddress, user.email === null);
     } catch (error) {
       this.logger.warn(`[annual] quota exceeded userId=${user.userId}`);
-      throw new ApiErrorHttpException(HttpStatus.TOO_MANY_REQUESTS, 'RATE_LIMITED', error instanceof Error ? error.message : 'Đã vượt hạn mức báo cáo năm.');
+      throwQuotaRateLimited(error, 'Đã vượt hạn mức báo cáo năm.');
     }
 
     const frame = this.engine.computeAnnualFrame(snapshot, year);

@@ -12,11 +12,10 @@ import { HistoryModule } from './modules/history/history.module';
 import { QuotasModule } from './modules/quotas/quotas.module';
 import { QuizzesMbtiModule } from './modules/quizzes-mbti/quizzes-mbti.module';
 import { PairingsModule } from './modules/pairings/pairings.module';
-import { VisionFaceModule } from './modules/vision-face/vision-face.module';
-import { VisionPalmModule } from './modules/vision-palm/vision-palm.module';
+import { VisionSharedModule } from './modules/vision-shared/vision-shared.module';
 
 @Module({
-  imports: [AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsTarotModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionFaceModule, VisionPalmModule],
+  imports: [AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsTarotModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

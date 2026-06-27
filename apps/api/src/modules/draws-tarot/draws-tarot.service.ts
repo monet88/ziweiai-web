@@ -7,6 +7,7 @@ import {
   type TarotSpread,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
+import { throwQuotaRateLimited } from '../quotas/quota-http';
 import { apiEnv } from '../../config/env';
 import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
@@ -88,11 +89,7 @@ export class DrawsTarotService {
     try {
       await this.quotasService.assertCanCreateTarotDraw(userId, ipAddress, isAnonymous);
     } catch (error) {
-      throw new ApiErrorHttpException(
-        HttpStatus.TOO_MANY_REQUESTS,
-        'RATE_LIMITED',
-        error instanceof Error ? error.message : 'Đã vượt hạn mức rút Tarot.',
-      );
+      throwQuotaRateLimited(error, 'Đã vượt hạn mức rút Tarot.');
     }
   }
 

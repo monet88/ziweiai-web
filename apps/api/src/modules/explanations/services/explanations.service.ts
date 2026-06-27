@@ -8,6 +8,7 @@ import {
   type ExplanationRequestRecord,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
+import { throwQuotaRateLimited } from '../../quotas/quota-http';
 import { assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
 import { apiEnv } from '../../../config/env';
 import { buildExplanationRequestIdempotencyKey } from '../../../database/idempotency';
@@ -456,7 +457,7 @@ export class ExplanationsService {
     try {
       await this.quotasService.assertCanCreateExplanation(userId, ipAddress, isAnonymous);
     } catch (error) {
-      throw new ApiErrorHttpException(HttpStatus.TOO_MANY_REQUESTS, 'RATE_LIMITED', error instanceof Error ? error.message : 'Đã vượt hạn mức tạo luận giải.');
+      throwQuotaRateLimited(error, 'Đã vượt hạn mức tạo luận giải.');
     }
   }
 

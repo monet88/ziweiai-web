@@ -70,3 +70,4 @@ docs/deploy/lightsail-ssh-key.txt
 /CLAUDE.md
 /AGENTS.md
 AGENTS.md.orig.bak
+.mcp.json

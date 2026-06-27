@@ -30,6 +30,7 @@ import {
   lenormandDrawSchema,
   dreamInterpretationSchema,
   stickDrawSchema,
+  almanacSelectionSchema,
   type AnnualReportResponse,
   type ChartDetailResponse,
   type ConversationDetailResponse,
@@ -64,6 +65,8 @@ import {
   type LenormandSpread,
   type DreamInterpretation,
   type StickDraw,
+  type AlmanacSelection,
+  type AlmanacTopic,
 } from '@ziweiai/contracts';
 import { fetchJson, fetchMultipart, fetchNoContent } from './fetch-json';
 import { env } from '$lib/env';
@@ -437,6 +440,26 @@ export function drawStick(
     body: {
       question: params.question,
       ...(params.seed ? { seed: params.seed } : {}),
+    },
+  });
+}
+
+/**
+ * US-040: POST /almanac/select — Bearer (anon được phép, theo backend). Gửi chủ đề + khoảng ngày;
+ * service dùng tyme4ts tính lịch rồi chấm điểm chọn ngày, bài luận do LLM sinh. Response parse qua
+ * almanacSelectionSchema — sai shape → throw, không trust raw.
+ */
+export function selectAlmanac(
+  token: string,
+  params: { topic: AlmanacTopic; startDate: string; endDate: string },
+): Promise<AlmanacSelection> {
+  return fetchJson('/almanac/select', almanacSelectionSchema, {
+    method: 'POST',
+    token,
+    body: {
+      topic: params.topic,
+      startDate: params.startDate,
+      endDate: params.endDate,
     },
   });
 }

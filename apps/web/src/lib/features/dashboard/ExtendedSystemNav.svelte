@@ -20,6 +20,7 @@
     { route: '/lenormand', flag: 'lenormand', label: viCopy.lenormand.navOpen },
     { route: '/dream', flag: 'dream', label: viCopy.dream.navOpen },
     { route: '/stick', flag: 'sticks', label: viCopy.stick.navOpen },
+    { route: '/almanac', flag: 'almanac', label: viCopy.almanac.navOpen },
   ] as const satisfies ReadonlyArray<{ route: string; flag: keyof FeaturesResponse; label: string }>;
 
   // staleTime dài: trạng thái cờ ít đổi trong một phiên. enabled mặc định (không cần token —

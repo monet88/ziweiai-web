@@ -10,6 +10,7 @@ import { DrawsTarotModule } from './modules/draws-tarot/draws-tarot.module';
 import { DrawsLenormandModule } from './modules/draws-lenormand/draws-lenormand.module';
 import { DreamsModule } from './modules/dreams/dreams.module';
 import { DrawsSticksModule } from './modules/draws-sticks/draws-sticks.module';
+import { AlmanacModule } from './modules/almanac/almanac.module';
 import { FortuneModule } from './modules/fortune/fortune.module';
 import { HistoryModule } from './modules/history/history.module';
 import { QuotasModule } from './modules/quotas/quotas.module';
@@ -18,7 +19,7 @@ import { PairingsModule } from './modules/pairings/pairings.module';
 import { VisionSharedModule } from './modules/vision-shared/vision-shared.module';
 
 @Module({
-  imports: [AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsTarotModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule],
+imports: [AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsTarotModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

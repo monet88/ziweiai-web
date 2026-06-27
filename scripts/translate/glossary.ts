@@ -58,6 +58,32 @@ export const TRANSLATION_GLOSSARY: ReadonlyArray<readonly [string, string]> = [
   ['卦', 'Quẻ'],
   ['爻', 'Hào'],
   ['签', 'Quẻ xăm'],
+  // Hoàng lịch (#48 / US-040): 12 trực (kiến trừ) - từ đơn dễ dịch lệch nên ghim Hán Việt.
+  ['建', 'Kiến'],
+  ['除', 'Trừ'],
+  ['满', 'Mãn'],
+  ['平', 'Bình'],
+  ['定', 'Định'],
+  ['执', 'Chấp'],
+  ['破', 'Phá'],
+  ['危', 'Nguy'],
+  ['成', 'Thành'],
+  ['收', 'Thu'],
+  ['开', 'Khai'],
+  ['闭', 'Bế'],
+  // Hoàng lịch - con giáp 12 (địa chi đã có ở trên; đây là tên con vật).
+  ['鼠', 'Chuột'],
+  ['牛', 'Trâu'],
+  ['虎', 'Hổ'],
+  ['兔', 'Mèo'],
+  ['龙', 'Rồng'],
+  ['蛇', 'Rắn'],
+  ['马', 'Ngựa'],
+  ['羊', 'Dê'],
+  ['猴', 'Khỉ'],
+  ['鸡', 'Gà'],
+  ['狗', 'Chó'],
+  ['猪', 'Lợn'],
 ];
 
 // Render glossary thành đoạn text nhúng vào prompt. Giữ gọn để không phình token.

@@ -120,6 +120,7 @@ export const apiEnvSchema = z.object({
   EXTENDED_SYSTEM_LENORMAND_ENABLED: z.stringbool().default(false),
   EXTENDED_SYSTEM_DREAM_ENABLED: z.stringbool().default(false),
   EXTENDED_SYSTEM_STICKS_ENABLED: z.stringbool().default(false),
+  EXTENDED_SYSTEM_ALMANAC_ENABLED: z.stringbool().default(false),
 
   // Separate daily quota for vision (face/palm) — vision is much more expensive
   API_VISION_REQUESTS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(5),

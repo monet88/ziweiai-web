@@ -12,6 +12,7 @@ export * from './chart/tarot-draw';
 export * from './chart/lenormand-draw';
 export * from './chart/dream-interpretation';
 export * from './chart/stick-draw';
+export * from './chart/almanac-selection';
 export * from './chart/vision-analysis';
 export {
   meihuaTrigramKeys,

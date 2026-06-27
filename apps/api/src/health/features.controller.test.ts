@@ -15,7 +15,8 @@ type ExtendedFeatureEnvKey =
   | 'EXTENDED_SYSTEM_PALM_ENABLED'
   | 'EXTENDED_SYSTEM_LENORMAND_ENABLED'
   | 'EXTENDED_SYSTEM_DREAM_ENABLED'
-  | 'EXTENDED_SYSTEM_STICKS_ENABLED';
+  | 'EXTENDED_SYSTEM_STICKS_ENABLED'
+  | 'EXTENDED_SYSTEM_ALMANAC_ENABLED';
 
 const FEATURE_KEYS: readonly ExtendedFeatureEnvKey[] = [
   'EXTENDED_SYSTEM_HEPAN_ENABLED',
@@ -27,6 +28,7 @@ const FEATURE_KEYS: readonly ExtendedFeatureEnvKey[] = [
   'EXTENDED_SYSTEM_LENORMAND_ENABLED',
   'EXTENDED_SYSTEM_DREAM_ENABLED',
   'EXTENDED_SYSTEM_STICKS_ENABLED',
+  'EXTENDED_SYSTEM_ALMANAC_ENABLED',
 ];
 
 function withFeatureFlags<T>(values: Record<ExtendedFeatureEnvKey, boolean>, callback: () => T): T {
@@ -45,7 +47,7 @@ function withFeatureFlags<T>(values: Record<ExtendedFeatureEnvKey, boolean>, cal
 }
 
 describe('FeaturesController', () => {
-  it('trả đúng trạng thái 9 cờ hệ mở rộng', () => {
+  it('trả đúng trạng thái 10 cờ hệ mở rộng', () => {
     const controller = new FeaturesController();
 
     const result = withFeatureFlags(
@@ -59,6 +61,7 @@ describe('FeaturesController', () => {
         EXTENDED_SYSTEM_LENORMAND_ENABLED: true,
         EXTENDED_SYSTEM_DREAM_ENABLED: false,
         EXTENDED_SYSTEM_STICKS_ENABLED: true,
+        EXTENDED_SYSTEM_ALMANAC_ENABLED: true,
       },
       () => controller.getFeatures(),
     );
@@ -73,6 +76,7 @@ describe('FeaturesController', () => {
       lenormand: true,
       dream: false,
       sticks: true,
+      almanac: true,
     });
   });
 

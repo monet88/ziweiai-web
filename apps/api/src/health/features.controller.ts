@@ -14,6 +14,8 @@ export interface FeaturesStatus {
   lenormand: boolean;
   dream: boolean;
   sticks: boolean;
+  // B6 Hoàng lịch (US-040)
+  almanac: boolean;
 }
 
 @Controller('features')
@@ -31,6 +33,7 @@ export class FeaturesController {
       lenormand: apiEnv.EXTENDED_SYSTEM_LENORMAND_ENABLED,
       dream: apiEnv.EXTENDED_SYSTEM_DREAM_ENABLED,
       sticks: apiEnv.EXTENDED_SYSTEM_STICKS_ENABLED,
+      almanac: apiEnv.EXTENDED_SYSTEM_ALMANAC_ENABLED,
     };
   }
 }

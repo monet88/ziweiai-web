@@ -115,6 +115,10 @@ export class QuotasService {
     await this.assertB6DrawQuota('stick-draw', userId, ipAddress, isAnonymous);
   }
 
+  async assertCanCreateAlmanacSelection(userId: string, ipAddress: string, isAnonymous = false): Promise<void> {
+    await this.assertB6DrawQuota('almanac-selection', userId, ipAddress, isAnonymous);
+  }
+
   private async assertB6DrawQuota(
     namespace: string,
     userId: string,

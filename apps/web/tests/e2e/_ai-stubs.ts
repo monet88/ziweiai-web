@@ -112,6 +112,179 @@ export async function stubTarot(page: Page): Promise<void> {
   });
 }
 
+// Số lá theo từng kiểu trải bài Lenormand (khớp LENORMAND_SPREAD_CARD_COUNTS ở contract). Stub đọc
+// spread từ request rồi trả đúng số lá để khẳng định UI render đúng bố cục.
+const LENORMAND_STUB_CARD_COUNTS: Record<string, number> = {
+  single: 1,
+  three: 3,
+  relationship: 5,
+  decision: 6,
+  nine: 9,
+};
+
+const LENORMAND_STUB_SPREAD_NAMES: Record<string, string> = {
+  single: 'Một lá',
+  three: 'Ba lá',
+  relationship: 'Mối quan hệ',
+  decision: 'Lựa chọn',
+  nine: 'Cửu cung',
+};
+
+/**
+ * Stub POST /draws/lenormand → lenormandDrawSchema hợp lệ. Số lá đúng theo spread request; mỗi lá có
+ * nhãn Việt + từ khóa + nghĩa. narrative tiếng Việt, 0 chữ Hán. KHÔNG đốt token LLM.
+ */
+export async function stubLenormand(page: Page): Promise<void> {
+  await page.route('**/draws/lenormand', async (route: Route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue();
+      return;
+    }
+    const body = (route.request().postDataJSON() ?? {}) as { question?: string; spread?: string };
+    const spread = body.spread ?? 'three';
+    const count = LENORMAND_STUB_CARD_COUNTS[spread] ?? 3;
+    const cards = Array.from({ length: count }, (_value, index) => ({
+      id: index + 1,
+      name: `Lá mẫu ${index + 1}`,
+      keywords: ['tin tức', 'khởi đầu'],
+      meaning: 'Ý nghĩa mẫu của lá bài cho kiểm thử.',
+      reversed: index % 2 === 1,
+      position: index,
+      positionLabel: `Vị trí ${index + 1}`,
+    }));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        question: body.question ?? 'Câu hỏi kiểm thử',
+        spread,
+        spreadName: LENORMAND_STUB_SPREAD_NAMES[spread] ?? 'Ba lá',
+        cards,
+        narrative:
+          '## Tổng quan\nĐây là bài đọc Lenormand mẫu cho kiểm thử, chỉ mang tính tham khảo.\n\n## Tóm lại\nHãy giữ tâm thế chủ động.',
+      }),
+    });
+  });
+}
+
+/**
+ * Stub POST /dreams/interpret → dreamInterpretationSchema hợp lệ. Trả vài biểu tượng mẫu + narrative
+ * tiếng Việt, 0 chữ Hán. KHÔNG đốt token LLM.
+ */
+export async function stubDream(page: Page): Promise<void> {
+  await page.route('**/dreams/interpret', async (route: Route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue();
+      return;
+    }
+    const body = (route.request().postDataJSON() ?? {}) as { dream?: string };
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        dream: body.dream ?? 'Tôi mơ thấy một giấc mơ kỳ lạ.',
+        symbols: [
+          {
+            keywords: ['rắn'],
+            meaning: 'Biểu tượng cho sự chuyển hóa và nỗi lo tiềm ẩn.',
+            category: 'Động vật',
+            positive: 'Tái sinh, đổi mới.',
+            negative: 'Lo âu chưa gọi tên.',
+            advice: 'Quan sát cảm xúc của bạn.',
+          },
+        ],
+        narrative:
+          '## Tổng quan\nĐây là phần giải mộng mẫu cho kiểm thử, chỉ mang tính tham khảo.\n\n## Tóm lại\nHãy chiêm nghiệm cảm xúc của bạn.',
+      }),
+    });
+  });
+}
+
+/**
+ * Stub POST /draws/stick → stickDrawSchema hợp lệ. Một quẻ mẫu (id trong 1..100, mức hợp lệ) +
+ * narrative tiếng Việt, 0 chữ Hán. KHÔNG đốt token LLM.
+ */
+export async function stubStick(page: Page): Promise<void> {
+  await page.route('**/draws/stick', async (route: Route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue();
+      return;
+    }
+    const body = (route.request().postDataJSON() ?? {}) as { question?: string };
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        question: body.question ?? 'Câu hỏi kiểm thử',
+        stick: {
+          id: 1,
+          level: 'Thượng thượng',
+          title: 'Quẻ mẫu kiểm thử',
+          poem: 'Bốn câu thơ quẻ mẫu cho kiểm thử.',
+          interpretation: 'Nghĩa nền mẫu của quẻ xăm.',
+          advice: 'Giữ tâm thế bình tĩnh và chủ động.',
+          categories: { career: 'Sự nghiệp thuận lợi.' },
+        },
+        narrative:
+          '## Tổng quan\nĐây là phần luận giải quẻ mẫu cho kiểm thử, chỉ mang tính tham khảo.\n\n## Tóm lại\nHãy chọn một hành động nhỏ cho hôm nay.',
+      }),
+    });
+  });
+}
+
+/**
+ * Stub POST /almanac/select → almanacSelectionSchema hợp lệ. Trả vài ngày ứng viên đã chấm điểm +
+ * narrative tiếng Việt, 0 chữ Hán. KHÔNG đốt token LLM.
+ */
+export async function stubAlmanac(page: Page): Promise<void> {
+  await page.route('**/almanac/select', async (route: Route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue();
+      return;
+    }
+    const body = (route.request().postDataJSON() ?? {}) as {
+      topic?: string;
+      startDate?: string;
+      endDate?: string;
+    };
+    const buildDay = (date: string, score: number) => ({
+      date,
+      weekday: 'Thứ hai',
+      lunarDate: 'Mùng 1 tháng 1 âm lịch, năm Giáp Thìn',
+      ganzhi: { year: 'Giáp Thìn', month: 'Bính Dần', day: 'Mậu Tý' },
+      zodiac: 'Chuột',
+      dayOfficer: 'Kiến',
+      twelveStar: 'Thanh Long',
+      twentyEightStar: 'Giác',
+      nineStar: 'Nhất Bạch Thủy',
+      gods: ['Thiên ân', 'Thiên đức'],
+      recommends: ['Cưới hỏi', 'Xuất hành'],
+      avoids: ['Động thổ'],
+      pengZu: 'Mậu không nhận ruộng, ruộng chủ chẳng lành',
+      clash: 'Xung tuổi Ngựa, sát hướng Nam',
+      score,
+      highlights: ['Việc nên trong ngày khớp với chủ đề'],
+      cautions: [],
+    });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        topic: body.topic ?? 'marriage',
+        topicLabel: 'Cưới hỏi',
+        startDate: body.startDate ?? '2026-01-01',
+        endDate: body.endDate ?? '2026-01-03',
+        days: [
+          buildDay(body.startDate ?? '2026-01-01', 84),
+          buildDay(body.endDate ?? '2026-01-03', 72),
+        ],
+        narrative:
+          '## Tổng quan\nĐây là phần tư vấn chọn ngày mẫu cho kiểm thử, chỉ mang tính tham khảo.\n\n## Tóm lại\nHãy cân nhắc lịch thực tế của bạn.',
+      }),
+    });
+  });
+}
+
 /**
  * Stub POST /charts/:id/annual-report → annualReportResponseSchema hợp lệ. frame.monthly đúng 12 mục.
  * markdown tiếng Việt, 0 chữ Hán.

@@ -121,6 +121,11 @@ export default defineConfig({
         EXTENDED_SYSTEM_PALM_ENABLED: 'true',
         // US-017h: bật cờ Tarot cho e2e (mặc định false ở mọi nơi khác → fail-closed).
         EXTENDED_SYSTEM_TAROT_ENABLED: 'true',
+        // US-037/038/039/040: bật 4 cờ hệ B6 cho e2e (mặc định false ở mọi nơi khác → fail-closed).
+        EXTENDED_SYSTEM_LENORMAND_ENABLED: 'true',
+        EXTENDED_SYSTEM_DREAM_ENABLED: 'true',
+        EXTENDED_SYSTEM_STICKS_ENABLED: 'true',
+        EXTENDED_SYSTEM_ALMANAC_ENABLED: 'true',
         // Báo cáo năm (US-016) + Trợ lý hội thoại (US-018) chỉ sinh thật khi cờ tương ứng bật (mặc
         // định tắt ở mọi nơi → nhánh paywall/FEATURE_DISABLED). webServer khởi động MỘT lần với env
         // tĩnh nên chỉ bật cho phiên @live: bản live gọi LLM thật, bộ default giữ tắt (0 token LLM,

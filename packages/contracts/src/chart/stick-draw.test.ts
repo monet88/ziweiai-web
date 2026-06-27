@@ -26,6 +26,23 @@ describe('stickDrawSchema (US-039)', () => {
     expect(divinationStickSchema.safeParse(validStick).success).toBe(true);
   });
 
+  it('giữ ageGenderInterpretations (không bị Zod strip)', () => {
+    const withAgeGender = {
+      ...validStick,
+      ageGenderInterpretations: {
+        child: 'Trẻ nhỏ đại cát.',
+        male: 'Nam giới thuận lợi.',
+        female: 'Nữ giới hòa thuận.',
+      },
+    };
+    const parsed = divinationStickSchema.safeParse(withAgeGender);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.ageGenderInterpretations?.child).toBe('Trẻ nhỏ đại cát.');
+      expect(parsed.data.ageGenderInterpretations?.male).toBe('Nam giới thuận lợi.');
+    }
+  });
+
   it('từ chối id ngoài 1..100', () => {
     expect(divinationStickSchema.safeParse({ ...validStick, id: 0 }).success).toBe(false);
     expect(divinationStickSchema.safeParse({ ...validStick, id: 101 }).success).toBe(false);

@@ -45,6 +45,17 @@ export const stickCategoriesSchema = z.object({
   travel: z.string().optional(),
 });
 
+// Giải theo tuổi/giới của quẻ (đã dịch sẵn qua pipeline B6-0). Có trong dataset sticks-data.ts nên
+// PHẢI khai báo ở contract: nếu không, divinationStickSchema.parse() ở stick-deck strip mất field
+// này trước khi /draws/stick trả về (Zod loại key không khai báo) → mất dữ liệu cho client.
+export const stickAgeGenderInterpretationsSchema = z.object({
+  child: z.string().optional(),
+  youngGirl: z.string().optional(),
+  youngBoy: z.string().optional(),
+  male: z.string().optional(),
+  female: z.string().optional(),
+});
+
 export const divinationStickSchema = z.object({
   id: z.number().int().min(1).max(100),
   level: stickLevelSchema,
@@ -55,6 +66,7 @@ export const divinationStickSchema = z.object({
   story: z.string().optional(),
   dailyPoem: z.string().optional(),
   detailedInterpretations: stickDetailedInterpretationsSchema.optional(),
+  ageGenderInterpretations: stickAgeGenderInterpretationsSchema.optional(),
   categories: stickCategoriesSchema,
 });
 

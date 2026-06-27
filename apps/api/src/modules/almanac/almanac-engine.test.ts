@@ -101,6 +101,28 @@ describe('generateAlmanacSelection (US-040)', () => {
     expect(dirty).toEqual([]);
   });
 
+  it('28 tú dịch qua bảng riêng: tên sao thuộc tập 28 phiên Hán-Việt, KHÔNG lẫn con giáp', () => {
+    // Khử nhập nhằng collision key bảng phẳng: "牛" là sao "Ngưu" (không phải con giáp "Trâu").
+    const STAR_NAMES_VI = new Set([
+      'Giác', 'Cang', 'Đê', 'Phòng', 'Tâm', 'Vĩ', 'Cơ',
+      'Đẩu', 'Ngưu', 'Nữ', 'Hư', 'Nguy', 'Thất', 'Bích',
+      'Khuê', 'Lâu', 'Vị', 'Mão', 'Tất', 'Chủy', 'Sâm',
+      'Tỉnh', 'Quỷ', 'Liễu', 'Tinh', 'Trương', 'Dực', 'Chẩn',
+    ]);
+    const ZODIAC_VI = new Set(['Chuột', 'Trâu', 'Hổ', 'Mèo', 'Rồng', 'Rắn', 'Ngựa', 'Dê', 'Khỉ', 'Gà', 'Chó', 'Lợn']);
+    const { days } = generateAlmanacSelection({
+      topic: 'custom',
+      topicLabel: 'Việc tùy chọn',
+      startDate: '2026-01-01',
+      endDate: '2026-01-31',
+    });
+    for (const day of days) {
+      expect(STAR_NAMES_VI.has(day.twentyEightStar)).toBe(true);
+      // Tên sao không được rơi vào nhãn con giáp (trừ "Ngưu" vốn không trùng tên con giáp nào).
+      expect(ZODIAC_VI.has(day.twentyEightStar)).toBe(false);
+    }
+  });
+
   it('AlmanacVocabError tách hẳn khỏi AlmanacEngineError (không bị gộp vào nhánh 400)', () => {
     // Bất biến phân loại lỗi: Han-gate thiếu mục từ điển là defect dữ liệu nội bộ (→ 500), KHÔNG
     // phải lỗi input (→ 400). Service chỉ bắt AlmanacEngineError; nếu AlmanacVocabError vô tình kế

@@ -40,13 +40,14 @@ export class AlmanacService {
       );
     }
 
-    // Gate AI (premium) TRƯỚC quota: đồng bộ tarot — chặn 402 ngay nếu không free-for-all.
+    const topicLabel = ALMANAC_TOPIC_LABELS[topic];
+    // Validate + chạy engine (tất định, rẻ, không tốn LLM) TRƯỚC quota: nếu ngày sai định dạng/đảo
+    // ngược/vượt trần thì trả 400 ngay, KHÔNG tăng counter quota — tránh đốt hạn mức ngày của user
+    // bằng một request lỗi input. Gate premium vẫn đứng trước cả hai (chặn 402 sớm nhất).
     this.assertPremiumEntitlement();
+    const selection = this.runEngine({ topic, topicLabel, startDate, endDate });
     // email rỗng/null ⟺ phiên ẩn danh (decision 0009); !user.email bắt cả email="".
     await this.assertCanCreate(user.userId, ipAddress, !user.email);
-
-    const topicLabel = ALMANAC_TOPIC_LABELS[topic];
-    const selection = this.runEngine({ topic, topicLabel, startDate, endDate });
     const narrative = await this.generateNarrative(topic, topicLabel, startDate, endDate, selection);
 
     return almanacSelectionSchema.parse({

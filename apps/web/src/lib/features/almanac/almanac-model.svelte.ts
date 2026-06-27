@@ -47,11 +47,18 @@ export function createAlmanacModel(options: AlmanacModelOptions) {
     if (!DATE_PATTERN.test(start) || !DATE_PATTERN.test(end)) {
       return copy.dateRangeRequired;
     }
+    // Ngày đúng định dạng nhưng không tồn tại (vd 2026-02-31) → Date.parse trả NaN. Không bắt sớm
+    // thì diffDays là NaN, phép so > 30 thành false và lọt qua check khoảng (backend vẫn chặn).
+    const startMs = Date.parse(start);
+    const endMs = Date.parse(end);
+    if (Number.isNaN(startMs) || Number.isNaN(endMs)) {
+      return copy.dateRangeInvalid;
+    }
     if (end < start) {
       return copy.dateRangeInvalid;
     }
     // Khoảng > 31 ngày: chặn sớm tại UI (engine cũng ném 400). 86_400_000 ms/ngày.
-    const diffDays = Math.round((Date.parse(end) - Date.parse(start)) / 86_400_000);
+    const diffDays = Math.round((endMs - startMs) / 86_400_000);
     if (diffDays > 30) {
       return copy.dateRangeTooWide;
     }

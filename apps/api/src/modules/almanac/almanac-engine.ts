@@ -45,6 +45,41 @@ const WEEKDAYS_VI = [
 
 const MAX_RANGE_DAYS = 31;
 
+// Nhị thập bát tú (28 sao): tập CỐ ĐỊNH 28 phần tử, phiên Hán-Việt thiên văn chuẩn. KHÔNG dùng bảng
+// tra phẳng ALMANAC_VOCAB cho nhóm này: nhiều chữ Hán đơn của sao trùng key với con giáp / chú thích
+// khác (vd "牛" vừa là con giáp Sửu "Trâu" vừa là sao "Ngưu"; "觜"→"Chủy", "亢"→"Cang"), nên bảng phẳng
+// dịch sai ngữ cảnh. Map riêng này khử nhập nhằng và là nguồn sự thật cho tên sao.
+const TWENTY_EIGHT_STAR_VI: Record<string, string> = {
+  角: 'Giác',
+  亢: 'Cang',
+  氐: 'Đê',
+  房: 'Phòng',
+  心: 'Tâm',
+  尾: 'Vĩ',
+  箕: 'Cơ',
+  斗: 'Đẩu',
+  牛: 'Ngưu',
+  女: 'Nữ',
+  虚: 'Hư',
+  危: 'Nguy',
+  室: 'Thất',
+  壁: 'Bích',
+  奎: 'Khuê',
+  娄: 'Lâu',
+  胃: 'Vị',
+  昴: 'Mão',
+  毕: 'Tất',
+  觜: 'Chủy',
+  参: 'Sâm',
+  井: 'Tỉnh',
+  鬼: 'Quỷ',
+  柳: 'Liễu',
+  星: 'Tinh',
+  张: 'Trương',
+  翼: 'Dực',
+  轸: 'Chẩn',
+};
+
 // Lỗi đầu vào người dùng (khoảng ngày sai định dạng/đảo ngược/vượt trần) → service map sang 400.
 export class AlmanacEngineError extends Error {}
 
@@ -62,6 +97,15 @@ function toVi(han: string): string {
   return vi;
 }
 
+// Han-gate riêng cho 28 tú: tra qua TWENTY_EIGHT_STAR_VI (không qua bảng phẳng) để tránh trùng key.
+function twentyEightStarToVi(han: string): string {
+  const vi = TWENTY_EIGHT_STAR_VI[han];
+  if (vi === undefined) {
+    throw new AlmanacVocabError(`Bảng 28 tú Hoàng lịch thiếu bản dịch cho "${han}".`);
+  }
+  return vi;
+}
+
 function parseDateText(value: string, fieldName: string): { year: number; month: number; day: number; date: Date } {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) {
@@ -73,17 +117,18 @@ function parseDateText(value: string, fieldName: string): { year: number; month:
   if (year < 1900 || year > 2100) {
     throw new AlmanacEngineError(`${fieldName} cần nằm trong khoảng năm 1900-2100.`);
   }
-  const date = new Date(year, month - 1, day);
-  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+  // Dùng UTC để tránh lệch ngày do DST/timezone của server (mỗi ngày = đúng 24h, không nhảy ±1 ngày).
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
     throw new AlmanacEngineError(`${fieldName} không phải ngày hợp lệ.`);
   }
   return { year, month, day, date };
 }
 
 function formatDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -123,14 +168,15 @@ function scoreDay(params: {
   }
   if (params.godsHan.length >= 4) {
     score += 6;
-    highlights.push('Nhiều cát thần trong ngày, có thể tính là điểm cộng tham khảo');
+    // getGods() trả cả cát thần lẫn hung thần (vd Bạch Hổ, Thiên Cẩu), nên không khẳng định "cát".
+    highlights.push('Nhiều thần sát xuất hiện trong ngày, có thể tính là điểm cộng tham khảo');
   }
 
   return { score: Math.max(0, Math.min(100, score)), highlights, cautions };
 }
 
 function buildDayCandidate(date: Date, topic: AlmanacTopic, topicLabel: string): AlmanacDayCandidate {
-  const lunarDay = SolarDay.fromYmd(date.getFullYear(), date.getMonth() + 1, date.getDate()).getLunarDay();
+  const lunarDay = SolarDay.fromYmd(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()).getLunarDay();
   const dayCycle = lunarDay.getSixtyCycle();
   const branch = dayCycle.getEarthBranch();
 
@@ -153,11 +199,13 @@ function buildDayCandidate(date: Date, topic: AlmanacTopic, topicLabel: string):
   const lunarMonthNumber = lunarMonth.getMonth();
   const lunarYearGanzhiVi = toVi(lunarDay.getYearSixtyCycle().getName());
   const leapSuffix = lunarMonth.isLeap() ? ' (nhuận)' : '';
-  const lunarDateVi = `Ngày ${lunarDayNumber} tháng ${lunarMonthNumber}${leapSuffix} âm lịch, năm ${lunarYearGanzhiVi}`;
+  // 10 ngày đầu tháng âm gọi theo lối Việt là "Mùng 1..Mùng 10"; còn lại "Ngày N".
+  const dayPrefix = lunarDayNumber <= 10 ? 'Mùng' : 'Ngày';
+  const lunarDateVi = `${dayPrefix} ${lunarDayNumber} tháng ${lunarMonthNumber}${leapSuffix} âm lịch, năm ${lunarYearGanzhiVi}`;
 
   return {
     date: formatDate(date),
-    weekday: WEEKDAYS_VI[date.getDay()],
+    weekday: WEEKDAYS_VI[date.getUTCDay()],
     lunarDate: lunarDateVi,
     ganzhi: {
       year: toVi(lunarDay.getYearSixtyCycle().getName()),
@@ -167,7 +215,7 @@ function buildDayCandidate(date: Date, topic: AlmanacTopic, topicLabel: string):
     zodiac: toVi(branch.getZodiac().getName()),
     dayOfficer: toVi(lunarDay.getDuty().getName()),
     twelveStar: toVi(lunarDay.getTwelveStar().getName()),
-    twentyEightStar: toVi(lunarDay.getTwentyEightStar().getName()),
+    twentyEightStar: twentyEightStarToVi(lunarDay.getTwentyEightStar().getName()),
     nineStar: toVi(lunarDay.getNineStar().toString()),
     gods: godsHan.map(toVi),
     recommends: recommendsHan.map(toVi),
@@ -205,7 +253,7 @@ export function generateAlmanacSelection(params: {
 
   const days = Array.from({ length: diffDays + 1 }, (_, index) => {
     const current = new Date(start.date);
-    current.setDate(start.date.getDate() + index);
+    current.setUTCDate(start.date.getUTCDate() + index);
     return buildDayCandidate(current, params.topic, params.topicLabel);
   }).sort((a, b) => b.score - a.score);
 

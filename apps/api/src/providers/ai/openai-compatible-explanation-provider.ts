@@ -240,14 +240,28 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
 
       // Yield deltas as frames complete. SSE frames are separated by a blank line ("\n\n"); a single
       // JSON payload can be split across reads, so we keep a buffer and only consume complete frames.
-      const deltas: string[] = [];
-      try {
-        while (!done) {
-          const { value, done: streamDone } = await reader.read();
-          if (streamDone) {
-            break;
-          }
-          buffer += decoder.decode(value, { stream: true });
+        const deltas: string[] = [];
+        try {
+          while (!done) {
+            let value: Uint8Array | undefined;
+            let streamDone = false;
+            try {
+              ({ value, done: streamDone } = await reader.read());
+            } catch (readError) {
+              // Backlog #34 (lossless client-disconnect): if the CALLER signal aborted (client went
+              // away) mid-read, stop gracefully and KEEP the text accumulated so far so the service can
+              // still persist the partial reply the user already saw. The upstream fetch is cancelled
+              // (token burn stops) but nothing is lost. A timeout-only abort is a genuine failure, so
+              // only swallow the read error when the caller signal is the one that fired.
+              if (signal?.aborted) {
+                break;
+              }
+              throw readError;
+            }
+            if (streamDone) {
+              break;
+            }
+            buffer += decoder.decode(value, { stream: true });
 
           let separatorIndex = buffer.indexOf('\n\n');
           while (separatorIndex !== -1) {

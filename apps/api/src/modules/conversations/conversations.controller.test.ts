@@ -256,15 +256,17 @@ describe('ConversationsController.appendMessageStream', () => {
     expect(res.end).toHaveBeenCalledOnce();
   });
 
-  // US-027 (decision 0026, revised): the controller drives the provider stream to completion so the
-  // service ALWAYS persists the assistant message, even if the client disconnects mid-stream. We do
-  // not abort on a client 'close' — the response 'close' is not a reliable mid-stream disconnect
-  // signal under Node/Express (it can fire before the SSE ends), and a spurious abort would kill the
-  // upstream fetch before the assistant message is persisted. After a disconnect, the controller
-  // simply stops writing to the dead socket but keeps consuming so the service finishes + persists.
-  // The disconnect-driven upstream-abort optimization is re-deferred to backlog #28.
-  it('drives the stream to completion even if the client socket dies mid-stream (persist must win)', async () => {
+  // US-027 + backlog #34 (lossless client-disconnect): the controller drives the provider stream to
+  // completion so the service ALWAYS persists the assistant message, even if the client disconnects
+  // mid-stream. On a real disconnect (res.destroyed) it aborts the signal so the provider stops
+  // reading upstream (token burn stops) — but the provider returns the accumulated partial text
+  // losslessly, so draining the generator still lets the service persist what the user already saw.
+  // We poll res.destroyed in the loop instead of listening on the 'close' event: that event misfires
+  // mid-stream under Node/Express, and a spurious abort there would have dropped the reply. With the
+  // lossless provider, the worst case is a truncated-but-persisted answer, never a lost one.
+  it('aborts the signal on client disconnect but still drains to completion so persist wins', async () => {
     let consumedToEnd = false;
+    let capturedSignal: AbortSignal | undefined;
     async function* gen(): AsyncGenerator<string, unknown, void> {
       yield 'Xin ';
       yield 'chào';
@@ -272,7 +274,10 @@ describe('ConversationsController.appendMessageStream', () => {
       return ASSISTANT_MESSAGE;
     }
     const service = createService({
-      appendMessageAndGenerateStream: vi.fn(() => gen()),
+      appendMessageAndGenerateStream: vi.fn((_user, _ip, _id, _input, signal?: AbortSignal) => {
+        capturedSignal = signal;
+        return gen();
+      }),
     });
     const controller = new ConversationsController(service);
     const { res, writes } = createResponse();
@@ -287,7 +292,10 @@ describe('ConversationsController.appendMessageStream', () => {
       res as never,
     );
 
-    // The generator was driven to its return value (service persisted), not abandoned at first delta.
+    // The signal was passed and tripped because the socket is dead (upstream token burn stops).
+    expect(capturedSignal).toBeInstanceOf(AbortSignal);
+    expect(capturedSignal?.aborted).toBe(true);
+    // The generator was still driven to its return value (service persisted), not abandoned.
     expect(consumedToEnd).toBe(true);
     // Nothing was written to the dead socket, and res.end() is skipped on a destroyed socket.
     expect(writes).toEqual([]);

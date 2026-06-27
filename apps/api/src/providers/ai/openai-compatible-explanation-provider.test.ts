@@ -450,6 +450,62 @@ describe('OpenAiCompatibleExplanationProvider.generateConversationStream', () =>
     expect(onCancel).toHaveBeenCalledOnce();
   });
 
+  it('returns the accumulated partial text when the caller aborts mid-stream (lossless, no throw)', async () => {
+    process.env.OPENAI_COMPAT_API_KEY = 'sk-test-key';
+    process.env.OPENAI_COMPAT_BASE_URL = 'https://vps.monet.uno/api-cli';
+    process.env.OPENAI_COMPAT_MODEL = 'gemini-3.1-flash-lite';
+    vi.resetModules();
+
+    // Backlog #34 (lossless client-disconnect): when the caller signal (client disconnect) fires
+    // MID-stream after some tokens already arrived, the provider must NOT throw. It breaks the read
+    // loop and returns the accumulated partial text so the service can still persist the reply the
+    // user partially saw. The fetch is cancelled (token burn stops) but no data is lost.
+    const callerAbort = new AbortController();
+    let firstDelivered = false;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init: { signal?: AbortSignal }) => {
+        const encoder = new TextEncoder();
+        const body = new ReadableStream<Uint8Array>({
+          pull(controller) {
+            if (!firstDelivered) {
+              firstDelivered = true;
+              controller.enqueue(encoder.encode(deltaFrame('Xin chao')));
+              return;
+            }
+            // Second pull parks until the combined signal aborts, then errors the body exactly like a
+            // real fetch whose AbortSignal fired mid-body.
+            return new Promise<void>((resolve) => {
+              const sig = init.signal;
+              const fail = () => {
+                const abortError = new Error('The operation was aborted');
+                abortError.name = 'AbortError';
+                controller.error(abortError);
+                resolve();
+              };
+              if (sig?.aborted) {
+                fail();
+                return;
+              }
+              sig?.addEventListener('abort', fail, { once: true });
+            });
+          },
+        });
+        return new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+      }),
+    );
+
+    const provider = await loadProvider();
+    const generator = provider.generateConversationStream(buildConversationPayload(), callerAbort.signal);
+    const first = await generator.next();
+    expect(first.value).toBe('Xin chao');
+    // Client goes away mid-stream.
+    callerAbort.abort();
+    const final = await generator.next();
+    expect(final.done).toBe(true);
+    expect(final.value?.renderedMarkdown).toBe('Xin chao');
+  });
+
   it('flushes a trailing frame the upstream sent without a final blank line or [DONE]', async () => {
     process.env.OPENAI_COMPAT_API_KEY = 'sk-test-key';
     process.env.OPENAI_COMPAT_BASE_URL = 'https://vps.monet.uno/api-cli';

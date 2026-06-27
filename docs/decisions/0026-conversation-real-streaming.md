@@ -67,3 +67,23 @@ Tradeoffs:
 - Backlog #28 dong khi e2e live xanh.
 - Neu them provider streaming khac (gemini/deepseek), tai dung interface
   generateConversationStream.
+
+## Addendum (backlog #34, 2026-06-27)
+
+Muc 3 (huy fetch upstream khi client disconnect) ban dau bi defer sau khi 2 lan
+noi abort vao close-event lam mat assistant message (xem backlog #28 live fix:
+stream chay xong moi persist, nen abort sai = mat cau tra loi). Backlog #34 hien
+thuc lai theo huong LOSSLESS, an toan voi detection sai:
+
+- Provider generateConversationStream: khi caller `signal` abort GIUA stream,
+  reader.read() nem AbortError -> bat va `break` (KHONG throw), giu nguyen text
+  da tich luy va return nhu ket qua hop le. Timeout-only van throw nhu cu.
+- Controller appendMessageStream: tao AbortController, truyen signal xuong
+  service->provider, va abort khi `res.destroyed` (trang thai socket that, poll
+  trong vong lap) thay vi 'close' event (von fire som, da gay abort sai 2 lan).
+  Van drain generator den het de service persist phan da co.
+
+Ket qua: client bo ngang -> fetch upstream bi huy (dung dot token) NHUNG phan
+tra loi da stream van duoc luu. Kich ban xau nhat khi detection sai chi la cau
+tra loi bi cat ngan, khong bao gio mat. Verify: api 297 test xanh + e2e live
+US-018 xanh (generation completed + persist).

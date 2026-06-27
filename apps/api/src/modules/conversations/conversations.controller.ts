@@ -141,16 +141,14 @@ export class ConversationsController {
       headersFlushed = true;
     };
 
-    // US-027 (decision 0026): drive the provider stream to completion REGARDLESS of the client
-    // connection. Persistence happens inside the service AFTER the stream finishes, so the assistant
-    // message is only durable if we consume the generator fully. We deliberately do NOT abort the
-    // generator on a client 'close': in this Node/Express setup that event is an unreliable mid-stream
-    // signal (it fires while the response is still writable), and aborting it kills the upstream fetch
-    // before the service can persist — losing the answer the user already saw stream in. Cancelling
-    // the upstream fetch on a genuine client disconnect is a cost optimization tracked in backlog #28b;
-    // it must not come at the price of dropping the persisted reply. Socket writes are still guarded by
-    // res.destroyed so we never write to a dead socket, but we keep pulling tokens so the service
-    // commits the message.
+    // US-027 (decision 0026) + backlog #34 (lossless client-disconnect): abort the upstream provider
+    // fetch when the client goes away so we stop burning tokens, WITHOUT ever dropping the reply the
+    // user already saw. The signal is threaded to the service -> provider; on abort the provider stops
+    // reading upstream and returns the text accumulated so far (it does NOT throw), so the service
+    // still persists the partial assistant message. The disconnect signal is res.destroyed, polled in
+    // the loop on the real socket state — NOT the 'close' event, which fires while the response is
+    // still writable under Node/Express and previously caused spurious aborts that lost the reply.
+    const abortController = new AbortController();
     try {
       // The service runs all gates (enabled -> entitlement 402 -> quota 429) and persists the user
       // message BEFORE the first delta, so any failure up to here throws before a byte is sent. Each
@@ -162,14 +160,20 @@ export class ConversationsController {
         request.ip ?? 'unknown',
         parsedId,
         input,
+        abortController.signal,
       );
 
       let next = await generator.next();
       while (!next.done) {
-        // The first delta is the safe point to commit headers: generation has started successfully.
-        // Skip the socket write if the client is gone, but keep draining the generator so the service
-        // still persists the completed assistant message.
-        if (!res.destroyed) {
+        if (res.destroyed) {
+          // Client gone: abort the upstream fetch so the provider stops pulling tokens. The provider
+          // returns the accumulated text (lossless), so we keep draining the generator to its return
+          // value and let the service persist the partial reply. We just stop writing to the dead socket.
+          if (!abortController.signal.aborted) {
+            abortController.abort();
+          }
+        } else {
+          // The first delta is the safe point to commit headers: generation has started successfully.
           ensureHeaders();
           send({ type: 'chunk', delta: next.value });
         }

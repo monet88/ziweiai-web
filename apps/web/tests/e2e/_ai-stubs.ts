@@ -247,6 +247,19 @@ export async function stubAlmanac(page: Page): Promise<void> {
       startDate?: string;
       endDate?: string;
     };
+    // Map nhãn việc theo topic của request (khớp ALMANAC_TOPIC_LABELS ở contract) thay vì hard-code,
+    // để test chọn topic khác vẫn nhận đúng topicLabel. Fallback 'Cưới hỏi' cho topic lạ/thiếu.
+    const topicLabels: Record<string, string> = {
+      marriage: 'Cưới hỏi',
+      move: 'Chuyển nhà / nhập trạch',
+      opening: 'Khai trương',
+      contract: 'Ký kết hợp tác',
+      travel: 'Xuất hành',
+      medical: 'Khám chữa bệnh',
+      study: 'Học hành / thi cử',
+      custom: 'Việc tùy chọn',
+    };
+    const topic = body.topic ?? 'marriage';
     const buildDay = (date: string, score: number) => ({
       date,
       weekday: 'Thứ hai',
@@ -270,8 +283,8 @@ export async function stubAlmanac(page: Page): Promise<void> {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        topic: body.topic ?? 'marriage',
-        topicLabel: 'Cưới hỏi',
+        topic,
+        topicLabel: topicLabels[topic] ?? 'Cưới hỏi',
         startDate: body.startDate ?? '2026-01-01',
         endDate: body.endDate ?? '2026-01-03',
         days: [

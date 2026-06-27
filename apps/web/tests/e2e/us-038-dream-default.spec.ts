@@ -17,7 +17,16 @@ test('US-038: giải mộng (stub) → render biểu tượng + bài giải, 0 c
   await expect(page.getByRole('heading', { name: 'Giải mã giấc mơ' })).toBeVisible();
 
   await page.locator('#dream-input').fill('Tôi mơ thấy một con rắn lớn bò qua sân nhà.');
+
+  // Chặn + khẳng định payload request: UI phải gửi đúng mô tả giấc mơ (không chỉ tin kết quả).
+  const requestPromise = page.waitForRequest(
+    (req) => req.url().includes('/dreams/interpret') && req.method() === 'POST',
+  );
   await page.getByRole('button', { name: 'Giải mộng', exact: true }).click();
+  const request = await requestPromise;
+  expect(request.postDataJSON()).toEqual({
+    dream: 'Tôi mơ thấy một con rắn lớn bò qua sân nhà.',
+  });
 
   // Kết quả: khối biểu tượng nhận diện (stub trả 1 biểu tượng) + bài giải.
   await expect(page.getByText('Biểu tượng nhận diện', { exact: true })).toBeVisible({ timeout: 15_000 });

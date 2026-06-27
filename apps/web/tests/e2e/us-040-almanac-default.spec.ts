@@ -18,10 +18,22 @@ test('US-040: chọn ngày Hoàng lịch (stub) → render danh sách ngày + lu
   await page.goto('/almanac');
   await expect(page.getByRole('heading', { name: 'Chọn ngày tốt' })).toBeVisible();
 
-  // Chọn việc (mặc định marriage) + khoảng ngày, rồi bấm chọn ngày.
+  // Chọn việc qua value từ contract (selectOption, ổn định hơn nhãn dịch) + khoảng ngày.
+  await page.locator('#almanac-topic').selectOption('marriage');
   await page.locator('#almanac-start').fill('2026-01-01');
   await page.locator('#almanac-end').fill('2026-01-03');
+
+  // Chặn + khẳng định payload request: UI phải gửi đúng topic + khoảng ngày.
+  const requestPromise = page.waitForRequest(
+    (req) => req.url().includes('/almanac/select') && req.method() === 'POST',
+  );
   await page.getByRole('button', { name: 'Chọn ngày', exact: true }).click();
+  const request = await requestPromise;
+  expect(request.postDataJSON()).toEqual({
+    topic: 'marriage',
+    startDate: '2026-01-01',
+    endDate: '2026-01-03',
+  });
 
   // Kết quả: tiêu đề + danh sách ngày (2 ngày stub, mỗi ngày có .day-date).
   await expect(page.getByText('Ngày phù hợp', { exact: true })).toBeVisible({ timeout: 15_000 });

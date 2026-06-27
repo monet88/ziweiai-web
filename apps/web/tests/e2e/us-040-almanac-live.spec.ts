@@ -19,7 +19,8 @@ test('US-040 @live: chọn ngày Hoàng lịch qua UI → render ngày chấm đ
   await page.goto('/almanac');
   await expect(page.getByRole('heading', { name: 'Chọn ngày tốt' })).toBeVisible();
 
-  // Chủ đề "Cưới hỏi" là mặc định (marriage); chọn khoảng ngày ngắn (5 ngày) để engine sinh nhanh.
+  // Chọn chủ đề qua value từ contract (selectOption, ổn định hơn nhãn dịch); khoảng ngày ngắn (5 ngày).
+  await page.locator('#almanac-topic').selectOption('marriage');
   await page.locator('#almanac-start').fill('2026-03-01');
   await page.locator('#almanac-end').fill('2026-03-05');
   await page.getByRole('button', { name: 'Chọn ngày', exact: true }).click();

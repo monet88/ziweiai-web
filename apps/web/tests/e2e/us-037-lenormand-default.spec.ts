@@ -19,7 +19,17 @@ test('US-037: rút Lenormand ba lá (stub) → render 3 lá + bài đọc, 0 ch�
   await page.locator('#lenormand-question').fill('Mối quan hệ này nên đi tiếp theo hướng nào?');
   // Trải bài ba lá: chọn qua value (ổn định hơn nhãn dịch).
   await page.locator('button[value="three"]').click();
+
+  // Chặn + khẳng định payload request: UI phải gửi đúng câu hỏi + spread đã chọn (không chỉ tin kết quả).
+  const requestPromise = page.waitForRequest(
+    (req) => req.url().includes('/draws/lenormand') && req.method() === 'POST',
+  );
   await page.getByRole('button', { name: 'Rút bài', exact: true }).click();
+  const request = await requestPromise;
+  expect(request.postDataJSON()).toEqual({
+    question: 'Mối quan hệ này nên đi tiếp theo hướng nào?',
+    spread: 'three',
+  });
 
   // Kết quả: đúng 3 lá (mỗi lá một .card) + bài đọc.
   await expect(page.locator('.card-list .card')).toHaveCount(3, { timeout: 15_000 });
@@ -36,7 +46,16 @@ test('US-037: trải bài Cửu cung (stub) → rút 9 lá', async ({ page }) =>
   await page.goto('/lenormand');
   await page.locator('#lenormand-question').fill('Bức tranh toàn cảnh tình hình hiện tại của tôi ra sao?');
   await page.locator('button[value="nine"]').click();
+
+  const requestPromise = page.waitForRequest(
+    (req) => req.url().includes('/draws/lenormand') && req.method() === 'POST',
+  );
   await page.getByRole('button', { name: 'Rút bài', exact: true }).click();
+  const request = await requestPromise;
+  expect(request.postDataJSON()).toEqual({
+    question: 'Bức tranh toàn cảnh tình hình hiện tại của tôi ra sao?',
+    spread: 'nine',
+  });
 
   await expect(page.locator('.card-list .card')).toHaveCount(9, { timeout: 15_000 });
 });

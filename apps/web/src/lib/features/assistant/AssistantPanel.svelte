@@ -91,7 +91,7 @@
       {#each assistant.messages as m, idx (idx)}
         <div class={m.role === 'user' ? 'msg user' : 'msg assistant'}>
           <div class="role">{m.role === 'user' ? viCopy.assistant.roleUser : viCopy.assistant.roleAssistant}</div>
-          <div class="content">
+          <div class="content" class:streaming={m.isStreaming}>
             {#if m.role === 'assistant' && !m.quickPromptKey}
               <!-- Assistant prose is markdown: reuse the XSS-hardened MarkdownView (spans escaped,
                    no raw-HTML directive). User turns + quick-prompt labels stay plain text. -->
@@ -187,7 +187,8 @@
   /* MarkdownView lives in a child component, so its styles are out of this file's scope.
      Re-anchor with `.content :global(...)` to tighten the markdown to the transcript's
      compact scale (panel body is 13px) instead of the larger explanation-screen scale.
-     Scoped to `.content` so it only affects assistant turns inside this panel. */
+     Scoped to `.content` so it only affects assistant turns inside this panel. These
+     rules apply to every assistant turn (streaming or settled). */
   .content :global(.markdown) {
     gap: var(--space-xs);
   }
@@ -206,6 +207,23 @@
   }
   .content :global(.markdown .heading.h3) {
     font-size: 13px;
+  }
+  /* Streaming only: MarkdownView's container is `display: flex; flex-direction: column`,
+     a block-level box, so the cursor (a sibling of <MarkdownView />) drops onto its own
+     line below the text. While streaming, make the container and its LAST block inline so
+     the cursor trails the final line. `gap` is inert on an inline box, so restore
+     inter-block spacing with `margin-bottom`; the last block drops it so the cursor sits
+     flush. Settled turns keep the flex+gap layout above, so block headings and flex
+     list-items (bullets/hanging indents) stay intact. */
+  .content.streaming :global(.markdown) {
+    display: inline;
+  }
+  .content.streaming :global(.markdown > *) {
+    margin-bottom: var(--space-xs);
+  }
+  .content.streaming :global(.markdown > :last-child) {
+    display: inline;
+    margin-bottom: 0;
   }
   .cursor {
     display: inline-block;

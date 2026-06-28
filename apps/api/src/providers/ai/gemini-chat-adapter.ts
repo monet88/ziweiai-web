@@ -21,7 +21,15 @@ async function readGeminiResponseBody(response: Response): Promise<GeminiNativeR
     return null;
   }
 
-  return JSON.parse(rawBody) as GeminiNativeResponse;
+  // Đọc raw text rồi mới thử parse JSON: upstream/proxy có thể trả non-JSON (trang lỗi HTML 502/504)
+  // khiến JSON.parse ném SyntaxError TRƯỚC khi parseResult kiểm tra !response.ok → mất HTTP status thật
+  // và lỗi bị map thành unavailableMessage chung. Trả null khi parse hỏng để parseResult vẫn vào nhánh
+  // !response.ok và surface đúng "HTTP <status> <statusText>" (khớp pattern phòng thủ của OpenAi-style).
+  try {
+    return JSON.parse(rawBody) as GeminiNativeResponse;
+  } catch {
+    return null;
+  }
 }
 
 function extractGeminiErrorMessage(body: GeminiNativeResponse): string | null {

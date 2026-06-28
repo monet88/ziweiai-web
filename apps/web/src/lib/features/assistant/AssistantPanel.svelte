@@ -12,6 +12,7 @@
   import { viCopy } from '$lib/i18n/vi';
   import { createAssistantModel } from './assistant-model.svelte';
   import { QUICK_PROMPT_KEYS, QUICK_PROMPT_LABELS, type QuickPromptKey } from './quick-prompts';
+  import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
 
   interface Props {
     chartSnapshotId: string;
@@ -91,8 +92,15 @@
         <div class={m.role === 'user' ? 'msg user' : 'msg assistant'}>
           <div class="role">{m.role === 'user' ? viCopy.assistant.roleUser : viCopy.assistant.roleAssistant}</div>
           <div class="content">
-            {m.quickPromptKey ? (QUICK_PROMPT_LABELS[m.quickPromptKey] ?? m.content) : m.content}
-            {#if m.isStreaming}<span class="cursor">▍</span>{/if}
+            {#if m.role === 'assistant' && !m.quickPromptKey}
+              <!-- Assistant prose is markdown: reuse the XSS-hardened MarkdownView (spans escaped,
+                   no raw-HTML directive). User turns + quick-prompt labels stay plain text. -->
+              <MarkdownView markdown={m.content} />
+              {#if m.isStreaming}<span class="cursor">▍</span>{/if}
+            {:else}
+              {m.quickPromptKey ? (QUICK_PROMPT_LABELS[m.quickPromptKey] ?? m.content) : m.content}
+              {#if m.isStreaming}<span class="cursor">▍</span>{/if}
+            {/if}
           </div>
         </div>
       {/each}
@@ -176,6 +184,29 @@
     white-space: pre-wrap;
     color: var(--color-text-secondary);
   }
+  /* MarkdownView lives in a child component, so its styles are out of this file's scope.
+     Re-anchor with `.content :global(...)` to tighten the markdown to the transcript's
+     compact scale (panel body is 13px) instead of the larger explanation-screen scale.
+     Scoped to `.content` so it only affects assistant turns inside this panel. */
+  .content :global(.markdown) {
+    gap: var(--space-xs);
+  }
+  .content :global(.markdown .paragraph),
+  .content :global(.markdown .list-item) {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .content :global(.markdown .heading.h1) {
+    font-size: 15px;
+    margin-top: var(--space-xs);
+  }
+  .content :global(.markdown .heading.h2) {
+    font-size: 14px;
+    margin-top: 2px;
+  }
+  .content :global(.markdown .heading.h3) {
+    font-size: 13px;
+  }
   .cursor {
     display: inline-block;
     animation: blink 1s step-end infinite;
@@ -202,7 +233,8 @@
     border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-sm);
     padding: 8px;
-    font-size: 13px;
+    /* 16px: below this, iOS Safari auto-zooms the viewport on focus. Keep >=16px. */
+    font-size: 16px;
     background: var(--color-bg-surface);
     color: var(--color-text-secondary);
   }

@@ -8,6 +8,32 @@
   --font-serif: 'Playfair Display Variable', 'Playfair Display', Georgia, 'Times New Roman', serif;
   --font-sans: 'Space Grotesk Variable', 'Space Grotesk', 'Inter Variable', 'Inter', -apple-system, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif;
 
+  /* Thang cỡ chữ (typography scale) — nguồn sự thật DUY NHẤT cho mọi màn. Heading
+     dùng clamp() để fluid theo viewport; body/label cố định. Mỗi vai trò có cặp
+     size + line-height đi liền. Component PHẢI tham chiếu các token này thay vì
+     hardcode font-size, để hero dashboard / AppScaffold / sign-in cùng một thang.
+     (Heading kế thừa --font-serif; body/label kế thừa --font-sans.) */
+  --text-display: clamp(34px, 5vw, 64px);
+  --text-display-line: 1.08;
+  --text-h1: clamp(30px, 3.4vw, 42px);
+  --text-h1-line: 1.1;
+  --text-h2: clamp(24px, 2.6vw, 32px);
+  --text-h2-line: 1.2;
+  --text-h3: 22px;
+  --text-h3-line: 1.3;
+  --text-title: 20px;
+  --text-title-line: 1.4;
+  --text-body: 16px;
+  --text-body-line: 1.6;
+  --text-body-sm: 15px;
+  --text-body-sm-line: 1.5;
+  --text-caption: 14px;
+  --text-caption-line: 1.45;
+  --text-eyebrow: 12px;
+  --text-eyebrow-line: 1.33;
+  /* Nhãn eyebrow in hoa dùng tracking dương nhẹ (một giá trị chuẩn cho cả app). */
+  --tracking-eyebrow: 0.04em;
+
   /* Nền monochrome ấm kiểu Luvsa: canvas kem ấm cho trang, surface trắng cho thẻ,
      elevated là beige ấm (chip thông tin / nền nhấn dịu). */
   --color-bg-primary: #f5f2ed;
@@ -41,6 +67,21 @@
   /* Viền hairline (1px nhạt thay vì đổ bóng nặng; khớp --color-border Luvsa #e7e7e7) */
   --color-border-hairline: #e7e7e7;
 
+  /* Viền charcoal đậm hơn hairline cho trạng thái hover/active của input/thẻ tương tác. */
+  --color-border-strong: #c9c6c0;
+
+  /* Lớp phủ monochrome (overlay/scrim/shadow) dẫn xuất từ charcoal #1a1a1a và trắng.
+     Dùng các token này thay vì hardcode rgb(26 26 26 / a) rải rác — giữ alpha nhất quán.
+     border = viền charcoal nhạt trên surface; border-strong = viền charcoal đậm hơn
+     (hover/active); ink-wash = nền nhấn dịu khi hover; surface-veil = lớp trắng mờ
+     đặt trên canvas kem; shadow-card = đổ bóng nhẹ chuẩn cho thẻ nổi. */
+  --overlay-border: rgb(26 26 26 / 0.12);
+  --overlay-border-strong: rgb(26 26 26 / 0.18);
+  --overlay-ink-wash: rgb(26 26 26 / 0.06);
+  --overlay-hairline: rgb(26 26 26 / 0.1);
+  --overlay-surface-veil: rgb(255 255 255 / 0.86);
+  --shadow-card: 0 24px 80px rgb(0 0 0 / 0.08);
+
   /* Sticker palette (trang trí thuần: illustration/icon tile/category dot).
      KHÔNG tô CTA hay nền cấu trúc bằng các màu này. */
   --color-accent-sky: #62aef0;
@@ -69,6 +110,12 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-pill: 9999px;
+
+  /* Thời lượng chuyển động (motion) — nguồn sự thật cho transition/animation.
+     fast cho hover/focus vi tương tác; base mặc định; slow cho overlay/fade lớn. */
+  --duration-fast: 150ms;
+  --duration: 150ms;
+  --duration-slow: 360ms;
 
   /* US-012: Star coloring tokens (brightness 7 levels + mutagen 4 levels + malefic) */
   /* Brightness: mạnh → trung → yếu. Đã cân lại cho nền sáng (AA trên surface trắng). */

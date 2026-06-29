@@ -154,19 +154,19 @@
     padding-bottom: 10px;
     border-bottom: 1px solid var(--color-border-hairline);
     color: var(--color-text-muted);
-    font-size: 12px;
+    font-size: var(--text-eyebrow);
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-eyebrow);
   }
 
   .intro-copy {
     margin: 0;
     max-width: 12ch;
     color: var(--color-text-primary);
-    font-size: 42px;
+    font-size: var(--text-h1);
     font-weight: 700;
     letter-spacing: 0;
-    line-height: 1.04;
+    line-height: var(--text-h1-line);
     text-wrap: balance;
   }
 
@@ -192,18 +192,18 @@
 
   .eyebrow {
     margin: 0;
-    font-size: 12px;
+    font-size: var(--text-eyebrow);
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-eyebrow);
     color: var(--color-text-muted);
   }
 
   .title {
     margin: 0;
-    font-size: 34px;
+    font-size: var(--text-h2);
     font-weight: 700;
     letter-spacing: 0;
-    line-height: 1.08;
+    line-height: var(--text-h2-line);
     color: var(--color-text-primary);
     text-wrap: balance;
   }
@@ -211,8 +211,8 @@
   .subtitle {
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: 15px;
-    line-height: 1.55;
+    font-size: var(--text-body-sm);
+    line-height: var(--text-body-sm-line);
     text-wrap: pretty;
   }
 
@@ -317,9 +317,6 @@
 
     .intro-copy {
       max-width: 16ch;
-      font-size: 34px;
-      letter-spacing: 0;
-      line-height: 1.08;
     }
 
     .card {
@@ -331,7 +328,6 @@
     .intro-copy,
     .title {
       max-width: none;
-      font-size: 30px;
     }
   }
 </style>

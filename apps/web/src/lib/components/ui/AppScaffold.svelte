@@ -89,19 +89,19 @@
   .eyebrow {
     margin: 0;
     color: var(--color-text-muted);
-    font-size: 12px;
+    font-size: var(--text-eyebrow);
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-eyebrow);
   }
 
   .title {
     margin: 0;
     color: var(--color-text-primary);
     max-width: 13ch;
-    font-size: 42px;
+    font-size: var(--text-h1);
     font-weight: 700;
     letter-spacing: 0;
-    line-height: 1.04;
+    line-height: var(--text-h1-line);
     text-wrap: balance;
   }
 
@@ -109,8 +109,8 @@
     margin: 0;
     max-width: 62ch;
     color: var(--color-text-secondary);
-    font-size: 16px;
-    line-height: 1.6;
+    font-size: var(--text-body);
+    line-height: var(--text-body-line);
     text-wrap: pretty;
   }
 
@@ -210,9 +210,6 @@
 
     .title {
       max-width: none;
-      font-size: 34px;
-      letter-spacing: 0;
-      line-height: 1.08;
     }
   }
 </style>

@@ -436,8 +436,8 @@
   }
 
   .vision-delete:hover:not(:disabled) {
-    border-color: var(--color-danger, #c0392b);
-    color: var(--color-danger, #c0392b);
+    border-color: var(--color-accent-danger);
+    color: var(--color-accent-danger);
   }
 
   .vision-delete:focus-visible {
@@ -452,7 +452,7 @@
 
   .vision-delete-error {
     margin: 0;
-    color: var(--color-danger, #c0392b);
+    color: var(--color-accent-danger);
     font-size: 13px;
   }
 

@@ -1,6 +1,11 @@
-// Design tokens (ngôn ngữ thiết kế: Notion paper-calm, xem DESIGN.md + decision 0018).
-// Web tiêu thụ chủ yếu qua CSS custom properties trong tokens.css; bản TS này giữ cho
-// logic cần token số học (vd tính toán layout) tham chiếu cùng một nguồn giá trị.
+// Design tokens — ngôn ngữ thiết kế: monochrome astrology kiểu Luvsa
+// (decision 0031; DESIGN.md là phân tích Notion cũ đã superseded).
+//
+// NGUỒN SỰ THẬT (canonical) là tokens.css — đó là file DUY NHẤT được import/áp dụng
+// (ở root layout). File .ts này KHÔNG được import ở bất kỳ đâu trong app; nó chỉ là
+// bản mirror tham chiếu cho code TS cần giá trị token dạng số (vd tính layout). Khi
+// đổi token: sửa tokens.css trước (bắt buộc), rồi cập nhật mirror này nếu cần. Đừng
+// coi đây là nguồn 2 chiều.
 export const colors = {
   background: {
     primary: '#F5F2ED',

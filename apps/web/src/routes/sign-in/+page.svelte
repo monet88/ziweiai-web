@@ -126,7 +126,7 @@
     min-height: 100dvh;
     padding: 40px var(--space-lg);
     background:
-      linear-gradient(180deg, var(--color-bg-surface) 0, var(--color-bg-primary) 320px),
+      linear-gradient(180deg, var(--color-bg-surface) 0%, var(--color-bg-primary) 320px),
       var(--color-bg-primary);
     color: var(--color-text-primary);
   }

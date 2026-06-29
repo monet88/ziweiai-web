@@ -47,7 +47,7 @@
   .screen {
     min-height: 100dvh;
     background:
-      linear-gradient(180deg, var(--color-bg-surface) 0, var(--color-bg-primary) 260px),
+      linear-gradient(180deg, var(--color-bg-surface) 0%, var(--color-bg-primary) 260px),
       var(--color-bg-primary);
     color: var(--color-text-primary);
   }

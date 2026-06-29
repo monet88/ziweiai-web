@@ -111,16 +111,16 @@ export const apiEnvSchema = z.object({
   // fail-OPEN. Mọi hệ thuật số bật sẵn cho user; cờ chỉ còn để TẮT có chủ đích (đặt =false
   // trong .env) cho môi trường đặc thù, không còn dùng để ẩn mặc định. z.stringbool vẫn dùng
   // (z.coerce.boolean() khiến "false" → true, vô hiệu hoá việc tắt thủ công).
-  EXTENDED_SYSTEM_HEPAN_ENABLED: z.stringbool().default(true),
-  EXTENDED_SYSTEM_MANGPAI_ENABLED: z.stringbool().default(true),
-  EXTENDED_SYSTEM_TAROT_ENABLED: z.stringbool().default(true),
-  EXTENDED_SYSTEM_MBTI_ENABLED: z.stringbool().default(true),
-  EXTENDED_SYSTEM_FACE_ENABLED: z.stringbool().default(true),
-  EXTENDED_SYSTEM_PALM_ENABLED: z.stringbool().default(true),
-  EXTENDED_SYSTEM_LENORMAND_ENABLED: z.stringbool().default(true),
-  EXTENDED_SYSTEM_DREAM_ENABLED: z.stringbool().default(true),
-  EXTENDED_SYSTEM_STICKS_ENABLED: z.stringbool().default(true),
-  EXTENDED_SYSTEM_ALMANAC_ENABLED: z.stringbool().default(true),
+  EXTENDED_SYSTEM_HEPAN_ENABLED: z.preprocess((val) => (val === '' ? undefined : val), z.stringbool().default(true)),
+  EXTENDED_SYSTEM_MANGPAI_ENABLED: z.preprocess((val) => (val === '' ? undefined : val), z.stringbool().default(true)),
+  EXTENDED_SYSTEM_TAROT_ENABLED: z.preprocess((val) => (val === '' ? undefined : val), z.stringbool().default(true)),
+  EXTENDED_SYSTEM_MBTI_ENABLED: z.preprocess((val) => (val === '' ? undefined : val), z.stringbool().default(true)),
+  EXTENDED_SYSTEM_FACE_ENABLED: z.preprocess((val) => (val === '' ? undefined : val), z.stringbool().default(true)),
+  EXTENDED_SYSTEM_PALM_ENABLED: z.preprocess((val) => (val === '' ? undefined : val), z.stringbool().default(true)),
+  EXTENDED_SYSTEM_LENORMAND_ENABLED: z.preprocess((val) => (val === '' ? undefined : val), z.stringbool().default(true)),
+  EXTENDED_SYSTEM_DREAM_ENABLED: z.preprocess((val) => (val === '' ? undefined : val), z.stringbool().default(true)),
+  EXTENDED_SYSTEM_STICKS_ENABLED: z.preprocess((val) => (val === '' ? undefined : val), z.stringbool().default(true)),
+  EXTENDED_SYSTEM_ALMANAC_ENABLED: z.preprocess((val) => (val === '' ? undefined : val), z.stringbool().default(true)),
 
   // Separate daily quota for vision (face/palm) — vision is much more expensive
   API_VISION_REQUESTS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(5),

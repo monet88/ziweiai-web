@@ -4,16 +4,18 @@
   //
   // Model dashboard khởi tạo một lần ở đây (factory runes) rồi truyền xuống BirthForm.
   // Đăng xuất: clear cache query để không rò dữ liệu user cũ (bất biến token tươi §3).
-  import { useQueryClient } from '@tanstack/svelte-query';
+  import { createQuery, useQueryClient } from '@tanstack/svelte-query';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
+  import { fetchFeatures } from '$lib/api-client';
   import { PrimaryButton } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { createDashboardModel } from '$lib/features/dashboard/dashboard-model.svelte';
   import BirthForm from '$lib/features/dashboard/BirthForm.svelte';
   import DashboardSidebar from '$lib/features/dashboard/DashboardSidebar.svelte';
   import ExtendedSystemNav from '$lib/features/dashboard/ExtendedSystemNav.svelte';
+  import type { FeaturesResponse } from '@ziweiai/contracts';
 
   const auth = getAuthStore();
   const queryClient = useQueryClient();
@@ -58,26 +60,51 @@
     { route: '/qimen', label: viCopy.dashboard.openQimen },
   ] as const;
 
+  // Lối vào nhóm tool (xem tướng / tarot / chỉ tay) gắn cờ tương ứng để theo cùng quy tắc
+  // fail-OPEN với ExtendedSystemNav: chỉ ẩn card khi /features trả về ĐÚNG `false` (tắt chủ
+  // đích); đang tải / lỗi tải vẫn hiện đủ. Tránh mời user vào flow mà submit chỉ trả
+  // FEATURE_DISABLED khi cờ đã tắt.
   const toolLinks = [
     {
       route: '/face',
+      flag: 'face',
       title: viCopy.dashboard.toolFaceTitle,
       description: viCopy.dashboard.toolFaceDescription,
       meta: viCopy.dashboard.toolFaceMeta,
     },
     {
       route: '/tarot',
+      flag: 'tarot',
       title: viCopy.dashboard.toolTarotTitle,
       description: viCopy.dashboard.toolTarotDescription,
       meta: viCopy.dashboard.toolTarotMeta,
     },
     {
       route: '/palm',
+      flag: 'palm',
       title: viCopy.dashboard.toolPalmTitle,
       description: viCopy.dashboard.toolPalmDescription,
       meta: viCopy.dashboard.toolPalmMeta,
     },
-  ] as const;
+  ] as const satisfies ReadonlyArray<{
+    route: string;
+    flag: keyof FeaturesResponse;
+    title: string;
+    description: string;
+    meta: string;
+  }>;
+
+  // staleTime dài: trạng thái cờ ít đổi trong phiên; query key trùng ExtendedSystemNav nên dùng
+  // chung cache. Fail-open: ẩn card chỉ khi cờ đã tải về và bằng đúng `false`.
+  const features = createQuery(() => ({
+    queryKey: ['features'],
+    queryFn: fetchFeatures,
+    staleTime: 5 * 60_000,
+  }));
+
+  const visibleToolLinks = $derived(
+    toolLinks.filter((tool) => features.data?.[tool.flag] !== false),
+  );
 
   const promiseCards = [
     {
@@ -145,7 +172,7 @@
         </div>
       </div>
 
-      <div class="chart-preview" aria-label={viCopy.dashboard.previewChart}>
+      <div class="chart-preview" role="region" aria-label={viCopy.dashboard.previewChart}>
         <div class="chart-orbit">
           <span class="orbit-label primary">{viCopy.dashboard.previewPrimaryLabel}</span>
           <span class="orbit-label secondary">{viCopy.dashboard.previewSecondaryLabel}</span>
@@ -167,21 +194,23 @@
       </div>
     </section>
 
-    <section class="tools" id="tools" aria-labelledby="tools-title">
-      <div class="section-head compact">
-        <h2 id="tools-title">{viCopy.dashboard.toolSectionTitle}</h2>
-        <p>{viCopy.dashboard.toolSectionDescription}</p>
-      </div>
-      <div class="tool-grid">
-        {#each toolLinks as tool (tool.route)}
-          <a class="tool-card" href={resolve(tool.route)}>
-            <span>{tool.meta}</span>
-            <strong>{tool.title}</strong>
-            <small>{tool.description}</small>
-          </a>
-        {/each}
-      </div>
-    </section>
+    {#if visibleToolLinks.length > 0}
+      <section class="tools" id="tools" aria-labelledby="tools-title">
+        <div class="section-head compact">
+          <h2 id="tools-title">{viCopy.dashboard.toolSectionTitle}</h2>
+          <p>{viCopy.dashboard.toolSectionDescription}</p>
+        </div>
+        <div class="tool-grid">
+          {#each visibleToolLinks as tool (tool.route)}
+            <a class="tool-card" href={resolve(tool.route)}>
+              <span>{tool.meta}</span>
+              <strong>{tool.title}</strong>
+              <small>{tool.description}</small>
+            </a>
+          {/each}
+        </div>
+      </section>
+    {/if}
 
     <section class="workspace" aria-label={viCopy.dashboard.createPanelTitle}>
       <section class="form-panel" id="create-chart" aria-labelledby="create-chart-title">

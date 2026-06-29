@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { containsCjkText } from '@ziweiai/core';
 import { apiEnv } from '../../config/env';
 import {
+  buildConversationPrompt,
+} from './build-conversation-prompt';
+import {
+  EXPLANATION_SYSTEM_PROMPT,
   buildExplanationPrompt,
   type AiConversationProvider,
   type ConversationPromptPayload,
@@ -9,16 +12,10 @@ import {
   type ExplanationPromptPayload,
   type ExplanationProviderResult,
 } from './ai-explanation-provider';
-import { buildConversationPrompt } from './build-conversation-prompt';
-import { EXPLANATION_SYSTEM_PROMPT } from './ai-explanation-provider';
+import { assertNoCjk, buildProviderMetadata } from './llm-chat-adapter';
+import { LlmExchange } from './llm-exchange';
+import { OpenAiStyleChatAdapter } from './openai-style-chat-adapter';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
-import { buildImageDataUrl } from './vision-prompt';
-
-type OpenAiCompatibleResponse = {
-  choices?: Array<{ message?: { content?: string } }>;
-  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
-  error?: { message?: string };
-};
 
 // US-027: shape of a streamed SSE chunk from an OpenAI-compatible upstream. Only the delta content
 // and the optional trailing usage block matter for us.
@@ -26,11 +23,6 @@ type OpenAiCompatibleStreamChunk = {
   choices?: Array<{ delta?: { content?: string } }>;
   usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
 };
-
-// US-017e: user message OpenAI-style là string hoặc mảng content part (text + image_url).
-type OpenAiStyleContentPart =
-  | { type: 'text'; text: string }
-  | { type: 'image_url'; image_url: { url: string } };
 
 // Chuẩn hóa base URL về dạng không có dấu `/` cuối và không có hậu tố `/v1`,
 // rồi nối `/v1/chat/completions`. Tránh lặp `/v1/v1/...` khi operator cấu hình base
@@ -40,147 +32,70 @@ function buildChatCompletionsEndpoint(): string {
   return `${normalized}/v1/chat/completions`;
 }
 
+/**
+ * REFACTOR-007 (decision 0030): đường non-stream đi qua OpenAiStyleChatAdapter + LlmExchange (glue
+ * dùng chung). Đường streaming (US-027 / decision 0026) GIỮ NGUYÊN tại đây vì có vòng đọc SSE +
+ * abort/disconnect riêng; nó chỉ chia sẻ assertNoCjk + buildProviderMetadata với đường non-stream.
+ */
 @Injectable()
 export class OpenAiCompatibleExplanationProvider implements AiConversationProvider {
   private readonly logger = new Logger(OpenAiCompatibleExplanationProvider.name);
-  readonly providerName = 'openai-compat';
-
-  isAvailable(): boolean {
-    return apiEnv.OPENAI_COMPAT_API_KEY.length > 0;
-  }
-
-  async generateConversation(payload: ConversationPromptPayload): Promise<ConversationProviderResult> {
-    return this.generateChatCompletion({
-      prompt: buildConversationPrompt(payload),
-      emptyMessage: 'Nhà cung cấp OpenAI-compatible không trả về nội dung hội thoại.',
-      metadataKind: 'conversation',
-      modelOverride: payload.modelOverride,
-    });
-  }
+  private readonly exchange = new LlmExchange();
 
   // US-017e: endpoint OpenAI-compatible do operator cấu hình (OPENAI_COMPAT_MODEL). Coi như đọc được
   // ảnh khi key có sẵn — không hard-code allowlist model vì model do operator chọn (gpt-4o, llava...).
   // Nếu model cấu hình không đọc ảnh, lỗi/ bỏ ảnh sẽ lộ qua failover sang gemini trong chain vision.
+  private readonly adapter = new OpenAiStyleChatAdapter({
+    providerName: 'openai-compat',
+    visionCapable: true,
+    notConfiguredMessage: 'Chưa cấu hình nhà cung cấp OpenAI-compatible.',
+    timeoutMessage: 'Nhà cung cấp OpenAI-compatible phản hồi quá thời gian chờ.',
+    unavailableMessage: 'Yêu cầu nhà cung cấp OpenAI-compatible thất bại.',
+    systemPrompt: EXPLANATION_SYSTEM_PROMPT,
+    isAvailable: () => apiEnv.OPENAI_COMPAT_API_KEY.length > 0,
+    resolveModel: (modelOverride) => modelOverride ?? apiEnv.OPENAI_COMPAT_MODEL,
+    buildEndpoint: buildChatCompletionsEndpoint,
+    apiKey: () => apiEnv.OPENAI_COMPAT_API_KEY,
+    buildErrorMessage: ({ status, statusText, upstreamError }) =>
+      upstreamError
+        ? `Yêu cầu nhà cung cấp OpenAI-compatible thất bại: ${upstreamError}`
+        : `Yêu cầu nhà cung cấp OpenAI-compatible thất bại: HTTP ${status} ${statusText}.`,
+  });
+
+  readonly providerName = this.adapter.providerName;
+
+  isAvailable(): boolean {
+    return this.adapter.isAvailable();
+  }
+
   isVisionCapable(): boolean {
-    return this.isAvailable();
+    return this.adapter.isAvailable() && this.adapter.visionCapable;
+  }
+
+  async generateConversation(payload: ConversationPromptPayload): Promise<ConversationProviderResult> {
+    return this.exchange.run({
+      adapter: this.adapter,
+      prompt: buildConversationPrompt(payload),
+      emptyMessage: 'Nhà cung cấp OpenAI-compatible không trả về nội dung hội thoại.',
+      modelOverride: payload.modelOverride,
+    });
   }
 
   async generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {
-    return this.generateChatCompletion({
+    return this.exchange.run({
+      adapter: this.adapter,
       prompt: payload.promptOverride ?? buildExplanationPrompt(payload),
       emptyMessage: 'Nhà cung cấp OpenAI-compatible không trả về nội dung luận giải.',
-      metadataKind: 'explanation',
       modelOverride: payload.modelOverride,
       imageInput: payload.imageInput,
       timeoutMsOverride: payload.timeoutMsOverride,
     });
   }
 
-  private async generateChatCompletion(params: {
-    prompt: string;
-    emptyMessage: string;
-    metadataKind: 'explanation' | 'conversation';
-    modelOverride?: string;
-    imageInput?: { base64: string; mimeType: string };
-    timeoutMsOverride?: number;
-  }): Promise<ExplanationProviderResult> {
-    if (!this.isAvailable()) {
-      throw new ProviderUnavailableError('Chưa cấu hình nhà cung cấp OpenAI-compatible.');
-    }
-
-    try {
-      const model = params.modelOverride ?? apiEnv.OPENAI_COMPAT_MODEL;
-      const timeoutMs = params.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
-      const userContent: string | OpenAiStyleContentPart[] = params.imageInput
-        ? [
-            { type: 'text', text: params.prompt },
-            { type: 'image_url', image_url: { url: buildImageDataUrl(params.imageInput.mimeType, params.imageInput.base64) } },
-          ]
-        : params.prompt;
-      const response = await fetch(buildChatCompletionsEndpoint(), {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiEnv.OPENAI_COMPAT_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: EXPLANATION_SYSTEM_PROMPT },
-            { role: 'user', content: userContent },
-          ],
-          stream: false,
-          temperature: 0.7,
-          max_tokens: 2048,
-        }),
-        signal: AbortSignal.timeout(timeoutMs),
-      });
-
-      // Đọc raw text trước rồi mới thử parse JSON: upstream có thể trả non-JSON
-      // (vd trang lỗi HTML 502/504) khiến response.json() ném SyntaxError và che mất
-      // HTTP status thật. Cách này giữ lại được mã lỗi để chẩn đoán.
-      let body: OpenAiCompatibleResponse = {};
-      const rawBody = await response.text();
-      if (rawBody.trim().length > 0) {
-        try {
-          body = JSON.parse(rawBody) as OpenAiCompatibleResponse;
-        } catch {
-          // Bỏ qua khi phản hồi không phải JSON; giữ body rỗng và dùng HTTP status bên dưới.
-        }
-      }
-
-      if (!response.ok) {
-        const upstreamError =
-          typeof body.error?.message === 'string' && body.error.message.trim().length > 0 ? body.error.message.trim() : null;
-        throw new ProviderUnavailableError(
-          upstreamError
-            ? `Yêu cầu nhà cung cấp OpenAI-compatible thất bại: ${upstreamError}`
-            : `Yêu cầu nhà cung cấp OpenAI-compatible thất bại: HTTP ${response.status} ${response.statusText}.`,
-        );
-      }
-
-    const renderedMarkdown = body.choices?.[0]?.message?.content?.trim();
-    if (!renderedMarkdown) {
-      // Use the caller-supplied message so the conversation flow surfaces "không trả về nội dung hội
-      // thoại" instead of the explanation text. Both callers pass `emptyMessage`.
-      throw new ProviderUnavailableError(params.emptyMessage);
-    }
-
-      if (containsCjkText(renderedMarkdown)) {
-        this.logger.warn('Nhà cung cấp OpenAI-compatible trả về nội dung chứa chữ Hán, từ chối.');
-        throw new ProviderUnavailableError('Nhà cung cấp trả về nội dung không hợp lệ (chứa chữ Hán).');
-      }
-
-      return {
-        renderedMarkdown,
-        providerMetadata: {
-          provider: this.providerName,
-          model,
-          totalTokens: String(body.usage?.total_tokens ?? 0),
-          promptTokens: String(body.usage?.prompt_tokens ?? 0),
-          completionTokens: String(body.usage?.completion_tokens ?? 0),
-        },
-      };
-    } catch (error) {
-      if (error instanceof ProviderUnavailableError) {
-        this.logger.warn(error.message);
-        throw error;
-      }
-      this.logger.error(
-        'Yêu cầu nhà cung cấp OpenAI-compatible thất bại.',
-        error instanceof Error ? error.stack : String(error),
-      );
-      if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
-        throw new ProviderTimeoutError('Nhà cung cấp OpenAI-compatible phản hồi quá thời gian chờ.');
-      }
-      throw new ProviderUnavailableError('Yêu cầu nhà cung cấp OpenAI-compatible thất bại.');
-    }
-  }
-
   // US-027 (decision 0026): REAL token streaming. POST with stream:true, read the upstream SSE
   // body, parse `data:` frames, and yield each delta as it arrives. The accumulated text is run
   // through the CJK guard before the final result is returned, mirroring the non-stream path.
-  // Timeout (AbortSignal.timeout) and error mapping match generateChatCompletion. An optional
+  // Timeout (AbortSignal.timeout) and error mapping match the non-stream path. An optional
   // external `signal` lets the caller cancel the upstream fetch when the client disconnects.
   async *generateConversationStream(
     payload: ConversationPromptPayload,
@@ -326,20 +241,20 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
       // invalid content on the client is possible; it is client-dependent and the assistant message is
       // never persisted, so the durable record stays clean. A per-delta guard would add cost for a
       // cosmetic gain, so we keep the accumulated-text guard.
-      if (containsCjkText(renderedMarkdown)) {
+      try {
+        assertNoCjk(renderedMarkdown);
+      } catch (cjkError) {
         this.logger.warn('Nhà cung cấp OpenAI-compatible trả về nội dung chứa chữ Hán, từ chối.');
-        throw new ProviderUnavailableError('Nhà cung cấp trả về nội dung không hợp lệ (chứa chữ Hán).');
+        throw cjkError;
       }
 
       return {
         renderedMarkdown,
-        providerMetadata: {
-          provider: this.providerName,
-          model,
-          totalTokens: String(usage?.total_tokens ?? 0),
-          promptTokens: String(usage?.prompt_tokens ?? 0),
-          completionTokens: String(usage?.completion_tokens ?? 0),
-        },
+        providerMetadata: buildProviderMetadata(this.providerName, model, {
+          promptTokens: usage?.prompt_tokens,
+          completionTokens: usage?.completion_tokens,
+          totalTokens: usage?.total_tokens,
+        }),
       };
     } catch (error) {
       if (error instanceof ProviderUnavailableError) {

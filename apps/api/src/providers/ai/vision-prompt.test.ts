@@ -1,23 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { CJK_TEXT_PATTERN } from '@ziweiai/core';
 import {
-  DEEPSEEK_VISION_CAPABLE_MODELS,
   buildImageDataUrl,
-  isDeepseekModelVisionCapable,
   mimeTypeToExtension,
 } from './vision-prompt';
 import { buildVisionUserPrompt } from '../../modules/vision-shared/vision-prompts';
 
 describe('vision-prompt helpers', () => {
-  it('DeepSeek allowlist rỗng — API chưa hỗ trợ vision (pro/flash đều không đọc ảnh)', () => {
-    // Đính chính Correction spec US-017e: docs chính thức + probe 400 xác nhận DeepSeek API chưa
-    // nhận content part image_url, kể cả deepseek-v4-pro. Allowlist rỗng → router loại DeepSeek
-    // khỏi chain vision. Khi DeepSeek mở vision, thêm model id vào set là đủ.
-    expect(isDeepseekModelVisionCapable('deepseek-v4-pro')).toBe(false);
-    expect(isDeepseekModelVisionCapable('deepseek-v4-flash')).toBe(false);
-    expect(DEEPSEEK_VISION_CAPABLE_MODELS.size).toBe(0);
-  });
-
   it('builds an OpenAI-style data URL', () => {
     expect(buildImageDataUrl('image/png', 'YWJj')).toBe('data:image/png;base64,YWJj');
   });

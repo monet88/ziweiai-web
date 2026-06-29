@@ -62,3 +62,14 @@ pnpm build       # vite build
 E2E uses request interception with stable value slugs (Playwright). Add or
 update specs when a product flow changes; keep tabs centered via the shared
 container layout.
+
+
+Important: `pnpm e2e` (Playwright) IS runnable locally and in this environment.
+The Playwright config (`apps/web/playwright.config.ts`) auto-starts BOTH the api
+(`:3000`) and the web preview (`:4173`) via its `webServer` block and tears them
+down afterwards, so you do NOT need to start servers yourself. A full run builds the
+static SPA first, so allow ~30s+ even for a single spec. Do not skip e2e or claim it
+`cannot run` here: run the real test (for a quick check, `pnpm exec playwright test
+smoke.spec.ts --workers=1`) and report the actual result. The `@live` group
+(`pnpm e2e:live`) additionally calls real LLM providers; the default `pnpm e2e`
+stubs them and needs no API keys.

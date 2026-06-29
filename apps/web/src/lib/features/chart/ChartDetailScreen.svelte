@@ -142,20 +142,22 @@
         />
       {/if}
 
-      {#if !showBoard && detailState === 'pillars'}
-        <BaziDetailCard snapshot={detail.snapshot} />
-      {:else if !showBoard && detailState === 'mangpai'}
-        <MangpaiDetailCard snapshot={detail.snapshot} />
-      {:else if !showBoard && detailState === 'hexagram'}
-        <MeihuaDetailCard snapshot={detail.snapshot} />
-      {:else if !showBoard && detailState === 'liuyao'}
-        <LiuyaoDetailCard snapshot={detail.snapshot} />
-      {:else if !showBoard && detailState === 'daliuren'}
-        <DaliurenDetailCard snapshot={detail.snapshot} />
-      {:else if !showBoard && detailState === 'qimen'}
-        <QimenDetailCard snapshot={detail.snapshot} />
-      {:else if !showBoard && !(detail.palaces.length === 0 && detail.chartSystem === 'zi-wei-dou-shu')}
-        <SummaryCard title={copy.chartSummary} items={summaryItems} />
+      {#if !showBoard}
+        {#if detailState === 'pillars'}
+          <BaziDetailCard snapshot={detail.snapshot} />
+        {:else if detailState === 'mangpai'}
+          <MangpaiDetailCard snapshot={detail.snapshot} />
+        {:else if detailState === 'hexagram'}
+          <MeihuaDetailCard snapshot={detail.snapshot} />
+        {:else if detailState === 'liuyao'}
+          <LiuyaoDetailCard snapshot={detail.snapshot} />
+        {:else if detailState === 'daliuren'}
+          <DaliurenDetailCard snapshot={detail.snapshot} />
+        {:else if detailState === 'qimen'}
+          <QimenDetailCard snapshot={detail.snapshot} />
+        {:else if !(detail.palaces.length === 0 && detail.chartSystem === 'zi-wei-dou-shu')}
+          <SummaryCard title={copy.chartSummary} items={summaryItems} />
+        {/if}
       {/if}
 
       {#if showBoard}
@@ -234,7 +236,7 @@
   .assistant-section {
     display: flex;
     flex-direction: column;
-    border-top: 1px solid rgb(26 26 26 / 0.12);
+    border-top: 1px solid var(--overlay-border);
     padding-top: var(--space-xl);
   }
 

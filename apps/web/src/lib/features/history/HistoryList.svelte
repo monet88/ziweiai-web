@@ -305,8 +305,8 @@
     gap: var(--space-sm);
     min-height: 180px;
     justify-content: center;
-    border-top: 1px solid rgb(26 26 26 / 0.12);
-    border-bottom: 1px solid rgb(26 26 26 / 0.12);
+    border-top: 1px solid var(--overlay-border);
+    border-bottom: 1px solid var(--overlay-border);
   }
 
   .state-text {
@@ -335,12 +335,12 @@
     gap: 0;
     margin: 0;
     padding: 0;
-    border-top: 1px solid rgb(26 26 26 / 0.12);
+    border-top: 1px solid var(--overlay-border);
     list-style: none;
   }
 
   .list > li {
-    border-bottom: 1px solid rgb(26 26 26 / 0.12);
+    border-bottom: 1px solid var(--overlay-border);
   }
 
   .item {

@@ -3,19 +3,19 @@
 // logic cần token số học (vd tính toán layout) tham chiếu cùng một nguồn giá trị.
 export const colors = {
   background: {
-    primary: '#F6F5F4',
-    elevated: '#EFEDEA',
+    primary: '#F5F2ED',
+    elevated: '#EDE8E0',
     surface: '#FFFFFF',
   },
   text: {
-    primary: '#1A1A1A',
-    secondary: '#31302E',
-    muted: '#615D59',
+    primary: '#111111',
+    secondary: '#3A3A3A',
+    muted: '#666666',
   },
   accent: {
-    primary: '#0075DE',
-    primaryPressed: '#005BAB',
-    primarySoft: '#CFE4FA',
+    primary: '#0F0F12',
+    primaryPressed: '#000000',
+    primarySoft: '#E6E1D7',
     ai: '#6D28D9',
     danger: '#C0392B',
   },
@@ -32,7 +32,7 @@ export const colors = {
     brown: '#523410',
   },
   border: {
-    hairline: '#E6E6E6',
+    hairline: '#E7E7E7',
   },
 } as const;
 

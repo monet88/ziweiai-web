@@ -2,37 +2,44 @@
    Ngôn ngữ thiết kế: Notion paper-calm (xem DESIGN.md + docs/decisions/0018).
    Mọi component web tham chiếu var(--*) thay vì hardcode palette/spacing/radius. */
 :root {
-  /* Phông chữ: Inter (self-host qua @fontsource-variable/inter, import ở root layout) */
-  --font-sans: 'Inter Variable', 'Inter', -apple-system, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif;
+  /* Phông chữ (copy Luvsa, decision US-043): heading serif Playfair Display,
+     body/label sans Space Grotesk; cả hai self-host qua @fontsource-variable,
+     import ở root layout. Inter giữ lại làm fallback. */
+  --font-serif: 'Playfair Display Variable', 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Space Grotesk Variable', 'Space Grotesk', 'Inter Variable', 'Inter', -apple-system, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif;
 
-  /* Nền: canvas giấy ấm cho trang, surface trắng cho thẻ, elevated là nền nhấn dịu */
-  --color-bg-primary: #f6f5f4;
-  --color-bg-elevated: #efedea;
+  /* Nền monochrome ấm kiểu Luvsa: canvas kem ấm cho trang, surface trắng cho thẻ,
+     elevated là beige ấm (chip thông tin / nền nhấn dịu). */
+  --color-bg-primary: #f5f2ed;
+  --color-bg-elevated: #ede8e0;
   --color-bg-surface: #ffffff;
 
-  /* Chữ: gần-đen ấm, không dùng màu để tạo thứ bậc (dựa vào trọng lượng/kích cỡ) */
-  --color-text-primary: #1a1a1a;
-  --color-text-secondary: #31302e;
-  --color-text-muted: #615d59;
+  /* Chữ: charcoal/gần-đen, không dùng màu để tạo thứ bậc (dựa vào trọng lượng/kích cỡ). */
+  --color-text-primary: #111111;
+  --color-text-secondary: #3a3a3a;
+  --color-text-muted: #666666;
 
-  /* Nhấn cấu trúc: một màu xanh Notion duy nhất cho hành động chính/liên kết/focus.
-     primary-soft là tint nhạt cho viền/nền phụ (vd cung tam hợp), không phải hành động. */
-  --color-accent-primary: #0075de;
-  --color-accent-primary-pressed: #005bab;
-  --color-accent-primary-soft: #cfe4fa;
+  /* Nhấn cấu trúc monochrome: CTA/active/focus dùng gần-đen (Luvsa không có màu thương
+     hiệu). primary-soft là tint kem ấm trung tính cho viền/nền phụ (vd cung tam hợp). */
+  --color-accent-primary: #0f0f12;
+  --color-accent-primary-pressed: #000000;
+  --color-accent-primary-soft: #e6e1d7;
   --color-text-on-primary: #ffffff;
 
-  /* Màu CHỮ link trên nền sáng: dùng sắc xanh đậm hơn (= pressed) để đạt AA body
-     (>= 4.5:1) trên canvas/elevated, nơi accent-primary #0075de chỉ đạt ~4.19.
-     Tách vai trò: accent-primary cho viền/focus/nền nút; link cho chữ-liên-kết. */
-  --color-link: var(--color-accent-primary-pressed);
+  /* Màu CHỮ link: charcoal gần-đen (đạt AA dư trên canvas/elevated). Component phân biệt
+     link bằng gạch chân/đậm thay vì màu, đúng tinh thần monochrome Luvsa. */
+  --color-link: #111111;
+
+  /* Accent nâu/sienna (Luvsa trang "This Year"): chỉ cho nhãn eyebrow/ngày in hoa +
+     thanh nhấn dọc, KHÔNG tô CTA hay nền cấu trúc. */
+  --color-accent-sienna: #9f760f;
 
   /* Nhấn AI/premium (tím) + lỗi (đỏ) — token đơn cho từng vai trò ngữ nghĩa. */
   --color-accent-ai: #6d28d9;
   --color-accent-danger: #c0392b;
 
-  /* Viền hairline (Notion: 1px nhạt thay vì đổ bóng nặng) */
-  --color-border-hairline: #e6e6e6;
+  /* Viền hairline (1px nhạt thay vì đổ bóng nặng; khớp --color-border Luvsa #e7e7e7) */
+  --color-border-hairline: #e7e7e7;
 
   /* Sticker palette (trang trí thuần: illustration/icon tile/category dot).
      KHÔNG tô CTA hay nền cấu trúc bằng các màu này. */
@@ -131,16 +138,16 @@ body {
   margin: 0;
 }
 
-/* Tracking âm cho heading theo bảng DESIGN.md (Inter mặc định lỏng hơn NotionInter).
-   Component có thể đặt letter-spacing riêng để tinh chỉnh theo size cụ thể. */
-h1 {
-  letter-spacing: -1px;
-}
-
-h2 {
-  letter-spacing: -0.625px;
-}
-
-h3 {
-  letter-spacing: -0.25px;
+/* Heading dùng serif Playfair Display (copy Luvsa). Letter-spacing 0 — Playfair là
+   serif tương phản cao, không cần tracking âm như Inter; giữ 0 đúng quy ước repo
+   (không letter-spacing âm/dương cho heading serif). Component có thể tinh chỉnh
+   weight/size riêng nhưng kế thừa font-family serif từ đây. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-serif);
+  letter-spacing: 0;
 }

@@ -369,13 +369,13 @@
   .item-system {
     font-size: 18px;
     font-weight: 750;
-    letter-spacing: -0.2px;
+    letter-spacing: 0;
   }
 
   .item-question {
     font-size: 18px;
     font-weight: 750;
-    letter-spacing: -0.2px;
+    letter-spacing: 0;
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -400,7 +400,7 @@
     font-size: 22px;
     font-weight: 750;
     line-height: 1.15;
-    letter-spacing: -0.25px;
+    letter-spacing: 0;
     color: var(--color-text-primary);
   }
 

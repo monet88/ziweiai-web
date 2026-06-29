@@ -100,7 +100,7 @@
     max-width: 13ch;
     font-size: 42px;
     font-weight: 700;
-    letter-spacing: -0.035em;
+    letter-spacing: 0;
     line-height: 1.04;
     text-wrap: balance;
   }
@@ -211,7 +211,7 @@
     .title {
       max-width: none;
       font-size: 34px;
-      letter-spacing: -0.03em;
+      letter-spacing: 0;
       line-height: 1.08;
     }
   }

@@ -20,6 +20,11 @@
 
   const model = createDashboardModel({ auth, queryClient });
 
+  // Lối vào lịch sử (link topbar/hero/side-rail + "Lá số gần đây") chỉ hiện cho tài khoản
+  // đăng nhập thật bằng email. Phiên ẩn danh (decision 0009) tuy có JWT nhưng không phải
+  // "đăng nhập" theo yêu cầu người dùng → ẩn các lối vào lịch sử.
+  const isMember = $derived(auth.isAuthenticated && !auth.isAnonymous);
+
   let isSigningOut = $state(false);
 
   async function handleSignOut(): Promise<void> {
@@ -104,7 +109,9 @@
       <a class="brand" href={resolve('/')}>ziweiai</a>
       <div class="top-links">
         <a href="#create-chart">{viCopy.dashboard.homeNavCreate}</a>
-        <a href={resolve('/history')}>{viCopy.dashboard.homeNavHistory}</a>
+        {#if isMember}
+          <a href={resolve('/history')}>{viCopy.dashboard.homeNavHistory}</a>
+        {/if}
         <a href="#systems">{viCopy.dashboard.homeNavSystems}</a>
       </div>
       <div class="session">
@@ -132,7 +139,9 @@
         <p class="hero-subtitle">{viCopy.dashboard.heroSubtitle}</p>
         <div class="hero-actions">
           <a class="hero-primary" href="#create-chart">{viCopy.dashboard.createChart}</a>
-          <a class="hero-secondary" href={resolve('/history')}>{viCopy.dashboard.viewHistory}</a>
+          {#if isMember}
+            <a class="hero-secondary" href={resolve('/history')}>{viCopy.dashboard.viewHistory}</a>
+          {/if}
         </div>
       </div>
 
@@ -194,11 +203,15 @@
             {/each}
           </div>
           <ExtendedSystemNav />
-          <a class="nav-history" href={resolve('/history')}>
-            {viCopy.dashboard.viewHistory}
-          </a>
+          {#if isMember}
+            <a class="nav-history" href={resolve('/history')}>
+              {viCopy.dashboard.viewHistory}
+            </a>
+          {/if}
         </nav>
-        <DashboardSidebar onCreateFirst={focusForm} />
+        {#if isMember}
+          <DashboardSidebar onCreateFirst={focusForm} />
+        {/if}
       </aside>
     </section>
 
@@ -247,7 +260,7 @@
     color: var(--color-text-primary);
     font-size: 18px;
     font-weight: 800;
-    letter-spacing: -0.4px;
+    letter-spacing: 0;
     text-decoration: none;
   }
 
@@ -326,14 +339,14 @@
     gap: clamp(28px, 5vw, 72px);
     align-items: center;
     min-height: min(720px, calc(100dvh - 72px));
-    padding: clamp(40px, 8vw, 92px) 0 clamp(32px, 7vw, 72px);
+    padding: clamp(56px, 10vw, 120px) 0 clamp(48px, 9vw, 96px);
   }
 
   .hero-copy {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--space-md);
+    gap: var(--space-lg);
   }
 
   .eyebrow {
@@ -347,18 +360,18 @@
   h1 {
     max-width: 760px;
     margin: 0;
-    font-size: clamp(44px, 7vw, 92px);
-    font-weight: 850;
-    line-height: 0.96;
-    letter-spacing: -2.6px;
+    font-size: clamp(34px, 5vw, 64px);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: 0;
   }
 
   .hero-subtitle {
     max-width: 650px;
     margin: 0;
     color: var(--color-text-secondary);
-    font-size: clamp(17px, 2vw, 21px);
-    line-height: 1.55;
+    font-size: clamp(15px, 1.4vw, 18px);
+    line-height: 1.6;
   }
 
   .hero-actions {
@@ -543,7 +556,7 @@
   .tool-card strong {
     font-size: 24px;
     font-weight: 780;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
     line-height: 1.08;
   }
 
@@ -594,7 +607,7 @@
     font-size: clamp(28px, 4vw, 48px);
     font-weight: 820;
     line-height: 1;
-    letter-spacing: -1.4px;
+    letter-spacing: 0;
   }
 
   .section-head p {
@@ -686,7 +699,7 @@
     margin: 0;
     font-size: 20px;
     font-weight: 760;
-    letter-spacing: -0.25px;
+    letter-spacing: 0;
   }
 
   .promise-card p {
@@ -746,8 +759,8 @@
     }
 
     h1 {
-      font-size: clamp(40px, 14vw, 58px);
-      letter-spacing: -1.6px;
+      font-size: clamp(30px, 9vw, 42px);
+      letter-spacing: 0;
     }
 
     .preview-grid,

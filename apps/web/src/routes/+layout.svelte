@@ -1,6 +1,8 @@
 <script lang="ts">
   import { QueryClientProvider } from '@tanstack/svelte-query';
   import '@fontsource-variable/inter/wght.css';
+  import '@fontsource-variable/playfair-display/wght.css';
+  import '@fontsource-variable/space-grotesk/wght.css';
   import '$lib/theme/tokens.css';
   import type { LayoutData } from './$types';
   import type { Snippet } from 'svelte';

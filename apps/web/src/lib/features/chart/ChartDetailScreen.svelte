@@ -225,7 +225,7 @@
     font-size: 22px;
     font-weight: 750;
     line-height: 1.15;
-    letter-spacing: -0.25px;
+    letter-spacing: 0;
   }
 
   .board-section,

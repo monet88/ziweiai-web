@@ -165,7 +165,7 @@
     color: var(--color-text-primary);
     font-size: 42px;
     font-weight: 700;
-    letter-spacing: -0.035em;
+    letter-spacing: 0;
     line-height: 1.04;
     text-wrap: balance;
   }
@@ -202,7 +202,7 @@
     margin: 0;
     font-size: 34px;
     font-weight: 700;
-    letter-spacing: -0.03em;
+    letter-spacing: 0;
     line-height: 1.08;
     color: var(--color-text-primary);
     text-wrap: balance;
@@ -318,7 +318,7 @@
     .intro-copy {
       max-width: 16ch;
       font-size: 34px;
-      letter-spacing: -0.03em;
+      letter-spacing: 0;
       line-height: 1.08;
     }
 

@@ -44,3 +44,34 @@ Notes:
 - `pnpm e2e` excludes `@live`; `pnpm e2e:live` runs the real-provider specs and
   flips the live-only server flags (annual report, conversation) on for that run.
 - Tune workers with `E2E_WORKERS` (default 4; must be a positive integer).
+
+## pnpm version mismatch in this environment (codex runtime)
+
+The repo pins `pnpm@10.17.1` (`package.json` `packageManager`, CI `action-setup`,
+deploy server). But the `pnpm` on PATH here is the codex runtime's bundled
+**11.7.0**, which sits ahead of everything on PATH. pnpm 11 has
+`verify-deps-before-run` on by default: before each script (including the
+`pnpm --filter` calls Playwright spawns via `webServer`), it tries to re-`install`
+and then wants to purge `node_modules`. With no TTY that aborts, so e2e/build/test
+fail with:
+
+```text
+ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY
+```
+
+This is a pnpm version mismatch, NOT broken code or broken tests. Do not "fix" it
+by editing repo files. Two safe ways to run here:
+
+```powershell
+# A) use the repo-pinned pnpm via corepack (reads packageManager -> 10.17.1)
+corepack pnpm -F @ziweiai/web e2e
+
+# B) disable the deps precheck in pnpm USER config (reversible, no repo change)
+pnpm config set verify-deps-before-run false   # already set in this env
+pnpm config delete verify-deps-before-run      # to revert
+```
+
+For just running scripts (build/test/lint/e2e) either works; option B is already
+applied here. For dependency changes (`install`/`add`/`update`) prefer
+`corepack pnpm ...` so pnpm 11 does not rewrite `pnpm-lock.yaml`. Bumping the repo
+to pnpm 11 is tracked separately (backlog #49) and stays at 10.17.1 for now.

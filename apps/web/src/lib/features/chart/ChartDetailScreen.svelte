@@ -140,24 +140,20 @@
           title={copy.twelvePalaceUnavailableTitle}
           description={copy.twelvePalaceUnavailableDescription}
         />
-      {/if}
-
-      {#if !showBoard}
-        {#if detailState === 'pillars'}
-          <BaziDetailCard snapshot={detail.snapshot} />
-        {:else if detailState === 'mangpai'}
-          <MangpaiDetailCard snapshot={detail.snapshot} />
-        {:else if detailState === 'hexagram'}
-          <MeihuaDetailCard snapshot={detail.snapshot} />
-        {:else if detailState === 'liuyao'}
-          <LiuyaoDetailCard snapshot={detail.snapshot} />
-        {:else if detailState === 'daliuren'}
-          <DaliurenDetailCard snapshot={detail.snapshot} />
-        {:else if detailState === 'qimen'}
-          <QimenDetailCard snapshot={detail.snapshot} />
-        {:else if !(detail.palaces.length === 0 && detail.chartSystem === 'zi-wei-dou-shu')}
-          <SummaryCard title={copy.chartSummary} items={summaryItems} />
-        {/if}
+      {:else if detailState === 'pillars'}
+        <BaziDetailCard snapshot={detail.snapshot} />
+      {:else if detailState === 'mangpai'}
+        <MangpaiDetailCard snapshot={detail.snapshot} />
+      {:else if detailState === 'hexagram'}
+        <MeihuaDetailCard snapshot={detail.snapshot} />
+      {:else if detailState === 'liuyao'}
+        <LiuyaoDetailCard snapshot={detail.snapshot} />
+      {:else if detailState === 'daliuren'}
+        <DaliurenDetailCard snapshot={detail.snapshot} />
+      {:else if detailState === 'qimen'}
+        <QimenDetailCard snapshot={detail.snapshot} />
+      {:else}
+        <SummaryCard title={copy.chartSummary} items={summaryItems} />
       {/if}
 
       {#if showBoard}

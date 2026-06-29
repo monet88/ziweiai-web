@@ -4,8 +4,9 @@
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
   import { NoticeBanner } from '$lib/components/ui';
+  import { viCopy } from '$lib/i18n/vi';
 
-  // Nhãn tiếng Việt hardcode tạm — i18n tập trung là US-003 (bất biến ngôn ngữ: không chữ Hán).
+  const t = viCopy.signIn;
   const auth = getAuthStore();
   const queryClient = useQueryClient();
 
@@ -36,14 +37,14 @@
       } else {
         const { needsEmailConfirmation } = await auth.signUpWithPassword(email, password);
         if (needsEmailConfirmation) {
-          noticeMessage = 'Tài khoản đã tạo. Vui lòng kiểm tra email để xác nhận trước khi đăng nhập.';
+          noticeMessage = t.signUpCheckEmail;
         } else {
           queryClient.clear();
           await goto(resolve('/'));
         }
       }
     } catch (error) {
-      errorMessage = error instanceof Error ? error.message : 'Xác thực thất bại. Vui lòng thử lại.';
+      errorMessage = error instanceof Error ? error.message : t.genericError;
     } finally {
       isBusy = false;
     }
@@ -57,21 +58,21 @@
 </script>
 
 <svelte:head>
-  <title>{mode === 'sign-in' ? 'Đăng nhập' : 'Tạo tài khoản'} - ziweiai</title>
+  <title>{mode === 'sign-in' ? t.headTitleSignIn : t.headTitleSignUp} - ziweiai</title>
 </svelte:head>
 
 <main class="screen">
   <div class="shell">
     <section class="intro" aria-label="ziweiai">
-      <p class="brand">ZIWEIAI</p>
-      <p class="intro-copy">Luận giải Tử Vi và chiêm tinh cá nhân hoá trong một không gian đọc tĩnh.</p>
+      <p class="brand">{t.brand}</p>
+      <p class="intro-copy">{t.introCopy}</p>
     </section>
 
     <form class="card" onsubmit={handleSubmit}>
       <div class="header">
-        <p class="eyebrow">{mode === 'sign-in' ? 'Phiên cá nhân' : 'Tài khoản mới'}</p>
-        <h1 class="title">{mode === 'sign-in' ? 'Đăng nhập' : 'Tạo tài khoản'}</h1>
-        <p class="subtitle">Tiếp tục hồ sơ và lịch sử luận giải của bạn.</p>
+        <p class="eyebrow">{mode === 'sign-in' ? t.eyebrowSignIn : t.eyebrowSignUp}</p>
+        <h1 class="title">{mode === 'sign-in' ? t.titleSignIn : t.titleSignUp}</h1>
+        <p class="subtitle">{t.subtitle}</p>
       </div>
 
       {#if errorMessage}
@@ -82,18 +83,18 @@
       {/if}
 
       <label class="field">
-        <span>Email</span>
+        <span>{t.emailLabel}</span>
         <input
           type="email"
           bind:value={email}
-          placeholder="ban@vidu.com"
+          placeholder={t.emailPlaceholder}
           autocomplete="email"
           required
         />
       </label>
 
       <label class="field">
-        <span>Mật khẩu</span>
+        <span>{t.passwordLabel}</span>
         <input
           type="password"
           bind:value={password}
@@ -105,14 +106,14 @@
 
       <button type="submit" class="primary" disabled={isBusy}>
         {#if isBusy}
-          Đang xử lý…
+          {t.submitBusy}
         {:else}
-          {mode === 'sign-in' ? 'Đăng nhập' : 'Tạo tài khoản'}
+          {mode === 'sign-in' ? t.submitSignIn : t.submitSignUp}
         {/if}
       </button>
 
       <button type="button" class="switch" onclick={toggleMode}>
-        {mode === 'sign-in' ? 'Chưa có tài khoản? Tạo mới' : 'Đã có tài khoản? Đăng nhập'}
+        {mode === 'sign-in' ? t.switchToSignUp : t.switchToSignIn}
       </button>
     </form>
   </div>

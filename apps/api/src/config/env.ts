@@ -107,20 +107,20 @@ export const apiEnvSchema = z.object({
     z.coerce.number().int().positive().default(12),
   ),
 
-  // US-017: 6 feature flags for extended divination systems (default false = disabled)
-  EXTENDED_SYSTEM_HEPAN_ENABLED: z.stringbool().default(false),
-  EXTENDED_SYSTEM_MANGPAI_ENABLED: z.stringbool().default(false),
-  EXTENDED_SYSTEM_TAROT_ENABLED: z.stringbool().default(false),
-  EXTENDED_SYSTEM_MBTI_ENABLED: z.stringbool().default(false),
-  EXTENDED_SYSTEM_FACE_ENABLED: z.stringbool().default(false),
-  EXTENDED_SYSTEM_PALM_ENABLED: z.stringbool().default(false),
-
-  // B6 (backlog #26 decomposition): net-new divination systems, each its own flag (default false).
-  // Same fail-closed pattern as US-017: feature exists in code but stays off until explicitly enabled.
-  EXTENDED_SYSTEM_LENORMAND_ENABLED: z.stringbool().default(false),
-  EXTENDED_SYSTEM_DREAM_ENABLED: z.stringbool().default(false),
-  EXTENDED_SYSTEM_STICKS_ENABLED: z.stringbool().default(false),
-  EXTENDED_SYSTEM_ALMANAC_ENABLED: z.stringbool().default(false),
+  // US-017 + B6: feature flags for extended divination systems. US-042: default `true` =
+  // fail-OPEN. Mọi hệ thuật số bật sẵn cho user; cờ chỉ còn để TẮT có chủ đích (đặt =false
+  // trong .env) cho môi trường đặc thù, không còn dùng để ẩn mặc định. z.stringbool vẫn dùng
+  // (z.coerce.boolean() khiến "false" → true, vô hiệu hoá việc tắt thủ công).
+  EXTENDED_SYSTEM_HEPAN_ENABLED: z.stringbool().default(true),
+  EXTENDED_SYSTEM_MANGPAI_ENABLED: z.stringbool().default(true),
+  EXTENDED_SYSTEM_TAROT_ENABLED: z.stringbool().default(true),
+  EXTENDED_SYSTEM_MBTI_ENABLED: z.stringbool().default(true),
+  EXTENDED_SYSTEM_FACE_ENABLED: z.stringbool().default(true),
+  EXTENDED_SYSTEM_PALM_ENABLED: z.stringbool().default(true),
+  EXTENDED_SYSTEM_LENORMAND_ENABLED: z.stringbool().default(true),
+  EXTENDED_SYSTEM_DREAM_ENABLED: z.stringbool().default(true),
+  EXTENDED_SYSTEM_STICKS_ENABLED: z.stringbool().default(true),
+  EXTENDED_SYSTEM_ALMANAC_ENABLED: z.stringbool().default(true),
 
   // Separate daily quota for vision (face/palm) — vision is much more expensive
   API_VISION_REQUESTS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(5),

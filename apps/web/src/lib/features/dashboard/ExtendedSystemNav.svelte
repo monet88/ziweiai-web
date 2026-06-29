@@ -1,8 +1,9 @@
 <script lang="ts">
-  // ExtendedSystemNav (US-017d): lối vào các hệ mở rộng gate-by-flag trên dashboard. Đọc
-  // GET /features (public) rồi chỉ hiện link khi cờ tương ứng bật — fail-closed: cờ tắt / lỗi
-  // tải đều ẩn link, tránh mời gọi vào hệ chưa bật. Hiện tại phục vụ Mạnh Phái; thêm hệ khác
-  // chỉ cần nối thêm vào danh sách EXTENDED_LINKS.
+  // ExtendedSystemNav (US-042): lối vào tất cả hệ thuật số mở rộng trên dashboard. Đọc
+  // GET /features (public) nhưng theo hướng fail-OPEN: mặc định hiện đủ link, chỉ ẩn một link
+  // khi cờ tương ứng trả về ĐÚNG `false` (tắt có chủ đích). Đang tải / lỗi tải / chưa có dữ
+  // liệu đều coi như mở — người dùng luôn thấy mọi tính năng. Thêm hệ khác chỉ cần nối vào
+  // danh sách EXTENDED_LINKS.
   import { createQuery } from '@tanstack/svelte-query';
   import { resolve } from '$app/paths';
   import { fetchFeatures } from '$lib/api-client';
@@ -24,15 +25,17 @@
   ] as const satisfies ReadonlyArray<{ route: string; flag: keyof FeaturesResponse; label: string }>;
 
   // staleTime dài: trạng thái cờ ít đổi trong một phiên. enabled mặc định (không cần token —
-  // /features là public). Lỗi/đang tải → coi như chưa bật (fail-closed).
+  // /features là public). Lỗi/đang tải → coi như mở (fail-open, xem visibleLinks).
   const features = createQuery(() => ({
     queryKey: ['features'],
     queryFn: fetchFeatures,
     staleTime: 5 * 60_000,
   }));
 
+  // Fail-open: ẩn một link CHỈ khi cờ tương ứng đã tải về và bằng đúng `false`. Khi chưa có dữ
+  // liệu (đang tải / lỗi) thì giữ nguyên toàn bộ link để không bao giờ ẩn mặc định.
   const visibleLinks = $derived(
-    features.data ? EXTENDED_LINKS.filter((link) => features.data![link.flag]) : [],
+    EXTENDED_LINKS.filter((link) => features.data?.[link.flag] !== false),
   );
 </script>
 

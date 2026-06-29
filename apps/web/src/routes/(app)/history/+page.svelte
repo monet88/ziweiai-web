@@ -8,6 +8,10 @@
   import HistoryList from '$lib/features/history/HistoryList.svelte';
 </script>
 
+<svelte:head>
+  <title>{viCopy.history.heroTitle} - ziweiai</title>
+</svelte:head>
+
 <AppScaffold
   eyebrow={viCopy.history.heroEyebrow}
   title={viCopy.history.heroTitle}

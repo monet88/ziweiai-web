@@ -90,7 +90,7 @@ test('US-017: đổi sang hệ implemented khác rồi lập được lá số (
         request.method() === 'POST' && new URL(request.url()).pathname.endsWith('/charts'),
       { timeout: 30_000 },
     ),
-    page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click(),
+    page.locator('#birth-day').locator('xpath=ancestor::form').getByRole('button', { name: 'Lập lá số', exact: true }).click(),
   ]);
 
   expect(

@@ -86,6 +86,10 @@
   });
 </script>
 
+<svelte:head>
+  <title>{copy.heroTitle} - ziweiai</title>
+</svelte:head>
+
 <AppScaffold
   eyebrow={copy.heroEyebrow}
   title={copy.heroTitle}
@@ -104,119 +108,134 @@
   {:else if detail.isError || !detail.snapshot}
     <NoticeBanner tone="danger" message={copy.chartNotAvailableFallback} />
   {:else}
-    {#if showBoard}
-      <section class="board-section" aria-labelledby="palace-board-title">
-        <h2 class="section-title" id="palace-board-title">{copy.twelvePalaceTitle}</h2>
-        <div class="board-layout">
-          <PalaceGrid
-            palaces={detail.palaces}
-            selectedPalaceKey={detail.selectedPalaceKey}
-            onSelect={detail.selectPalace}
-            chartId={detail.chartId}
-            horoscopeOverlay={horoscope.overlay}
-          >
-            {#snippet center()}
-              <h3 class="center-title">{copy.centerSummaryTitle}</h3>
-              <dl class="center-list">
-                {#each centerItems as item (item.label)}
-                  <div class="center-row">
-                    <dt>{item.label}</dt>
-                    <dd>{item.value}</dd>
-                  </div>
-                {/each}
-              </dl>
-            {/snippet}
-          </PalaceGrid>
-          <ZiweiHoroscopePanel model={horoscope} />
-        </div>
-      </section>
-    {:else if detail.palaces.length === 0 && detail.chartSystem === 'zi-wei-dou-shu'}
-      <EmptyStateCard
-        title={copy.twelvePalaceUnavailableTitle}
-        description={copy.twelvePalaceUnavailableDescription}
-      />
-    {:else if detailState === 'pillars'}
-      <BaziDetailCard snapshot={detail.snapshot} />
-    {:else if detailState === 'mangpai'}
-      <MangpaiDetailCard snapshot={detail.snapshot} />
-    {:else if detailState === 'hexagram'}
-      <MeihuaDetailCard snapshot={detail.snapshot} />
-    {:else if detailState === 'liuyao'}
-      <LiuyaoDetailCard snapshot={detail.snapshot} />
-    {:else if detailState === 'daliuren'}
-      <DaliurenDetailCard snapshot={detail.snapshot} />
-    {:else if detailState === 'qimen'}
-      <QimenDetailCard snapshot={detail.snapshot} />
-    {:else}
-      <SummaryCard title={copy.chartSummary} items={summaryItems} />
-    {/if}
-
-    {#if showBoard}
-      <section class="fortune-section" aria-labelledby="fortune-title">
-        <h2 class="section-title" id="fortune-title">{viCopy.fortune.sectionTitle}</h2>
-        <div class="fortune-grid">
-          <DailyFortuneCard {auth} chartId={detail.chartId} />
-          <MonthlyFortuneCard {auth} chartId={detail.chartId} />
-        </div>
-        <AnnualReportButton {auth} chartId={detail.chartId} />
-      </section>
-    {/if}
-
-    <section class="explanation-section" aria-labelledby="explanation-title">
-      <h2 class="section-title" id="explanation-title">{copy.explanationTitle}</h2>
-      <p class="hint">{selectionHint}</p>
-
-      {#if explanation.isPaymentRequired}
-        <PrimaryButton
-          label={viCopy.explanation.premiumCta}
-          variant="primary"
-          onclick={() => goto(resolve('/pricing'))}
-        />
-        <p class="hint">{viCopy.explanation.premiumHint}</p>
-      {:else}
-        <PrimaryButton
-          label={explanation.hasResult ? copy.regenerateExplanation : explanationButtonLabel}
-          loading={explanation.isPending}
-          onclick={explanation.generate}
+    <div class="detail-page">
+      {#if showBoard}
+        <section class="board-section" aria-labelledby="palace-board-title">
+          <h2 class="section-title" id="palace-board-title">{copy.twelvePalaceTitle}</h2>
+          <div class="board-layout">
+            <PalaceGrid
+              palaces={detail.palaces}
+              selectedPalaceKey={detail.selectedPalaceKey}
+              onSelect={detail.selectPalace}
+              chartId={detail.chartId}
+              horoscopeOverlay={horoscope.overlay}
+            >
+              {#snippet center()}
+                <h3 class="center-title">{copy.centerSummaryTitle}</h3>
+                <dl class="center-list">
+                  {#each centerItems as item (item.label)}
+                    <div class="center-row">
+                      <dt>{item.label}</dt>
+                      <dd>{item.value}</dd>
+                    </div>
+                  {/each}
+                </dl>
+              {/snippet}
+            </PalaceGrid>
+            <ZiweiHoroscopePanel model={horoscope} />
+          </div>
+        </section>
+      {:else if detail.palaces.length === 0 && detail.chartSystem === 'zi-wei-dou-shu'}
+        <EmptyStateCard
+          title={copy.twelvePalaceUnavailableTitle}
+          description={copy.twelvePalaceUnavailableDescription}
         />
       {/if}
-      {#if explanation.isPending && !explanation.hasResult}
-        <p class="status">{viCopy.explanation.statusPending}</p>
-      {:else if explanation.isError && explanation.errorMessage && !explanation.isPaymentRequired}
-        <NoticeBanner tone="danger" message={explanation.errorMessage} />
-      {:else if explanation.hasResult && explanation.renderedMarkdown}
-        <article class="result">
-          <MarkdownView markdown={explanation.renderedMarkdown} />
-        </article>
-      {:else}
-        <EmptyStateCard title={copy.noExplanationTitle} description={copy.noExplanationDescription} />
-      {/if}
-    </section>
 
-    <section class="assistant-section" aria-labelledby="assistant-title">
-      <AssistantPanel
-        chartSnapshotId={detail.chartId}
-        onConversationCreated={() => {
-          /* no-op: panel tự quản lý conversation id; có thể mở rộng để lưu vào chart-detail cache */
-        }}
-      />
-    </section>
+      {#if !showBoard && detailState === 'pillars'}
+        <BaziDetailCard snapshot={detail.snapshot} />
+      {:else if !showBoard && detailState === 'mangpai'}
+        <MangpaiDetailCard snapshot={detail.snapshot} />
+      {:else if !showBoard && detailState === 'hexagram'}
+        <MeihuaDetailCard snapshot={detail.snapshot} />
+      {:else if !showBoard && detailState === 'liuyao'}
+        <LiuyaoDetailCard snapshot={detail.snapshot} />
+      {:else if !showBoard && detailState === 'daliuren'}
+        <DaliurenDetailCard snapshot={detail.snapshot} />
+      {:else if !showBoard && detailState === 'qimen'}
+        <QimenDetailCard snapshot={detail.snapshot} />
+      {:else if !showBoard && !(detail.palaces.length === 0 && detail.chartSystem === 'zi-wei-dou-shu')}
+        <SummaryCard title={copy.chartSummary} items={summaryItems} />
+      {/if}
+
+      {#if showBoard}
+        <section class="fortune-section" aria-labelledby="fortune-title">
+          <h2 class="section-title" id="fortune-title">{viCopy.fortune.sectionTitle}</h2>
+          <div class="fortune-grid">
+            <DailyFortuneCard {auth} chartId={detail.chartId} />
+            <MonthlyFortuneCard {auth} chartId={detail.chartId} />
+          </div>
+          <AnnualReportButton {auth} chartId={detail.chartId} />
+        </section>
+      {/if}
+
+      <section class="explanation-section" aria-labelledby="explanation-title">
+        <h2 class="section-title" id="explanation-title">{copy.explanationTitle}</h2>
+        <p class="hint">{selectionHint}</p>
+
+        {#if explanation.isPaymentRequired}
+          <PrimaryButton
+            label={viCopy.explanation.premiumCta}
+            variant="primary"
+            onclick={() => goto(resolve('/pricing'))}
+          />
+          <p class="hint">{viCopy.explanation.premiumHint}</p>
+        {:else}
+          <PrimaryButton
+            label={explanation.hasResult ? copy.regenerateExplanation : explanationButtonLabel}
+            loading={explanation.isPending}
+            onclick={explanation.generate}
+          />
+        {/if}
+        {#if explanation.isPending && !explanation.hasResult}
+          <p class="status">{viCopy.explanation.statusPending}</p>
+        {:else if explanation.isError && explanation.errorMessage && !explanation.isPaymentRequired}
+          <NoticeBanner tone="danger" message={explanation.errorMessage} />
+        {:else if explanation.hasResult && explanation.renderedMarkdown}
+          <article class="result">
+            <MarkdownView markdown={explanation.renderedMarkdown} />
+          </article>
+        {:else}
+          <EmptyStateCard title={copy.noExplanationTitle} description={copy.noExplanationDescription} />
+        {/if}
+      </section>
+
+      <section class="assistant-section" aria-labelledby="assistant-title">
+        <AssistantPanel
+          chartSnapshotId={detail.chartId}
+          onConversationCreated={() => {
+            /* no-op: panel tự quản lý conversation id; có thể mở rộng để lưu vào chart-detail cache */
+          }}
+        />
+      </section>
+    </div>
   {/if}
 </AppScaffold>
 
 <style>
+  .detail-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+  }
+
   .section-title {
-    margin: 0 0 var(--space-md);
+    margin: 0 0 var(--space-lg);
     color: var(--color-text-primary);
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 750;
+    line-height: 1.15;
+    letter-spacing: -0.25px;
   }
 
   .board-section,
   .fortune-section,
-  .explanation-section {
+  .explanation-section,
+  .assistant-section {
     display: flex;
     flex-direction: column;
+    border-top: 1px solid rgb(26 26 26 / 0.12);
+    padding-top: var(--space-xl);
   }
 
   /* US-016: section vận hạn — hai card (ngày/tháng) song song trên desktop, xếp dọc mobile;
@@ -292,7 +311,17 @@
     margin-top: var(--space-md);
     padding: var(--space-lg);
     border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
     background: var(--color-bg-surface);
+  }
+
+  @media (min-width: 1080px) {
+    .detail-page {
+      gap: var(--space-xxl);
+    }
+
+    .section-title {
+      font-size: 24px;
+    }
   }
 </style>

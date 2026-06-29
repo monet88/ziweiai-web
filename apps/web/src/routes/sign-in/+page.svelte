@@ -56,53 +56,66 @@
   }
 </script>
 
+<svelte:head>
+  <title>{mode === 'sign-in' ? 'Đăng nhập' : 'Tạo tài khoản'} - ziweiai</title>
+</svelte:head>
+
 <main class="screen">
-  <form class="card" onsubmit={handleSubmit}>
-    <p class="eyebrow">ZIWEIAI</p>
-    <h1 class="title">{mode === 'sign-in' ? 'Đăng nhập' : 'Tạo tài khoản'}</h1>
-    <p class="subtitle">Luận giải Tử Vi và chiêm tinh cá nhân hoá.</p>
+  <div class="shell">
+    <section class="intro" aria-label="ziweiai">
+      <p class="brand">ZIWEIAI</p>
+      <p class="intro-copy">Luận giải Tử Vi và chiêm tinh cá nhân hoá trong một không gian đọc tĩnh.</p>
+    </section>
 
-    {#if errorMessage}
-      <NoticeBanner tone="danger" message={errorMessage} />
-    {/if}
-    {#if noticeMessage}
-      <NoticeBanner tone="info" message={noticeMessage} />
-    {/if}
+    <form class="card" onsubmit={handleSubmit}>
+      <div class="header">
+        <p class="eyebrow">{mode === 'sign-in' ? 'Phiên cá nhân' : 'Tài khoản mới'}</p>
+        <h1 class="title">{mode === 'sign-in' ? 'Đăng nhập' : 'Tạo tài khoản'}</h1>
+        <p class="subtitle">Tiếp tục hồ sơ và lịch sử luận giải của bạn.</p>
+      </div>
 
-    <label class="field">
-      <span>Email</span>
-      <input
-        type="email"
-        bind:value={email}
-        placeholder="ban@vidu.com"
-        autocomplete="email"
-        required
-      />
-    </label>
-
-    <label class="field">
-      <span>Mật khẩu</span>
-      <input
-        type="password"
-        bind:value={password}
-        placeholder="••••••••"
-        autocomplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
-        required
-      />
-    </label>
-
-    <button type="submit" class="primary" disabled={isBusy}>
-      {#if isBusy}
-        Đang xử lý…
-      {:else}
-        {mode === 'sign-in' ? 'Đăng nhập' : 'Tạo tài khoản'}
+      {#if errorMessage}
+        <NoticeBanner tone="danger" message={errorMessage} />
       {/if}
-    </button>
+      {#if noticeMessage}
+        <NoticeBanner tone="info" message={noticeMessage} />
+      {/if}
 
-    <button type="button" class="switch" onclick={toggleMode}>
-      {mode === 'sign-in' ? 'Chưa có tài khoản? Tạo mới' : 'Đã có tài khoản? Đăng nhập'}
-    </button>
-  </form>
+      <label class="field">
+        <span>Email</span>
+        <input
+          type="email"
+          bind:value={email}
+          placeholder="ban@vidu.com"
+          autocomplete="email"
+          required
+        />
+      </label>
+
+      <label class="field">
+        <span>Mật khẩu</span>
+        <input
+          type="password"
+          bind:value={password}
+          placeholder="••••••••"
+          autocomplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+          required
+        />
+      </label>
+
+      <button type="submit" class="primary" disabled={isBusy}>
+        {#if isBusy}
+          Đang xử lý…
+        {:else}
+          {mode === 'sign-in' ? 'Đăng nhập' : 'Tạo tài khoản'}
+        {/if}
+      </button>
+
+      <button type="button" class="switch" onclick={toggleMode}>
+        {mode === 'sign-in' ? 'Chưa có tài khoản? Tạo mới' : 'Đã có tài khoản? Đăng nhập'}
+      </button>
+    </form>
+  </div>
 </main>
 
 <style>
@@ -110,71 +123,137 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    padding: var(--space-lg);
-    background: var(--color-bg-primary);
+    min-height: 100dvh;
+    padding: 40px var(--space-lg);
+    background:
+      linear-gradient(180deg, var(--color-bg-surface) 0, var(--color-bg-primary) 320px),
+      var(--color-bg-primary);
+    color: var(--color-text-primary);
+  }
+
+  .shell {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(380px, 460px);
+    gap: 48px;
+    width: 100%;
+    max-width: 980px;
+    align-items: center;
+  }
+
+  .intro {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding-right: 24px;
+  }
+
+  .brand {
+    margin: 0;
+    width: fit-content;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--color-border-hairline);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .intro-copy {
+    margin: 0;
+    max-width: 12ch;
+    color: var(--color-text-primary);
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.04;
+    text-wrap: balance;
   }
 
   .card {
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: var(--space-md);
+    gap: 18px;
     width: 100%;
-    max-width: 420px;
-    padding: var(--space-xl);
+    padding: 36px;
     border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-sm);
     background: var(--color-bg-surface);
+  }
+
+  .header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-border-hairline);
   }
 
   .eyebrow {
     margin: 0;
     font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.125px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     color: var(--color-text-muted);
   }
 
   .title {
     margin: 0;
-    font-size: 26px;
+    font-size: 34px;
     font-weight: 700;
-    letter-spacing: -0.625px;
+    letter-spacing: -0.03em;
+    line-height: 1.08;
     color: var(--color-text-primary);
+    text-wrap: balance;
   }
 
   .subtitle {
-    margin: 0 0 var(--space-xs);
-    color: var(--color-text-muted);
+    margin: 0;
+    color: var(--color-text-secondary);
     font-size: 15px;
+    line-height: 1.55;
+    text-wrap: pretty;
   }
 
   .field {
     display: flex;
     flex-direction: column;
-    gap: var(--space-xxs);
+    gap: 8px;
     font-size: 14px;
+    font-weight: 600;
     color: var(--color-text-secondary);
   }
 
   .field input {
-    padding: var(--space-xs) var(--space-sm);
+    min-height: 48px;
+    box-sizing: border-box;
+    padding: 0 var(--space-sm);
     border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-sm);
     background: var(--color-bg-surface);
     color: var(--color-text-primary);
     font-size: 16px;
   }
 
+  .field input::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .field input:hover {
+    border-color: var(--color-border-strong);
+  }
+
   .field input:focus-visible {
     outline: 2px solid var(--color-accent-primary);
-    outline-offset: 1px;
+    outline-offset: 2px;
   }
 
   .primary {
-    padding: var(--space-sm) var(--space-md);
+    min-height: 48px;
+    padding: 0 var(--space-md);
     border: none;
-    border-radius: var(--radius-pill);
+    border-radius: var(--radius-sm);
     background: var(--color-accent-primary);
     color: var(--color-text-on-primary);
     font-size: 16px;
@@ -198,7 +277,8 @@
 
   .switch {
     align-self: flex-start;
-    padding: var(--space-xs) 0;
+    min-height: 36px;
+    padding: 0;
     background: none;
     border: none;
     color: var(--color-link);
@@ -216,6 +296,42 @@
   @media (pointer: coarse) {
     .switch {
       min-height: 44px;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .screen {
+      align-items: flex-start;
+      padding: var(--space-lg) var(--space-md);
+    }
+
+    .shell {
+      grid-template-columns: 1fr;
+      gap: 28px;
+      max-width: 480px;
+    }
+
+    .intro {
+      padding-right: 0;
+    }
+
+    .intro-copy {
+      max-width: 16ch;
+      font-size: 34px;
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+    }
+
+    .card {
+      padding: var(--space-lg);
+    }
+  }
+
+  @media (max-width: 420px) {
+    .intro-copy,
+    .title {
+      max-width: none;
+      font-size: 30px;
     }
   }
 </style>

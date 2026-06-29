@@ -1,7 +1,10 @@
 # apps/web - `@ziweiai/web`
 
-SvelteKit 5 SPA (static adapter). Notion paper-calm theme (see root `DESIGN.md`
-and `docs/decisions/0018`), Vietnamese-only UI. Talks
+SvelteKit 5 SPA (static adapter). Vietnamese-only UI. The legacy visual base is
+Notion paper-calm (see root `DESIGN.md` and `docs/decisions/0018`), but the
+active website redesign direction is the restrained monochrome astrology product
+language captured in `docs/decisions/0031-luvsa-inspired-web-redesign-direction.md`.
+Talks
 to `@ziweiai/api` over HTTP, authenticates via Supabase, and shares request and
 response shapes through `@ziweiai/contracts` (`workspace:*`). Server state is
 managed with `@tanstack/svelte-query`.
@@ -25,11 +28,14 @@ managed with `@tanstack/svelte-query`.
 
 - UI text is Vietnamese only. Route copy through `src/lib/i18n` / `src/lib/text`;
   do not hardcode user-facing strings inline.
-- Theme is Notion paper-calm (canvas `#F6F5F4`, white surfaces, one structural
-  accent `--color-accent-primary` Notion blue `#0075DE`; sticker palette is
-  decorative-only). Use tokens from `src/lib/theme`; do not introduce new color
-  systems. Self-host Inter via `@fontsource-variable/inter`; apply the DESIGN.md
-  negative tracking on headings. Details: root `DESIGN.md`, `docs/decisions/0018`.
+- Theme direction is currently transitional. Existing routes may still use
+  Notion paper-calm tokens (canvas `#F6F5F4`, white surfaces, one structural
+  accent `--color-accent-primary` Notion blue `#0075DE`; sticker palette
+  decorative-only), while redesigned routes should follow decision `0031`:
+  restrained monochrome astrology product UI, product workflow first, no
+  marketing-only landing page. Use `src/lib/theme` tokens where possible; add
+  local route styling for redesign slices before replacing global tokens. Self-host
+  Inter via `@fontsource-variable/inter`; keep heading tracking intentional.
 - All backend calls go through `src/lib/api-client` and are typed by
   `@ziweiai/contracts`. Do not fetch the API ad hoc from components.
 - Wrap server state in `@tanstack/svelte-query`; keep components thin and push

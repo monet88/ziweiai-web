@@ -176,6 +176,7 @@
   }
 </script>
 
+<section class="history-list" aria-label={viCopy.history.title}>
 {#if history.isPending}
   <div class="state">
     <Spinner />
@@ -276,6 +277,7 @@
     </section>
   {/if}
 {/if}
+</section>
 
 {#if pendingDeleteId}
   <ConfirmDialog
@@ -291,10 +293,20 @@
 {/if}
 
 <style>
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+  }
+
   .state {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
+    min-height: 180px;
+    justify-content: center;
+    border-top: 1px solid var(--overlay-border);
+    border-bottom: 1px solid var(--overlay-border);
   }
 
   .state-text {
@@ -320,10 +332,15 @@
   .list {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
+    gap: 0;
     margin: 0;
     padding: 0;
+    border-top: 1px solid var(--overlay-border);
     list-style: none;
+  }
+
+  .list > li {
+    border-bottom: 1px solid var(--overlay-border);
   }
 
   .item {
@@ -331,10 +348,9 @@
     flex-direction: column;
     gap: 4px;
     width: 100%;
-    padding: var(--space-md);
-    border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-surface);
+    padding: var(--space-lg) 0;
+    border: 0;
+    background: transparent;
     color: var(--color-text-primary);
     text-align: left;
     text-decoration: none;
@@ -342,22 +358,24 @@
   }
 
   .item:hover {
-    border-color: var(--color-accent-primary);
+    color: var(--color-link);
   }
 
   .item:focus-visible {
     outline: 2px solid var(--color-accent-primary);
-    outline-offset: 1px;
+    outline-offset: 4px;
   }
 
   .item-system {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 750;
+    letter-spacing: 0;
   }
 
   .item-question {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 750;
+    letter-spacing: 0;
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -373,25 +391,24 @@
   .vision-section {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
-    margin-top: var(--space-lg);
+    gap: var(--space-md);
+    padding-top: var(--space-xl);
   }
 
   .vision-section-title {
     margin: 0;
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 750;
+    line-height: 1.15;
+    letter-spacing: 0;
     color: var(--color-text-primary);
   }
 
   .vision-item {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
-    padding: var(--space-md);
-    border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-surface);
+    gap: var(--space-md);
+    padding: var(--space-lg) 0;
   }
 
   .vision-head {
@@ -419,8 +436,8 @@
   }
 
   .vision-delete:hover:not(:disabled) {
-    border-color: var(--color-danger, #c0392b);
-    color: var(--color-danger, #c0392b);
+    border-color: var(--color-accent-danger);
+    color: var(--color-accent-danger);
   }
 
   .vision-delete:focus-visible {
@@ -435,7 +452,7 @@
 
   .vision-delete-error {
     margin: 0;
-    color: var(--color-danger, #c0392b);
+    color: var(--color-accent-danger);
     font-size: 13px;
   }
 

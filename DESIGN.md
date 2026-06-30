@@ -249,6 +249,28 @@ components:
 ---
 
 
+> [!IMPORTANT]
+> **STATUS: SUPERSEDED for the web product.** The analysis below documents the
+> original *Notion paper-calm* brand study (blue `#0075de` accent, `NotionInter`
+> type, negative display tracking). It is kept for historical reference only.
+>
+> The **active** web design language is the restrained **monochrome Luvsa-inspired
+> astrology product** direction. Do NOT build new UI from the Notion palette/type below.
+>
+> Sources of truth, in order:
+> 1. `apps/web/src/lib/theme/tokens.css` — canonical runtime tokens (the only file the
+>    app imports). Colors, typography scale (`--text-*`), spacing, radius, overlays.
+> 2. `docs/decisions/0031-luvsa-inspired-web-redesign-direction.md` — the durable
+>    redesign decision and guardrails.
+> 3. `docs/decisions/0018-*` + this file — older Notion analysis (background only).
+>
+> Active language in one line: **warm cream canvas (`#f5f2ed`) + white surfaces, near-black
+> ink, serif headings (Playfair Display) over sans body/label (Space Grotesk), a single
+> near-black structural accent (`#0f0f12`) for CTA/active/focus, letter-spacing 0 on
+> headings, hairline borders, and the multi-color sticker palette kept strictly decorative.**
+> The sienna accent (`#9f760f`) is for eyebrow/date labels only — never CTAs or structural fills.
+
+
 ## Overview
 
 Notion looks like a well-organized desk in good daylight. The dominant surface is not pure white but a warm, paper-soft off-white — `{colors.canvas-soft}` (#f6f5f4) — that takes the clinical edge off the screen and makes long pages feel like a document rather than an app. Type is set in `NotionInter` (a tuned Inter) in near-black `{colors.ink}` at large, tightly-tracked weights, so headlines read as confident statements with very little letter-spacing slack at display sizes (`{typography.display-1}` pulls −2.125px of tracking at 64px). The whole system whispers in greys and blacks, then says exactly one thing in colour: a single, dependable blue, `{colors.primary}` (#0075de), reserved almost entirely for the primary call-to-action and inline links.

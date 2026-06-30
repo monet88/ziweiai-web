@@ -4,8 +4,9 @@
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
   import { NoticeBanner } from '$lib/components/ui';
+  import { viCopy } from '$lib/i18n/vi';
 
-  // Nhãn tiếng Việt hardcode tạm — i18n tập trung là US-003 (bất biến ngôn ngữ: không chữ Hán).
+  const t = viCopy.signIn;
   const auth = getAuthStore();
   const queryClient = useQueryClient();
 
@@ -36,14 +37,14 @@
       } else {
         const { needsEmailConfirmation } = await auth.signUpWithPassword(email, password);
         if (needsEmailConfirmation) {
-          noticeMessage = 'Tài khoản đã tạo. Vui lòng kiểm tra email để xác nhận trước khi đăng nhập.';
+          noticeMessage = t.signUpCheckEmail;
         } else {
           queryClient.clear();
           await goto(resolve('/'));
         }
       }
     } catch (error) {
-      errorMessage = error instanceof Error ? error.message : 'Xác thực thất bại. Vui lòng thử lại.';
+      errorMessage = error instanceof Error ? error.message : t.genericError;
     } finally {
       isBusy = false;
     }
@@ -56,53 +57,66 @@
   }
 </script>
 
+<svelte:head>
+  <title>{mode === 'sign-in' ? t.headTitleSignIn : t.headTitleSignUp} - ziweiai</title>
+</svelte:head>
+
 <main class="screen">
-  <form class="card" onsubmit={handleSubmit}>
-    <p class="eyebrow">ZIWEIAI</p>
-    <h1 class="title">{mode === 'sign-in' ? 'Đăng nhập' : 'Tạo tài khoản'}</h1>
-    <p class="subtitle">Luận giải Tử Vi và chiêm tinh cá nhân hoá.</p>
+  <div class="shell">
+    <section class="intro" aria-label="ziweiai">
+      <p class="brand">{t.brand}</p>
+      <p class="intro-copy">{t.introCopy}</p>
+    </section>
 
-    {#if errorMessage}
-      <NoticeBanner tone="danger" message={errorMessage} />
-    {/if}
-    {#if noticeMessage}
-      <NoticeBanner tone="info" message={noticeMessage} />
-    {/if}
+    <form class="card" onsubmit={handleSubmit}>
+      <div class="header">
+        <p class="eyebrow">{mode === 'sign-in' ? t.eyebrowSignIn : t.eyebrowSignUp}</p>
+        <h1 class="title">{mode === 'sign-in' ? t.titleSignIn : t.titleSignUp}</h1>
+        <p class="subtitle">{t.subtitle}</p>
+      </div>
 
-    <label class="field">
-      <span>Email</span>
-      <input
-        type="email"
-        bind:value={email}
-        placeholder="ban@vidu.com"
-        autocomplete="email"
-        required
-      />
-    </label>
-
-    <label class="field">
-      <span>Mật khẩu</span>
-      <input
-        type="password"
-        bind:value={password}
-        placeholder="••••••••"
-        autocomplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
-        required
-      />
-    </label>
-
-    <button type="submit" class="primary" disabled={isBusy}>
-      {#if isBusy}
-        Đang xử lý…
-      {:else}
-        {mode === 'sign-in' ? 'Đăng nhập' : 'Tạo tài khoản'}
+      {#if errorMessage}
+        <NoticeBanner tone="danger" message={errorMessage} />
       {/if}
-    </button>
+      {#if noticeMessage}
+        <NoticeBanner tone="info" message={noticeMessage} />
+      {/if}
 
-    <button type="button" class="switch" onclick={toggleMode}>
-      {mode === 'sign-in' ? 'Chưa có tài khoản? Tạo mới' : 'Đã có tài khoản? Đăng nhập'}
-    </button>
-  </form>
+      <label class="field">
+        <span>{t.emailLabel}</span>
+        <input
+          type="email"
+          bind:value={email}
+          placeholder={t.emailPlaceholder}
+          autocomplete="email"
+          required
+        />
+      </label>
+
+      <label class="field">
+        <span>{t.passwordLabel}</span>
+        <input
+          type="password"
+          bind:value={password}
+          placeholder="••••••••"
+          autocomplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+          required
+        />
+      </label>
+
+      <button type="submit" class="primary" disabled={isBusy}>
+        {#if isBusy}
+          {t.submitBusy}
+        {:else}
+          {mode === 'sign-in' ? t.submitSignIn : t.submitSignUp}
+        {/if}
+      </button>
+
+      <button type="button" class="switch" onclick={toggleMode}>
+        {mode === 'sign-in' ? t.switchToSignUp : t.switchToSignIn}
+      </button>
+    </form>
+  </div>
 </main>
 
 <style>
@@ -110,71 +124,137 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    padding: var(--space-lg);
-    background: var(--color-bg-primary);
+    min-height: 100dvh;
+    padding: 40px var(--space-lg);
+    background:
+      linear-gradient(180deg, var(--color-bg-surface) 0%, var(--color-bg-primary) 320px),
+      var(--color-bg-primary);
+    color: var(--color-text-primary);
+  }
+
+  .shell {
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(380px, 460px);
+    gap: 48px;
+    width: 100%;
+    max-width: 980px;
+    align-items: center;
+  }
+
+  .intro {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding-right: 24px;
+  }
+
+  .brand {
+    margin: 0;
+    width: fit-content;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--color-border-hairline);
+    color: var(--color-text-muted);
+    font-size: var(--text-eyebrow);
+    font-weight: 700;
+    letter-spacing: var(--tracking-eyebrow);
+  }
+
+  .intro-copy {
+    margin: 0;
+    max-width: 12ch;
+    color: var(--color-text-primary);
+    font-size: var(--text-h1);
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: var(--text-h1-line);
+    text-wrap: balance;
   }
 
   .card {
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: var(--space-md);
+    gap: 18px;
     width: 100%;
-    max-width: 420px;
-    padding: var(--space-xl);
+    padding: 36px;
     border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-sm);
     background: var(--color-bg-surface);
+  }
+
+  .header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-border-hairline);
   }
 
   .eyebrow {
     margin: 0;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.125px;
+    font-size: var(--text-eyebrow);
+    font-weight: 700;
+    letter-spacing: var(--tracking-eyebrow);
     color: var(--color-text-muted);
   }
 
   .title {
     margin: 0;
-    font-size: 26px;
+    font-size: var(--text-h2);
     font-weight: 700;
-    letter-spacing: -0.625px;
+    letter-spacing: 0;
+    line-height: var(--text-h2-line);
     color: var(--color-text-primary);
+    text-wrap: balance;
   }
 
   .subtitle {
-    margin: 0 0 var(--space-xs);
-    color: var(--color-text-muted);
-    font-size: 15px;
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: var(--text-body-sm);
+    line-height: var(--text-body-sm-line);
+    text-wrap: pretty;
   }
 
   .field {
     display: flex;
     flex-direction: column;
-    gap: var(--space-xxs);
+    gap: 8px;
     font-size: 14px;
+    font-weight: 600;
     color: var(--color-text-secondary);
   }
 
   .field input {
-    padding: var(--space-xs) var(--space-sm);
+    min-height: 48px;
+    box-sizing: border-box;
+    padding: 0 var(--space-sm);
     border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-sm);
     background: var(--color-bg-surface);
     color: var(--color-text-primary);
     font-size: 16px;
   }
 
+  .field input::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .field input:hover {
+    border-color: var(--color-border-strong);
+  }
+
   .field input:focus-visible {
     outline: 2px solid var(--color-accent-primary);
-    outline-offset: 1px;
+    outline-offset: 2px;
   }
 
   .primary {
-    padding: var(--space-sm) var(--space-md);
+    min-height: 48px;
+    padding: 0 var(--space-md);
     border: none;
-    border-radius: var(--radius-pill);
+    border-radius: var(--radius-sm);
     background: var(--color-accent-primary);
     color: var(--color-text-on-primary);
     font-size: 16px;
@@ -198,7 +278,8 @@
 
   .switch {
     align-self: flex-start;
-    padding: var(--space-xs) 0;
+    min-height: 36px;
+    padding: 0;
     background: none;
     border: none;
     color: var(--color-link);
@@ -216,6 +297,38 @@
   @media (pointer: coarse) {
     .switch {
       min-height: 44px;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .screen {
+      align-items: flex-start;
+      padding: var(--space-lg) var(--space-md);
+    }
+
+    .shell {
+      grid-template-columns: 1fr;
+      gap: 28px;
+      max-width: 480px;
+    }
+
+    .intro {
+      padding-right: 0;
+    }
+
+    .intro-copy {
+      max-width: 16ch;
+    }
+
+    .card {
+      padding: var(--space-lg);
+    }
+  }
+
+  @media (max-width: 420px) {
+    .intro-copy,
+    .title {
+      max-width: none;
     }
   }
 </style>

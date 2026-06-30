@@ -54,7 +54,10 @@ test('US-025: gieo quẻ Mai Hoa (preset) → chi tiết VN không Hán → hist
   // History: item gieo quẻ hiển thị câu hỏi (khác item lá số natal).
   await page.getByRole('button', { name: 'Quay về trang chính', exact: true }).click();
   await page.waitForURL(/\/$/, { timeout: 15_000 });
-  await page.getByRole('link', { name: 'Xem toàn bộ lịch sử', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Hệ thuật số khác' })
+    .getByRole('link', { name: 'Xem toàn bộ lịch sử', exact: true })
+    .click();
   await page.waitForURL(/\/history$/, { timeout: 15_000 });
 
   await expect(

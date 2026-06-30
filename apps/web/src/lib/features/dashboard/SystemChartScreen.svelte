@@ -49,7 +49,7 @@
     gap: var(--space-xs);
     padding: var(--space-xs) var(--space-sm);
     border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-pill);
     background: transparent;
     color: var(--color-text-secondary);
     font-size: 13px;

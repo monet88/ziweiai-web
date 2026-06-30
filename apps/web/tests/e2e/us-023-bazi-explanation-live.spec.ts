@@ -33,7 +33,7 @@ async function createBaziChart(page: Page): Promise<string> {
   await page.locator('#birth-year').selectOption('1988');
   await page.locator('#birth-hour').fill('22');
   await page.locator('#birth-minute').fill('45');
-  await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
+  await page.locator('#birth-day').locator('xpath=ancestor::form').getByRole('button', { name: 'Lập lá số', exact: true }).click();
   await page.waitForURL(/\/charts\/[0-9a-f-]{36}$/i, { timeout: 30_000 });
   const match = page.url().match(/\/charts\/([0-9a-f-]{36})/i);
   expect(match, 'URL phải chứa chartId dạng uuid').not.toBeNull();

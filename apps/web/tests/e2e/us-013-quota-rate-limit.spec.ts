@@ -54,7 +54,7 @@ test('US-013: POST /charts bị 429 → hiện thông báo lỗi quota', async (
     gender: 'male',
   });
 
-  await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
+  await page.locator('#birth-day').locator('xpath=ancestor::form').getByRole('button', { name: 'Lập lá số', exact: true }).click();
 
   // UI phải hiển thị thông báo lỗi. BirthForm render lỗi quota qua NoticeBanner tone="danger",
   // tức role="alert" — bám đúng vai trò thay vì quét class chung chung (dễ khớp nhầm phần tử).
@@ -84,7 +84,7 @@ test('US-013: POST /explanations bị 429 → hiện thông báo lỗi trên tra
     gender: 'female',
   });
 
-  await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
+  await page.locator('#birth-day').locator('xpath=ancestor::form').getByRole('button', { name: 'Lập lá số', exact: true }).click();
   await page.waitForURL(/\/charts\/[0-9a-f-]{36}$/i, { timeout: 30_000 });
   await expect(page.getByRole('heading', { name: 'Lá số 12 cung' })).toBeVisible({
     timeout: 30_000,

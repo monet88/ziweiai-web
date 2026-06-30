@@ -172,7 +172,7 @@
     display: flex;
     flex-direction: column;
   }
-  .msg.user .role { color: var(--color-accent-gold-soft); }
+  .msg.user .role { color: var(--color-accent-sienna); }
   .msg.assistant .role { color: var(--color-text-muted); }
   .role {
     font-size: 11px;

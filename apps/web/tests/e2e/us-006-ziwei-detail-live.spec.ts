@@ -35,7 +35,7 @@ async function createZiweiChart(page: Page): Promise<string> {
   await page.locator('#birth-gender').selectOption('male');
   await page.locator('#birth-hour').fill('4');
   await page.locator('#birth-minute').fill('15');
-  await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
+  await page.locator('#birth-day').locator('xpath=ancestor::form').getByRole('button', { name: 'Lập lá số', exact: true }).click();
   await page.waitForURL(/\/charts\/[0-9a-f-]{36}$/i, { timeout: 30_000 });
   const match = page.url().match(/\/charts\/([0-9a-f-]{36})/i);
   expect(match, 'URL phải chứa chartId dạng uuid').not.toBeNull();
@@ -74,7 +74,10 @@ test('US-006 LIVE @live: luận giải cung thật → lưu → mở lại từ 
   // ---- Rời trang rồi mở LẠI lá số từ lịch sử: nội dung phải hydrate sẵn (đã lưu) ----
   await page.getByRole('button', { name: 'Quay về trang chính', exact: true }).click();
   await page.waitForURL(/\/$/, { timeout: 15_000 });
-  await page.getByRole('link', { name: 'Xem toàn bộ lịch sử', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Hệ thuật số khác' })
+    .getByRole('link', { name: 'Xem toàn bộ lịch sử', exact: true })
+    .click();
   await page.waitForURL(/\/history$/, { timeout: 15_000 });
   await shot(page, '02-history-list');
 

@@ -22,7 +22,7 @@ async function createZiweiChart(page: Page): Promise<void> {
   await page.locator('#birth-gender').selectOption('female');
   await page.locator('#birth-hour').fill('12');
   await page.locator('#birth-minute').fill('30');
-  await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
+  await page.locator('form:has(#birth-day)').getByRole('button', { name: 'Lập lá số', exact: true }).click();
   await page.waitForURL(/\/charts\/[0-9a-f-]{36}(?:[/?#]|$)/i, { timeout: 30_000 });
 }
 
@@ -53,8 +53,12 @@ test('tour: lịch sử lá số', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Quay về trang chính', exact: true }).click();
   await page.waitForURL(/\/$/, { timeout: 15_000 });
-  await page.getByRole('link', { name: 'Xem toàn bộ lịch sử', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Hệ thuật số khác' })
+    .getByRole('link', { name: 'Xem toàn bộ lịch sử', exact: true })
+    .click();
   await page.waitForURL(/\/history$/, { timeout: 15_000 });
+  await expect(page.locator('a[href^="/charts/"]').first()).toBeVisible({ timeout: 15_000 });
   await shot(page, '04-history');
 });
 

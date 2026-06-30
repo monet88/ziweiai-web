@@ -30,7 +30,10 @@ test('US-007 hardening: lỗi tải lịch sử hiện nút "Thử lại" và re
   });
 
   // ---- Điều hướng client-side sang /history → HistoryList fetch → vào nhánh lỗi ----
-  await page.getByRole('link', { name: 'Xem toàn bộ lịch sử', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Hệ thuật số khác' })
+    .getByRole('link', { name: 'Xem toàn bộ lịch sử', exact: true })
+    .click();
   await page.waitForURL(/\/history$/, { timeout: 15_000 });
 
   // ---- Banner danger (role=alert) + nút "Thử lại" hiện ra ----

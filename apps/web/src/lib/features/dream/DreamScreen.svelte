@@ -183,7 +183,7 @@
     font-size: 26px;
     font-weight: 700;
     line-height: 1.23;
-    letter-spacing: -0.625px;
+    letter-spacing: 0;
   }
 
   .band-sub {

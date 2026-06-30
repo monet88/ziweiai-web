@@ -30,7 +30,7 @@ test('US-017d: lập lá số Mạnh Phái qua route /mangpai → POST /charts m
         request.method() === 'POST' && new URL(request.url()).pathname.endsWith('/charts'),
       { timeout: 30_000 },
     ),
-    page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click(),
+    page.locator('#birth-day').locator('xpath=ancestor::form').getByRole('button', { name: 'Lập lá số', exact: true }).click(),
   ]);
 
   expect(

@@ -1,21 +1,26 @@
-// Design tokens (ngôn ngữ thiết kế: Notion paper-calm, xem DESIGN.md + decision 0018).
-// Web tiêu thụ chủ yếu qua CSS custom properties trong tokens.css; bản TS này giữ cho
-// logic cần token số học (vd tính toán layout) tham chiếu cùng một nguồn giá trị.
+// Design tokens — ngôn ngữ thiết kế: monochrome astrology kiểu Luvsa
+// (decision 0031; DESIGN.md là phân tích Notion cũ đã superseded).
+//
+// NGUỒN SỰ THẬT (canonical) là tokens.css — đó là file DUY NHẤT được import/áp dụng
+// (ở root layout). File .ts này KHÔNG được import ở bất kỳ đâu trong app; nó chỉ là
+// bản mirror tham chiếu cho code TS cần giá trị token dạng số (vd tính layout). Khi
+// đổi token: sửa tokens.css trước (bắt buộc), rồi cập nhật mirror này nếu cần. Đừng
+// coi đây là nguồn 2 chiều.
 export const colors = {
   background: {
-    primary: '#F6F5F4',
-    elevated: '#EFEDEA',
+    primary: '#F5F2ED',
+    elevated: '#EDE8E0',
     surface: '#FFFFFF',
   },
   text: {
-    primary: '#1A1A1A',
-    secondary: '#31302E',
-    muted: '#615D59',
+    primary: '#111111',
+    secondary: '#3A3A3A',
+    muted: '#666666',
   },
   accent: {
-    primary: '#0075DE',
-    primaryPressed: '#005BAB',
-    primarySoft: '#CFE4FA',
+    primary: '#0F0F12',
+    primaryPressed: '#000000',
+    primarySoft: '#E6E1D7',
     ai: '#6D28D9',
     danger: '#C0392B',
   },
@@ -32,7 +37,7 @@ export const colors = {
     brown: '#523410',
   },
   border: {
-    hairline: '#E6E6E6',
+    hairline: '#E7E7E7',
   },
 } as const;
 

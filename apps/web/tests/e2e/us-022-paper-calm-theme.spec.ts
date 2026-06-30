@@ -99,7 +99,7 @@ test('US-022: dashboard hiển thị đúng tone paper-calm + hairline borders',
   await signInViaUi(page);
 
   // Dashboard heading
-  await expect(page.getByRole('heading', { name: 'Tạo lá số của bạn' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Một không gian xem lá số tinh gọn' })).toBeVisible();
 
   // Thay vì quét querySelectorAll('*') (trắng/viền nhạt là màu quá phổ biến → gần như
   // luôn pass kể cả khi theme hỏng), bám vào MỘT surface element ngữ nghĩa ổn định: link
@@ -139,7 +139,7 @@ test('US-022: trang chi tiết lá số áp theme paper-calm nhất quán', asyn
   await page.locator('#birth-gender').selectOption('male');
   await page.locator('#birth-hour').fill('10');
   await page.locator('#birth-minute').fill('30');
-  await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
+  await page.locator('#birth-day').locator('xpath=ancestor::form').getByRole('button', { name: 'Lập lá số', exact: true }).click();
   await page.waitForURL(/\/charts\/[0-9a-f-]{36}$/i, { timeout: 30_000 });
 
   await expect(page.getByRole('heading', { name: 'Lá số 12 cung' })).toBeVisible({

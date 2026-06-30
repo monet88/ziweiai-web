@@ -31,7 +31,7 @@ async function createZiweiChart(page: Page): Promise<string> {
   await page.locator('#birth-gender').selectOption('male');
   await page.locator('#birth-hour').fill('10');
   await page.locator('#birth-minute').fill('30');
-  await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
+  await page.locator('#birth-day').locator('xpath=ancestor::form').getByRole('button', { name: 'Lập lá số', exact: true }).click();
   await page.waitForURL(/\/charts\/[0-9a-f-]{36}$/i, { timeout: 30_000 });
   const match = page.url().match(/\/charts\/([0-9a-f-]{36})/i);
   expect(match, 'URL phải chứa chartId dạng uuid').not.toBeNull();

@@ -24,7 +24,7 @@ async function createZiweiChart(page: Page, birth: BirthData): Promise<string> {
   await page.locator('#birth-hour').fill(birth.hour);
   await page.locator('#birth-minute').fill(birth.minute);
 
-  await page.getByRole('main').getByRole('button', { name: 'Lập lá số', exact: true }).click();
+  await page.locator('#birth-day').locator('xpath=ancestor::form').getByRole('button', { name: 'Lập lá số', exact: true }).click();
 
   await page.waitForURL(/\/charts\/[0-9a-f-]{36}$/i, { timeout: 30_000 });
   const match = page.url().match(/\/charts\/([0-9a-f-]{36})/i);
@@ -40,7 +40,7 @@ test('US-009: khách chưa login không bị đá ra → lập + xem lá số �
 
   // Dashboard hiện ra (không bị đẩy về /sign-in). Mốc: tiêu đề + ô #birth-day.
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole('heading', { name: 'Tạo lá số của bạn' })).toBeVisible({
+  await expect(page.getByRole('heading', { name: 'Một không gian xem lá số tinh gọn' })).toBeVisible({
     timeout: 30_000,
   });
   await expect(page.locator('#birth-day')).toBeVisible();

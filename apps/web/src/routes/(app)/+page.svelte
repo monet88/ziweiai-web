@@ -172,7 +172,7 @@
         </div>
       </div>
 
-      <div class="chart-preview" role="region" aria-label={viCopy.dashboard.previewChart}>
+      <div class="chart-preview">
         <div class="chart-orbit">
           <span class="orbit-label primary">{viCopy.dashboard.previewPrimaryLabel}</span>
           <span class="orbit-label secondary">{viCopy.dashboard.previewSecondaryLabel}</span>

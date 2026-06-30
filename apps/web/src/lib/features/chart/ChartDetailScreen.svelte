@@ -236,6 +236,13 @@
     padding-top: var(--space-xl);
   }
 
+  /* Phan tu dau trong .detail-page nam ngay duoi hero (da co border-bottom): bo vien/padding
+     tren de tranh duong ke kep. */
+  .detail-page > :first-child {
+    border-top: none;
+    padding-top: 0;
+  }
+
   /* US-016: section vận hạn — hai card (ngày/tháng) song song trên desktop, xếp dọc mobile;
      nút báo cáo năm bên dưới. */
   .fortune-grid {

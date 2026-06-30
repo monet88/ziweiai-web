@@ -22,7 +22,7 @@ async function createZiweiChart(page: Page): Promise<void> {
   await page.locator('#birth-gender').selectOption('female');
   await page.locator('#birth-hour').fill('12');
   await page.locator('#birth-minute').fill('30');
-  await page.locator('#birth-day').locator('xpath=ancestor::form').getByRole('button', { name: 'Lập lá số', exact: true }).click();
+  await page.locator('form:has(#birth-day)').getByRole('button', { name: 'Lập lá số', exact: true }).click();
   await page.waitForURL(/\/charts\/[0-9a-f-]{36}(?:[/?#]|$)/i, { timeout: 30_000 });
 }
 

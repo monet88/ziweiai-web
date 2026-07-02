@@ -2,5 +2,11 @@
   "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm rebuild esbuild && pnpm --filter @ziweiai/contracts build && pnpm --filter @ziweiai/core build && pnpm --filter @ziweiai/astro-engine build && pnpm --filter @ziweiai/api build && pnpm --filter @ziweiai/web build",
-  "outputDirectory": "apps/web/build"
+  "outputDirectory": "apps/web/build",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/[...path]"
+    }
+  ]
 }

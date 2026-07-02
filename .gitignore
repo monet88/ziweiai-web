@@ -71,3 +71,5 @@ docs/deploy/lightsail-ssh-key.txt
 /AGENTS.md
 AGENTS.md.orig.bak
 .mcp.json
+.vercel
+.env*

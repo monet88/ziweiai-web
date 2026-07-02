@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Implementation Notes - Vercel Demo Deploy</title>
+    <style>
+      :root {
+        color: #171717;
+        background: #f7f7f5;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        padding: 40px 20px;
+      }
+
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        background: #ffffff;
+        border: 1px solid #deded8;
+        border-radius: 8px;
+        padding: 28px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 26px;
+      }
+
+      h2 {
+        margin: 28px 0 10px;
+        font-size: 17px;
+      }
+
+      p,
+      li {
+        line-height: 1.6;
+      }
+
+      code {
+        border-radius: 4px;
+        background: #f1f1ee;
+        padding: 2px 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Vercel Demo Deploy Notes</h1>
+      <p>
+        Ghi chú các quyết định triển khai demo public cho <code>tuvitoantap.vercel.app</code>.
+      </p>
+
+      <h2>Unspecified &amp; Implicit Decisions</h2>
+      <ul>
+        <li>
+          Web và API được chạy cùng origin trên Vercel: frontend gọi <code>/api</code> thay vì gọi trực tiếp
+          domain API cũ.
+        </li>
+        <li>
+          Supabase cloud được dùng làm backend data/auth cho demo. Các migration trong
+          <code>apps/api/supabase/migrations</code> đã được apply lên project cloud.
+        </li>
+        <li>
+          API wrapper của Vercel import bản NestJS đã build trong <code>apps/api/dist</code> để giữ đúng
+          compiler options cho decorator metadata.
+        </li>
+      </ul>
+
+      <h2>Deviations From Specification</h2>
+      <ul>
+        <li>
+          Không deploy API lên Lightsail vì workspace hiện không có SSH key và GitHub Actions của fork thiếu
+          <code>DEPLOY_SSH_KEY</code>, <code>DEPLOY_HOST</code>, <code>DEPLOY_USER</code>.
+        </li>
+        <li>
+          Demo public tạm chạy API dạng Vercel serverless function để user có thể test trên cùng domain.
+        </li>
+      </ul>
+
+      <h2>Considered Trade-offs</h2>
+      <ul>
+        <li>
+          Lightsail là hướng production đã được docs repo mô tả, phù hợp hơn cho API dài hạn và tác vụ AI lâu.
+        </li>
+        <li>
+          Vercel serverless nhanh hơn cho demo public nhưng có cold start và giới hạn thời gian thực thi.
+        </li>
+      </ul>
+
+      <h2>Maintenance Notes</h2>
+      <ul>
+        <li>
+          Không commit file env thật. Vercel production env đang chứa Supabase URL, anon key, service role và
+          config API cần thiết.
+        </li>
+        <li>
+          Nếu chuyển về Lightsail, đặt lại <code>PUBLIC_API_BASE_URL</code> sang API domain production và bỏ
+          serverless wrapper nếu không còn dùng.
+        </li>
+      </ul>
+    </main>
+  </body>
+</html>

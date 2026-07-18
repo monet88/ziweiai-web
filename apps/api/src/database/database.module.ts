@@ -7,6 +7,6 @@ import { SUPABASE_CLIENT, createSupabaseServiceRoleClient } from './supabase-cli
     { provide: SUPABASE_CLIENT, useFactory: createSupabaseServiceRoleClient },
     SupabasePersistenceGateway,
   ],
-  exports: [SupabasePersistenceGateway],
+  exports: [SupabasePersistenceGateway, SUPABASE_CLIENT],
 })
 export class DatabaseModule {}

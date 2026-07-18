@@ -508,3 +508,11 @@ export function createAnnualReport(
     token,
   });
 }
+
+/**
+ * DELETE /users/me — Bearer.
+ * Xoá tài khoản hiện tại.
+ */
+export function deleteAccount(token: string): Promise<void> {
+  return fetchNoContent('/users/me', { method: 'DELETE', token });
+}

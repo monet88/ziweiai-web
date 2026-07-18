@@ -15,6 +15,7 @@
   import BirthForm from '$lib/features/dashboard/BirthForm.svelte';
   import DashboardSidebar from '$lib/features/dashboard/DashboardSidebar.svelte';
   import ExtendedSystemNav from '$lib/features/dashboard/ExtendedSystemNav.svelte';
+  import { Settings } from 'lucide-svelte';
   import type { FeaturesResponse } from '@ziweiai/contracts';
 
   const auth = getAuthStore();
@@ -149,6 +150,9 @@
           <span class="session-email" title={auth.user?.email ?? undefined}
             >{auth.user?.email ?? viCopy.dashboard.unknownUser}</span
           >
+          <a class="settings-link" href={resolve('/settings')} title="Cài đặt">
+            <Settings class="w-5 h-5 text-slate-500 hover:text-slate-900 transition-colors" />
+          </a>
           <PrimaryButton
             label={viCopy.dashboard.signOut}
             variant="surface"
@@ -257,6 +261,18 @@
         {/each}
       </div>
     </section>
+
+    <footer class="mt-16 pt-8 border-t border-slate-200/60 pb-8">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500">
+        <div class="flex items-center gap-4">
+          <a href={resolve('/terms')} class="hover:text-slate-900 transition-colors">Điều khoản Dịch vụ</a>
+          <a href={resolve('/privacy')} class="hover:text-slate-900 transition-colors">Chính sách Bảo mật</a>
+        </div>
+        <div>
+          &copy; {new Date().getFullYear()} Tử Vi Toàn Tập. All rights reserved.
+        </div>
+      </div>
+    </footer>
   </div>
 </main>
 

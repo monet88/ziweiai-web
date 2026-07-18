@@ -7,6 +7,9 @@ import type { QuotasService } from '../../quotas/quotas.service';
 import type { ExplanationProviderRouter } from '../../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError } from '../../../providers/ai/provider-errors';
 import { apiEnv, apiEnvSchema } from '../../../config/env';
+import { ExplanationValidatorService } from './explanation-validator.service';
+import { ExplanationBillingService } from './explanation-billing.service';
+import { ExplanationRaceControllerService } from './explanation-race-controller.service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 // Test file sử dụng any cho mock fixture phức tạp (snapshot, persistence records) — phổ biến trong Nest/Vitest.
@@ -67,6 +70,9 @@ function createExplanationRequest(palaceScope?: string, explanationKind?: string
 
 describe('ExplanationsService (with palaceScope)', () => {
   let service: ExplanationsService;
+  let validatorService: ExplanationValidatorService;
+  let billingService: ExplanationBillingService;
+  let raceController: ExplanationRaceControllerService;
   let persistence: Partial<SupabasePersistenceGateway>;
   let quotas: Partial<QuotasService>;
   let providerRouter: Partial<ExplanationProviderRouter>;
@@ -96,10 +102,16 @@ describe('ExplanationsService (with palaceScope)', () => {
       }),
     };
 
+    validatorService = new ExplanationValidatorService();
+    billingService = new ExplanationBillingService(quotas as QuotasService, persistence as SupabasePersistenceGateway);
+    raceController = new ExplanationRaceControllerService(persistence as SupabasePersistenceGateway);
+
     service = new ExplanationsService(
       persistence as SupabasePersistenceGateway,
-      quotas as QuotasService,
       providerRouter as ExplanationProviderRouter,
+      validatorService,
+      billingService,
+      raceController,
     );
   });
 
@@ -426,7 +438,7 @@ describe('ExplanationsService (with palaceScope)', () => {
     (persistence.findExplanationResultByRequestId as any).mockResolvedValue(null);
 
     // Rút ngắn cửa sổ chờ để test không treo: spy waitForExplanationResult trả null ngay.
-    vi.spyOn(service as any, 'waitForExplanationResult').mockResolvedValue(null);
+    vi.spyOn(raceController as any, 'waitForExplanationResult').mockResolvedValue(null);
 
     await expect(service.createExplanation(user, '127.0.0.1', input)).rejects.toThrow(
       /PROVIDER_TIMEOUT|đang được xử lý/,
@@ -476,7 +488,7 @@ describe('ExplanationsService (with palaceScope)', () => {
     (persistence.createExplanationResult as any).mockResolvedValue(createdResult);
     (persistence.createHistoryView as any).mockResolvedValue(undefined);
 
-    const waitSpy = vi.spyOn(service as any, 'waitForExplanationResult');
+    const waitSpy = vi.spyOn(raceController as any, 'waitForExplanationResult');
 
     try {
       await service.createExplanation(user, '127.0.0.1', input);
@@ -641,6 +653,9 @@ describe('ExplanationsService (with palaceScope)', () => {
 
 describe('US-010 AI explanation gate', () => {
   let service: ExplanationsService;
+  let validatorService: ExplanationValidatorService;
+  let billingService: ExplanationBillingService;
+  let raceController: ExplanationRaceControllerService;
   let persistence: Partial<SupabasePersistenceGateway>;
   let quotas: Partial<QuotasService>;
   let providerRouter: Partial<ExplanationProviderRouter>;
@@ -670,10 +685,16 @@ describe('US-010 AI explanation gate', () => {
       }),
     };
 
+    validatorService = new ExplanationValidatorService();
+    billingService = new ExplanationBillingService(quotas as QuotasService, persistence as SupabasePersistenceGateway);
+    raceController = new ExplanationRaceControllerService(persistence as SupabasePersistenceGateway);
+
     service = new ExplanationsService(
       persistence as SupabasePersistenceGateway,
-      quotas as QuotasService,
       providerRouter as ExplanationProviderRouter,
+      validatorService,
+      billingService,
+      raceController,
     );
   });
 

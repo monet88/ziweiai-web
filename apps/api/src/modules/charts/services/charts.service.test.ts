@@ -164,6 +164,7 @@ describe('ChartsService', () => {
         viewedAt: snapshot.createdAt,
       })),
       listExplanationResultsForChart: vi.fn(async () => []),
+      deductXU: vi.fn(async () => true),
     };
     const quotasService = {
       assertCanCreateChart: vi.fn(async () => undefined),
@@ -724,6 +725,7 @@ describe('ChartsService — gate Mạnh Phái (US-017d)', () => {
       })),
       findChartSnapshotByDedupeKey: vi.fn(async () => null),
       createChartSnapshot: vi.fn(async () => buildChartRecord(snapshot)),
+      deductXU: vi.fn(async () => true),
     };
     const quotasService = {
       assertCanCreateChart: vi.fn(quotaOverride ?? (async () => undefined)),
@@ -758,7 +760,8 @@ describe('ChartsService — gate Mạnh Phái (US-017d)', () => {
   it('402 PAYMENT_REQUIRED khi cờ bật nhưng AI không free-for-all — gate AI TRƯỚC quota', async () => {
     apiEnv.EXTENDED_SYSTEM_MANGPAI_ENABLED = true;
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
-    const { service, quotasService } = buildService();
+    const { service, quotasService, persistenceGateway } = buildService();
+    persistenceGateway.deductXU = vi.fn(async () => false);
 
     await service.createChart(MANGPAI_USER, '127.0.0.1', mangpaiInput).then(
       () => expect.fail('phải ném PAYMENT_REQUIRED'),
@@ -810,6 +813,7 @@ describe('ChartsService — gate Mạnh Phái (US-017d)', () => {
       })),
       findChartSnapshotByDedupeKey: vi.fn(async () => null),
       createChartSnapshot: vi.fn(async () => buildChartRecord(snapshot)),
+      deductXU: vi.fn(async () => true),
     };
     const quotasService = { assertCanCreateChart: vi.fn(async () => undefined) };
     const service = new ChartsService(persistenceGateway as never, quotasService as never);

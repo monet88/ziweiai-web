@@ -55,10 +55,10 @@ function createChartRecord() {
   };
 }
 
-function createExplanationRequest(palaceScope?: string): CreateExplanationRequest {
+function createExplanationRequest(palaceScope?: string, explanationKind?: string): CreateExplanationRequest {
   return {
     chartSnapshotId: '11111111-1111-1111-1111-111111111111',
-    explanationKind: 'overview',
+    explanationKind: (explanationKind as any) || 'overview',
     palaceScope: palaceScope as any,
     providerPreference: 'auto',
     userConsentedToStorePrompt: false,
@@ -81,6 +81,7 @@ describe('ExplanationsService (with palaceScope)', () => {
       tryClaimExplanationRequest: vi.fn(),
       createExplanationResult: vi.fn(),
       createHistoryView: vi.fn(),
+      deductXU: vi.fn().mockResolvedValue(true),
     };
 
     quotas = {
@@ -160,6 +161,28 @@ describe('ExplanationsService (with palaceScope)', () => {
       chartSnapshotId: '11111111-1111-1111-1111-111111111111',
     }));
     expect(persistence.createHistoryView).toHaveBeenCalled();
+  });
+
+  it('rejects blocked snapshots before cache/provider generation', async () => {
+    const user = createAuthenticatedUser();
+    const input = createExplanationRequest();
+    const chartRecord = createChartRecord();
+    chartRecord.snapshot.calculationConfidence = {
+      level: 'blocked',
+      reasons: ['XUANSHU_REFERENCE_RUNTIME_UNAVAILABLE'],
+      visibleMessageKey: 'chart.runtime.reference-unavailable',
+      blocksExactReading: true,
+    };
+
+    (persistence.findChartSnapshotById as any).mockResolvedValue(chartRecord);
+
+    await expect(service.createExplanation(user, '127.0.0.1', input)).rejects.toMatchObject({
+      status: HttpStatus.BAD_REQUEST,
+    });
+
+    expect(persistence.findExplanationRequestByIdempotencyKey).not.toHaveBeenCalled();
+    expect(persistence.createExplanationRequest).not.toHaveBeenCalled();
+    expect(providerRouter.generate).not.toHaveBeenCalled();
   });
 
   it('returns cached result on idempotent hit for same palaceScope', async () => {
@@ -632,6 +655,7 @@ describe('US-010 AI explanation gate', () => {
       tryClaimExplanationRequest: vi.fn(),
       createExplanationResult: vi.fn(),
       createHistoryView: vi.fn(),
+      deductXU: vi.fn().mockResolvedValue(true),
     };
 
     quotas = {
@@ -716,10 +740,11 @@ describe('US-010 AI explanation gate', () => {
     (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = false;
     try {
       const user = createAuthenticatedUser();
-      const input = createExplanationRequest('careerPalace');
+      const input = createExplanationRequest('careerPalace', 'career');
       const chartRecord = createChartRecord();
       (persistence.findChartSnapshotById as any).mockResolvedValue(chartRecord);
       (persistence.findExplanationRequestByIdempotencyKey as any).mockResolvedValue(null);
+      (persistence.deductXU as any).mockResolvedValue(false);
       await expect(service.createExplanation(user, '127.0.0.1', input)).rejects.toMatchObject({
         status: HttpStatus.PAYMENT_REQUIRED,
       });

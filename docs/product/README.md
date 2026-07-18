@@ -1,7 +1,8 @@
 # Product Docs
 
-Hợp đồng sản phẩm hiện tại của `ziweiai-web`, dẫn xuất từ `SPEC.md` (SPEC là input
-material, không phải living plan — xem `docs/HARNESS.md` §Spec Lifecycle).
+Hợp đồng sản phẩm hiện tại của `ziweiai-web`, dẫn xuất từ spec gốc và được đồng
+bộ với `spec.md`. Spec là input material, không phải living plan — xem
+`docs/HARNESS.md` §Spec Lifecycle.
 
 ## File hiện có
 
@@ -13,11 +14,11 @@ material, không phải living plan — xem `docs/HARNESS.md` §Spec Lifecycle).
 
 ## Update Rule
 
-When behavior changes:
+Khi behavior thay đổi:
 
 1. Update the affected product doc.
 2. Update or create the story packet.
-3. Update durable proof status with `scripts/bin/harness-cli story add` or
-   `scripts/bin/harness-cli story update`.
-4. Record a decision if the change affects architecture, scope, risk, or a
-   previously settled product rule.
+3. Update durable proof status nếu Harness CLI có trong workspace. Nếu không có,
+   ghi evidence bằng code/tests/report như `docs/TEST_MATRIX.md` mô tả.
+4. Record a decision nếu thay đổi ảnh hưởng architecture, scope, risk hoặc rule
+   sản phẩm đã chốt.

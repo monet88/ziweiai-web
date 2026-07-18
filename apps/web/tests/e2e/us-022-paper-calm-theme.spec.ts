@@ -1,14 +1,14 @@
 import { test, expect } from '@playwright/test';
 import { signInViaUi } from './sign-in';
 
-// US-022: Notion paper-calm theme — E2E test.
+// US-022: paper-calm/Luvsa transitional theme — E2E test.
 // Kiểm các thuộc tính thiết kế đã triển khai đúng trên UI thật:
 //   1. Design token CSS variables khai báo đúng trên :root (nền, chữ, accent, border, spacing, radius).
-//   2. Font Inter đã được load (fontFamily trên body chứa 'Inter').
-//   3. Nền trang (canvas paper) là #f6f5f4 hoặc gần.
+//   2. Font sans đã được load (Space Grotesk, có Inter fallback).
+//   3. Nền trang (canvas paper) là #f5f2ed.
 //   4. Surface cards (thẻ nổi) dùng nền trắng #ffffff.
 //   5. Viền hairline 1px nhạt (không bóng nặng).
-//   6. Accent primary là xanh Notion (#0075de).
+//   6. Accent primary là monochrome charcoal (#0f0f12).
 //
 // Không có logic nghiệp vụ — chỉ xác nhận visual design token đã áp dụng.
 
@@ -37,26 +37,29 @@ test('US-022: design token CSS variables khai báo đúng trên :root', async ({
     };
   });
 
-  // Nền canvas paper ấm
-  expect(tokens.bgPrimary, '--color-bg-primary phải là #f6f5f4').toBe('#f6f5f4');
+  // Nền canvas paper ấm theo direction 0031.
+  expect(tokens.bgPrimary, '--color-bg-primary phải là #f5f2ed').toBe('#f5f2ed');
   // Surface trắng (trình duyệt rút gọn #ffffff → #fff)
   expect(['#ffffff', '#fff'].includes(tokens.bgSurface), `--color-bg-surface phải là #fff(fff) (got: ${tokens.bgSurface})`).toBe(true);
   // Elevated nhạt
-  expect(tokens.bgElevated, '--color-bg-elevated phải là #efedea').toBe('#efedea');
+  expect(tokens.bgElevated, '--color-bg-elevated phải là #ede8e0').toBe('#ede8e0');
   // Chữ gần-đen ấm
-  expect(tokens.textPrimary, '--color-text-primary phải là #1a1a1a').toBe('#1a1a1a');
-  expect(tokens.textSecondary).toBe('#31302e');
-  expect(tokens.textMuted).toBe('#615d59');
-  // Accent xanh Notion
-  expect(tokens.accentPrimary).toBe('#0075de');
+  expect(
+    ['#111111', '#111'].includes(tokens.textPrimary),
+    `--color-text-primary phải là #111111/#111 (got: ${tokens.textPrimary})`,
+  ).toBe(true);
+  expect(tokens.textSecondary).toBe('#3a3a3a');
+  expect(['#666666', '#666'].includes(tokens.textMuted), `--color-text-muted phải là #666666/#666 (got: ${tokens.textMuted})`).toBe(true);
+  // Accent monochrome
+  expect(tokens.accentPrimary).toBe('#0f0f12');
   // Accent AI tím
   expect(tokens.accentAi).toBe('#6d28d9');
   // Danger đỏ
   expect(tokens.accentDanger).toBe('#c0392b');
   // Border hairline
-  expect(tokens.borderHairline).toBe('#e6e6e6');
-  // Font Inter
-  expect(tokens.fontSans).toContain('Inter');
+  expect(tokens.borderHairline).toBe('#e7e7e7');
+  // Font sans chính là Space Grotesk, Inter giữ vai trò fallback.
+  expect(tokens.fontSans).toContain('Space Grotesk');
 
   // Spacing base 8px
   expect(tokens.spaceXs).toBe('8px');
@@ -86,10 +89,10 @@ test('US-022: font Inter load trên body + nền canvas đúng', async ({ page }
   // Font phải chứa Inter (self-hosted)
   expect(htmlStyles.fontFamily.toLowerCase(), 'html fontFamily phải chứa Inter').toContain('inter');
 
-  // Background nền trang (canvas paper) trên html — rgb(246, 245, 244) tương đương #f6f5f4
+  // Background nền trang (canvas paper) trên html — rgb(245, 242, 237) tương đương #f5f2ed
   expect(
-    htmlStyles.backgroundColor === 'rgb(246, 245, 244)' || htmlStyles.backgroundColor === '#f6f5f4',
-    `html background phải là #f6f5f4 (got: ${htmlStyles.backgroundColor})`,
+    htmlStyles.backgroundColor === 'rgb(245, 242, 237)' || htmlStyles.backgroundColor === '#f5f2ed',
+    `html background phải là #f5f2ed (got: ${htmlStyles.backgroundColor})`,
   ).toBe(true);
 
   await page.screenshot({ path: 'test-results/us-022-font-and-canvas.png', fullPage: true });
@@ -104,7 +107,7 @@ test('US-022: dashboard hiển thị đúng tone paper-calm + hairline borders',
   // Thay vì quét querySelectorAll('*') (trắng/viền nhạt là màu quá phổ biến → gần như
   // luôn pass kể cả khi theme hỏng), bám vào MỘT surface element ngữ nghĩa ổn định: link
   // trong nav "Hệ thuật số khác". Link này dùng đồng thời --color-bg-surface (#fff) +
-  // --color-border-hairline (#e6e6e6), nên một element chứng minh cả hai token được áp dụng.
+  // --color-border-hairline (#e7e7e7), nên một element chứng minh cả hai token được áp dụng.
   // Bám role/landmark (không bám class nội bộ dễ đổi).
   const surfaceLink = page
     .getByRole('navigation', { name: 'Hệ thuật số khác' })
@@ -121,9 +124,9 @@ test('US-022: dashboard hiển thị đúng tone paper-calm + hairline borders',
   expect(surfaceStyles.background, 'Surface element phải có nền trắng (--color-bg-surface)').toBe(
     'rgb(255, 255, 255)',
   );
-  // hairline = --color-border-hairline → #e6e6e6 → rgb(230, 230, 230)
+  // hairline = --color-border-hairline → #e7e7e7 → rgb(231, 231, 231)
   expect(surfaceStyles.border, 'Surface element phải có viền hairline (--color-border-hairline)').toBe(
-    'rgb(230, 230, 230)',
+    'rgb(231, 231, 231)',
   );
 
   await page.screenshot({ path: 'test-results/us-022-dashboard-paper-calm.png', fullPage: true });
@@ -155,9 +158,9 @@ test('US-022: trang chi tiết lá số áp theme paper-calm nhất quán', asyn
       fontSans: s.getPropertyValue('--font-sans').trim(),
     };
   });
-  expect(chartTokens.bgPrimary).toBe('#f6f5f4');
-  expect(chartTokens.accentPrimary).toBe('#0075de');
-  expect(chartTokens.fontSans).toContain('Inter');
+  expect(chartTokens.bgPrimary).toBe('#f5f2ed');
+  expect(chartTokens.accentPrimary).toBe('#0f0f12');
+  expect(chartTokens.fontSans).toContain('Space Grotesk');
 
   await page.screenshot({ path: 'test-results/us-022-chart-detail-theme.png', fullPage: true });
 });

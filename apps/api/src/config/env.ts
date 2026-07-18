@@ -146,6 +146,8 @@ export const apiEnvSchema = z.object({
   // Khi store ngoài mất kết nối: open = cho qua + log warn (mặc định, ưu tiên ổn định —
   // quota là chống lạm dụng, không phải hàng rào bảo mật); closed = chặn (ném quota error).
   QUOTA_FAIL_MODE: z.enum(['open', 'closed']).default('open'),
+  SEPAY_WEBHOOK_SECRET: z.string().optional(),
+  SENTRY_DSN: z.string().optional(),
   npm_package_version: z.string().min(1).optional(),
 });
 

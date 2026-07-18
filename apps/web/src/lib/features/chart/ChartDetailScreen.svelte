@@ -71,6 +71,8 @@
   const summaryItems = $derived(detail.snapshot ? formatChartSummaryItems(detail.snapshot.summary) : []);
   const centerItems = $derived(detail.snapshot ? formatCenterSummaryItems(detail.snapshot.summary) : []);
   const selectionHint = $derived(getChartDetailSelectionHint(copy, detail.selectedPalace?.name ?? null));
+  const explanationHint = $derived(showBoard ? selectionHint : copy.overviewExplanationGenericHint);
+  const explanationBlocked = $derived(detail.snapshot?.calculationConfidence.blocksExactReading ?? false);
 
   const explanationButtonLabel = $derived(
     detail.selectedPalace ? copy.generatePalaceExplanation : copy.generateOverviewExplanation,
@@ -169,7 +171,7 @@
 
       <section class="explanation-section" aria-labelledby="explanation-title">
         <h2 class="section-title" id="explanation-title">{copy.explanationTitle}</h2>
-        <p class="hint">{selectionHint}</p>
+        <p class="hint">{explanationHint}</p>
 
         {#if explanation.isPaymentRequired}
           <PrimaryButton
@@ -182,10 +184,13 @@
           <PrimaryButton
             label={explanation.hasResult ? copy.regenerateExplanation : explanationButtonLabel}
             loading={explanation.isPending}
+            disabled={explanationBlocked}
             onclick={explanation.generate}
           />
         {/if}
-        {#if explanation.isPending && !explanation.hasResult}
+        {#if explanationBlocked}
+          <NoticeBanner tone="warning" message={copy.explanationBlockedDescription} />
+        {:else if explanation.isPending && !explanation.hasResult}
           <p class="status">{viCopy.explanation.statusPending}</p>
         {:else if explanation.isError && explanation.errorMessage && !explanation.isPaymentRequired}
           <NoticeBanner tone="danger" message={explanation.errorMessage} />

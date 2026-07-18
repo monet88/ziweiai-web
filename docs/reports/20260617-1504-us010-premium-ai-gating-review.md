@@ -1,5 +1,9 @@
 # Review Report: US-010 Premium AI Gating
 
+> Status note 2026-07-13: report này là historical review cho nhánh US-010.
+> Không dùng nó làm bằng chứng production hiện tại. Trạng thái demo mới nhất
+> nằm ở `docs/project-execution-dashboard.md` và `docs/reports/README.md`.
+
 **Timestamp:** 20260617-1504 (2026-06-17 Asia/Saigon)  
 **Branch:** feat/us-010-premium-ai-gating  
 **Story:** docs/stories/epics/E10-premium-ai-gating/US-010-premium-ai-gating.md  

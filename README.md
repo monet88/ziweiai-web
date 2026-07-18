@@ -16,12 +16,17 @@ packages/
   core/                   # logic, kéo theo iztro — SERVER-ONLY
   astro-engine/           # iztro + lunar-javascript + temporal — SERVER-ONLY
 vendor/xuanshu-runtime/   # runtime SERVER-ONLY (LiuYao/DaLiuRen/QiMen bridge)
-docs/                     # SPEC, product contract, story packets, decisions
-scripts/bin/harness-cli.exe   # CLI lớp durable (intake/story/trace/matrix)
-SPEC.md                   # nguồn chân lý duy nhất — full spec 8 phase
+docs/                     # product contract, deploy notes, story packets, decisions
 ```
 
-Tài liệu nền tảng nên đọc theo thứ tự: `SPEC.md` → `docs/product/invariants.md` → `docs/HARNESS.md` + `docs/ARCHITECTURE.md` → story packets trong `docs/stories/epics/` → `docs/decisions/`.
+Tài liệu nền tảng nên đọc theo thứ tự: `docs/product/overview.md` →
+`docs/product/invariants.md` → `docs/product/api-contract.md` →
+`docs/deploy/vercel-demo-release-checklist.md` → story packets trong
+`docs/stories/epics/` → `docs/decisions/`.
+
+Lưu ý vận hành 2026-07-12: một số tài liệu harness cũ còn nhắc
+`scripts/bin/harness-cli.exe`, nhưng binary đó không có trong workspace hiện tại.
+Khi cần trạng thái thực tế, ưu tiên code + tests + báo cáo deploy gần nhất.
 
 ## Stack
 
@@ -29,7 +34,7 @@ Tài liệu nền tảng nên đọc theo thứ tự: `SPEC.md` → `docs/produc
 |---|---|
 | Backend | NestJS 11, Zod v4, Supabase JS |
 | Web | SvelteKit 2 + Svelte 5 runes, Vite, `@tanstack/svelte-query`, `@supabase/supabase-js` |
-| Web render | `adapter-static` chế độ SPA (`ssr=false`, `prerender=false`, `fallback: index.html`) — app sau đăng nhập, không cần SSR/SEO |
+| Web render | `adapter-static` chế độ SPA (`ssr=false`, `prerender=false`, `fallback: index.html`) — anonymous/session app, không cần SSR/SEO |
 | Styling | scoped CSS + CSS custom properties (design tokens). **Không dùng Tailwind** |
 | Engine lá số | iztro + lunar-javascript + `@js-temporal` (server-only) |
 | Monorepo | pnpm workspace + Turbo. `pnpm@10.17.1`, Node `>=22` |
@@ -53,7 +58,8 @@ Tài liệu nền tảng nên đọc theo thứ tự: `SPEC.md` → `docs/produc
 | `useRouter` | `goto` |
 | `EXPO_PUBLIC_*` / `process.env` | `$env/static/public` (`PUBLIC_*`) |
 
-Mapping đầy đủ: `SPEC.md` Part A8.
+Mapping lịch sử đầy đủ nằm trong spec gốc; với trạng thái hiện tại, ưu tiên
+`spec.md`, `docs/product/*` và các `AGENTS.md` theo phạm vi.
 
 ## API backend
 
@@ -65,7 +71,7 @@ Mapping đầy đủ: `SPEC.md` Part A8.
 | Vận hạn | `GET /charts/:id/daily`, `GET /charts/:id/monthly`, `POST /charts/:id/annual-report` |
 | Luận giải + lịch sử | `POST /explanations`, `GET /history?limit=N` |
 | Trợ lý AI hội thoại | `POST /conversations`, `GET /conversations`, `GET /conversations/:id`, `POST /conversations/:id/messages`, `POST /conversations/:id/messages/stream` |
-| Các hệ thuật số mở rộng | `POST /divinations`, `POST /draws/tarot`, `POST /vision/face`, `POST /vision/palm`, `POST /quizzes/mbti`, `POST /pairings` |
+| Các hệ thuật số mở rộng | `POST /divinations`, `POST /draws/tarot`, `POST /draws/lenormand`, `POST /draws/stick`, `POST /dreams/interpret`, `POST /almanac/select`, `POST /vision/face`, `POST /vision/palm`, `POST /quizzes/mbti`, `POST /pairings` |
 
 Mọi response UI dùng phải `parse()` bằng schema từ `@ziweiai/contracts` (tên camelCase: `historyListResponseSchema`, `chartDetailResponseSchema`, ...) — web không tự định nghĩa DTO. Token = `session.access_token` gửi qua header `Authorization: Bearer`. Chi tiết: `docs/product/api-contract.md`.
 
@@ -96,15 +102,34 @@ Chạy từ repo root.
 | `pnpm -F @ziweiai/web build` | Build SPA tĩnh ra `build/` |
 | `pnpm -F @ziweiai/web check` | svelte-check + tsc |
 | `pnpm -F @ziweiai/web e2e` | Playwright E2E |
+| `pnpm check:supabase-migrations` | Kiểm tra tên/version migration local; bật `SUPABASE_VERIFY_LINKED=1` để chạy ledger linked |
+| `pnpm deploy:vercel-demo` | Deploy demo Vercel + alias `tuvitoantap.vercel.app` bằng `VERCEL_GALAXY` |
+| `pnpm smoke:vercel-demo` | Safe smoke demo Vercel: inspect alias, health/features, SPA fallback; không tạo dữ liệu |
+| `pnpm smoke:vercel-live-mutation` | Guarded smoke tạo Lục Hào + gọi AI thật; mặc định skip, chỉ chạy khi bật cờ xác nhận |
 
 ## Trạng thái
 
-Nền tảng 8 phase đầu (US-001..US-007) đã xong: scaffold → auth + route guard → logic thuần + i18n + design tokens → UI primitives → dashboard + birth form → chi tiết lá số Tử Vi + luận giải → các hệ thuật số khác + lịch sử.
+Trạng thái theo code/tests/deploy ngày 2026-07-12:
 
-Sau đó tiếp tục mở rộng (US-008 trở đi): lá số Tử Vi trực quan + đường nối tam phương tứ chính, tô màu sao, highlight đa màu vận hạn, panel vận hạn (đại vận/lưu niên/lưu nguyệt/lưu nhật); quota anon qua Redis/Upstash; khung 6 hệ luận giải mở rộng (Hợp Hôn, Manh Phái, Tarot, MBTI, Xem Tướng, Xem Tay) + trợ lý AI hội thoại multi-turn; ví XU + ledger + thanh toán VietQR; re-theme Notion paper-calm; flow gieo quẻ (Lục Hào / Mai Hoa). Mặc định AI provider là **openai-compat**, fallback **deepseek**.
+- Demo public chạy tại `https://tuvitoantap.vercel.app`.
+- Luồng chính đã verify: anonymous session → lập lá số → mở `/charts/<uuid>` →
+  refresh detail không còn Vercel 404.
+- Đã có các nhóm tính năng: Tử Vi, Bát Tự, Mai Hoa, Lục Hào, Đại Lục Nhâm, Kỳ
+  Môn, Hợp Hôn, Mang Phái, Tarot, MBTI, Face/Palm, Lenormand, Giải mộng, Xin
+  xăm, Hoàng lịch, vận hạn ngày/tháng/năm và trợ lý hội thoại.
+- Có 46 Playwright E2E specs trong `apps/web/tests/e2e`; full non-live E2E gần nhất pass 46/46 ngày 2026-07-13.
+- Có 9 migration Supabase trong `apps/api/supabase/migrations`.
 
-Xem proof status từng story: `scripts/bin/harness-cli.exe query matrix`.
+Chưa coi là production business-ready:
+
+- Ví XU / ledger / VietQR / payment chưa là flow hoàn chỉnh.
+- Một số story packet cũ vẫn ghi `planned`; xem `docs/TEST_MATRIX.md` để biết
+  operational snapshot mới nhất.
+- Hạ tầng đang có hai hướng: Lightsail production guide cũ và Vercel demo hiện
+  đang dùng. Demo Vercel là đường kiểm thử public hiện tại.
 
 ## Quy trình harness
 
-Repo chạy harness workflow bắt buộc (lane normal/high-risk), theo thứ tự: intake → story breakdown → (fix doc drift nếu có) → implement → validate + update matrix → trace; thay đổi kiến trúc → decision. Chi tiết: `docs/HARNESS.md`, `docs/FEATURE_INTAKE.md`. CLI ở `scripts/bin/harness-cli.exe`.
+Repo từng dùng harness workflow (lane normal/high-risk). Vì binary harness không
+có trong workspace hiện tại, các cập nhật status gần đây dùng kiểm chứng trực
+tiếp: code, unit/e2e, Vercel inspect, smoke test và báo cáo trong `docs/reports/`.

@@ -9,7 +9,6 @@ import {
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { throwQuotaRateLimited } from '../../quotas/quota-http';
-import { assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
 import { apiEnv } from '../../../config/env';
 import { buildExplanationRequestIdempotencyKey } from '../../../database/idempotency';
 import { buildFailedExplanationRetentionTimestamp, DEFAULT_PROMPT_STORAGE_MODE, PERSONALIZED_CACHE_SCOPE, shouldStorePrompt } from '../../../database/persistence-lifecycle';
@@ -18,6 +17,7 @@ import { ExplanationProviderRouter } from '../../../providers/ai/explanation-pro
 import { resolveDivinationInquiry } from '../../../providers/ai/divination-inquiry';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../../providers/ai/provider-errors';
 import { QuotasService } from '../../quotas/quotas.service';
+import { DailyQuotaExceededError } from '../../quotas/quota-errors';
 
 // Cửa sổ chờ in-flight phải PHỦ TRỌN thời gian provider có thể chạy (AI_PROVIDER_TIMEOUT_MS),
 // cộng đệm cho lần ghi DB sau khi provider trả về. Nếu chờ ngắn hơn provider timeout, một worker
@@ -38,13 +38,29 @@ export class ExplanationsService {
   ) {}
 
   async createExplanation(user: AuthenticatedUser, ipAddress: string, input: CreateExplanationRequest) {
-    // email === null ⟺ phiên ẩn danh (decision 0009): app chỉ có email+password, anon JWT
-    // không mang email → dùng làm tín hiệu áp trần daily-per-IP cho đường anon.
-    await this.assertCanCreateExplanation(user.userId, ipAddress, user.email === null);
+    let requiresXu = false;
+    const isAnonymous = user.email === null;
+    try {
+      await this.quotasService.assertCanCreateExplanation(user.userId, ipAddress, isAnonymous);
+    } catch (error) {
+      if (error instanceof DailyQuotaExceededError && !isAnonymous) {
+        requiresXu = true;
+      } else {
+        throwQuotaRateLimited(error, 'Đã vượt hạn mức tạo luận giải.');
+      }
+    }
 
     const chartRecord = await this.persistenceGateway.findChartSnapshotById(user.userId, input.chartSnapshotId);
     if (!chartRecord) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số đã lưu.');
+    }
+
+    if (chartRecord.snapshot.calculationConfidence.blocksExactReading) {
+      throw new ApiErrorHttpException(
+        HttpStatus.BAD_REQUEST,
+        'INVALID_INPUT',
+        'Chưa thể tạo luận giải AI vì dữ liệu lá số/quẻ chưa đủ tin cậy. Vui lòng tạo lại với dữ liệu đầy đủ trước khi luận giải.',
+      );
     }
 
     // Early validation palaceScope vs snapshot (P1 fix từ review PR #5)
@@ -123,7 +139,7 @@ export class ExplanationsService {
       // US-010 (decision 0010): gate ENTITLEMENT đặt TRƯỚC mọi thao tác tạo/claim request record
       // sinh generation mới. Cache-hit ở trên đã free (kết quả đã có). Khi flag=false + chưa entitled
       // → ném 402 ngay, KHÔNG ghi/đổi state request (tránh ô nhiễm 'failed' + tốn lifecycle).
-      this.assertCanUseAiExplanation();
+      await this.consumeQuotaOrXu(user.userId, input, requiresXu);
 
       // Sửa P1 race (violation): logic reuse trước đây (line 68) cho cả pending/running/failed gây duplicate worker
       // (hai concurrent call cùng idempotencyKey đều thấy no-result -> đều generate + createResult).
@@ -292,7 +308,7 @@ export class ExplanationsService {
       });
     } else {
       // US-010 (decision 0010): gate TRƯỚC khi tạo request record mới (cache-hit đã bypass ở trên).
-      this.assertCanUseAiExplanation();
+      await this.consumeQuotaOrXu(user.userId, input, requiresXu);
       const failureRetainsUntil = buildFailedExplanationRetentionTimestamp(new Date());
       request = await this.persistenceGateway.createExplanationRequest({
         ownerUserId: user.userId,
@@ -453,13 +469,7 @@ export class ExplanationsService {
     });
   }
 
-  private async assertCanCreateExplanation(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
-    try {
-      await this.quotasService.assertCanCreateExplanation(userId, ipAddress, isAnonymous);
-    } catch (error) {
-      throwQuotaRateLimited(error, 'Đã vượt hạn mức tạo luận giải.');
-    }
-  }
+
 
   /**
    * Chờ (poll) cho result xuất hiện trên request id đã có (từ worker in-flight khác).
@@ -501,11 +511,23 @@ export class ExplanationsService {
     return Date.now() - updatedAtMs > EXPLANATION_INFLIGHT_STALE_MS;
   }
 
-  private assertCanUseAiExplanation(): void {
-    // US-016: logic gate đã trích ra module chung `common/entitlement/ai-entitlement.guard`
-    // để AnnualReportService dùng lại (decision 0010). Giữ method wrapper để 2 call-site cũ
-    // trong service này không đổi.
-    assertCanUseAiExplanation(this.logger);
+  private async consumeQuotaOrXu(userId: string, input: CreateExplanationRequest, isOverDailyQuota: boolean): Promise<void> {
+    const isPremium = input.explanationKind !== 'overview';
+    const needsXu = isPremium || isOverDailyQuota;
+
+    if (needsXu) {
+      const success = await this.persistenceGateway.deductXU(userId, 1);
+      if (!success) {
+        const message = isPremium 
+          ? 'Tính năng luận giải chuyên sâu yêu cầu 1 XU. Vui lòng nạp thêm XU để sử dụng.'
+          : 'Bạn đã hết lượt luận giải miễn phí trong ngày. Vui lòng nạp XU (1 XU/lượt) để tiếp tục.';
+        throw new ApiErrorHttpException(
+          HttpStatus.PAYMENT_REQUIRED,
+          'PAYMENT_REQUIRED',
+          message
+        );
+      }
+    }
   }
 
 }

@@ -1,4 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
+import type { Session } from '@supabase/supabase-js';
+import { getCachedSession, installSession } from './sign-in';
+import { getTestUserForWorker, resolveWorkerIndex } from './test-user';
 
 // US-009 (decision 0009): bỏ tường đăng nhập. Khách chưa login mở app → AuthStore.init()
 // cấp phiên ẩn danh qua Supabase anonymous sign-in → KHÔNG bị redirect /sign-in, lập + xem
@@ -14,6 +17,24 @@ interface BirthData {
   gender: 'male' | 'female';
   hour: string;
   minute: string;
+}
+
+async function installAnonymousLikeSession(page: Page): Promise<void> {
+  // Supabase Cloud rate-limit anonymous sign-in trong full suite. Dùng JWT thật của user test,
+  // nhưng ghi user object phía browser như anonymous để kiểm tra UI/flow "không đăng nhập email"
+  // ổn định; API vẫn xác thực bằng access_token thật.
+  const session = await getCachedSession(getTestUserForWorker(resolveWorkerIndex()));
+  const anonymousLikeSession: Session = {
+    ...session,
+    user: {
+      ...session.user,
+      email: undefined,
+      phone: undefined,
+      is_anonymous: true,
+      app_metadata: { ...session.user.app_metadata, provider: 'anonymous' },
+    },
+  };
+  await installSession(page, anonymousLikeSession);
 }
 
 async function createZiweiChart(page: Page, birth: BirthData): Promise<string> {
@@ -35,6 +56,8 @@ async function createZiweiChart(page: Page, birth: BirthData): Promise<string> {
 test('US-009: khách chưa login không bị đá ra → lập + xem lá số ẩn danh → CTA đăng nhập hiện', async ({
   page,
 }) => {
+  await installAnonymousLikeSession(page);
+
   // ---- Mở app chưa đăng nhập → KHÔNG redirect /sign-in ----
   await page.goto('/');
 

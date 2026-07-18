@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Implementation Notes - Vercel Demo Deploy</title>
+    <title>Ghi Chú Triển Khai - Demo Vercel Và Đồng Bộ Tài Liệu</title>
     <style>
       :root {
         color: #171717;
@@ -50,12 +50,13 @@
   </head>
   <body>
     <main>
-      <h1>Vercel Demo Deploy Notes</h1>
+      <h1>Ghi Chú Triển Khai Demo Vercel Và Đồng Bộ Tài Liệu</h1>
       <p>
-        Ghi chú các quyết định triển khai demo public cho <code>tuvitoantap.vercel.app</code>.
+        Ghi chú các quyết định triển khai demo public cho <code>tuvitoantap.vercel.app</code>
+        và đợt đồng bộ tài liệu trạng thái ngày 2026-07-12 đến 2026-07-13.
       </p>
 
-      <h2>Unspecified &amp; Implicit Decisions</h2>
+      <h2>Quyết Định Ngầm Định Và Chưa Nói Rõ</h2>
       <ul>
         <li>
           Web và API được chạy cùng origin trên Vercel: frontend gọi <code>/api</code> thay vì gọi trực tiếp
@@ -63,15 +64,50 @@
         </li>
         <li>
           Supabase cloud được dùng làm backend data/auth cho demo. Các migration trong
-          <code>apps/api/supabase/migrations</code> đã được apply lên project cloud.
+          <code>apps/api/supabase/migrations</code> là nguồn schema cần được đối chiếu bằng
+          <code>pnpm check:supabase-migrations</code>; linked cloud ledger đã được xác minh ngày 2026-07-13
+          10:23 +07 cho project ref <code>ttvqrukctlebkggsylun</code>.
+        </li>
+        <li>
+          DeepSeek được giữ làm AI provider chính cho demo; OpenRouter được cấu hình qua lớp
+          <code>OPENAI_COMPAT_*</code> để thay thế nhóm OpenAI/Gemini-compatible khi cần fallback hoặc vision.
         </li>
         <li>
           API wrapper của Vercel import bản NestJS đã build trong <code>apps/api/dist</code> để giữ đúng
           compiler options cho decorator metadata.
         </li>
+        <li>
+          Tài liệu trạng thái được chuẩn hoá theo code/tests/deploy hiện tại thay vì theo các story packet
+          cũ còn ghi <code>planned</code>. SPEC/Harness được giữ như tài liệu intent hoặc lịch sử vận hành.
+        </li>
+        <li>
+          Thêm <code>AGENTS.md</code> ở root làm quy tắc điều phối chung cho repo. File này yêu cầu đọc
+          <code>spec.md</code>, <code>goal.md</code> và các <code>AGENTS.md</code> gần phạm vi sửa trước khi
+          thay đổi code, test, deploy hoặc tài liệu.
+        </li>
+        <li>
+          Playwright E2E build/preview web phải ép <code>PUBLIC_API_BASE_URL=http://localhost:3000</code> để
+          luôn gọi API local. Nếu không, biến môi trường shell có thể làm client bundle trỏ sang API
+          production và gây CORS fail trên localhost.
+        </li>
+        <li>
+          E2E đăng nhập email dùng session Supabase thật được cache theo worker thay vì đăng nhập qua form lặp
+          lại ở mọi spec. Quyết định này giữ JWT thật cho API nhưng giảm rủi ro chạm Supabase Auth rate limit
+          khi chạy full suite song song.
+        </li>
+        <li>
+          US-009 dùng session test thật được đánh dấu anonymous-like ở phía browser để kiểm tra UI/flow không
+          đăng nhập email ổn định. Đây là kiểm tra regression cho dashboard/create/detail/CTA; không phải bằng
+          chứng production rằng Supabase anonymous sign-in luôn khả dụng dưới tải test lặp lại.
+        </li>
+        <li>
+          Mapper lỗi quota không còn là catch-all 429. Chỉ lỗi vượt quota/rate-limit thật mới trả
+          <code>RATE_LIMITED</code>; lỗi hạ tầng lạ từ quota DB/store trả <code>503 INTERNAL_ERROR</code>
+          với thông báo thử lại, để người dùng không bị báo nhầm là đã vượt hạn mức.
+        </li>
       </ul>
 
-      <h2>Deviations From Specification</h2>
+      <h2>Điểm Khác Với Đặc Tả Ban Đầu</h2>
       <ul>
         <li>
           Không deploy API lên Lightsail vì workspace hiện không có SSH key và GitHub Actions của fork thiếu
@@ -80,9 +116,13 @@
         <li>
           Demo public tạm chạy API dạng Vercel serverless function để user có thể test trên cùng domain.
         </li>
+        <li>
+          Không cố phục hồi Harness CLI trong đợt này vì <code>scripts/bin/harness-cli.exe</code> không có
+          trong workspace; thay vào đó ghi rõ nguồn chứng cứ là code, tests, migrations và deploy report.
+        </li>
       </ul>
 
-      <h2>Considered Trade-offs</h2>
+      <h2>Các Đánh Đổi Đã Cân Nhắc</h2>
       <ul>
         <li>
           Lightsail là hướng production đã được docs repo mô tả, phù hợp hơn cho API dài hạn và tác vụ AI lâu.
@@ -90,17 +130,131 @@
         <li>
           Vercel serverless nhanh hơn cho demo public nhưng có cold start và giới hạn thời gian thực thi.
         </li>
+        <li>
+          Dọn toàn bộ story packet chi tiết sẽ sạch hơn nhưng tốn thời gian và dễ tạo diff lớn; lựa chọn hiện
+          tại là cập nhật các entrypoint docs chính trước, rồi dọn story con theo từng epic.
+        </li>
       </ul>
 
-      <h2>Maintenance Notes</h2>
+      <h2>Ghi Chú Bảo Trì</h2>
       <ul>
         <li>
           Không commit file env thật. Vercel production env đang chứa Supabase URL, anon key, service role và
           config API cần thiết.
         </li>
         <li>
+          <code>.gitignore</code> và <code>.vercelignore</code> cần tiếp tục chặn env, key, service account,
+          Firebase/Google credentials, folder agent cục bộ và artifact mobile/media trước mọi lần push/deploy.
+        </li>
+        <li>
+          Dùng <code>VERCEL_GALAXY</code> trong <code>~/.zshrc</code> cho demo Vercel. Không dùng
+          <code>VERCEL_TOKEN</code> vì biến đó có thể thuộc account/team khác. Script chuẩn là
+          <code>pnpm deploy:vercel-demo</code>.
+        </li>
+        <li>
           Nếu chuyển về Lightsail, đặt lại <code>PUBLIC_API_BASE_URL</code> sang API domain production và bỏ
           serverless wrapper nếu không còn dùng.
+        </li>
+        <li>
+          Với Lục Hào, production demo đang có fallback khi <code>xuanshu</code> bridge/runtime không khả dụng:
+          snapshot vẫn có dữ liệu quẻ để AI không luận giải trên dữ liệu rỗng, nhưng warning
+          <code>XUANSHU_REFERENCE_RUNTIME_FALLBACK</code> cần được xem là tín hiệu kỹ thuật để harden runtime
+          trước khi coi đây là production thương mại.
+        </li>
+        <li>
+          Nguồn trạng thái nên đọc trước: <code>README.md</code>, <code>docs/README.md</code>,
+          <code>docs/TEST_MATRIX.md</code>, <code>docs/product/api-contract.md</code> và
+          <code>docs/deploy/vercel-demo-release-checklist.md</code>.
+        </li>
+        <li>
+          <code>.gitignore</code> không được ignore root <code>AGENTS.md</code>; đây là artifact dự án cần
+          theo dõi bằng Git. Các folder agent cục bộ như <code>.agents</code>, <code>.claude</code> và
+          <code>.gemini</code> vẫn phải bị ignore.
+        </li>
+        <li>
+          Khi debug E2E local, kiểm tra network tab/trace trước: request tới
+          <code>https://api.tuvi.monet.uno</code> từ <code>localhost:4173</code> là sai ngữ cảnh test; request
+          đúng phải tới <code>http://localhost:3000</code>.
+        </li>
+        <li>
+          Khi thêm quota mới, ném <code>DailyQuotaExceededError</code> hoặc
+          <code>RateLimitWindowError</code> thay vì raw <code>Error</code>. Raw message quota cũ vẫn được hỗ trợ,
+          nhưng typed error mới là contract bảo trì đúng.
+        </li>
+        <li>
+          Owner-scoping là invariant bắt buộc: các query đọc chart, divination context, explanation, history,
+          conversation, annual report và vision result phải lọc theo <code>owner_user_id</code>. Sai owner nên
+          trả về not found để tránh leak sự tồn tại của record.
+        </li>
+        <li>
+          Test <code>supabase-persistence.gateway.ownership.test.ts</code> khóa các query gateway quan trọng phải
+          có điều kiện <code>owner_user_id</code>; cập nhật test này khi thêm bảng hoặc luồng đọc dữ liệu user mới.
+        </li>
+        <li>
+          Tool discovery ngày 2026-07-13 xác nhận repo không có <code>.openai/hosting.json</code>. Vì vậy Sites
+          plugin không phải đường deploy mặc định; chỉ dùng nếu user quyết định đổi chiến lược hosting khỏi Vercel.
+        </li>
+        <li>
+          Tooling map nằm ở <code>docs/tooling-capabilities.md</code>. Không có Vercel plugin callable riêng trong
+          phiên này; Vercel demo dùng CLI/script repo. Build Web Apps dùng cho frontend debugging hoặc redesign,
+          Sites chỉ dùng khi có <code>.openai/hosting.json</code> hoặc có quyết định đổi hosting.
+        </li>
+        <li>
+          Completion audit nằm ở <code>docs/goal-completion-audit.md</code>. Audit này cố ý chưa đánh dấu goal là
+          complete vì thiếu bằng chứng live mutation smoke mới và các quyết định provider/free-beta. Supabase linked
+          migration ledger đã pass ngày 2026-07-13 10:23 +07.
+        </li>
+        <li>
+          Các quyết định còn mở nằm ở <code>docs/open-decisions.md</code>. Khuyến nghị mặc định là ưu tiên demo
+          public ổn định, giữ DeepSeek làm provider chính trong ngắn hạn, dùng OpenRouter/OpenAI-compatible làm
+          fallback, giữ Lục Hào fallback cho demo, và hoãn payment/XU đến sau core reliability.
+        </li>
+        <li>
+          Ma trận validation/hardening theo feature nằm ở
+          <code>docs/feature-validation-hardening-matrix.md</code>. Dùng file này để chọn gate tối thiểu và hardening
+          bắt buộc trước khi claim một feature hoặc phase là xong.
+        </li>
+        <li>
+          <code>scripts/check-supabase-migrations.zsh</code> chạy linked ledger check từ
+          <code>apps/api</code>, vì Supabase config thật nằm ở <code>apps/api/supabase/config.toml</code>.
+          Local migration sanity vẫn chạy từ repo root; linked ledger vẫn cần đúng Supabase project ref/token.
+        </li>
+        <li>
+          Dùng <code>pnpm smoke:vercel-demo</code> cho safe smoke sau deploy. Script này chỉ inspect alias,
+          kiểm tra root/API public và SPA fallback; nó không ghi Supabase và không gọi AI provider.
+        </li>
+        <li>
+          Dùng <code>pnpm smoke:vercel-live-mutation</code> khi cần chứng minh live flow thật
+          anonymous auth → Lục Hào → detail → AI explanation. Script mặc định skip; chỉ chạy production
+          mutation khi có <code>LIVE_MUTATION_SMOKE=1</code> và
+          <code>LIVE_MUTATION_SMOKE_CONFIRM=tuvitoantap.vercel.app</code>. Cleanup anonymous user cần thêm
+          <code>LIVE_MUTATION_SMOKE_CLEANUP=1</code> và <code>SUPABASE_SERVICE_ROLE_KEY</code>.
+        </li>
+        <li>
+          Checklist observability tối thiểu nằm ở <code>docs/deploy/observability-minimum.md</code>. Trước khi
+          mở beta rộng, cần theo dõi ít nhất API 5xx, <code>PROVIDER_TIMEOUT</code>,
+          <code>PROVIDER_UNAVAILABLE</code>, <code>RATE_LIMITED</code>,
+          <code>quota-store.unavailable</code>, token usage và Supabase migration drift.
+        </li>
+        <li>
+          Provider router đã được khóa bằng test cho hai invariant vận hành: timeout/unavailable ở provider đầu
+          được phép failover sang provider kế tiếp; lỗi CJK guard không được failover để tránh đốt quota kép cho
+          nội dung đã bị chặn.
+        </li>
+        <li>
+          Lượt kiểm tra cục bộ mới nhất ngày 2026-07-13 10:09 +07: <code>pnpm -F @ziweiai/web check</code>
+          pass với 0 lỗi/0 cảnh báo, US-009 pass riêng, và <code>pnpm -F @ziweiai/web e2e</code> pass 46/46.
+          Đây là E2E non-live, không gọi provider AI thật và không thay thế live mutation smoke production.
+        </li>
+        <li>
+          <code>goal.md</code> và <code>spec.md</code> đã ghi rõ quy tắc giao tiếp/tài liệu: trả lời chủ dự án
+          và viết báo cáo bằng tiếng Việt; chỉ giữ English cho tên công nghệ, command, endpoint, package, biến
+          môi trường hoặc thuật ngữ chuẩn.
+        </li>
+        <li>
+          Build Web Apps skill hữu ích cho debug UI/render/console/responsive. Với repo này vẫn phải chạy qua
+          Playwright/SvelteKit gate hiện có, không thay thế contract trong <code>AGENTS.md</code> và
+          <code>spec.md</code>.
         </li>
       </ul>
     </main>

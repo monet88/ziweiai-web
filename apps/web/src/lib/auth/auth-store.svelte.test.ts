@@ -36,6 +36,18 @@ function makeAnonSession(token: string) {
   };
 }
 
+function makeLegacyAnonSession(token: string) {
+  return {
+    access_token: token,
+    user: {
+      id: 'anon-legacy-1',
+      email: undefined,
+      phone: undefined,
+      app_metadata: { provider: 'anonymous' },
+    },
+  };
+}
+
 describe('AuthStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -135,6 +147,14 @@ describe('AuthStore', () => {
     store.init();
     await vi.waitFor(() => expect(store.isInitializing).toBe(false));
     expect(store.isAnonymous).toBe(false);
+  });
+
+  it('isAnonymous true cho phiên anonymous Supabase không có cờ is_anonymous', async () => {
+    mockAuth.getSession.mockResolvedValue({ data: { session: makeLegacyAnonSession('anon-tok') } });
+    const store = new AuthStore();
+    store.init();
+    await vi.waitFor(() => expect(store.isInitializing).toBe(false));
+    expect(store.isAnonymous).toBe(true);
   });
 
   it('init() KHÔNG ghi đè phiên email bằng anon khi xảy ra race (phiên thật đến trước)', async () => {

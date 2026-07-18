@@ -13,4 +13,12 @@ Single AWS Lightsail instance (Ubuntu 24.04, Singapore, IP `54.255.81.117`).
 - Redeploy: `cd ~/ziweiai-web && git pull && pnpm install && pnpm turbo build && pm2 restart ziwei-api && sudo systemctl reload caddy`
 - `PUBLIC_*` baked at build time → rebuild on change. `API_CORS_ORIGINS` must match web origin.
 
+## Vercel demo
+
+- Demo domain: `https://tuvitoantap.vercel.app`
+- Account/team: `galaxypro710-7060` / `galaxypro710-7060s-projects`
+- Token env: use `VERCEL_GALAXY` from `~/.zshrc`. Do not use the generic `VERCEL_TOKEN` here because it may point at another Vercel account.
+- Deploy: `pnpm deploy:vercel-demo`
+- The script checks the Vercel account, deploys production, then aliases `tuvitoantap.vercel.app` to the new deployment.
+
 Confirm with user before deploying. Never commit `.env` or SSH keys.

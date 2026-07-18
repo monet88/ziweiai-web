@@ -29,13 +29,15 @@ on web. Never commit `.env`.
 
 ## Backend API + response parsing
 
-5 endpoints: `GET /health` (public), `POST /charts`, `GET /charts/:id`,
-`POST /explanations`, `GET /history?limit=N` (Bearer). Parse every response with
+Full endpoint list lives in `docs/product/api-contract.md`. Core endpoints
+include `GET /health`, `GET /features`, `POST /charts`, `GET /charts/:id`,
+`POST /divinations`, `POST /explanations`, `GET /history`, conversations,
+fortune, vision, draws, quizzes and pairings. Parse every response with
 `@ziweiai/contracts` schemas (camelCase: `historyListResponseSchema`,
-`chartDetailResponseSchema`, ...) — no custom DTOs. Api-client: flat functions
-(`fetchHealth`/`createChart`/`fetchChartDetail`/`createExplanation`/`fetchHistory`).
-Token = `session.access_token` via `Authorization: Bearer`, read from auth store
-before each request. Details: `docs/product/api-contract.md`.
+`chartDetailResponseSchema`, ...) — no custom DTOs. Api-client uses flat
+functions (`fetchHealth`/`createChart`/`fetchChartDetail`/`createExplanation`/
+`fetchHistory`/...). Token = `session.access_token` via `Authorization: Bearer`,
+read from auth store before each request. Details: `docs/product/api-contract.md`.
 
 ## Svelte 5 rewrite (React/Expo → runes)
 
@@ -46,7 +48,8 @@ Runes mapping: `useState`→`$state`, `useMemo`→`$derived`, `useQuery`→`crea
 Don't port `useEffect` to `$effect` mechanically — prefer `$derived` or event
 handlers. `createQuery` wraps options in a function: `createQuery(() => ({ ... }))`.
 Styling: scoped CSS + `var(--*)`, NO Tailwind. React source:
-`F:/CodeBase/ziweiai/apps/app/`. Full mapping: SPEC.md Part A8.
+`F:/CodeBase/ziweiai/apps/app/`. Với trạng thái hiện tại, ưu tiên `spec.md`,
+`docs/product/*` và code thật hơn mapping SPEC cũ.
 
 ### Svelte MCP Server
 

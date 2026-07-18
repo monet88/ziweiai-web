@@ -22,13 +22,15 @@ describe('QuizzesMbtiService', () => {
   const originalFreeForAll = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
   const user: AuthenticatedUser = { userId: '11111111-1111-1111-1111-111111111111', email: 'user@example.com' };
   let quotasService: Pick<QuotasService, 'assertCanCreateMbtiQuiz'>;
+  let persistenceGateway: Partial<SupabasePersistenceGateway>;
   let service: QuizzesMbtiService;
 
   beforeEach(() => {
     apiEnv.EXTENDED_SYSTEM_MBTI_ENABLED = true;
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
     quotasService = { assertCanCreateMbtiQuiz: vi.fn().mockResolvedValue(undefined) };
-    service = new QuizzesMbtiService(quotasService as QuotasService);
+    persistenceGateway = { deductXU: vi.fn().mockResolvedValue(true) };
+    service = new QuizzesMbtiService(quotasService as QuotasService, persistenceGateway as SupabasePersistenceGateway);
   });
 
   afterEach(() => {
@@ -52,6 +54,7 @@ describe('QuizzesMbtiService', () => {
 
   it('chặn PAYMENT_REQUIRED khi đã bật MBTI nhưng AI gate không free-for-all', async () => {
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
+    persistenceGateway.deductXU = vi.fn().mockResolvedValue(false);
 
     try {
       await service.submitQuiz(user, '127.0.0.1', NEUTRAL_ANSWERS);
@@ -65,7 +68,7 @@ describe('QuizzesMbtiService', () => {
 
   it('bọc lỗi quota raw thành 429 RATE_LIMITED', async () => {
     quotasService.assertCanCreateMbtiQuiz = vi.fn().mockRejectedValue(new Error('Daily explanation quota exceeded.'));
-    service = new QuizzesMbtiService(quotasService as QuotasService);
+    service = new QuizzesMbtiService(quotasService as QuotasService, persistenceGateway as SupabasePersistenceGateway);
 
     try {
       await service.submitQuiz(user, '127.0.0.1', NEUTRAL_ANSWERS);

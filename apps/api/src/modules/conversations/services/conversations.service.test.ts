@@ -23,7 +23,7 @@ describe('ConversationsService entitlement gate', () => {
   const originalConversationEnabled = apiEnv.AI_CONVERSATION_ENABLED;
   const originalFreeForAll = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
 
-  let persistenceGateway: Pick<SupabasePersistenceGateway, 'findConversationById' | 'findChartSnapshotById'>;
+  let persistenceGateway: Pick<SupabasePersistenceGateway, 'findConversationById' | 'findChartSnapshotById' | 'deductXU'>;
   let quotasService: Pick<QuotasService, 'assertCanCreateConversationMessage'>;
   let conversationRouter: Pick<ConversationProviderRouter, 'generate'>;
   let service: ConversationsService;
@@ -34,6 +34,7 @@ describe('ConversationsService entitlement gate', () => {
     persistenceGateway = {
       findConversationById: vi.fn().mockResolvedValue({ id: CONVERSATION_ID, chartSnapshotId: 'chart-1' }),
       findChartSnapshotById: vi.fn().mockResolvedValue({ snapshot: {} }),
+      deductXU: vi.fn().mockResolvedValue(true),
     };
     quotasService = { assertCanCreateConversationMessage: vi.fn().mockResolvedValue(undefined) };
     conversationRouter = { generate: vi.fn() };
@@ -52,6 +53,7 @@ describe('ConversationsService entitlement gate', () => {
 
   it('chặn PAYMENT_REQUIRED khi AI gate không free-for-all (trước quota + provider)', async () => {
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
+    persistenceGateway.deductXU = vi.fn().mockResolvedValue(false);
     try {
       await service.appendMessageAndGenerate(emailUser, '127.0.0.1', CONVERSATION_ID, {
         content: 'Xin chào',
@@ -201,6 +203,7 @@ describe('ConversationsService.appendMessageAndGenerateStream', () => {
       findChartSnapshotById: vi.fn().mockResolvedValue({ snapshot: SNAPSHOT }),
       listRecentConversationMessages: vi.fn().mockResolvedValue([]),
       createConversationMessage,
+      deductXU: vi.fn(async () => true),
     };
     const quotasService = { assertCanCreateConversationMessage: vi.fn().mockResolvedValue(undefined) };
     const conversationRouter = {
@@ -231,9 +234,10 @@ describe('ConversationsService.appendMessageAndGenerateStream', () => {
 
   it('blocks with PAYMENT_REQUIRED before quota / persist / streaming when the AI gate is closed', async () => {
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
-    const { service, quotasService, conversationRouter, createConversationMessage } = buildStreamingService({
+    const { service, quotasService, conversationRouter, createConversationMessage, persistenceGateway } = buildStreamingService({
       generateConversationStream: vi.fn(),
     });
+    persistenceGateway.deductXU = vi.fn(async () => false);
 
     try {
       await service

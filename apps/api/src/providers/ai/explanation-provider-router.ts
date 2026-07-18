@@ -10,6 +10,7 @@ import { GeminiExplanationProvider } from './gemini-explanation-provider';
 import { OpenAiCompatibleExplanationProvider } from './openai-compatible-explanation-provider';
 import { ProviderUnavailableError } from './provider-errors';
 import { ProviderRouterBase } from './provider-router-base';
+import { LangfuseAiProviderWrapper } from './langfuse-ai-provider-wrapper';
 
 @Injectable()
 export class ExplanationProviderRouter extends ProviderRouterBase<AiExplanationProvider> {
@@ -18,7 +19,11 @@ export class ExplanationProviderRouter extends ProviderRouterBase<AiExplanationP
     openAiCompatProvider: OpenAiCompatibleExplanationProvider,
     geminiProvider: GeminiExplanationProvider,
   ) {
-    super(deepseekProvider, openAiCompatProvider, geminiProvider);
+    super(
+      new LangfuseAiProviderWrapper(deepseekProvider),
+      new LangfuseAiProviderWrapper(openAiCompatProvider),
+      new LangfuseAiProviderWrapper(geminiProvider)
+    );
   }
 
   async generate(preference: ProviderPreference, payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {

@@ -237,7 +237,7 @@ Required files:
 
 - H4 files.
 - Self-improvement protocol.
-- Historical improvement reports.
+- Báo cáo cải tiến lịch sử.
 - Backlog outcome reviews.
 
 Benchmark indicators:

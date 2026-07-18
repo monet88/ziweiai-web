@@ -53,7 +53,22 @@ no extra or missing versions.
 
 ## Verification checklist
 
+- Local filename/version sanity:
+
+```bash
+pnpm check:supabase-migrations
+```
+
+- Optional linked ledger check, only after `supabase link --project-ref <ref>`
+  or an equivalent CLI-linked environment is configured:
+
+```bash
+SUPABASE_VERIFY_LINKED=1 pnpm check:supabase-migrations
+```
+
 - `supabase migration list --linked` shows local and remote columns aligned.
+- The repo script runs linked checks from `apps/api`, because the Supabase
+  config lives at `apps/api/supabase/config.toml`.
 - The count of applied versions equals the number of files in
   `apps/api/supabase/migrations/`.
 - No migration file was applied via the dashboard/Management API without a

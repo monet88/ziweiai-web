@@ -1,0 +1,59 @@
+import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
+import {
+  chartDetailResponseSchema,
+  createChartRequestSchema,
+  horoscopeRequestSchema,
+  type AuthenticatedUser,
+  type CreateChartResponse,
+  type HoroscopeResponse,
+} from '@ziweiai/contracts';
+import { z } from 'zod';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
+import { ChartsService } from './services/charts.service';
+
+@Controller('charts')
+export class ChartsController {
+  constructor(private readonly chartsService: ChartsService) {}
+
+  @Post()
+  async createChart(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Req() request: AuthenticatedRequest,
+    @Body() body: unknown,
+  ): Promise<CreateChartResponse> {
+    const input = createChartRequestSchema.parse(body);
+    // email === null ⟺ phiên ẩn danh (decision 0009): app chỉ có email+password, anon JWT
+    // không mang email → truyền cờ để quota áp trần daily-per-IP cho đường anon.
+    return this.chartsService.createChart(currentUser.userId, request.ip ?? 'unknown', input, currentUser.email === null);
+  }
+
+  @Get(':chartSnapshotId')
+  async getChartDetail(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('chartSnapshotId') chartSnapshotId: string,
+  ) {
+    const parsedChartSnapshotId = z.uuid().parse(chartSnapshotId);
+    return chartDetailResponseSchema.parse(await this.chartsService.getChartDetail(currentUser.userId, parsedChartSnapshotId));
+  }
+
+  @Post(':chartSnapshotId/horoscope')
+  async computeHoroscope(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Req() request: AuthenticatedRequest,
+    @Param('chartSnapshotId') chartSnapshotId: string,
+    @Body() body: unknown,
+  ): Promise<HoroscopeResponse> {
+    const parsedChartId = z.uuid().parse(chartSnapshotId);
+    const input = horoscopeRequestSchema.parse(body);
+    // email === null ⟺ phiên ẩn danh (decision 0009) — quota daily-per-IP cho đường anon.
+    return this.chartsService.computeHoroscope(
+      currentUser.userId,
+      request.ip ?? 'unknown',
+      parsedChartId,
+      input.asOf,
+      input.scopes,
+      currentUser.email === null,
+    );
+  }
+}

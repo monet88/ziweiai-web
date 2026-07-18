@@ -13,7 +13,7 @@ import {
 import { buildChartSnapshotDedupeKey } from '../../../database/idempotency';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
-import { assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
+
 import { apiEnv } from '../../../config/env';
 import { QuotasService } from '../../quotas/quotas.service';
 import { throwQuotaRateLimited } from '../../quotas/quota-http';
@@ -53,7 +53,15 @@ export class ChartsService {
     // mới tiêu quota (429). 6 hệ cũ giữ nguyên: chỉ qua quota như trước.
     if (input.chartSystem === 'mangpai') {
       this.assertMangpaiEnabled();
-      assertCanUseAiExplanation(this.logger);
+      // GATE 3: Trừ XU cho tính năng premium (Mạnh Phái). Tốn 1 XU.
+      const success = await this.persistenceGateway.deductXU(userId, 1);
+      if (!success) {
+        throw new ApiErrorHttpException(
+          HttpStatus.PAYMENT_REQUIRED,
+          'PAYMENT_REQUIRED',
+          'Tính năng Mạnh Phái yêu cầu 1 XU. Vui lòng nạp thêm XU để tiếp tục.'
+        );
+      }
     }
 
     await this.assertCanCreateChart(userId, ipAddress, isAnonymous);

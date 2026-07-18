@@ -8,7 +8,7 @@ import {
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { throwQuotaRateLimited } from '../../quotas/quota-http';
-import { assertAnnualReportEnabled, assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
+import { assertAnnualReportEnabled } from '../../../common/entitlement/ai-entitlement.guard';
 import { apiEnv } from '../../../config/env';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import { buildAnnualReportPrompt } from '../../../providers/ai/build-annual-report-prompt';
@@ -47,7 +47,15 @@ export class AnnualReportService {
     }
 
     // ===== GATES (chỉ áp khi sinh mới) — fail-closed cả hai cờ =====
-    assertCanUseAiExplanation(this.logger);
+    // GATE 3: Trừ XU cho tính năng premium (Báo cáo năm). Tốn 1 XU.
+    const success = await this.persistenceGateway.deductXU(user.userId, 1);
+    if (!success) {
+      throw new ApiErrorHttpException(
+        HttpStatus.PAYMENT_REQUIRED,
+        'PAYMENT_REQUIRED',
+        'Tính năng Báo cáo năm yêu cầu 1 XU. Vui lòng nạp thêm XU để tiếp tục.'
+      );
+    }
     assertAnnualReportEnabled(this.logger);
     try {
       await this.quotasService.assertCanCreateAnnualReport(user.userId, ipAddress, user.email === null);

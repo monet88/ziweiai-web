@@ -1,9 +1,17 @@
 import { NestFactory } from '@nestjs/core';
+import * as Sentry from '@sentry/node';
 import { ApiErrorFilter } from './common/http/api-error.filter';
 import { AppModule } from './app.module';
 import { allowedCorsOrigins, apiEnv } from './config/env';
 
 async function bootstrap() {
+  if (apiEnv.SENTRY_DSN) {
+    Sentry.init({
+      dsn: apiEnv.SENTRY_DSN,
+      tracesSampleRate: 0,
+    });
+  }
+
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
   app.useGlobalFilters(new ApiErrorFilter());

@@ -1,0 +1,88 @@
+--- apps/api/src/modules/explanations/services/explanations.service.ts
++++ apps/api/src/modules/explanations/services/explanations.service.ts
+@@ -10,7 +10,7 @@
+ import { ApiErrorHttpException } from '../../../common/http/api-error';
+ import { throwQuotaRateLimited } from '../../quotas/quota-http';
+-import { assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
+ import { apiEnv } from '../../../config/env';
+ import { buildExplanationRequestIdempotencyKey } from '../../../database/idempotency';
+ import { buildFailedExplanationRetentionTimestamp, DEFAULT_PROMPT_STORAGE_MODE, PERSONALIZED_CACHE_SCOPE, shouldStorePrompt } from '../../../database/persistence-lifecycle';
+ import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+@@ -20,6 +20,7 @@
+ import { QuotasService } from '../../quotas/quotas.service';
++import { DailyQuotaExceededError } from '../../quotas/quota-errors';
+ 
+ // Cửa sổ chờ in-flight phải PHỦ TRỌN thời gian provider có thể chạy (AI_PROVIDER_TIMEOUT_MS),
+@@ -40,7 +41,16 @@
+     // email === null ⟺ phiên ẩn danh (decision 0009): app chỉ có email+password, anon JWT
+     // không mang email → dùng làm tín hiệu áp trần daily-per-IP cho đường anon.
+-    await this.assertCanCreateExplanation(user.userId, ipAddress, user.email === null);
++    let requiresXu = false;
++    const isAnonymous = user.email === null;
++    try {
++      await this.quotasService.assertCanCreateExplanation(user.userId, ipAddress, isAnonymous);
++    } catch (error) {
++      if (error instanceof DailyQuotaExceededError && !isAnonymous) {
++        requiresXu = true;
++      } else {
++        throwQuotaRateLimited(error, 'Đã vượt hạn mức tạo luận giải.');
++      }
++    }
+ 
+     const chartRecord = await this.persistenceGateway.findChartSnapshotById(user.userId, input.chartSnapshotId);
+@@ -131,7 +141,7 @@
+       // US-010 (decision 0010): gate ENTITLEMENT đặt TRƯỚC mọi thao tác tạo/claim request record
+       // sinh generation mới. Cache-hit ở trên đã free (kết quả đã có). Khi flag=false + chưa entitled
+       // → ném 402 ngay, KHÔNG ghi/đổi state request (tránh ô nhiễm 'failed' + tốn lifecycle).
+-      this.assertCanUseAiExplanation();
++      await this.consumeQuotaOrXu(user.userId, input, requiresXu);
+ 
+       // Sửa P1 race (violation): logic reuse trước đây (line 68) cho cả pending/running/failed gây duplicate worker
+@@ -300,7 +310,7 @@
+       });
+     } else {
+       // US-010 (decision 0010): gate TRƯỚC khi tạo request record mới (cache-hit đã bypass ở trên).
+-      this.assertCanUseAiExplanation();
++      await this.consumeQuotaOrXu(user.userId, input, requiresXu);
+       const failureRetainsUntil = buildFailedExplanationRetentionTimestamp(new Date());
+       request = await this.persistenceGateway.createExplanationRequest({
+@@ -461,12 +471,20 @@
+     });
+   }
+ 
+-  private async assertCanCreateExplanation(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
+-    try {
+-      await this.quotasService.assertCanCreateExplanation(userId, ipAddress, isAnonymous);
+-    } catch (error) {
+-      throwQuotaRateLimited(error, 'Đã vượt hạn mức tạo luận giải.');
+-    }
+-  }
+-
+   /**
+@@ -509,9 +527,21 @@
+   }
+ 
+-  private assertCanUseAiExplanation(): void {
+-    // US-016: logic gate đã trích ra module chung `common/entitlement/ai-entitlement.guard`
+-    // để AnnualReportService dùng lại (decision 0010). Giữ method wrapper để 2 call-site cũ
+-    // trong service này không đổi.
+-    assertCanUseAiExplanation(this.logger);
++  private async consumeQuotaOrXu(userId: string, input: CreateExplanationRequest, isOverDailyQuota: boolean): Promise<void> {
++    const isPremium = input.explanationKind !== 'overview';
++    const needsXu = isPremium || isOverDailyQuota;
++
++    if (needsXu) {
++      const success = await this.persistenceGateway.deductXU(userId, 1);
++      if (!success) {
++        const message = isPremium 
++          ? 'Tính năng luận giải chuyên sâu yêu cầu 1 XU. Vui lòng nạp thêm XU để sử dụng.'
++          : 'Bạn đã hết lượt luận giải miễn phí trong ngày. Vui lòng nạp XU (1 XU/lượt) để tiếp tục.';
++        throw new ApiErrorHttpException(
++          HttpStatus.PAYMENT_REQUIRED,
++          'INSUFFICIENT_FUNDS',
++          message
++        );
++      }
++    }
+   }
+ 

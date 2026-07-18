@@ -37,13 +37,15 @@ describe('PairingsService', () => {
   const originalFreeForAll = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
   const user: AuthenticatedUser = { userId: '11111111-1111-1111-1111-111111111111', email: 'user@example.com' };
   let quotasService: Pick<QuotasService, 'assertCanCreatePairing'>;
+  let persistenceGateway: Partial<SupabasePersistenceGateway>;
   let service: PairingsService;
 
   beforeEach(() => {
     apiEnv.EXTENDED_SYSTEM_HEPAN_ENABLED = true;
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
     quotasService = { assertCanCreatePairing: vi.fn().mockResolvedValue(undefined) };
-    service = new PairingsService(quotasService as QuotasService);
+    persistenceGateway = { deductXU: vi.fn().mockResolvedValue(true) };
+    service = new PairingsService(quotasService as QuotasService, persistenceGateway as SupabasePersistenceGateway);
   });
 
   afterEach(() => {
@@ -67,6 +69,7 @@ describe('PairingsService', () => {
 
   it('chặn PAYMENT_REQUIRED khi đã bật nhưng AI gate không free-for-all', async () => {
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
+    persistenceGateway.deductXU = vi.fn().mockResolvedValue(false);
 
     try {
       await service.createPairing(user, '127.0.0.1', request);
@@ -80,7 +83,7 @@ describe('PairingsService', () => {
 
   it('bọc lỗi quota raw thành 429 RATE_LIMITED', async () => {
     quotasService.assertCanCreatePairing = vi.fn().mockRejectedValue(new Error('Daily explanation quota exceeded.'));
-    service = new PairingsService(quotasService as QuotasService);
+    service = new PairingsService(quotasService as QuotasService, persistenceGateway as SupabasePersistenceGateway);
 
     try {
       await service.createPairing(user, '127.0.0.1', request);

@@ -3,10 +3,19 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm rebuild esbuild && pnpm --filter @ziweiai/contracts build && pnpm --filter @ziweiai/core build && pnpm --filter @ziweiai/astro-engine build && pnpm --filter @ziweiai/api build && pnpm --filter @ziweiai/web build",
   "outputDirectory": "apps/web/build",
+  "functions": {
+    "api/[...path].ts": {
+      "includeFiles": "{vendor/xuanshu-runtime/**,packages/astro-engine/dist/adapters/xuanshu-*-runner.js,node_modules/tsx/dist/**}"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/:path*",
       "destination": "/api/[...path]"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
     }
   ]
 }

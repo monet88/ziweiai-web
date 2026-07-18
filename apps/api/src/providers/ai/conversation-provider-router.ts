@@ -9,6 +9,7 @@ import { DeepseekExplanationProvider } from './deepseek-explanation-provider';
 import { GeminiExplanationProvider } from './gemini-explanation-provider';
 import { OpenAiCompatibleExplanationProvider } from './openai-compatible-explanation-provider';
 import { ProviderRouterBase } from './provider-router-base';
+import { LangfuseAiProviderWrapper } from './langfuse-ai-provider-wrapper';
 
 // US-027 (decision 0026): a conversation provider that implements REAL token streaming. The base
 // AiConversationProvider keeps generateConversationStream optional so deepseek/gemini still build;
@@ -23,7 +24,11 @@ export class ConversationProviderRouter extends ProviderRouterBase<AiConversatio
     openAiCompatProvider: OpenAiCompatibleExplanationProvider,
     geminiProvider: GeminiExplanationProvider,
   ) {
-    super(deepseekProvider, openAiCompatProvider, geminiProvider);
+    super(
+      new LangfuseAiProviderWrapper(deepseekProvider),
+      new LangfuseAiProviderWrapper(openAiCompatProvider),
+      new LangfuseAiProviderWrapper(geminiProvider)
+    );
   }
 
   // US-027 (decision 0026): pick the provider the controller would actually use (first available in

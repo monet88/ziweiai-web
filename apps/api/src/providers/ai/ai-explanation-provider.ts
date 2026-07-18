@@ -18,6 +18,8 @@ export interface ExplanationProviderResult {
 }
 
 export interface ExplanationPromptPayload {
+  userId?: string;
+  sessionId?: string;
   // US-017e: vision (face/palm) không có lá số → chartSnapshot/explanationContext optional. Chúng chỉ
   // được dùng khi KHÔNG có promptOverride (provider gọi buildExplanationPrompt). Đường vision luôn set
   // promptOverride nên hai field này vắng mặt là hợp lệ; buildExplanationPrompt sẽ tự guard.
@@ -63,6 +65,8 @@ export interface AiExplanationProvider {
 }
 
 export interface ConversationPromptPayload {
+  userId?: string;
+  sessionId?: string;
   chartSnapshot: ChartSnapshot;
   explanationContext: ExplanationContext;
   messages: ConversationMessageRecord[];

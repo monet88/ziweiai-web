@@ -25,7 +25,7 @@
   // Lối vào lịch sử (link topbar/hero/side-rail + "Lá số gần đây") chỉ hiện cho tài khoản
   // đăng nhập thật bằng email. Phiên ẩn danh (decision 0009) tuy có JWT nhưng không phải
   // "đăng nhập" theo yêu cầu người dùng → ẩn các lối vào lịch sử.
-  const isMember = $derived(auth.isAuthenticated && !auth.isAnonymous);
+  const isMember = $derived(auth.isAuthenticated && !auth.isAnonymous && Boolean(auth.user?.email));
 
   let isSigningOut = $state(false);
 
@@ -142,7 +142,7 @@
         <a href="#systems">{viCopy.dashboard.homeNavSystems}</a>
       </div>
       <div class="session">
-        {#if auth.isAnonymous}
+        {#if !isMember}
           <span class="session-email">{viCopy.dashboard.anonymousSession}</span>
           <a class="session-cta" href={resolve('/sign-in')}>{viCopy.dashboard.signInOrSignUp}</a>
         {:else}

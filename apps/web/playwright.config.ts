@@ -142,6 +142,11 @@ export default defineConfig({
       timeout: 120_000,
       stdout: 'pipe',
       stderr: 'pipe',
+      env: {
+        // SvelteKit bake PUBLIC_* ở build time. E2E phải luôn gọi API local, tránh shell env
+        // trỏ sang API production rồi bị CORS chặn khi chạy preview localhost.
+        PUBLIC_API_BASE_URL: API_ORIGIN,
+      },
     },
   ],
 });

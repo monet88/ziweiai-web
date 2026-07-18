@@ -719,6 +719,20 @@ export class SupabasePersistenceGateway {
     return toAnnualReportRecord(data);
   }
 
+  async deductXU(ownerUserId: string, amount: number): Promise<boolean> {
+    const { data, error } = await this.client.rpc('deduct_xu', {
+      user_id: ownerUserId,
+      amount,
+    });
+    
+    if (error) {
+      // If error occurs (e.g., insufficient funds throws an error depending on RPC implementation)
+      return false;
+    }
+    
+    return data === true;
+  }
+
   private throwIfError(error: { message: string } | null): void {
     if (error) {
       throw new Error(error.message);

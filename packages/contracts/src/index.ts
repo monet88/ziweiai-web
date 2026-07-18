@@ -47,3 +47,4 @@ export * from './health';
 export * from './persistence/persistence-records';
 export * from './quizzes/mbti-result';
 export * from './quizzes/mbti-questions';
+export * from './payment/sepay';

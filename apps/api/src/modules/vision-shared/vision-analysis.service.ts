@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { visionAnalysisSchema, type AuthenticatedUser, type VisionAnalysis, type VisionKind } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
-import { assertCanUseAiExplanation } from '../../common/entitlement/ai-entitlement.guard';
+
 import { assertEmailIdentityRequired } from '../auth/identity.guard';
 import { apiEnv } from '../../config/env';
 import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
@@ -65,9 +65,15 @@ export class VisionAnalysisService {
     // danh → bắt buộc danh tính email (decision 0009 + 0012). Helper ném 403 IDENTITY_REQUIRED.
     assertEmailIdentityRequired(user);
 
-    // GATE 3: gate AI premium TRƯỚC quota (402) — không để user non-premium "tiêu" lượt quota cho thao
-    // tác chắc chắn bị từ chối. Dùng guard entitlement DÙNG CHUNG (decision 0010).
-    assertCanUseAiExplanation(this.logger);
+    // GATE 3: Trừ XU cho tính năng premium (Vision). Vision tốn 2 XU mỗi lượt.
+    const success = await this.persistence.deductXU(user.userId, 2);
+    if (!success) {
+      throw new ApiErrorHttpException(
+        HttpStatus.PAYMENT_REQUIRED,
+        'PAYMENT_REQUIRED',
+        'Tính năng Xem Tướng / Xem Tay yêu cầu 2 XU. Vui lòng nạp thêm XU để sử dụng.',
+      );
+    }
 
     // GATE 4: quota vision riêng (đắt token gấp 5-10× text). Bọc raw Error → 429 VISION_QUOTA_EXCEEDED.
     await this.assertVisionQuota(user.userId, ipAddress);

@@ -12,7 +12,6 @@ import {
   type CreateConversationRequest,
   type CreateConversationResponse,
 } from '@ziweiai/contracts';
-import { assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { apiEnv } from '../../../config/env';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
@@ -203,11 +202,15 @@ export class ConversationsService {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số liên kết.');
     }
 
-    // Gate AI entitlement (402) BEFORE quota — mirrors every other LLM-backed path (explanations,
-    // pairings, mbti, vision, annual). With AI_CONVERSATION_ENABLED=true but
-    // AI_EXPLANATION_FREE_FOR_ALL=false, conversations must not bypass the shared paywall and burn
-    // provider tokens. Shared guard (decision 0010) keeps one policy source for all AI text routes.
-    assertCanUseAiExplanation(this.logger);
+    // GATE 3: Trừ XU cho tính năng premium (Hội thoại AI). Tốn 1 XU mỗi tin nhắn.
+    const success = await this.persistenceGateway.deductXU(user.userId, 1);
+    if (!success) {
+      throw new ApiErrorHttpException(
+        HttpStatus.PAYMENT_REQUIRED,
+        'PAYMENT_REQUIRED',
+        'Tính năng Hỏi đáp AI yêu cầu 1 XU mỗi lượt. Vui lòng nạp thêm XU để tiếp tục.'
+      );
+    }
 
     await this.assertCanCreateConversationMessage(user.userId, ipAddress, user.email === null);
 

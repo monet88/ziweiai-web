@@ -1,0 +1,37 @@
+{
+  "projectId": "7d0a9fac-140a-4076-8d40-c16a0db46f81",
+  "type": "frontend",
+  "name": "Create Zi Wei chart and open chart detail",
+  "description": "Regression test for tuvitoantap.vercel.app: creating a chart must navigate to /charts/<id> and the detail page must load instead of showing API 404 / Không tải được chi tiết lá số.",
+  "priority": "p0",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "Open https://tuvitoantap.vercel.app and wait for the app to finish loading. If a sign-in prompt appears, use the anonymous/guest path if available; otherwise proceed with the default authenticated session behavior shown by the app."
+    },
+    {
+      "type": "assertion",
+      "description": "The app should show the main dashboard or chart creation flow, not a Vercel login wall and not a generic server error."
+    },
+    {
+      "type": "action",
+      "description": "Create a Zi Wei Dou Shu chart using valid data: name can be Test User if requested, Gregorian date 1992-05-20, time 09:15, female, place Ho Chi Minh City / Vietnam or manual timezone Asia/Ho_Chi_Minh if the UI asks for location. Submit the form."
+    },
+    {
+      "type": "assertion",
+      "description": "After submit, the browser should navigate to a URL matching /charts/<uuid> and should not remain stuck on the form with a generic error."
+    },
+    {
+      "type": "assertion",
+      "description": "The chart detail page should load chart content. It must not show the Vietnamese error text 'Không tải được chi tiết lá số' and browser/network state must not include a 404 for /api/charts/<uuid>."
+    },
+    {
+      "type": "action",
+      "description": "Refresh the chart detail page once."
+    },
+    {
+      "type": "assertion",
+      "description": "After refresh, the same chart detail page should still load successfully without a 404 or lost-session error."
+    }
+  ]
+}

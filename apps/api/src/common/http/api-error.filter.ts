@@ -1,4 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 import { apiErrorSchema } from '@ziweiai/contracts';
 import type { Response } from 'express';
 import { ZodError } from 'zod';
@@ -54,6 +55,12 @@ export class ApiErrorFilter implements ExceptionFilter {
         requestId,
       }),
     );
+    
+    // Send to Sentry
+    Sentry.captureException(exception, {
+      tags: { requestId: requestId ?? 'unknown' }
+    });
+
     // Nhánh fallback (non-HttpException/non-Zod): lỗi ngoài dự kiến phải để lại thông tin,
     // không nuốt im lặng. requestId giúp truy vết theo header x-request-id. Chi tiết lỗi đưa
     // vào message (param 1); param 2 chỉ nhận stack trace thật để không làm nhiễu log

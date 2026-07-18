@@ -30,6 +30,7 @@ function makeService(snapshot: any = ziweiSnapshot) {
     findChartSnapshotById: vi.fn().mockResolvedValue(snapshot ? { snapshot } : null),
     findAnnualReportByChartAndYear: vi.fn().mockResolvedValue(null),
     createAnnualReport: vi.fn().mockResolvedValue({ markdown: '# Báo cáo năm 2026\n\nNăm này...' }),
+    deductXU: vi.fn().mockResolvedValue(true),
   };
   const quotas = { assertCanCreateAnnualReport: vi.fn().mockResolvedValue(undefined) };
   const providerRouter = {
@@ -80,7 +81,8 @@ describe('AnnualReportService', () => {
   it('cache-miss + AI_EXPLANATION_FREE_FOR_ALL=false → 402 (gate kép)', async () => {
     (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = false;
     (apiEnv as any).AI_ANNUAL_REPORT_ENABLED = true;
-    const { service } = makeService();
+    const { service, persistence } = makeService();
+    persistence.deductXU.mockResolvedValue(false);
     await expect(service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026)).rejects.toMatchObject({
       status: HttpStatus.PAYMENT_REQUIRED,
     });

@@ -2,7 +2,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { mbtiResultSchema, type AuthenticatedUser, type MbtiAnswer, type MbtiResult } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { throwQuotaRateLimited } from '../quotas/quota-http';
-import { assertCanUseAiExplanation } from '../../common/entitlement/ai-entitlement.guard';
+import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 import { apiEnv } from '../../config/env';
 import { QuotasService } from '../quotas/quotas.service';
 import { scoreMbti } from './mbti-scoring';
@@ -11,7 +11,10 @@ import { scoreMbti } from './mbti-scoring';
 export class QuizzesMbtiService {
   private readonly logger = new Logger(QuizzesMbtiService.name);
 
-  constructor(private readonly quotasService: QuotasService) {}
+  constructor(
+    private readonly quotasService: QuotasService,
+    private readonly persistenceGateway: SupabasePersistenceGateway
+  ) {}
 
   async submitQuiz(user: AuthenticatedUser, ipAddress: string, answers: readonly MbtiAnswer[]): Promise<MbtiResult> {
     if (!apiEnv.EXTENDED_SYSTEM_MBTI_ENABLED) {
@@ -23,11 +26,15 @@ export class QuizzesMbtiService {
       );
     }
 
-    // Gate AI (premium) TRƯỚC quota: không free-for-all thì chặn 402 ngay, không để user
-    // non-premium "tiêu" lượt kiểm tra quota cho thao tác chắc chắn bị từ chối (giống Tarot).
-    // Dùng guard entitlement DÙNG CHUNG (decision 0010) thay vì tự viết — một nguồn chính sách
-    // cho mọi đường AI text, tránh lệch hành vi/thông điệp giữa các endpoint (review PR #24).
-    assertCanUseAiExplanation(this.logger);
+    // GATE 3: Trừ XU cho tính năng premium (MBTI). Tốn 1 XU.
+    const success = await this.persistenceGateway.deductXU(user.userId, 1);
+    if (!success) {
+      throw new ApiErrorHttpException(
+        HttpStatus.PAYMENT_REQUIRED,
+        'PAYMENT_REQUIRED',
+        'Tính năng MBTI yêu cầu 1 XU. Vui lòng nạp thêm XU để tiếp tục.'
+      );
+    }
     // email rỗng/null ⟺ phiên ẩn danh (decision 0009): anon JWT có thể mang email="" nên dùng
     // !user.email để không bỏ lọt nhánh anon. Đồng bộ với assertEmailIdentityRequired.
     await this.assertCanCreateMbtiQuiz(user.userId, ipAddress, !user.email);

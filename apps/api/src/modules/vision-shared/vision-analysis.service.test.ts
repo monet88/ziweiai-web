@@ -31,7 +31,7 @@ describe('VisionAnalysisService', () => {
   let storageGateway: Pick<VisionStorageGateway, 'uploadVisionImage' | 'deleteVisionImage'>;
   let persistence: Pick<
     SupabasePersistenceGateway,
-    'createVisionResult' | 'createHistoryView' | 'findVisionResultById' | 'deleteVisionResult'
+    'createVisionResult' | 'createHistoryView' | 'findVisionResultById' | 'deleteVisionResult' | 'deductXU'
   >;
   let service: VisionAnalysisService;
 
@@ -51,6 +51,7 @@ describe('VisionAnalysisService', () => {
       createHistoryView: vi.fn().mockResolvedValue({ id: '44444444-4444-4444-8444-444444444444' }),
       findVisionResultById: vi.fn(),
       deleteVisionResult: vi.fn().mockResolvedValue(undefined),
+      deductXU: vi.fn().mockResolvedValue(true),
     };
     service = new VisionAnalysisService(
       quotasService as QuotasService,
@@ -101,6 +102,7 @@ describe('VisionAnalysisService', () => {
 
   it('chặn PAYMENT_REQUIRED khi AI gate không free-for-all (trước quota)', async () => {
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
+    persistence.deductXU = vi.fn().mockResolvedValue(false);
     try {
       await service.analyze(baseInput());
       throw new Error('expected premium gate to throw');

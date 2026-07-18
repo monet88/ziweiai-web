@@ -10,6 +10,22 @@
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '$lib/supabase/supabase-client';
 
+function isAnonymousUser(user: User | null): boolean {
+  if (!user) {
+    return false;
+  }
+  if (user.is_anonymous === true) {
+    return true;
+  }
+  if (user.app_metadata?.provider === 'anonymous') {
+    return true;
+  }
+  if (user.identities?.some((identity) => identity.provider === 'anonymous')) {
+    return true;
+  }
+  return !user.email && !user.phone;
+}
+
 export class AuthStore {
   session = $state<Session | null>(null);
   user = $state<User | null>(null);
@@ -86,7 +102,7 @@ export class AuthStore {
 
   /** true khi phiên hiện tại là phiên ẩn danh (Supabase anonymous sign-in, decision 0009). */
   get isAnonymous(): boolean {
-    return this.session?.user.is_anonymous === true;
+    return isAnonymousUser(this.session?.user ?? null);
   }
 
   async signInWithPassword(email: string, password: string): Promise<void> {

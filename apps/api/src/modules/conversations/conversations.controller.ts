@@ -11,6 +11,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { ConversationsService } from './services/conversations.service';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 
 @Controller('conversations')
 export class ConversationsController {
@@ -18,76 +19,40 @@ export class ConversationsController {
 
   private readonly logger = new Logger(ConversationsController.name);
 
-  // Đồng nhất với VisionController: validate input bằng safeParse rồi ném ApiErrorHttpException
-  // (INVALID_INPUT, thông điệp tiếng Việt) thay vì để Zod ném ZodError thô. Gom về một helper để
-  // mọi handler dùng chung một dạng lỗi 400 cho dữ liệu thiếu/sai.
-  private parseOrBadRequest<T>(schema: z.ZodType<T>, value: unknown, message: string): T {
-    const result = schema.safeParse(value);
-    if (!result.success) {
-      throw new ApiErrorHttpException(HttpStatus.BAD_REQUEST, 'INVALID_INPUT', message);
-    }
-    return result.data;
-  }
-
   @Post()
   async createConversation(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Body() body: unknown,
+    @Body(new ZodValidationPipe(createConversationRequestSchema, 'Dữ liệu tạo cuộc trò chuyện không hợp lệ.')) input: z.infer<typeof createConversationRequestSchema>,
   ) {
-    const input = this.parseOrBadRequest(
-      createConversationRequestSchema,
-      body,
-      'Dữ liệu tạo cuộc trò chuyện không hợp lệ.',
-    );
     return this.conversationsService.createConversation(currentUser, input);
   }
 
   @Get()
   async listConversations(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Query('chartSnapshotId') chartSnapshotId: string | undefined,
+    @Query('chartSnapshotId', new ZodValidationPipe(z.uuid(), 'Thiếu hoặc sai mã lá số (chartSnapshotId).')) parsedChartId: string,
   ) {
     // List-by-chart: the client always scopes conversations to a chart (the assistant panel lives on
     // the chart-detail screen). chartSnapshotId is required — without it there is no useful "all my
     // conversations" view in the product, and an unscoped list would be an unbounded cross-chart scan.
-    const parsedChartId = this.parseOrBadRequest(
-      z.uuid(),
-      chartSnapshotId,
-      'Thiếu hoặc sai mã lá số (chartSnapshotId).',
-    );
     return this.conversationsService.listConversationsForChart(currentUser.userId, parsedChartId);
   }
 
   @Get(':conversationId')
   async getConversationDetail(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('conversationId') conversationId: string,
+    @Param('conversationId', new ZodValidationPipe(z.uuid(), 'Mã cuộc trò chuyện không hợp lệ.')) parsedId: string,
   ) {
-    const parsedId = this.parseOrBadRequest(
-      z.uuid(),
-      conversationId,
-      'Mã cuộc trò chuyện không hợp lệ.',
-    );
     return this.conversationsService.getConversationDetail(currentUser.userId, parsedId);
   }
 
   @Post(':conversationId/messages')
   async appendMessage(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('conversationId') conversationId: string,
-    @Body() body: unknown,
+    @Param('conversationId', new ZodValidationPipe(z.uuid(), 'Mã cuộc trò chuyện không hợp lệ.')) parsedId: string,
+    @Body(new ZodValidationPipe(createConversationMessageRequestSchema, 'Dữ liệu tin nhắn không hợp lệ.')) input: z.infer<typeof createConversationMessageRequestSchema>,
     @Req() request: AuthenticatedRequest,
   ) {
-    const parsedId = this.parseOrBadRequest(
-      z.uuid(),
-      conversationId,
-      'Mã cuộc trò chuyện không hợp lệ.',
-    );
-    const input = this.parseOrBadRequest(
-      createConversationMessageRequestSchema,
-      body,
-      'Dữ liệu tin nhắn không hợp lệ.',
-    );
     // Non-streaming path: persist user + generate assistant, return full assistant message via detail.
     // Pass the real client IP so per-IP daily quota / rate-limit applies (anon abuse control); the
     // streaming path already does this. A hardcoded value would collapse all anon callers into one key.
@@ -103,21 +68,11 @@ export class ConversationsController {
   @Post(':conversationId/messages/stream')
   async appendMessageStream(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @Param('conversationId') conversationId: string,
-    @Body() body: unknown,
+    @Param('conversationId', new ZodValidationPipe(z.uuid(), 'Mã cuộc trò chuyện không hợp lệ.')) parsedId: string,
+    @Body(new ZodValidationPipe(createConversationMessageRequestSchema, 'Dữ liệu tin nhắn không hợp lệ.')) input: z.infer<typeof createConversationMessageRequestSchema>,
     @Req() request: AuthenticatedRequest,
     @Res() res: Response,
   ) {
-    const parsedId = this.parseOrBadRequest(
-      z.uuid(),
-      conversationId,
-      'Mã cuộc trò chuyện không hợp lệ.',
-    );
-    const input = this.parseOrBadRequest(
-      createConversationMessageRequestSchema,
-      body,
-      'Dữ liệu tin nhắn không hợp lệ.',
-    );
 
     const send = (event: unknown) => {
       const validated = conversationStreamEventSchema.parse(event);

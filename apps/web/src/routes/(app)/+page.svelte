@@ -15,6 +15,7 @@
   import BirthForm from '$lib/features/dashboard/BirthForm.svelte';
   import DashboardSidebar from '$lib/features/dashboard/DashboardSidebar.svelte';
   import ExtendedSystemNav from '$lib/features/dashboard/ExtendedSystemNav.svelte';
+  import WalletBalance from '$lib/features/payment/WalletBalance.svelte';
   import { Settings } from 'lucide-svelte';
   import type { FeaturesResponse } from '@ziweiai/contracts';
 
@@ -147,6 +148,7 @@
           <span class="session-email">{viCopy.dashboard.anonymousSession}</span>
           <a class="session-cta" href={resolve('/sign-in')}>{viCopy.dashboard.signInOrSignUp}</a>
         {:else}
+          <WalletBalance />
           <span class="session-email" title={auth.user?.email ?? undefined}
             >{auth.user?.email ?? viCopy.dashboard.unknownUser}</span
           >

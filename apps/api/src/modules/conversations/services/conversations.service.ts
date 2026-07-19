@@ -203,13 +203,15 @@ export class ConversationsService {
     }
 
     // GATE 3: Trừ XU cho tính năng premium (Hội thoại AI). Tốn 1 XU mỗi tin nhắn.
-    const success = await this.persistenceGateway.deductXU(user.userId, 1);
-    if (!success) {
-      throw new ApiErrorHttpException(
-        HttpStatus.PAYMENT_REQUIRED,
-        'PAYMENT_REQUIRED',
-        'Tính năng Hỏi đáp AI yêu cầu 1 XU mỗi lượt. Vui lòng nạp thêm XU để tiếp tục.'
-      );
+    if (!apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
+      const success = await this.persistenceGateway.deductXU(user.userId, 1);
+      if (!success) {
+        throw new ApiErrorHttpException(
+          HttpStatus.PAYMENT_REQUIRED,
+          'PAYMENT_REQUIRED',
+          'Tính năng Hỏi đáp AI yêu cầu 1 XU mỗi lượt. Vui lòng nạp thêm XU để tiếp tục.'
+        );
+      }
     }
 
     await this.assertCanCreateConversationMessage(user.userId, ipAddress, user.email === null);

@@ -6,6 +6,7 @@
  */
 import type { ZodType } from 'zod';
 import { env } from '$lib/env';
+import { paywallStore } from '$lib/stores/paywall.svelte';
 
 export type ApiErrorKind =
   | 'unauthorized' // 401
@@ -87,6 +88,11 @@ async function throwHttpError(response: Response): Promise<never> {
   } catch {
     // Body không phải JSON (ví dụ 500 trả HTML) → giữ message generic.
   }
+
+  if (kind === 'payment-required') {
+    paywallStore.open(message);
+  }
+
   throw new ApiError(kind, message, response.status);
 }
 

@@ -81,11 +81,14 @@ export class LangfuseAiProviderWrapper implements AiConversationProvider {
       const result = await this.delegate.generateExplanation(payload);
       
       if (generation) {
+        const promptTokens = this.estimateTokens(JSON.stringify(payload));
         generation.end({
           output: result.renderedMarkdown,
           usage: {
             // Rough estimation
+            promptTokens,
             completionTokens: this.estimateTokens(result.renderedMarkdown),
+            totalTokens: promptTokens + this.estimateTokens(result.renderedMarkdown),
           }
         });
       }
@@ -119,10 +122,13 @@ export class LangfuseAiProviderWrapper implements AiConversationProvider {
       const result = await this.delegate.generateConversation(payload);
       
       if (generation) {
+        const promptTokens = this.estimateTokens(JSON.stringify(payload.messages));
         generation.end({
           output: result.renderedMarkdown,
           usage: {
+            promptTokens,
             completionTokens: this.estimateTokens(result.renderedMarkdown),
+            totalTokens: promptTokens + this.estimateTokens(result.renderedMarkdown),
           }
         });
       }
@@ -169,10 +175,13 @@ export class LangfuseAiProviderWrapper implements AiConversationProvider {
       const result = next.value;
       
       if (generation) {
+        const promptTokens = this.estimateTokens(JSON.stringify(payload.messages));
         generation.end({
           output: result.renderedMarkdown,
           usage: {
+            promptTokens,
             completionTokens: this.estimateTokens(result.renderedMarkdown),
+            totalTokens: promptTokens + this.estimateTokens(result.renderedMarkdown),
           }
         });
       }

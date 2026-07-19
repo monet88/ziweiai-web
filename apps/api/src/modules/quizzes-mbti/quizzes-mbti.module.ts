@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
+import { DatabaseModule } from '../../database/database.module';
 import { QuotasModule } from '../quotas/quotas.module';
 import { QuizzesMbtiController } from './quizzes-mbti.controller';
 import { QuizzesMbtiService } from './quizzes-mbti.service';
 
 @Module({
-  imports: [QuotasModule],
+  imports: [QuotasModule, DatabaseModule],
   controllers: [QuizzesMbtiController],
   providers: [QuizzesMbtiService],
 })

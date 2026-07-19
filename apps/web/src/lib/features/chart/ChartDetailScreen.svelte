@@ -173,26 +173,17 @@
         <h2 class="section-title" id="explanation-title">{copy.explanationTitle}</h2>
         <p class="hint">{explanationHint}</p>
 
-        {#if explanation.isPaymentRequired}
-          <PrimaryButton
-            label={viCopy.explanation.premiumCta}
-            variant="primary"
-            onclick={() => goto(resolve('/pricing'))}
-          />
-          <p class="hint">{viCopy.explanation.premiumHint}</p>
-        {:else}
-          <PrimaryButton
-            label={explanation.hasResult ? copy.regenerateExplanation : explanationButtonLabel}
-            loading={explanation.isPending}
-            disabled={explanationBlocked}
-            onclick={explanation.generate}
-          />
-        {/if}
+        <PrimaryButton
+          label={explanation.hasResult ? copy.regenerateExplanation : explanationButtonLabel}
+          loading={explanation.isPending}
+          disabled={explanationBlocked}
+          onclick={explanation.generate}
+        />
         {#if explanationBlocked}
           <NoticeBanner tone="warning" message={copy.explanationBlockedDescription} />
         {:else if explanation.isPending && !explanation.hasResult}
           <p class="status">{viCopy.explanation.statusPending}</p>
-        {:else if explanation.isError && explanation.errorMessage && !explanation.isPaymentRequired}
+        {:else if explanation.isError && explanation.errorMessage}
           <NoticeBanner tone="danger" message={explanation.errorMessage} />
         {:else if explanation.hasResult && explanation.renderedMarkdown}
           <article class="result">

@@ -56,9 +56,13 @@ export class ApiErrorFilter implements ExceptionFilter {
       }),
     );
     
+    const authRequest = request as RequestWithRequestId & { authenticatedUser?: { id: string } };
+    const userId = authRequest.authenticatedUser?.id;
+
     // Send to Sentry
     Sentry.captureException(exception, {
-      tags: { requestId: requestId ?? 'unknown' }
+      tags: { requestId: requestId ?? 'unknown' },
+      user: userId ? { id: userId } : undefined,
     });
 
     // Nhánh fallback (non-HttpException/non-Zod): lỗi ngoài dự kiến phải để lại thông tin,

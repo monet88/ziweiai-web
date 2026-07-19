@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getAuthStore } from '$lib/auth/auth-context';
+  import { GlobalPaywallModal } from '$lib/components/ui';
   import type { Snippet } from 'svelte';
 
   interface Props {
@@ -24,6 +25,8 @@
 {:else}
   {@render children()}
 {/if}
+
+<GlobalPaywallModal />
 
 <style>
   .state {

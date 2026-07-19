@@ -3,7 +3,7 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 const token = process.env.VERCEL_GALAXY;
 
-const envFile = fs.readFileSync('.env', 'utf-8');
+const envFile = fs.readFileSync('.env.local', 'utf-8');
 const lines = envFile.split('\n');
 
 for (const line of lines) {
@@ -13,6 +13,7 @@ for (const line of lines) {
   const key = line.slice(0, idx).trim();
   let val = line.slice(idx + 1).trim();
   if (val === '') continue; // Skip empty keys
+  if (key === 'PUBLIC_API_BASE_URL') continue; // Prevent localhost going to Vercel
   if (val.startsWith('"') && val.endsWith('"')) {
     val = val.slice(1, -1);
   }
@@ -26,7 +27,7 @@ for (const line of lines) {
     } catch(e) {}
     
     try {
-      const cmd = `echo -n '${safeVal}' | npx --yes vercel env add ${key} ${envName} --token "${token}"`;
+      const cmd = `printf '%s' '${safeVal}' | npx --yes vercel env add ${key} ${envName} --token "${token}"`;
       execSync(cmd, { stdio: 'ignore' });
     } catch (e) {
       // ignore

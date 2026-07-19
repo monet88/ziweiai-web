@@ -8,9 +8,12 @@ import { createClient } from '@supabase/supabase-js';
 // trỏ tới (Supabase Cloud, decision 0016). KHÔNG hardcode endpoint local nữa.
 // anon/publishable key là client-safe theo thiết kế Supabase (không phải secret).
 const rootEnvPath = fileURLToPath(new URL('../../../../.env', import.meta.url));
-if (existsSync(rootEnvPath) && typeof process.loadEnvFile === 'function') {
-  process.loadEnvFile(rootEnvPath);
+const rootEnvLocalPath = fileURLToPath(new URL('../../../../.env.local', import.meta.url));
+if (typeof process.loadEnvFile === 'function') {
+  if (existsSync(rootEnvPath)) process.loadEnvFile(rootEnvPath);
+  if (existsSync(rootEnvLocalPath)) process.loadEnvFile(rootEnvLocalPath);
 }
+
 
 function requireEnv(name: string): string {
   const value = process.env[name];

@@ -3,10 +3,10 @@ import { signInViaUi } from './sign-in';
 
 // US-010: giới hạn / gating lượt luận giải AI — E2E test phía UI.
 // Khi backend trả 402 (PAYMENT_REQUIRED), UI phải:
-//   1. Hiển thị nút CTA "Nâng cấp để dùng luận giải AI" thay vì nút "Luận giải cung này".
-//   2. Hiển thị gợi ý premium.
+//   1. Hiển thị Global Paywall Modal với dòng chữ báo hết XU.
+//   2. Trong modal có nút CTA "Nạp XU ngay".
 //   3. Click CTA → điều hướng đến /pricing.
-//   4. Trang /pricing hiển thị thông tin "Sắp ra mắt".
+//   4. Trang /pricing hiển thị giao diện nạp XU (Ví dụ: "Ví XU hiện tại").
 //
 // Dùng route intercept để giả lập 402 (không phụ thuộc quota backend thật).
 // Gate phía server đã phủ unit/integration test ở apps/api.
@@ -36,7 +36,7 @@ async function createZiweiChart(page: Page, birth: BirthData): Promise<string> {
   return match![1];
 }
 
-test('US-010: 402 → hiện CTA paywall + gợi ý premium + điều hướng /pricing', async ({ page }) => {
+test('US-010: 402 → hiện Global Paywall Modal + điều hướng /pricing', async ({ page }) => {
   await signInViaUi(page);
 
   await createZiweiChart(page, {
@@ -81,23 +81,24 @@ test('US-010: 402 → hiện CTA paywall + gợi ý premium + điều hướng /
     .getByRole('button', { name: /^(Luận giải cung này|Tạo lại luận giải)$/ })
     .click();
 
-  // (1) CTA paywall hiện
-  const premiumCta = page.getByRole('button', { name: 'Nâng cấp để dùng luận giải AI', exact: true });
-  await expect(premiumCta).toBeVisible({ timeout: 15_000 });
+  // (1) Modal paywall hiện
+  const modal = page.locator('.paywall-modal');
+  await expect(modal).toBeVisible({ timeout: 15_000 });
+  await expect(modal.getByText('Tính năng cần XU')).toBeVisible();
+  await expect(modal.getByText('Bạn đã hết lượt luận giải miễn phí')).toBeVisible();
 
-  // (2) Gợi ý premium hiện
-  await expect(page.getByText('Tính năng này yêu cầu gói trả phí')).toBeVisible();
+  const premiumCta = modal.getByRole('button', { name: 'Nạp XU ngay', exact: true });
+  await expect(premiumCta).toBeVisible();
 
   // Screenshot trước khi chuyển trang
-  await page.screenshot({ path: 'test-results/us-010-paywall-cta.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/us-010-paywall-modal.png', fullPage: true });
 
   // (3) Click CTA → /pricing
   await premiumCta.click();
   await page.waitForURL(/\/pricing$/, { timeout: 15_000 });
 
-  // (4) Trang pricing hiển thị thông tin
-  await expect(page.getByText('Sắp ra mắt', { exact: true })).toBeVisible();
-  await expect(page.getByText('Nâng cấp luận giải AI')).toBeVisible();
+  // (4) Trang pricing hiển thị thông tin (đã cập nhật ở Phase 4.1 có thẻ Ví XU)
+  await expect(page.getByText('Ví XU hiện tại')).toBeVisible();
 
   await page.screenshot({ path: 'test-results/us-010-pricing-page.png', fullPage: true });
 });

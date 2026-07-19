@@ -10,11 +10,15 @@ import {
   PUBLIC_SUPABASE_URL,
   PUBLIC_SUPABASE_ANON_KEY,
 } from '$env/static/public';
+import { env as dynamicEnv } from '$env/dynamic/public';
 
 export interface PublicEnv {
   apiBaseUrl: string;
   supabaseUrl: string;
   supabaseAnonKey: string;
+  vietqrBankId: string;
+  vietqrAccountNo: string;
+  vietqrAccountName: string;
 }
 
 function requireEnv(name: string, value: string | undefined): string {
@@ -31,4 +35,7 @@ export const env: PublicEnv = {
   apiBaseUrl: requireEnv('PUBLIC_API_BASE_URL', PUBLIC_API_BASE_URL),
   supabaseUrl: requireEnv('PUBLIC_SUPABASE_URL', PUBLIC_SUPABASE_URL),
   supabaseAnonKey: requireEnv('PUBLIC_SUPABASE_ANON_KEY', PUBLIC_SUPABASE_ANON_KEY),
+  vietqrBankId: dynamicEnv.PUBLIC_VIETQR_BANK_ID || 'mb',
+  vietqrAccountNo: dynamicEnv.PUBLIC_VIETQR_ACCOUNT_NO || '0123456789',
+  vietqrAccountName: dynamicEnv.PUBLIC_VIETQR_ACCOUNT_NAME || 'NGUYEN VAN A',
 };

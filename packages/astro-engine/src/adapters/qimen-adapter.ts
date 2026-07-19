@@ -8,8 +8,8 @@ import {
   buildXuanshuBridgeSettings,
   buildXuanshuRuntimeUnavailableConfidence,
   isXuanshuReferenceRuntimeAvailable,
-  runXuanshuBridge,
 } from './xuanshu-bridge';
+import { createQiMenPaiPan } from '@ziweiai/xuanshu-runtime';
 import {
   buildQimenChartFromXuanshu,
   buildQimenPillarsFromGanZhi,
@@ -72,11 +72,7 @@ export class QimenAdapter implements AstrologyChartAdapter {
       });
     }
 
-    const result = await runXuanshuBridge<XuanshuQimenResult>(
-      'xuanshu-qimen-runner.js',
-      { ...buildXuanshuBridgeSettings(input), ...DEFAULT_QIMEN_SETTINGS },
-      'Kỳ Môn',
-    );
+    const result = createQiMenPaiPan({ ...buildXuanshuBridgeSettings(input), ...DEFAULT_QIMEN_SETTINGS }) as XuanshuQimenResult;
     const { chart, summary } = buildQimenChartFromXuanshu(result);
     const normalizedBirthWithGanZhi = {
       ...normalizedBirth,

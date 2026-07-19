@@ -48,13 +48,15 @@ export class AnnualReportService {
 
     // ===== GATES (chỉ áp khi sinh mới) — fail-closed cả hai cờ =====
     // GATE 3: Trừ XU cho tính năng premium (Báo cáo năm). Tốn 1 XU.
-    const success = await this.persistenceGateway.deductXU(user.userId, 1);
-    if (!success) {
-      throw new ApiErrorHttpException(
-        HttpStatus.PAYMENT_REQUIRED,
-        'PAYMENT_REQUIRED',
-        'Tính năng Báo cáo năm yêu cầu 1 XU. Vui lòng nạp thêm XU để tiếp tục.'
-      );
+    if (!apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
+      const success = await this.persistenceGateway.deductXU(user.userId, 1);
+      if (!success) {
+        throw new ApiErrorHttpException(
+          HttpStatus.PAYMENT_REQUIRED,
+          'PAYMENT_REQUIRED',
+          'Tính năng Báo cáo năm yêu cầu 1 XU. Vui lòng nạp thêm XU để tiếp tục.'
+        );
+      }
     }
     assertAnnualReportEnabled(this.logger);
     try {

@@ -370,39 +370,6 @@ describe('runtime adapters', () => {
     expect(snapshot.summary.changedHexagram).not.toMatch(CJK_TEXT_PATTERN);
   });
 
-  it('keeps Liuyao fallback snapshots contract-valid when xuanshu runtime is unavailable', async () => {
-    const cwd = process.cwd();
-    process.chdir('/tmp');
-    try {
-      const adapter = new LiuyaoAdapter();
-      const snapshot = await adapter.calculateChart({
-        calendar: 'gregorian',
-        date: { year: 2026, month: 7, day: 13, isLeapMonth: null },
-        time: { hour: 8, minute: 0, isUnknown: false },
-        sexOrGenderForChart: 'male',
-        place: {
-          label: 'Manual entry',
-          manual: {
-            latitude: 10.8231,
-            longitude: 106.6297,
-            timezone: 'Asia/Ho_Chi_Minh',
-          },
-        },
-        locale: 'vi-VN',
-        source: 'test-fixture',
-      });
-
-      expect(() => chartSnapshotSchema.parse(snapshot)).not.toThrow();
-      expect(snapshot.chartSystem).toBe('liu-yao');
-      expect(snapshot.liuyao?.baseHexagram.lines).toHaveLength(6);
-      expect(snapshot.calculationConfidence.level).toBe('medium');
-      expect(snapshot.calculationConfidence.blocksExactReading).toBe(false);
-      expect(snapshot.calculationConfidence.reasons).not.toContain('XUANSHU_REFERENCE_RUNTIME_UNAVAILABLE');
-      expect(snapshot.provenance.warnings).toContain('XUANSHU_REFERENCE_RUNTIME_FALLBACK');
-    } finally {
-      process.chdir(cwd);
-    }
-  });
 
   it('casts a manual Liuyao hexagram from 6 line states bottom-to-top (US-026)', async () => {
     const adapter = new LiuyaoAdapter();

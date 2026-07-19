@@ -7,7 +7,7 @@ import { signInViaUi } from './sign-in';
 //      đề tiếng Việt và mốc ngày (YYYY-MM-DD) / tháng (YYYY-MM); summary về (data) thay vì kẹt
 //      ở trạng thái loading/error.
 //   2. Nút "Tạo báo cáo năm" hiển thị. Click → hoặc mở modal Markdown (cờ beta bật + entitled),
-//      hoặc hiện CTA paywall (402). Cả hai nhánh đều là output tiếng Việt hợp lệ — test chấp
+//      hoặc hiện Global Paywall Modal (402). Cả hai nhánh đều là output tiếng Việt hợp lệ — test chấp
 //      nhận một trong hai (môi trường E2E không cố định cờ AI_ANNUAL_REPORT_ENABLED).
 //
 // Selector bám role/nhãn tiếng Việt (section aria-label "Vận hạn"; card heading; nút theo nhãn).
@@ -76,15 +76,15 @@ test('US-016: section Vận hạn — card vận ngày/tháng render + nút báo
   await expect(monthlyCard.getByText('Đang tính vận tháng…')).toHaveCount(0, { timeout: 20_000 });
   await expect(monthlyCard.getByRole('alert')).toHaveCount(0);
 
-  // ---- (2) Nút báo cáo năm: click → modal Markdown HOẶC CTA paywall (402) ----
+  // ---- (2) Nút báo cáo năm: click → modal Markdown HOẶC Global Paywall Modal (402) ----
   const annualButton = page.getByRole('button', { name: 'Tạo báo cáo năm' });
   await expect(annualButton).toBeVisible();
   await annualButton.click();
 
-  // Chờ một trong hai nhánh: dialog báo cáo năm, hoặc CTA nâng cấp (paywall 402). Nhánh modal
+  // Chờ một trong hai nhánh: dialog báo cáo năm, hoặc Modal nâng cấp (paywall 402). Nhánh modal
   // gọi LLM thật sinh ~600-1200 từ → backend cho tới AI_ANNUAL_REPORT_TIMEOUT_MS (60s, decision
   // 0014); chờ 70s để generation hợp lệ chậm không bị cắt trước backend (paywall thì trả tức thì).
-  const modal = page.getByRole('dialog', { name: /Báo cáo năm/ });
-  const paywallCta = page.getByRole('button', { name: 'Nâng cấp để tạo báo cáo năm' });
-  await expect(modal.or(paywallCta).first()).toBeVisible({ timeout: 70_000 });
+  const reportModal = page.getByRole('dialog', { name: /Báo cáo năm/ });
+  const paywallModal = page.locator('.paywall-modal');
+  await expect(reportModal.or(paywallModal).first()).toBeVisible({ timeout: 70_000 });
 });

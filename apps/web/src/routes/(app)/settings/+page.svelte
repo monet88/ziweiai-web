@@ -1,7 +1,6 @@
 <script lang="ts">
   import { getAuthStore } from '$lib/auth/auth-context';
   import { deleteAccount } from '$lib/api-client';
-  import { toast } from '$lib/components/toast';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { AlertCircle, Trash2, ArrowLeft } from 'lucide-svelte';
@@ -16,11 +15,11 @@
     try {
       isDeleting = true;
       await deleteAccount(token);
-      toast.success('Tài khoản đã được xoá thành công.');
+      alert('Tài khoản đã được xoá thành công.');
       await auth.signOut();
       goto(resolve('/sign-in'));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Lỗi không xác định khi xoá tài khoản.');
+      alert(e instanceof Error ? e.message : 'Lỗi không xác định khi xoá tài khoản.');
     } finally {
       isDeleting = false;
       showConfirmModal = false;

@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
+    "outDir": "dist",
+    "declaration": true,
     "paths": {
       "@/*": [
         "./*"
@@ -21,6 +23,7 @@
   ],
   "exclude": [
     "node_modules",
-    "tests"
+    "tests",
+    "dist"
   ]
 }

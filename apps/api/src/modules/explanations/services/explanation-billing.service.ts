@@ -5,6 +5,7 @@ import { DailyQuotaExceededError } from '../../quotas/quota-errors';
 import { QuotasService } from '../../quotas/quotas.service';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import type { AuthenticatedUser, CreateExplanationRequest } from '@ziweiai/contracts';
+import { apiEnv } from '../../../config/env';
 
 @Injectable()
 export class ExplanationBillingService {
@@ -38,7 +39,7 @@ export class ExplanationBillingService {
    */
   async consumeXuIfNeeded(userId: string, input: CreateExplanationRequest, isOverDailyQuota: boolean): Promise<void> {
     const isPremium = input.explanationKind !== 'overview';
-    const needsXu = isPremium || isOverDailyQuota;
+    const needsXu = (isPremium || isOverDailyQuota) && !apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
 
     if (needsXu) {
       const success = await this.persistenceGateway.deductXU(userId, 1);

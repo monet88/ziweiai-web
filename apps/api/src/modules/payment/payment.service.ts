@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException, Inject } from '@nestjs/common';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../database/supabase-client';
-import { SepayWebhookPayload } from '@ziweiai/contracts';
+import { SepayWebhookPayload, RevenueCatWebhookPayload } from '@ziweiai/contracts';
 
 @Injectable()
 export class PaymentService {
@@ -85,5 +85,74 @@ export class PaymentService {
     }
 
     this.logger.log(`Successfully processed transaction ${payload.id}. Added ${xuAdded} XU to user ${userId}.`);
+  }
+
+  async processRevenueCatTransaction(payload: RevenueCatWebhookPayload) {
+    const event = payload.event;
+
+    // Only process INITIAL_PURCHASE and NON_RENEWING_PURCHASE
+    if (event.type !== 'INITIAL_PURCHASE' && event.type !== 'NON_RENEWING_PURCHASE') {
+      this.logger.log(`Skipping RevenueCat event type ${event.type}`);
+      return;
+    }
+
+    // 1. Check if transaction already processed (idempotency)
+    const { data: existingTx } = await this.client
+      .from('transactions')
+      .select('id')
+      .eq('revenuecat_transaction_id', event.id)
+      .single();
+
+    if (existingTx) {
+      this.logger.log(`RevenueCat transaction ${event.id} already processed. Skipping.`);
+      return;
+    }
+
+    const userId = event.app_user_id;
+
+    // 2. Map product_id to XU amount
+    let xuAdded = 0;
+    // Basic mapping, can be moved to config or database later
+    if (event.product_id.includes('100')) {
+      xuAdded = 100;
+    } else if (event.product_id.includes('500')) {
+      xuAdded = 500;
+    } else if (event.product_id.includes('2000')) {
+      xuAdded = 2000;
+    } else {
+      this.logger.warn(`Could not determine XU amount for product_id: ${event.product_id}`);
+      // Default fallback if we can't extract XU (or throw error)
+      return;
+    }
+
+    // 3. Extract amount in VND/USD if needed, or default to 0 for logging
+    const amountPaid = event.price_in_purchased_currency || event.price || 0;
+
+    // 4. Insert transaction and add XU
+    const { error: txError } = await this.client
+      .from('transactions')
+      .insert({
+        owner_user_id: userId,
+        amount_vnd: amountPaid,
+        xu_added: xuAdded,
+        revenuecat_transaction_id: event.id,
+      });
+
+    if (txError) {
+      this.logger.error(`Failed to insert transaction ${event.id}`, txError);
+      throw new BadRequestException('Database error');
+    }
+
+    const { error: rpcError } = await this.client.rpc('add_xu', {
+      user_id: userId,
+      amount: xuAdded,
+    });
+
+    if (rpcError) {
+      this.logger.error(`Failed to add XU for user ${userId}`, rpcError);
+      throw new BadRequestException('Database error');
+    }
+
+    this.logger.log(`Successfully processed RevenueCat transaction ${event.id}. Added ${xuAdded} XU to user ${userId}.`);
   }
 }

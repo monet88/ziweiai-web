@@ -17,6 +17,7 @@ import {
   type ConversationMessageRecord,
   type DivinationContextRecord,
   type DivinationPurposeKey,
+  type ProfileRecord,
 } from '@ziweiai/contracts';
 import { SUPABASE_CLIENT } from './supabase-client';
 import {
@@ -32,6 +33,7 @@ import {
   toExplanationResultRecord,
   toHistoryViewRecord,
   toVisionResultRecord,
+  toProfileRecord,
 } from './persistence-mappers';
 
 export type { AnnualReportRecord } from './persistence-mappers';
@@ -46,6 +48,16 @@ export class SupabasePersistenceGateway {
   // Client được inject qua DI (SUPABASE_CLIENT) thay vì tự `createClient` trong constructor: dời
   // seam ra khỏi gateway để test có thể cấp một client thay thế qua interface (Stage A của #38).
   constructor(@Inject(SUPABASE_CLIENT) private readonly client: SupabaseClient) {}
+
+  async findProfileByUserId(userId: string): Promise<ProfileRecord | null> {
+    const { data, error } = await this.client
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    this.throwIfError(error);
+    return data ? toProfileRecord(data) : null;
+  }
 
   async findLatestBirthProfileByInputHash(ownerUserId: string, inputHashDigest: string): Promise<BirthProfileRecord | null> {
     const { data, error } = await this.client
@@ -107,6 +119,17 @@ export class SupabasePersistenceGateway {
       .from('chart_snapshots')
       .select('*')
       .eq('owner_user_id', ownerUserId)
+      .eq('id', chartSnapshotId)
+      .maybeSingle();
+    this.throwIfError(error);
+    return data ? toChartSnapshotRecord(data) : null;
+  }
+
+  async findPublicChartSnapshotById(chartSnapshotId: string): Promise<ChartSnapshotRecord | null> {
+    // Used for social sharing. Bypasses owner_user_id check because chartSnapshotId is an unguessable UUID.
+    const { data, error } = await this.client
+      .from('chart_snapshots')
+      .select('*')
       .eq('id', chartSnapshotId)
       .maybeSingle();
     this.throwIfError(error);

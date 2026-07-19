@@ -2,6 +2,10 @@ import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 import { supabase } from '$lib/supabase/supabase-client';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
 
+// Singleton for Realtime channel to avoid duplicate connections
+let channel: ReturnType<typeof supabase.channel> | null = null;
+let activeSubscriptions = 0;
+
 export function createWalletModel(auth: AuthStore) {
   const queryClient = useQueryClient();
 
@@ -27,38 +31,41 @@ export function createWalletModel(auth: AuthStore) {
     staleTime: 5 * 60 * 1000,
   }));
 
-  let channel: ReturnType<typeof supabase.channel> | null = null;
-
   function subscribe() {
     if (!auth.user?.id || auth.isAnonymous) return;
+    activeSubscriptions++;
 
-    if (channel) {
-      supabase.removeChannel(channel);
-    }
-
-    channel = supabase
-      .channel(`public:profiles:${auth.user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `user_id=eq.${auth.user.id}`,
-        },
-        (payload) => {
-          // XU updated in DB (probably via webhook)
-          const newBalance = payload.new.xu_balance;
-          if (typeof newBalance === 'number') {
-            queryClient.setQueryData(queryKey(), newBalance);
+    if (activeSubscriptions === 1) {
+      if (channel) supabase.removeChannel(channel);
+      
+      channel = supabase
+        .channel(`public:profiles:${auth.user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `user_id=eq.${auth.user.id}`,
+          },
+          (payload) => {
+            const newBalance = payload.new.xu_balance;
+            if (typeof newBalance === 'number') {
+              queryClient.setQueryData(queryKey(), newBalance);
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    }
   }
 
   function unsubscribe() {
-    if (channel) {
+    if (!auth.user?.id || auth.isAnonymous) return;
+    if (activeSubscriptions > 0) {
+      activeSubscriptions--;
+    }
+
+    if (activeSubscriptions === 0 && channel) {
       supabase.removeChannel(channel);
       channel = null;
     }

@@ -19,9 +19,10 @@ import { PairingsModule } from './modules/pairings/pairings.module';
 import { VisionSharedModule } from './modules/vision-shared/vision-shared.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { UsersModule } from './modules/users/users.module';
+import { ShareModule } from './modules/share/share.module';
 
 @Module({
-imports: [AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsTarotModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule],
+imports: [AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsTarotModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule, ShareModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

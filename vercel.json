@@ -11,6 +11,10 @@
   },
   "rewrites": [
     {
+      "source": "/share/:path*",
+      "destination": "/api/share/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/[...path]"
     },

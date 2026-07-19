@@ -16,6 +16,7 @@
     "@nestjs/common": "^11.1.8",
     "@nestjs/core": "^11.1.8",
     "@nestjs/platform-express": "^11.1.8",
+    "@resvg/resvg-js": "^2.6.2",
     "@sentry/nestjs": "^10.66.0",
     "@sentry/node": "^10.66.0",
     "@supabase/supabase-js": "^2.84.0",
@@ -25,6 +26,8 @@
     "langfuse-node": "^3.38.20",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "satori": "^0.28.0",
+    "satori-html": "^0.3.2",
     "tyme4ts": "^1.5.2",
     "zod": "^4.1.12"
   },

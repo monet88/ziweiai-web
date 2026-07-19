@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import WalletIndicator from '$lib/features/payment/WalletIndicator.svelte';
 
   // AppScaffold: khung layout nền cho các màn hình US-006..008. Header (eyebrow/title/
   // subtitle + slot action) + <main> semantic + container responsive. Bố cục 2 cột
@@ -29,9 +30,12 @@
           <p class="subtitle">{subtitle}</p>
         {/if}
       </div>
-      {#if action}
-        <div class="hero-action">{@render action()}</div>
-      {/if}
+      <div class="hero-actions">
+        <WalletIndicator />
+        {#if action}
+          {@render action()}
+        {/if}
+      </div>
     </header>
 
     <div class="body-layout">
@@ -130,9 +134,10 @@
     min-width: 0;
   }
 
-  .hero-action {
+  .hero-actions {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    gap: 12px;
     flex-shrink: 0;
   }
 

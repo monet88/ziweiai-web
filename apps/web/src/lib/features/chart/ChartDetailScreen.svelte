@@ -86,6 +86,28 @@
       horoscope.ensureDefault();
     }
   });
+
+  async function handleShare() {
+    const shareUrl = `${window.location.origin}/share/charts/${detail.chartId}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Tử Vi Toàn Tập - Xem Lá Số',
+          text: 'Xem chi tiết lá số của tôi trên Tử Vi Toàn Tập',
+          url: shareUrl
+        });
+        return;
+      } catch (err) {
+        // ignore aborts
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      alert('Đã copy link chia sẻ!');
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  }
 </script>
 
 <svelte:head>
@@ -98,11 +120,18 @@
   subtitle={copy.heroSubtitle}
 >
   {#snippet action()}
-    <PrimaryButton
-      label={viCopy.bazi.returnToDashboard}
-      variant="surface"
-      onclick={() => goto(resolve('/'))}
-    />
+    <div style="display: flex; gap: 8px;">
+      <PrimaryButton
+        label="Chia Sẻ"
+        variant="primary"
+        onclick={handleShare}
+      />
+      <PrimaryButton
+        label={viCopy.bazi.returnToDashboard}
+        variant="surface"
+        onclick={() => goto(resolve('/'))}
+      />
+    </div>
   {/snippet}
 
   {#if detail.isPending}

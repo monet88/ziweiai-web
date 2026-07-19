@@ -21,6 +21,7 @@ export const profileRecordSchema = z.object({
   displayName: z.string().min(1).nullable(),
   locale: z.string().min(2),
   timezone: z.string().min(1).nullable(),
+  xuBalance: z.number().nonnegative().default(0),
 });
 
 export const birthProfileRecordSchema = z.object({

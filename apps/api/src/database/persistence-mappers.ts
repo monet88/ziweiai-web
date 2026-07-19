@@ -8,6 +8,7 @@ import {
   conversationRecordSchema,
   conversationMessageRecordSchema,
   divinationContextRecordSchema,
+  profileRecordSchema,
   type BirthProfileRecord,
   type ChartSnapshotRecord,
   type ExplanationRequestRecord,
@@ -17,6 +18,7 @@ import {
   type ConversationRecord,
   type ConversationMessageRecord,
   type DivinationContextRecord,
+  type ProfileRecord,
 } from '@ziweiai/contracts';
 import { normalizePostgresTimestamp } from './postgres-timestamp';
 
@@ -44,6 +46,16 @@ function coerceProviderMetadata(providerMetadataRow: unknown): Record<string, st
         Object.entries(providerMetadataRow as Record<string, unknown>).map(([key, value]) => [key, String(value)]),
       )
     : {};
+}
+
+export function toProfileRecord(row: SupabaseRow): ProfileRecord {
+  return profileRecordSchema.parse({
+    userId: row.user_id,
+    displayName: row.display_name,
+    locale: row.locale,
+    timezone: row.timezone,
+    xuBalance: row.xu_balance,
+  });
 }
 
 export function toBirthProfileRecord(row: SupabaseRow): BirthProfileRecord {

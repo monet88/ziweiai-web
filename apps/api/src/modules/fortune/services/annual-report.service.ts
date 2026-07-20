@@ -47,6 +47,8 @@ export class AnnualReportService {
     }
 
     // ===== GATES (chỉ áp khi sinh mới) — fail-closed cả hai cờ =====
+    assertAnnualReportEnabled(this.logger);
+
     // GATE 3: Trừ XU cho tính năng premium (Báo cáo năm). Tốn 1 XU.
     if (!apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
       const success = await this.persistenceGateway.deductXU(user.userId, 1);
@@ -58,7 +60,6 @@ export class AnnualReportService {
         );
       }
     }
-    assertAnnualReportEnabled(this.logger);
     try {
       await this.quotasService.assertCanCreateAnnualReport(user.userId, ipAddress, user.email === null);
     } catch (error) {

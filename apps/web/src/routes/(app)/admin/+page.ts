@@ -5,7 +5,7 @@ import { adminListUsers } from '$lib/api-client';
 export const load: PageLoad = async ({ parent }) => {
   const { session } = await parent();
   if (!session?.token) {
-    throw redirect(303, '/login');
+    throw redirect(303, '/sign-in');
   }
 
   try {

@@ -13,8 +13,8 @@ export const birthDateSchema = z.object({
 
 export const birthTimeSchema = z
   .object({
-    hour: z.number().int().min(0).max(23).nullable(),
-    minute: z.number().int().min(0).max(59).nullable(),
+    hour: z.number().int().min(0).max(23).nullish(),
+    minute: z.number().int().min(0).max(59).nullish(),
     isUnknown: z.boolean(),
   })
   .superRefine((value, ctx) => {
@@ -38,8 +38,8 @@ export const manualCoordinatesSchema = z.object({
 
 export const birthPlaceSchema = z
   .object({
-    label: z.string().trim().min(1).nullable(),
-    manual: manualCoordinatesSchema.nullable(),
+    label: z.string().trim().min(1).nullish(),
+    manual: manualCoordinatesSchema.nullish(),
   })
   .superRefine((value, ctx) => {
     if (value.label || value.manual) {

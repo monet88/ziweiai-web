@@ -1,7 +1,7 @@
 {
   "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm rebuild esbuild && pnpm --filter @ziweiai/contracts build && pnpm --filter @ziweiai/core build && pnpm --filter @ziweiai/astro-engine build && pnpm --filter @ziweiai/api build && pnpm --filter @ziweiai/web build",
+  "buildCommand": "pnpm run vercel-build",
   "outputDirectory": "apps/web/build",
   "functions": {
     "api/[...path].ts": {

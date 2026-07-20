@@ -33,15 +33,17 @@ void main() async {
     await Purchases.configure(configuration);
   }
 
-  // Sync Supabase Auth state with RevenueCat
-  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-    final session = data.session;
-    if (session != null) {
-      Purchases.logIn(session.user.id);
-    } else {
-      Purchases.logOut();
-    }
-  });
+  // Sync Supabase Auth state with RevenueCat only if configured
+  if (configuration != null) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final session = data.session;
+      if (session != null) {
+        Purchases.logIn(session.user.id);
+      } else {
+        Purchases.logOut();
+      }
+    });
+  }
 
   runApp(
     const ProviderScope(

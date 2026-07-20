@@ -39,6 +39,8 @@ export function createQuotaCounterStore(env: ApiEnv = apiEnv): QuotaCounterStore
   }
 }
 
+import { Logger } from '@nestjs/common';
+
 function logDriver(name: string): void {
-  console.log(`[quotas] counter store driver=${name}`);
+  Logger.log(`[quotas] counter store driver=${name}`);
 }

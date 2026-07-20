@@ -3,7 +3,7 @@ import 'birth_input.dart';
 
 part 'create_chart_request.g.dart';
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(explicitToJson: true, includeIfNull: false)
 class CreateChartRequest {
   final BirthInput birthInput;
   final String chartSystem; // e.g. 'zi-wei-dou-shu'

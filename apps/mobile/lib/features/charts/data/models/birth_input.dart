@@ -2,7 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'birth_input.g.dart';
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(explicitToJson: true, includeIfNull: false)
 class BirthDate {
   final int year;
   final int month;
@@ -20,7 +20,7 @@ class BirthDate {
   Map<String, dynamic> toJson() => _$BirthDateToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(explicitToJson: true, includeIfNull: false)
 class BirthTime {
   final int? hour;
   final int? minute;
@@ -36,7 +36,7 @@ class BirthTime {
   Map<String, dynamic> toJson() => _$BirthTimeToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(explicitToJson: true, includeIfNull: false)
 class ManualCoordinates {
   final double latitude;
   final double longitude;
@@ -52,7 +52,7 @@ class ManualCoordinates {
   Map<String, dynamic> toJson() => _$ManualCoordinatesToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(explicitToJson: true, includeIfNull: false)
 class BirthPlace {
   final String? label;
   final ManualCoordinates? manual;
@@ -66,7 +66,7 @@ class BirthPlace {
   Map<String, dynamic> toJson() => _$BirthPlaceToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable(explicitToJson: true, includeIfNull: false)
 class BirthInput {
   final String calendar; // 'gregorian' or 'lunar'
   final BirthDate date;

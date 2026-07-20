@@ -21,5 +21,5 @@ Map<String, dynamic> _$CreateChartRequestToJson(CreateChartRequest instance) =>
       'birthInput': instance.birthInput.toJson(),
       'chartSystem': instance.chartSystem,
       'makeActiveBirthProfile': instance.makeActiveBirthProfile,
-      'viewYear': instance.viewYear,
+      'viewYear': ?instance.viewYear,
     };

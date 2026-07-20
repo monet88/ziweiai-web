@@ -28,6 +28,15 @@ class ApiClient {
         return handler.next(e);
       },
     ));
+
+    _dio.interceptors.add(LogInterceptor(
+      request: true,
+      requestHeader: true,
+      requestBody: true,
+      responseHeader: true,
+      responseBody: true,
+      error: true,
+    ));
   }
 
   Dio get dio => _dio;

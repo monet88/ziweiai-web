@@ -1,7 +1,12 @@
+import 'dart:math';
+import 'dart:ui';
+
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+
 import '../providers/wallet_provider.dart';
 
 class WalletScreen extends ConsumerStatefulWidget {
@@ -15,11 +20,19 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
   Offerings? _offerings;
   bool _isLoading = true;
   bool _isPurchasing = false;
+  late ConfettiController _confettiController;
 
   @override
   void initState() {
     super.initState();
     _fetchOfferings();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchOfferings() async {
@@ -79,14 +92,13 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
       await Purchases.purchase(PurchaseParams.package(package));
       if (mounted) {
         ref.invalidate(walletBalanceProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Thanh toán thành công! XU sẽ sớm được cộng vào tài khoản.')),
-        );
+        _confettiController.play();
+        _showSuccessDialog();
       }
     } catch (e) {
       if (mounted) {
-        // Only show error if it's not a user cancellation
-        final isUserCancelled = e.toString().contains('canceled') || e.toString().contains('cancelled');
+        final isUserCancelled =
+            e.toString().contains('canceled') || e.toString().contains('cancelled');
         if (!isUserCancelled) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Đã xảy ra lỗi trong quá trình thanh toán.')),
@@ -102,237 +114,403 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final balanceAsyncValue = ref.watch(walletBalanceProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ví XU'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-        actions: [
-          TextButton.icon(
-            onPressed: _handleRestorePurchases,
-            icon: const Icon(Icons.restore, color: Colors.white),
-            label: const Text('Khôi phục', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Column(
           children: [
-            // Balance Card
-            Container(
-              padding: const EdgeInsets.all(24.0),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.deepPurple.shade700, Colors.deepPurple.shade400],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16.0),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.deepPurple.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    'Số dư hiện tại',
-                    style: TextStyle(color: Colors.white70, fontSize: 16),
-                  ),
-                  const SizedBox(height: 8),
-                  balanceAsyncValue.when(
-                    data: (balance) => Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          '$balance',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'XU',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    loading: () => const CircularProgressIndicator(color: Colors.white),
-                    error: (err, stack) => Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, color: Colors.redAccent),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Lỗi tải số dư',
-                          style: const TextStyle(color: Colors.redAccent, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              'Nạp thêm XU',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            
-            if (_isLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (_offerings == null || _offerings!.current == null || _offerings!.current!.availablePackages.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text(
-                    'Hiện tại chưa có gói XU nào khả dụng.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                ),
-              )
-            else
-              ..._offerings!.current!.availablePackages.map((package) {
-                // Determine mock XU from identifier or description (for UI display)
-                int xuDisplay = 0;
-                if (package.storeProduct.identifier.contains('100')) {
-                  xuDisplay = 100;
-                } else if (package.storeProduct.identifier.contains('500')) {
-                  xuDisplay = 500;
-                } else if (package.storeProduct.identifier.contains('2000')) {
-                  xuDisplay = 2000;
-                }
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: _buildPackageCard(
-                    context,
-                    title: package.storeProduct.title,
-                    xu: xuDisplay, // Fallback logic above
-                    price: package.storeProduct.priceString,
-                    isPopular: package.storeProduct.identifier.contains('popular'),
-                    onTap: () => _handlePurchase(package),
-                  ),
-                );
-              }),
+            Icon(Icons.stars, color: Colors.amber, size: 48),
+            SizedBox(height: 16),
+            Text('Thanh toán thành công!', textAlign: TextAlign.center),
           ],
         ),
+        content: const Text(
+          'Số XU của bạn đã được cộng vào tài khoản.\nCảm ơn bạn đã đồng hành cùng Tử Vi Toàn Tập!',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () => context.pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2A0845),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Đóng'),
+            ),
+          )
+        ],
       ),
-      // Overlay loading indicator during purchase
-      floatingActionButton: _isPurchasing
-          ? FloatingActionButton(
-              onPressed: () {},
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              child: const CircularProgressIndicator(),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
-  Widget _buildPackageCard(
-    BuildContext context, {
-    required String title,
-    required int xu,
-    required String price,
-    bool isPopular = false,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: isPopular ? 4 : 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: isPopular
-            ? const BorderSide(color: Colors.deepPurple, width: 2)
-            : BorderSide.none,
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple.shade50,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.stars, color: Colors.deepPurple),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          // Background Gradient (Space theme)
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF0F0C29), // Very dark blue/purple
+                  Color(0xFF302B63),
+                  Color(0xFF24243E),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          
+          // Custom Header
+          SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                // AppBar actions
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                        onPressed: () => context.pop(),
+                      ),
+                      TextButton.icon(
+                        onPressed: _handleRestorePurchases,
+                        icon: const Icon(Icons.restore, color: Colors.white70),
+                        label: const Text('Khôi phục', style: TextStyle(color: Colors.white70)),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Balance Display
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'TÀI KHOẢN CỦA BẠN',
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 14,
+                          letterSpacing: 2.0,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final balanceAsyncValue = ref.watch(walletBalanceProvider);
+                          
+                          return balanceAsyncValue.when(
+                            data: (balance) => Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  '$balance',
+                                  style: const TextStyle(
+                                    color: Color(0xFFFFD700), // Gold
+                                    fontSize: 64,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.0,
+                                    shadows: [
+                                      Shadow(
+                                        color: Color(0x66FFD700),
+                                        blurRadius: 20,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 8.0),
+                                  child: Text(
+                                    'XU',
+                                    style: TextStyle(
+                                      color: Color(0xFFFFD700),
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            loading: () => const CircularProgressIndicator(color: Color(0xFFFFD700)),
+                            error: (err, stack) => const Text(
+                              'Lỗi tải số dư',
+                              style: TextStyle(color: Colors.redAccent, fontSize: 16),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Glassmorphism Bottom Sheet
+                Expanded(
+                  flex: 7,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            width: 1.5,
                           ),
                         ),
-                        if (isPopular) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade100,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+                        child: _buildPackagesList(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Purchasing Overlay
+          if (_isPurchasing)
+            Container(
+              color: Colors.black.withValues(alpha: 0.5),
+              child: const Center(
+                child: CircularProgressIndicator(color: Color(0xFFFFD700)),
+              ),
+            ),
+            
+          // Confetti Overlay
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: pi / 2, // fall downwards
+              maxBlastForce: 5, 
+              minBlastForce: 2, 
+              emissionFrequency: 0.05,
+              numberOfParticles: 50, 
+              gravity: 0.2,
+              colors: const [
+                Color(0xFFFFD700), // Gold
+                Color(0xFFFFDF00), // Golden yellow
+                Color(0xFFD4AF37), // Metallic gold
+                Colors.white,
+              ],
+              createParticlePath: drawCoin,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Path drawCoin(Size size) {
+    final path = Path();
+    path.addOval(Rect.fromCircle(center: Offset.zero, radius: 10));
+    return path;
+  }
+
+  Widget _buildPackagesList() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: Colors.white));
+    }
+    
+    if (_offerings == null || _offerings!.current == null || _offerings!.current!.availablePackages.isEmpty) {
+      return const Center(
+        child: Text(
+          'Hiện tại chưa có gói XU nào khả dụng.',
+          style: TextStyle(color: Colors.white70),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Center(
+            child: Text(
+              'CHỌN GÓI NẠP',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          ..._offerings!.current!.availablePackages.map((package) {
+            int xuDisplay = 0;
+            if (package.storeProduct.identifier.contains('100')) {
+              xuDisplay = 100;
+            } else if (package.storeProduct.identifier.contains('500')) {
+              xuDisplay = 500;
+            } else if (package.storeProduct.identifier.contains('2000')) {
+              xuDisplay = 2000;
+            } else {
+              // fallback extraction
+              final match = RegExp(r'\d+').firstMatch(package.storeProduct.identifier);
+              if (match != null) {
+                xuDisplay = int.parse(match.group(0)!);
+              }
+            }
+
+            final isPopular = package.storeProduct.identifier.contains('popular');
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: _buildPremiumCard(
+                package: package,
+                xu: xuDisplay,
+                isPopular: isPopular,
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumCard({
+    required Package package,
+    required int xu,
+    required bool isPopular,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: isPopular
+            ? [
+                BoxShadow(
+                  color: const Color(0xFFFFD700).withValues(alpha: 0.3),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                )
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                )
+              ],
+      ),
+      child: Material(
+        color: isPopular ? Colors.white.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _handlePurchase(package),
+          splashColor: const Color(0xFFFFD700).withValues(alpha: 0.3),
+          highlightColor: Colors.white.withValues(alpha: 0.1),
+          child: Container(
+            padding: const EdgeInsets.all(20.0),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: isPopular ? const Color(0xFFFFD700) : Colors.white.withValues(alpha: 0.1),
+                width: isPopular ? 2.0 : 1.0,
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                // Coin Icon
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFFFD700).withValues(alpha: 0.5),
+                      width: 2,
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.stars, color: Color(0xFFFFD700), size: 32),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                
+                // Package Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
                             child: Text(
-                              'HOT',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.red.shade900,
+                              package.storeProduct.title.split('(').first.trim(),
+                              style: const TextStyle(
+                                color: Colors.white,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 18,
                               ),
                             ),
                           ),
-                        ]
-                      ],
+                          if (isPopular)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFD700),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'HOT',
+                                style: TextStyle(
+                                  color: Color(0xFF2A0845),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        xu > 0 ? '$xu XU' : 'Gói XU',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Price
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isPopular ? const Color(0xFFFFD700) : Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    package.storeProduct.priceString,
+                    style: TextStyle(
+                      color: isPopular ? const Color(0xFF2A0845) : Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                    const SizedBox(height: 4),
-                    Text(xu > 0 ? '$xu XU' : 'XU', style: const TextStyle(color: Colors.black54)),
-                  ],
+                  ),
                 ),
-              ),
-              Text(
-                price,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Colors.deepPurple,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

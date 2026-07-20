@@ -17,7 +17,7 @@ Map<String, dynamic> _$BirthDateToJson(BirthDate instance) => <String, dynamic>{
   'year': instance.year,
   'month': instance.month,
   'day': instance.day,
-  'isLeapMonth': instance.isLeapMonth,
+  'isLeapMonth': ?instance.isLeapMonth,
 };
 
 BirthTime _$BirthTimeFromJson(Map<String, dynamic> json) => BirthTime(
@@ -27,8 +27,8 @@ BirthTime _$BirthTimeFromJson(Map<String, dynamic> json) => BirthTime(
 );
 
 Map<String, dynamic> _$BirthTimeToJson(BirthTime instance) => <String, dynamic>{
-  'hour': instance.hour,
-  'minute': instance.minute,
+  'hour': ?instance.hour,
+  'minute': ?instance.minute,
   'isUnknown': instance.isUnknown,
 };
 
@@ -55,8 +55,8 @@ BirthPlace _$BirthPlaceFromJson(Map<String, dynamic> json) => BirthPlace(
 
 Map<String, dynamic> _$BirthPlaceToJson(BirthPlace instance) =>
     <String, dynamic>{
-      'label': instance.label,
-      'manual': instance.manual?.toJson(),
+      'label': ?instance.label,
+      'manual': ?instance.manual?.toJson(),
     };
 
 BirthInput _$BirthInputFromJson(Map<String, dynamic> json) => BirthInput(

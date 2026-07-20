@@ -23,6 +23,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _gender = 'male';
   String _calendar = 'gregorian';
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndSignInAnonymously();
+    });
+  }
+
+  Future<void> _checkAndSignInAnonymously() async {
+    final authRepo = ref.read(authRepositoryProvider);
+    if (authRepo.currentUser == null) {
+      try {
+        await authRepo.signInAnonymously();
+      } catch (e) {
+        // Suppress in production
+      }
+    }
+  }
+
   void _submit() {
     final year = int.tryParse(_yearController.text) ?? 1990;
     final month = int.tryParse(_monthController.text) ?? 1;

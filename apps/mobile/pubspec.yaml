@@ -43,6 +43,7 @@ dependencies:
   state_notifier: ^1.0.0
   flutter_markdown_plus: ^1.0.12
   purchases_flutter: ^10.4.2
+  confetti: ^0.8.0
 
 dev_dependencies:
   flutter_test:

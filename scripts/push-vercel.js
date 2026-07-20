@@ -13,7 +13,7 @@ for (const line of lines) {
   const key = line.slice(0, idx).trim();
   let val = line.slice(idx + 1).trim();
   if (val === '') continue; // Skip empty keys
-  if (key === 'PUBLIC_API_BASE_URL') continue; // Prevent localhost going to Vercel
+  // if (key === 'PUBLIC_API_BASE_URL') continue; // Allow it now because user changed it from localhost
   if (val.startsWith('"') && val.endsWith('"')) {
     val = val.slice(1, -1);
   }

@@ -764,7 +764,25 @@ export class SupabasePersistenceGateway {
       .order('created_at', { ascending: false })
       .limit(200);
     this.throwIfError(profileError);
-    return profiles || [];
+
+    let authUsers: any[] = [];
+    try {
+      const { data: authData, error: authError } = await this.client.auth.admin.listUsers({ perPage: 1000 });
+      if (!authError && authData?.users) {
+        authUsers = authData.users;
+      }
+    } catch (e) {
+      // Fallback if auth.admin fails
+    }
+
+    const emailMap = new Map(authUsers.map(u => [u.id, u.email]));
+    const nameMap = new Map(authUsers.map(u => [u.id, u.user_metadata?.full_name]));
+
+    return (profiles || []).map(p => ({
+      ...p,
+      email: emailMap.get(p.user_id) || null,
+      full_name: p.display_name || nameMap.get(p.user_id) || null,
+    }));
   }
 
   async adminTopupXU(userId: string, amount: number, actorEmail?: string): Promise<boolean> {

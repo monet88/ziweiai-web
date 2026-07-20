@@ -8,7 +8,7 @@ export function toIztroTimeIndex(input: BirthInput): number | null {
   const hour = input.time.hour;
   const minute = input.time.minute;
 
-  if (hour === null || minute === null) {
+  if (hour == null || minute == null) {
     return null;
   }
 

@@ -160,7 +160,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: chartState.isLoading ? null : _submit,
-              child: chartState.isLoading ? const CircularProgressIndicator() : const Text('Lập lá số Tử Vi'),
+              child: chartState.isLoading 
+                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)) 
+                : const Text('Lập lá số Tử Vi'),
             ),
           ],
         ),

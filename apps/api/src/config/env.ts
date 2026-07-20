@@ -149,6 +149,7 @@ export const apiEnvSchema = z.object({
   SEPAY_WEBHOOK_SECRET: z.string().optional(),
   REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
   SENTRY_DSN: z.string().optional(),
+  ADMIN_EMAILS: z.string().default(''),
   npm_package_version: z.string().min(1).optional(),
 });
 
@@ -159,3 +160,7 @@ export const apiVersion = apiEnv.npm_package_version ?? '0.1.0';
 export const allowedCorsOrigins = apiEnv.API_CORS_ORIGINS.split(',')
   .map((origin) => origin.trim())
   .filter((origin) => origin.length > 0);
+
+export const adminEmailsList = apiEnv.ADMIN_EMAILS.split(',')
+  .map((email) => email.trim())
+  .filter((email) => email.length > 0);

@@ -516,3 +516,16 @@ export function createAnnualReport(
 export function deleteAccount(token: string): Promise<void> {
   return fetchNoContent('/users/me', { method: 'DELETE', token });
 }
+
+// --- Admin ---
+export function adminListUsers(token: string): Promise<any> {
+  return fetchJson('/admin/users', z.any(), { method: 'GET', token });
+}
+
+export function adminTopupXU(token: string, userId: string, amount: number): Promise<any> {
+  return fetchJson(`/admin/users/${userId}/xu`, z.any(), {
+    method: 'POST',
+    token,
+    body: { amount },
+  });
+}

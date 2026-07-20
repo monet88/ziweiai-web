@@ -756,6 +756,35 @@ export class SupabasePersistenceGateway {
     return data === true;
   }
 
+  // --- Admin Methods ---
+  async adminListUsers(): Promise<any[]> {
+    const { data: profiles, error: profileError } = await this.client
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    this.throwIfError(profileError);
+    return profiles || [];
+  }
+
+  async adminTopupXU(userId: string, amount: number): Promise<boolean> {
+    const { data: current, error: selectError } = await this.client
+      .from('profiles')
+      .select('xu_balance')
+      .eq('user_id', userId)
+      .single();
+    this.throwIfError(selectError);
+
+    const newBalance = (current?.xu_balance || 0) + amount;
+    const { error: updateError } = await this.client
+      .from('profiles')
+      .update({ xu_balance: newBalance })
+      .eq('user_id', userId);
+    this.throwIfError(updateError);
+    
+    return true;
+  }
+
   private throwIfError(error: { message: string } | null): void {
     if (error) {
       throw new Error(error.message);

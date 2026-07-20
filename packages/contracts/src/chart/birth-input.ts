@@ -8,7 +8,7 @@ export const birthDateSchema = z.object({
   year: z.number().int().min(1).max(9999),
   month: z.number().int().min(1).max(12),
   day: z.number().int().min(1).max(31),
-  isLeapMonth: z.boolean().nullable(),
+  isLeapMonth: z.boolean().nullish(),
 });
 
 export const birthTimeSchema = z

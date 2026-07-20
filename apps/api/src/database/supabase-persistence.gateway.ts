@@ -743,13 +743,13 @@ export class SupabasePersistenceGateway {
   }
 
   async deductXU(ownerUserId: string, amount: number): Promise<boolean> {
-    const { data, error } = await this.client.rpc('deduct_xu', {
-      user_id: ownerUserId,
-      amount,
+    const { data, error } = await this.client.rpc('log_xu_transaction', {
+      p_user_id: ownerUserId,
+      p_amount: -amount, // Trừ XU nên amount phải là số âm
+      p_transaction_type: 'ai_usage',
     });
     
     if (error) {
-      // If error occurs (e.g., insufficient funds throws an error depending on RPC implementation)
       return false;
     }
     
@@ -767,22 +767,50 @@ export class SupabasePersistenceGateway {
     return profiles || [];
   }
 
-  async adminTopupXU(userId: string, amount: number): Promise<boolean> {
-    const { data: current, error: selectError } = await this.client
-      .from('profiles')
-      .select('xu_balance')
-      .eq('user_id', userId)
-      .single();
-    this.throwIfError(selectError);
-
-    const newBalance = (current?.xu_balance || 0) + amount;
-    const { error: updateError } = await this.client
-      .from('profiles')
-      .update({ xu_balance: newBalance })
-      .eq('user_id', userId);
-    this.throwIfError(updateError);
+  async adminTopupXU(userId: string, amount: number, actorEmail?: string): Promise<boolean> {
+    const { data, error } = await this.client.rpc('log_xu_transaction', {
+      p_user_id: userId,
+      p_amount: amount,
+      p_transaction_type: 'admin_topup',
+      p_actor_email: actorEmail || null
+    });
+    this.throwIfError(error);
     
+    return data === true;
+  }
+
+  async adminBanUser(userId: string, isBanned: boolean): Promise<boolean> {
+    const { error: authError } = await this.client.auth.admin.updateUserById(userId, {
+      ban_duration: isBanned ? '876000h' : 'none',
+    });
+    this.throwIfError(authError);
+
+    const { error: dbError } = await this.client
+      .from('profiles')
+      .update({ is_banned: isBanned, updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
+    this.throwIfError(dbError);
+
     return true;
+  }
+
+  async adminListTransactions(limit: number = 200): Promise<any[]> {
+    const { data: logs, error } = await this.client
+      .from('xu_transactions')
+      .select('*, profiles!inner(email, full_name)')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    this.throwIfError(error);
+    return logs || [];
+  }
+
+  async adminGetAnalytics(days: number = 30): Promise<any> {
+    const { data, error } = await this.client.rpc('get_admin_analytics', {
+      days,
+    });
+    this.throwIfError(error);
+    return data;
   }
 
   private throwIfError(error: { message: string } | null): void {

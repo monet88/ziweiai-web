@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import { adminTopupXU } from '$lib/api-client';
+  import { adminTopupXU, adminBanUser, adminUnbanUser } from '$lib/api-client';
 
   export let data: PageData;
   let topupAmount = 50;
@@ -40,21 +40,58 @@
       isLoading = false;
     }
   }
+
+  async function handleDeduct() {
+    if (!selectedUserId || topupAmount <= 0) return;
+    isLoading = true;
+    try {
+      const res = await adminTopupXU(data.session.token, selectedUserId, -topupAmount);
+      if (res.success) {
+        const user = data.users.find((u: any) => u.user_id === selectedUserId);
+        if (user) {
+          user.xu_balance = (user.xu_balance || 0) - topupAmount;
+          data.users = [...data.users];
+        }
+        closeTopupModal();
+      } else {
+        alert('Trừ XU thất bại, số dư không đủ hoặc có lỗi.');
+      }
+    } catch (error) {
+      console.error('Failed to deduct:', error);
+      alert('Trừ XU thất bại, vui lòng thử lại.');
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  let isBanning = false;
+  async function handleBan(userId: string, isBanned: boolean) {
+    if (!confirm(isBanned ? 'Bạn có chắc chắn muốn KHÓA tài khoản này?' : 'Bạn có chắc chắn muốn MỞ KHÓA tài khoản này?')) return;
+    isBanning = true;
+    try {
+      const apiCall = isBanned ? adminBanUser : adminUnbanUser;
+      const res = await apiCall(data.session.token, userId);
+      if (res.success) {
+        const user = data.users.find((u: any) => u.user_id === userId);
+        if (user) {
+          user.is_banned = isBanned;
+          data.users = [...data.users];
+        }
+      }
+    } catch (error) {
+      console.error('Failed to toggle ban status:', error);
+      alert('Thao tác thất bại, vui lòng thử lại.');
+    } finally {
+      isBanning = false;
+    }
+  }
 </script>
 
 <svelte:head>
   <title>Admin Dashboard - Tử Vi Toàn Tập</title>
 </svelte:head>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-  <div class="sm:flex sm:items-center">
-    <div class="sm:flex-auto">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-      <p class="mt-2 text-sm text-gray-700 dark:text-gray-300">Quản lý người dùng và số dư XU.</p>
-    </div>
-  </div>
-
-  <div class="mt-8 flex flex-col">
+  <div class="flex flex-col">
     <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
       <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
         <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
@@ -71,19 +108,41 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
-              {#each data.users as user}
+              {#each data.users as user (user.user_id)}
                 <tr>
-                  <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">{user.full_name || 'N/A'}</td>
+                  <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-6">
+                    {user.full_name || 'N/A'}
+                    {#if user.is_banned}
+                      <span class="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900 dark:text-red-200">Banned</span>
+                    {/if}
+                  </td>
                   <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-400">{user.email || 'N/A'}</td>
                   <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-400 font-bold text-amber-600">{user.xu_balance || 0}</td>
                   <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-400">{user.is_premium ? 'Có' : 'Không'}</td>
-                  <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                  <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 space-x-3">
                     <button
                       onclick={() => openTopupModal(user.user_id)}
                       class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium"
                     >
-                      Nạp XU
+                      XU +/-
                     </button>
+                    {#if user.is_banned}
+                      <button
+                        onclick={() => handleBan(user.user_id, false)}
+                        disabled={isBanning}
+                        class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 font-medium disabled:opacity-50"
+                      >
+                        Mở khoá
+                      </button>
+                    {:else}
+                      <button
+                        onclick={() => handleBan(user.user_id, true)}
+                        disabled={isBanning}
+                        class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 font-medium disabled:opacity-50"
+                      >
+                        Khoá
+                      </button>
+                    {/if}
                   </td>
                 </tr>
               {/each}
@@ -92,8 +151,7 @@
         </div>
       </div>
     </div>
-  </div>
-</div>
+    </div>
 
 {#if showModal}
   <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -104,7 +162,7 @@
         <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
           <div class="sm:flex sm:items-start">
             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-              <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white" id="modal-title">Nạp XU cho tài khoản</h3>
+              <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white" id="modal-title">Thay đổi XU tài khoản</h3>
               <div class="mt-4">
                 <label for="amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Số lượng XU</label>
                 <input
@@ -126,7 +184,15 @@
             onclick={handleTopup}
             disabled={isLoading}
           >
-            {isLoading ? 'Đang nạp...' : 'Xác nhận nạp'}
+            Nạp XU
+          </button>
+          <button
+            type="button"
+            class="mt-3 sm:mt-0 inline-flex w-full justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+            onclick={handleDeduct}
+            disabled={isLoading}
+          >
+            Trừ XU
           </button>
           <button
             type="button"

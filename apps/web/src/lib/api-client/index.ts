@@ -7,6 +7,7 @@
  * US-006: fetchChartDetail() — Bearer, GET /charts/:id để mở chi tiết lá số.
  *         createExplanation() — Bearer, POST /explanations để sinh luận giải AI theo cung.
  */
+import { z } from 'zod';
 import {
   chartDetailResponseSchema,
   conversationDetailResponseSchema,
@@ -528,4 +529,20 @@ export function adminTopupXU(token: string, userId: string, amount: number): Pro
     token,
     body: { amount },
   });
+}
+
+export function adminListTransactions(token: string): Promise<any> {
+  return fetchJson('/admin/transactions', z.any(), { method: 'GET', token });
+}
+
+export function adminBanUser(token: string, userId: string): Promise<any> {
+  return fetchJson(`/admin/users/${userId}/ban`, z.any(), { method: 'POST', token });
+}
+
+export function adminUnbanUser(token: string, userId: string): Promise<any> {
+  return fetchJson(`/admin/users/${userId}/unban`, z.any(), { method: 'POST', token });
+}
+
+export function adminGetAnalytics(token: string): Promise<any> {
+  return fetchJson('/admin/analytics', z.any(), { method: 'GET', token });
 }

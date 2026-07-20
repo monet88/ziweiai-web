@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { SuperAdminGuard } from '../../common/guards/super-admin.guard';
 import { ModeratorGuard } from '../../common/guards/moderator.guard';
+import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 import { z } from 'zod';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
@@ -14,6 +15,7 @@ const configSchema = z.object({
 });
 
 @Controller('admin')
+@UseGuards(SupabaseAuthGuard)
 export class AdminController {
   constructor(private readonly persistenceGateway: SupabasePersistenceGateway) {}
 
@@ -59,7 +61,7 @@ export class AdminController {
     @Param('key') key: string,
     @Body(new ZodValidationPipe(configSchema, 'Dữ liệu không hợp lệ')) body: { value: any },
   ) {
-    const actorEmail = req.user?.email;
+    const actorEmail = req.authenticatedUser?.email;
     await this.persistenceGateway.updateSystemConfig(key, body.value, actorEmail);
     return { success: true };
   }
@@ -71,7 +73,7 @@ export class AdminController {
     @Param('userId') userId: string,
     @Body(new ZodValidationPipe(topupSchema, 'Dữ liệu không hợp lệ')) body: { amount: number },
   ) {
-    const actorEmail = req.user?.email;
+    const actorEmail = req.authenticatedUser?.email;
     const success = await this.persistenceGateway.adminTopupXU(userId, body.amount, actorEmail);
     return { success, amount: body.amount };
   }
@@ -79,7 +81,7 @@ export class AdminController {
   @Post('users/:userId/ban')
   @UseGuards(SuperAdminGuard)
   async banUser(@Req() req: any, @Param('userId') userId: string) {
-    const actorEmail = req.user?.email;
+    const actorEmail = req.authenticatedUser?.email;
     const success = await this.persistenceGateway.adminBanUser(userId, true, actorEmail);
     return { success };
   }
@@ -87,7 +89,7 @@ export class AdminController {
   @Post('users/:userId/unban')
   @UseGuards(SuperAdminGuard)
   async unbanUser(@Req() req: any, @Param('userId') userId: string) {
-    const actorEmail = req.user?.email;
+    const actorEmail = req.authenticatedUser?.email;
     const success = await this.persistenceGateway.adminBanUser(userId, false, actorEmail);
     return { success };
   }

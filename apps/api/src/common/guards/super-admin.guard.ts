@@ -8,7 +8,7 @@ export class SuperAdminGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const user = request.user; // Assumes AuthGuard runs before this
+    const user = request.authenticatedUser; // Assumes SupabaseAuthGuard runs before this
 
     if (!user || !user.email) {
       throw new ApiErrorHttpException(HttpStatus.UNAUTHORIZED, 'UNAUTHORIZED', 'Vui lòng đăng nhập.');

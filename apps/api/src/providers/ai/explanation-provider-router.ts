@@ -30,9 +30,17 @@ export class ExplanationProviderRouter extends ProviderRouterBase<AiExplanationP
     // US-017e: khi có ảnh, lọc chain chỉ còn provider+model thật sự đọc được ảnh (isVisionCapable).
     // Nếu không lọc, failover có thể rơi vào provider text-only (vd deepseek-v4-flash) → ảnh bị bỏ
     // thầm lặng và LLM "ảo" mô tả ảnh không đọc được. Chain rỗng sau lọc → ProviderUnavailableError.
-    const providers = payload.imageInput
+    let providers = payload.imageInput
       ? this.getProviderChain(preference).filter((provider) => provider.isVisionCapable(payload.modelOverride))
       : this.getProviderChain(preference);
+
+    // Tối ưu chi phí: Luôn ưu tiên Gemini (nếu khả dụng) cho tính năng Vision thay vì OpenAI/gpt-4o-mini
+    if (payload.imageInput && preference === 'auto') {
+      const gemini = providers.find((p) => p.providerName === 'gemini');
+      if (gemini) {
+        providers = [gemini, ...providers.filter((p) => p !== gemini)];
+      }
+    }
 
     if (payload.imageInput && providers.length === 0) {
       throw new ProviderUnavailableError('Chưa cấu hình nhà cung cấp AI có khả năng đọc ảnh.');

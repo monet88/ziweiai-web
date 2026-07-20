@@ -112,6 +112,18 @@ export class AuthStore {
     }
   }
 
+  async signInWithGoogle(): Promise<void> {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+    if (error) {
+      throw new Error(error.message || 'Đăng nhập Google thất bại. Vui lòng thử lại.');
+    }
+  }
+
   /** Trả về cờ cần xác nhận email (signUp thành công nhưng chưa có session). */
   async signUpWithPassword(
     email: string,

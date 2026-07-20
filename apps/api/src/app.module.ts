@@ -1,5 +1,9 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { RequestIdMiddleware } from './common/request-id.middleware';
+import { DynamicThrottlerGuard } from './common/guards/dynamic-throttler.guard';
+import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ChartsModule } from './modules/charts/charts.module';
@@ -23,7 +27,20 @@ import { ShareModule } from './modules/share/share.module';
 import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
-imports: [AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsTarotModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule, ShareModule, AdminModule],
+  imports: [
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 10,
+    }]),
+    DatabaseModule,
+    AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsTarotModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule, ShareModule, AdminModule
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: DynamicThrottlerGuard,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

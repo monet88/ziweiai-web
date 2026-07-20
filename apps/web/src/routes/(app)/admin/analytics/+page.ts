@@ -1,8 +1,11 @@
 import type { PageLoad } from './$types';
 import { adminGetAnalytics } from '$lib/api-client';
 
-export const load: PageLoad = async ({ parent }) => {
-  const { session } = (await parent()) as any;
+import { supabase } from '$lib/supabase/supabase-client';
+
+export const load: PageLoad = async () => {
+  const { data: { session: rawSession } } = await supabase.auth.getSession();
+  const session = rawSession ? { token: rawSession.access_token, user: rawSession.user } : null;
   if (!session?.token) {
     return { analytics: null };
   }

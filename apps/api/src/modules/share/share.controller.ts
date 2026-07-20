@@ -2,7 +2,6 @@ import { Controller, Get, Param, Req, Res, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 import satori from 'satori';
-import { html } from 'satori-html';
 import { Resvg } from '@resvg/resvg-js';
 import { ChartSnapshotRecord } from '@ziweiai/contracts';
 
@@ -105,6 +104,10 @@ export class ShareController {
       else if (birth?.sexOrGenderForChart === 'female') genderStr = 'Nữ Mạng';
 
       const fontData = await getFont();
+      
+      // Dynamic import to avoid ERR_REQUIRE_ESM in CommonJS runtime (Vercel Node.js)
+      const satoriHtml = await (eval('import("satori-html")') as Promise<any>);
+      const html = satoriHtml.html;
 
       const template = html`
         <div style="display: flex; width: 1200px; height: 630px; background-color: #1a1a2e; color: white; font-family: 'Inter', sans-serif; align-items: center; justify-content: center; position: relative;">

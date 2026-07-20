@@ -546,3 +546,19 @@ export function adminUnbanUser(token: string, userId: string): Promise<any> {
 export function adminGetAnalytics(token: string): Promise<any> {
   return fetchJson('/admin/analytics', z.any(), { method: 'GET', token });
 }
+
+export function adminGetConfigs(token: string): Promise<any> {
+  return fetchJson('/admin/configs', z.any(), { method: 'GET', token });
+}
+
+export function adminUpdateConfig(token: string, key: string, value: any): Promise<any> {
+  return fetchJson(`/admin/configs/${key}`, z.any(), {
+    method: 'POST',
+    token,
+    body: { value },
+  });
+}
+
+export function adminGetAuditLogs(token: string): Promise<any> {
+  return fetchJson('/admin/audit-logs', z.any(), { method: 'GET', token });
+}

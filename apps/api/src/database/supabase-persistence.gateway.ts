@@ -776,10 +776,14 @@ export class SupabasePersistenceGateway {
     });
     this.throwIfError(error);
     
+    if (actorEmail) {
+      await this.logAdminAction(actorEmail, 'TOPUP_XU', userId, { amount });
+    }
+    
     return data === true;
   }
 
-  async adminBanUser(userId: string, isBanned: boolean): Promise<boolean> {
+  async adminBanUser(userId: string, isBanned: boolean, actorEmail?: string): Promise<boolean> {
     const { error: authError } = await this.client.auth.admin.updateUserById(userId, {
       ban_duration: isBanned ? '876000h' : 'none',
     });
@@ -790,6 +794,10 @@ export class SupabasePersistenceGateway {
       .update({ is_banned: isBanned, updated_at: new Date().toISOString() })
       .eq('user_id', userId);
     this.throwIfError(dbError);
+
+    if (actorEmail) {
+      await this.logAdminAction(actorEmail, isBanned ? 'BAN_USER' : 'UNBAN_USER', userId, {});
+    }
 
     return true;
   }
@@ -811,6 +819,76 @@ export class SupabasePersistenceGateway {
     });
     this.throwIfError(error);
     return data;
+  }
+
+  async checkAdminRole(email: string): Promise<'SUPER_ADMIN' | 'MODERATOR' | null> {
+    const { data, error } = await this.client
+      .from('admin_roles')
+      .select('role')
+      .eq('email', email)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error checking admin role:', error);
+      return null;
+    }
+    
+    return data?.role || null;
+  }
+
+  async logAdminAction(adminEmail: string, action: string, targetId: string | null, payload: any): Promise<void> {
+    const { error } = await this.client
+      .from('admin_audit_logs')
+      .insert({
+        admin_email: adminEmail,
+        action,
+        target_id: targetId,
+        payload,
+      });
+    
+    if (error) {
+      console.error('Failed to log admin action:', error);
+    }
+  }
+
+  async adminGetAuditLogs(limit: number = 200): Promise<any[]> {
+    const { data: logs, error } = await this.client
+      .from('admin_audit_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    this.throwIfError(error);
+    return logs || [];
+  }
+
+  async getSystemConfigs(): Promise<Record<string, any>> {
+    const { data, error } = await this.client
+      .from('system_configs')
+      .select('key, value');
+    
+    this.throwIfError(error);
+    
+    const configs: Record<string, any> = {};
+    for (const row of data || []) {
+      configs[row.key] = row.value;
+    }
+    
+    return configs;
+  }
+
+  async updateSystemConfig(key: string, value: any, adminEmail: string): Promise<void> {
+    const { error } = await this.client
+      .from('system_configs')
+      .upsert({
+        key,
+        value,
+        updated_by: adminEmail,
+        updated_at: new Date().toISOString(),
+      });
+      
+    this.throwIfError(error);
+    await this.logAdminAction(adminEmail, 'UPDATE_CONFIG', key, { value });
   }
 
   private throwIfError(error: { message: string } | null): void {

@@ -16,6 +16,7 @@
     "@nestjs/common": "^11.1.8",
     "@nestjs/core": "^11.1.8",
     "@nestjs/platform-express": "^11.1.8",
+    "@nestjs/throttler": "^6.5.0",
     "@resvg/resvg-js": "^2.6.2",
     "@sentry/nestjs": "^10.66.0",
     "@sentry/node": "^10.66.0",

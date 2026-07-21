@@ -82,6 +82,13 @@
       meta: viCopy.dashboard.toolTarotMeta,
     },
     {
+      route: '/vision-tarot',
+      flag: 'tarot',
+      title: viCopy.dashboard.toolVisionTarotTitle,
+      description: viCopy.dashboard.toolVisionTarotDescription,
+      meta: viCopy.dashboard.toolVisionTarotMeta,
+    },
+    {
       route: '/palm',
       flag: 'palm',
       title: viCopy.dashboard.toolPalmTitle,
@@ -578,7 +585,7 @@
 
   .tool-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--space-md);
   }
 
@@ -785,7 +792,7 @@
     }
 
     .tool-grid {
-      grid-template-columns: repeat(3, minmax(180px, 1fr));
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
       overflow-x: auto;
       padding-bottom: var(--space-xs);
     }

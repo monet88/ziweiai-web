@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { resolve } from '$app/paths';
 </script>
 
 <div class="admin-container">
@@ -13,35 +14,35 @@
   <div class="admin-nav-container">
     <nav class="admin-nav" aria-label="Tabs">
       <a
-        href="/admin"
+        href={resolve('/admin')}
         class="admin-tab {$page.url.pathname === '/admin' ? 'active' : ''}"
         aria-current={$page.url.pathname === '/admin' ? 'page' : undefined}
       >
         Người dùng
       </a>
       <a
-        href="/admin/transactions"
+        href={resolve('/admin/transactions')}
         class="admin-tab {$page.url.pathname === '/admin/transactions' ? 'active' : ''}"
         aria-current={$page.url.pathname === '/admin/transactions' ? 'page' : undefined}
       >
         Lịch sử giao dịch
       </a>
       <a
-        href="/admin/analytics"
+        href={resolve('/admin/analytics')}
         class="admin-tab {$page.url.pathname === '/admin/analytics' ? 'active' : ''}"
         aria-current={$page.url.pathname === '/admin/analytics' ? 'page' : undefined}
       >
         Thống kê
       </a>
       <a
-        href="/admin/configs"
+        href={resolve('/admin/configs')}
         class="admin-tab {$page.url.pathname === '/admin/configs' ? 'active' : ''}"
         aria-current={$page.url.pathname === '/admin/configs' ? 'page' : undefined}
       >
         Cấu hình
       </a>
       <a
-        href="/admin/audit-logs"
+        href={resolve('/admin/audit-logs')}
         class="admin-tab {$page.url.pathname === '/admin/audit-logs' ? 'active' : ''}"
         aria-current={$page.url.pathname === '/admin/audit-logs' ? 'page' : undefined}
       >

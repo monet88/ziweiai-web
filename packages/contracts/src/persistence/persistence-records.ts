@@ -22,6 +22,8 @@ export const profileRecordSchema = z.object({
   locale: z.string().min(2),
   timezone: z.string().min(1).nullable(),
   xuBalance: z.number().nonnegative().default(0),
+  referralCode: z.string().min(1).nullable(),
+  referredBy: z.string().nullable(),
 });
 
 export const birthProfileRecordSchema = z.object({
@@ -131,6 +133,16 @@ export const historyViewRecordSchema = z.object({
   viewedAt: z.iso.datetime(),
 });
 
+export const referralRecordSchema = z.object({
+  id: z.uuid(),
+  referrerId: z.uuid(),
+  refereeId: z.uuid(),
+  rewardXu: z.number().nonnegative(),
+  status: z.enum(['pending', 'completed']),
+  createdAt: z.iso.datetime(),
+  completedAt: z.iso.datetime().nullable(),
+});
+
 // US-025 (decision 0021): the four time-based divination systems are cast "now"
 // for a specific question. The snapshot stays pure engine output; the question +
 // purpose live in this separate context record linked to the snapshot, so
@@ -190,3 +202,4 @@ export type ConversationMessageRecord = z.infer<typeof conversationMessageRecord
 export type HistoryViewRecord = z.infer<typeof historyViewRecordSchema>;
 export type DivinationPurposeKey = z.infer<typeof divinationPurposeKeySchema>;
 export type DivinationContextRecord = z.infer<typeof divinationContextRecordSchema>;
+export type ReferralRecord = z.infer<typeof referralRecordSchema>;

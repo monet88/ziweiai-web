@@ -4,6 +4,9 @@ import '../../features/charts/presentation/chart_detail_screen.dart';
 import '../../features/charts/data/models/chart_snapshot.dart';
 import '../../features/auth/presentation/auth_screen.dart';
 import '../../features/wallet/presentation/wallet_screen.dart';
+import '../../features/vision/presentation/vision_input_screen.dart';
+import '../../features/vision/presentation/vision_result_screen.dart';
+import '../../features/vision/data/models/vision_kind.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -26,6 +29,20 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/wallet',
       builder: (context, state) => const WalletScreen(),
+    ),
+    GoRoute(
+      path: '/vision/input',
+      builder: (context, state) {
+        final kind = state.extra as VisionKind;
+        return VisionInputScreen(kind: kind);
+      },
+    ),
+    GoRoute(
+      path: '/vision/result',
+      builder: (context, state) {
+        final result = state.extra as Map<String, dynamic>;
+        return VisionResultScreen(result: result);
+      },
     ),
   ],
 );

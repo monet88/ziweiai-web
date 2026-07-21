@@ -56,11 +56,38 @@ const PALM_STRUCTURE = [
   '6. Gợi ý điều chỉnh tích cực; nhắc rằng chỉ tay thay đổi theo thời gian, phản ánh trạng thái hiện tại chứ không định đoạt số phận.',
 ].join('\n');
 
-/** Dựng user prompt cho luận giải vision theo loại (face/palm) + câu hỏi tuỳ chọn của người dùng. */
+const TAROT_PERSONA = [
+  'Bạn là một Reader Tarot chuyên nghiệp và tâm lý.',
+  'Phân tích dựa trên các lá bài xuất hiện trong tấm ảnh người dùng gửi tới.',
+  'Nguyên tắc: Giải nghĩa một cách trực quan dựa vào hình ảnh, biểu tượng trên lá bài và sự liên kết giữa chúng. Giọng văn gợi mở, mang tính định hướng, luôn tích cực và truyền cảm hứng.',
+].join(' ');
+
+const TAROT_STRUCTURE = [
+  'Hãy phân tích theo cấu trúc sau, mỗi mục một đoạn ngắn dễ hiểu:',
+  '1. Ấn tượng tổng thể: Bức ảnh cho thấy (các) lá bài nào, năng lượng chung toát ra là gì.',
+  '2. Chi tiết từng lá bài:',
+  '   - Nhận diện chính xác tên lá bài và vị trí (xuôi/ngược nếu có thể nhìn rõ).',
+  '   - Phân tích biểu tượng, màu sắc nổi bật trên lá bài.',
+  '   - Ý nghĩa cốt lõi của lá bài trong hoàn cảnh hiện tại.',
+  '3. Liên kết năng lượng: Nếu có nhiều lá bài, chúng tương tác với nhau thế nào. Nếu chỉ có một lá, năng lượng ấy tác động thế nào đến hoàn cảnh.',
+  '4. Thông điệp và Lời khuyên: Đúc kết lại thông điệp muốn gửi gắm, đưa ra gợi ý hành động tích cực và thiết thực.',
+].join('\\n');
+
+/** Dựng user prompt cho luận giải vision theo loại (face/palm/tarot) + câu hỏi tuỳ chọn của người dùng. */
 export function buildVisionUserPrompt(kind: VisionKind, question?: string): string {
-  const persona = kind === 'face' ? FACE_PERSONA : PALM_PERSONA;
-  const structure = kind === 'face' ? FACE_STRUCTURE : PALM_STRUCTURE;
-  const subject = kind === 'face' ? 'khuôn mặt' : 'lòng bàn tay';
+  let persona = FACE_PERSONA;
+  let structure = FACE_STRUCTURE;
+  let subject = 'khuôn mặt';
+  
+  if (kind === 'palm') {
+    persona = PALM_PERSONA;
+    structure = PALM_STRUCTURE;
+    subject = 'lòng bàn tay';
+  } else if (kind === 'tarot') {
+    persona = TAROT_PERSONA;
+    structure = TAROT_STRUCTURE;
+    subject = 'trải bài Tarot';
+  }
 
   const trimmedQuestion = question?.trim();
 

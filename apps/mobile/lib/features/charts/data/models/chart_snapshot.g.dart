@@ -12,7 +12,7 @@ ChartDetailResponse _$ChartDetailResponseFromJson(Map<String, dynamic> json) =>
         json['chartRecord'] as Map<String, dynamic>,
       ),
       snapshot: json['snapshot'] as Map<String, dynamic>,
-      explanationResults: json['explanationResults'] as List<dynamic>,
+      explanationResults: json['explanationResults'] as List<dynamic>?,
     );
 
 Map<String, dynamic> _$ChartDetailResponseToJson(

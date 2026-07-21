@@ -21,7 +21,7 @@ void main() async {
     final pushService = PushNotificationService();
     await pushService.initialize();
   } catch (e) {
-    print('Firebase initialization failed: $e');
+    debugPrint('Firebase initialization failed: $e');
   }
 
   // Initialize Supabase

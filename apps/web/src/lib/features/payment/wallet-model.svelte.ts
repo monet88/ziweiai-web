@@ -18,7 +18,7 @@ export function createWalletModel(auth: AuthStore) {
       if (!auth.user?.id) return null;
       const { data, error } = await supabase
         .from('profiles')
-        .select('xu_balance, last_checkin_date')
+        .select('xu_balance, last_checkin_date, referral_code')
         .eq('user_id', auth.user.id)
         .single();
       
@@ -30,6 +30,29 @@ export function createWalletModel(auth: AuthStore) {
     },
     enabled: !!auth.user?.id && !auth.isAnonymous,
     staleTime: 5 * 60 * 1000,
+  }));
+
+  const referralsQueryKey = () => ['wallet_referrals', auth.user?.id];
+  const referralsQuery = createQuery(() => ({
+    queryKey: referralsQueryKey(),
+    queryFn: async () => {
+      if (!auth.user?.id) return [];
+      const { fetchJson } = await import('$lib/api-client/fetch-json');
+      const schema = z.array(z.object({
+        id: z.string(),
+        referrerId: z.string(),
+        refereeId: z.string(),
+        rewardXu: z.number(),
+        status: z.string(),
+        createdAt: z.string(),
+        completedAt: z.string().nullable()
+      }));
+      return fetchJson('/api/rewards/referrals', schema, {
+        method: 'GET',
+        token: auth.session?.access_token,
+      });
+    },
+    enabled: !!auth.user?.id && !auth.isAnonymous,
   }));
 
   function subscribe() {
@@ -53,7 +76,7 @@ export function createWalletModel(auth: AuthStore) {
             const newBalance = payload.new.xu_balance;
             const newCheckinDate = payload.new.last_checkin_date;
             queryClient.setQueryData(queryKey(), (oldData: any) => {
-              if (!oldData) return { xu_balance: newBalance, last_checkin_date: newCheckinDate };
+              if (!oldData) return { xu_balance: newBalance, last_checkin_date: newCheckinDate, referral_code: undefined };
               return {
                 ...oldData,
                 xu_balance: newBalance !== undefined ? newBalance : oldData.xu_balance,
@@ -85,6 +108,12 @@ export function createWalletModel(auth: AuthStore) {
     get lastCheckinDate() {
       return query.data?.last_checkin_date ?? null;
     },
+    get referralCode() {
+      return query.data?.referral_code ?? null;
+    },
+    get referrals() {
+      return referralsQuery.data ?? [];
+    },
     get canCheckin() {
       const lastCheckin = query.data?.last_checkin_date;
       if (!lastCheckin) return true;
@@ -109,12 +138,20 @@ export function createWalletModel(auth: AuthStore) {
         success: z.boolean(),
         xu_added: z.number()
       });
+
+      const refCode = localStorage.getItem('ziweiai_ref_code');
+      const body = refCode ? { referralCode: refCode } : undefined;
+
       const result = await fetchJson('/api/rewards/checkin', schema, {
         method: 'POST',
         token: auth.session?.access_token,
+        body,
       });
       
       if (result.success) {
+        if (refCode) {
+          localStorage.removeItem('ziweiai_ref_code');
+        }
         this.refresh();
       }
       return result;

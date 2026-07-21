@@ -757,19 +757,7 @@ describe('ChartsService — gate Mạnh Phái (US-017d)', () => {
     expect(adapterCalculateChart).not.toHaveBeenCalled();
   });
 
-  it('402 PAYMENT_REQUIRED khi cờ bật nhưng AI không free-for-all — gate AI TRƯỚC quota', async () => {
-    apiEnv.EXTENDED_SYSTEM_MANGPAI_ENABLED = true;
-    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
-    const { service, quotasService, persistenceGateway } = buildService();
-    persistenceGateway.deductXU = vi.fn(async () => false);
 
-    await service.createChart(MANGPAI_USER, '127.0.0.1', mangpaiInput).then(
-      () => expect.fail('phải ném PAYMENT_REQUIRED'),
-      (error) => expectApiError(error, 402, 'PAYMENT_REQUIRED'),
-    );
-    // Gate AI chặn trước nên quota chưa bị tiêu.
-    expect(quotasService.assertCanCreateChart).not.toHaveBeenCalled();
-  });
 
   it('429 RATE_LIMITED khi vượt quota (cờ bật + AI free)', async () => {
     apiEnv.EXTENDED_SYSTEM_MANGPAI_ENABLED = true;

@@ -39,7 +39,7 @@
   </div>
   
   <div class="card-body">
-    {#each configs as conf}
+    {#each configs as conf (conf.key)}
       <div class="config-item">
         <div class="input-group">
           <label for="config-{conf.key}" class="form-label">{conf.key}</label>

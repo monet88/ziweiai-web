@@ -28,15 +28,25 @@ export class AdminController {
 
   @Get('transactions')
   @UseGuards(ModeratorGuard)
-  async listTransactions() {
-    const transactions = await this.persistenceGateway.adminListTransactions();
-    return { transactions };
+  async listTransactions(
+    @Req() req: any,
+  ) {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const type = req.query.type;
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
+
+    const result = await this.persistenceGateway.adminListTransactions(page, limit, type, startDate, endDate);
+    return { transactions: result.data, count: result.count, page, limit };
   }
 
   @Get('analytics')
   @UseGuards(ModeratorGuard)
-  async getAnalytics() {
-    const analytics = await this.persistenceGateway.adminGetAnalytics();
+  async getAnalytics(@Req() req: any) {
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
+    const analytics = await this.persistenceGateway.adminGetAnalytics(startDate, endDate);
     return { analytics };
   }
 
@@ -49,9 +59,15 @@ export class AdminController {
 
   @Get('audit-logs')
   @UseGuards(ModeratorGuard)
-  async getAuditLogs() {
-    const logs = await this.persistenceGateway.adminGetAuditLogs();
-    return { logs };
+  async getAuditLogs(@Req() req: any) {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const action = req.query.action;
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
+
+    const result = await this.persistenceGateway.adminGetAuditLogs(page, limit, action, startDate, endDate);
+    return { logs: result.data, count: result.count, page, limit };
   }
 
   @Post('configs/:key')

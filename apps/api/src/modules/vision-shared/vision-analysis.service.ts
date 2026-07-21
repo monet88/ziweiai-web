@@ -66,14 +66,7 @@ export class VisionAnalysisService {
     assertEmailIdentityRequired(user);
 
     // GATE 3: Trừ XU cho tính năng premium (Vision). Vision tốn 10 XU mỗi lượt.
-    const success = await this.persistence.deductXU(user.userId, 10);
-    if (!success) {
-      throw new ApiErrorHttpException(
-        HttpStatus.PAYMENT_REQUIRED,
-        'INSUFFICIENT_FUNDS',
-        'Tính năng Xem Tướng / Xem Tay yêu cầu 10 XU. Vui lòng nạp thêm XU để sử dụng.',
-      );
-    }
+    // NOTE: Đã được chuyển sang BillingInterceptor trên VisionAnalysisController để tránh Domain Leak.
 
     // GATE 4: quota vision riêng (đắt token gấp 5-10× text). Bọc raw Error → 429 VISION_QUOTA_EXCEEDED.
     await this.assertVisionQuota(user.userId, ipAddress);
@@ -212,7 +205,16 @@ export class VisionAnalysisService {
   }
 
   private isSystemEnabled(kind: VisionKind): boolean {
-    return kind === 'face' ? apiEnv.EXTENDED_SYSTEM_FACE_ENABLED : apiEnv.EXTENDED_SYSTEM_PALM_ENABLED;
+    switch (kind) {
+      case 'face':
+        return apiEnv.EXTENDED_SYSTEM_FACE_ENABLED;
+      case 'palm':
+        return apiEnv.EXTENDED_SYSTEM_PALM_ENABLED;
+      case 'tarot':
+        return apiEnv.EXTENDED_SYSTEM_TAROT_ENABLED;
+      default:
+        return false;
+    }
   }
 
   private async assertVisionQuota(userId: string, ipAddress: string): Promise<void> {

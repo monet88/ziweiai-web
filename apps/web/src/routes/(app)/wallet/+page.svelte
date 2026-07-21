@@ -93,10 +93,50 @@
         </div>
       </div>
 
+      <div class="referrals-section">
+        <h2 class="section-title">Giới thiệu bạn bè</h2>
+        <div class="referral-card surface-glass">
+          <div class="referral-info">
+            <h3>Chia sẻ mã giới thiệu</h3>
+            {#if walletModel.referralCode}
+              <p>Gửi link này cho bạn bè. Khi họ đăng ký và điểm danh lần đầu, cả hai đều nhận được 10 XU!</p>
+              <div class="ref-code-box">
+                <code>https://tuvitoantap.vercel.app/?ref={walletModel.referralCode}</code>
+                <PrimaryButton 
+                  onclick={() => {
+                    navigator.clipboard.writeText(`https://tuvitoantap.vercel.app/?ref=${walletModel.referralCode}`);
+                    alert('Đã copy link giới thiệu!');
+                  }}
+                >
+                  Copy Link
+                </PrimaryButton>
+              </div>
+            {:else}
+              <p class="loading-text">Đang tải mã giới thiệu...</p>
+            {/if}
+          </div>
+          
+          {#if walletModel.referrals.length > 0}
+            <div class="referral-history">
+              <h4>Lịch sử giới thiệu ({walletModel.referrals.length})</h4>
+              <ul>
+                {#each walletModel.referrals as ref (ref.createdAt)}
+                  <li>
+                    <span class="ref-date">{new Date(ref.createdAt).toLocaleDateString('vi-VN')}</span>
+                    <span class="ref-desc">Giới thiệu thành công</span>
+                    <span class="ref-reward">+{ref.rewardXu} XU</span>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {/if}
+        </div>
+      </div>
+
       <div class="packages-section">
         <h2 class="section-title">Chọn gói XU</h2>
         <div class="packages-grid">
-          {#each packages as pkg}
+          {#each packages as pkg (pkg.xu)}
             <button
               class="package-card"
               class:selected={selectedPackage.xu === pkg.xu}
@@ -188,7 +228,8 @@
     gap: 32px;
   }
 
-  .rewards-section {
+  .rewards-section,
+  .referrals-section {
     display: flex;
     flex-direction: column;
   }
@@ -220,6 +261,98 @@
     color: var(--color-danger) !important;
     font-size: var(--text-xs) !important;
     margin-top: 4px !important;
+  }
+
+  .referral-card {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    gap: 20px;
+  }
+
+  .referral-info h3 {
+    margin: 0 0 8px;
+    font-size: var(--text-body);
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .referral-info p {
+    margin: 0 0 16px;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .ref-code-box {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: var(--color-bg-elevated);
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--color-border-subtle);
+  }
+
+  .ref-code-box code {
+    flex: 1;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--color-text-primary);
+    word-break: break-all;
+  }
+
+  .loading-text {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  .referral-history {
+    border-top: 1px solid var(--color-border-hairline);
+    padding-top: 20px;
+  }
+
+  .referral-history h4 {
+    margin: 0 0 12px;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .referral-history ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .referral-history li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--color-bg-surface);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+  }
+
+  .ref-date {
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    min-width: 80px;
+  }
+
+  .ref-desc {
+    flex: 1;
+    color: var(--color-text-primary);
+  }
+
+  .ref-reward {
+    font-weight: 600;
+    color: var(--color-success);
   }
 
   .section-title {

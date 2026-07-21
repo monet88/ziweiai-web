@@ -6,12 +6,12 @@ part 'chart_snapshot.g.dart';
 class ChartDetailResponse {
   final ChartRecord chartRecord;
   final Map<String, dynamic> snapshot;
-  final List<dynamic> explanationResults;
+  final List<dynamic>? explanationResults;
 
   ChartDetailResponse({
     required this.chartRecord,
     required this.snapshot,
-    required this.explanationResults,
+    this.explanationResults,
   });
 
   factory ChartDetailResponse.fromJson(Map<String, dynamic> json) => _$ChartDetailResponseFromJson(json);

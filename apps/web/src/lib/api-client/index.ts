@@ -531,8 +531,16 @@ export function adminTopupXU(token: string, userId: string, amount: number): Pro
   });
 }
 
-export function adminListTransactions(token: string): Promise<any> {
-  return fetchJson('/admin/transactions', z.any(), { method: 'GET', token });
+export function adminListTransactions(token: string, params?: { page?: number; limit?: number; type?: string; startDate?: string; endDate?: string }): Promise<any> {
+  const query = new URLSearchParams();
+  if (params?.page) query.append('page', params.page.toString());
+  if (params?.limit) query.append('limit', params.limit.toString());
+  if (params?.type) query.append('type', params.type);
+  if (params?.startDate) query.append('startDate', params.startDate);
+  if (params?.endDate) query.append('endDate', params.endDate);
+  
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+  return fetchJson(`/admin/transactions${queryString}`, z.any(), { method: 'GET', token });
 }
 
 export function adminBanUser(token: string, userId: string): Promise<any> {
@@ -543,8 +551,13 @@ export function adminUnbanUser(token: string, userId: string): Promise<any> {
   return fetchJson(`/admin/users/${userId}/unban`, z.any(), { method: 'POST', token });
 }
 
-export function adminGetAnalytics(token: string): Promise<any> {
-  return fetchJson('/admin/analytics', z.any(), { method: 'GET', token });
+export function adminGetAnalytics(token: string, params?: { startDate?: string; endDate?: string }): Promise<any> {
+  const query = new URLSearchParams();
+  if (params?.startDate) query.append('startDate', params.startDate);
+  if (params?.endDate) query.append('endDate', params.endDate);
+  
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+  return fetchJson(`/admin/analytics${queryString}`, z.any(), { method: 'GET', token });
 }
 
 export function adminGetConfigs(token: string): Promise<any> {
@@ -559,6 +572,14 @@ export function adminUpdateConfig(token: string, key: string, value: any): Promi
   });
 }
 
-export function adminGetAuditLogs(token: string): Promise<any> {
-  return fetchJson('/admin/audit-logs', z.any(), { method: 'GET', token });
+export function adminGetAuditLogs(token: string, params?: { page?: number; limit?: number; action?: string; startDate?: string; endDate?: string }): Promise<any> {
+  const query = new URLSearchParams();
+  if (params?.page) query.append('page', params.page.toString());
+  if (params?.limit) query.append('limit', params.limit.toString());
+  if (params?.action) query.append('action', params.action);
+  if (params?.startDate) query.append('startDate', params.startDate);
+  if (params?.endDate) query.append('endDate', params.endDate);
+  
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+  return fetchJson(`/admin/audit-logs${queryString}`, z.any(), { method: 'GET', token });
 }

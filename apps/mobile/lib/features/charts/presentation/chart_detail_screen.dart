@@ -22,9 +22,11 @@ class ChartDetailScreen extends StatelessWidget {
         final imagePath = await File('${directory.path}/laso_${chartData.chartRecord.id}.png').create();
         await imagePath.writeAsBytes(imageBytes);
         
-        await Share.shareXFiles(
-          [XFile(imagePath.path)],
-          text: 'Xem lá số tử vi của tôi tại ZiweiAI',
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(imagePath.path)],
+            text: 'Xem lá số tử vi của tôi tại ZiweiAI',
+          )
         );
       }
     } catch (e) {

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseInterceptors } from '@nestjs/common';
 import {
   chartDetailResponseSchema,
   createChartRequestSchema,
@@ -13,11 +13,14 @@ import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
 import { ChartsService } from './services/charts.service';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 
+import { RequireXU } from '../../common/interceptors/billing.interceptor';
+
 @Controller('charts')
 export class ChartsController {
   constructor(private readonly chartsService: ChartsService) {}
 
   @Post()
+  @UseInterceptors(RequireXU((req) => req.body?.chartSystem === 'mangpai' ? 1 : 0))
   async createChart(
     @CurrentUser() currentUser: AuthenticatedUser,
     @Req() request: AuthenticatedRequest,

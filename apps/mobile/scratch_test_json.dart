@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'dart:convert';
 import 'package:ziweiai_mobile/features/charts/data/models/create_chart_request.dart';
 import 'package:ziweiai_mobile/features/charts/data/models/birth_input.dart';

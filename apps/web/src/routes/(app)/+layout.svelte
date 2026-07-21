@@ -2,6 +2,8 @@
   import { getAuthStore } from '$lib/auth/auth-context';
   import { GlobalPaywallModal } from '$lib/components/ui';
   import type { Snippet } from 'svelte';
+  import { page } from '$app/stores';
+  import { browser } from '$app/environment';
 
   interface Props {
     children: Snippet;
@@ -10,6 +12,15 @@
   let { children }: Props = $props();
 
   const auth = getAuthStore();
+
+  $effect(() => {
+    if (browser) {
+      const refCode = $page.url.searchParams.get('ref');
+      if (refCode) {
+        localStorage.setItem('ziweiai_ref_code', refCode);
+      }
+    }
+  });
 
   // Không còn tường đăng nhập (decision 0009 / US-009): AuthStore.init() cấp phiên ẩn
   // danh khi chưa có session, nên sau init mọi khách đều có JWT thật → dashboard + lập +

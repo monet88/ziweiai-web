@@ -14,15 +14,13 @@ scripts/bin/harness-cli
 scripts/bin/harness-cli.exe
 
 # Agent / tooling local dirs.
-.claude
-.claude/*
-.codex/*
-.agents
-.agents/*
-.agent/*
-.agent
-.gemini
-.gemini/*
+.claude/
+.codex/
+.agents/logs/
+.agents/cache/
+.agents/tmp/
+.agent/
+.gemini/
 .kiro
 .codegraph/
 .playwright-mcp/

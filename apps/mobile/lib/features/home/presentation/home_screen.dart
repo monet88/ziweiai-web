@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../charts/data/models/birth_input.dart';
 import '../../charts/data/models/create_chart_request.dart';
 import '../../charts/data/models/chart_snapshot.dart';
 import '../../charts/presentation/charts_provider.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../auth/data/repositories/auth_repository.dart';
+import '../../vision/data/models/vision_kind.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -164,9 +166,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)) 
                 : const Text('Lập lá số Tử Vi'),
             ),
+            const SizedBox(height: 48),
+            const Divider(),
+            const SizedBox(height: 16),
+            const Text('Bộ công cụ mở rộng (Web)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.auto_awesome),
+                    label: const Text('Đọc bài Tarot'),
+                    onPressed: () => context.push('/vision/input', extra: VisionKind.tarot),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.face),
+                    label: const Text('Xem Tướng Mặt'),
+                    onPressed: () => context.push('/vision/input', extra: VisionKind.face),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.pan_tool),
+                    label: const Text('Xem Chỉ Tay'),
+                    onPressed: () => context.push('/vision/input', extra: VisionKind.palm),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
+
+  // Future<void> _launchWeb(String path) async {
+  //   // Should inject environment config, but using hardcoded for simplicity in this fallback.
+  //   final uri = Uri.parse('https://tuvitoantap.vercel.app$path');
+  //   if (await canLaunchUrl(uri)) {
+  //     await launchUrl(uri, mode: LaunchMode.externalApplication);
+  //   }
+  // }
 }

@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'dart:convert';
 import 'lib/features/charts/data/models/birth_input.dart';
 import 'lib/features/charts/data/models/create_chart_request.dart';

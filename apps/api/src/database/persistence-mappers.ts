@@ -19,6 +19,8 @@ import {
   type ConversationMessageRecord,
   type DivinationContextRecord,
   type ProfileRecord,
+  type ReferralRecord,
+  referralRecordSchema,
 } from '@ziweiai/contracts';
 import { normalizePostgresTimestamp } from './postgres-timestamp';
 
@@ -55,6 +57,8 @@ export function toProfileRecord(row: SupabaseRow): ProfileRecord {
     locale: row.locale,
     timezone: row.timezone,
     xuBalance: row.xu_balance,
+    referralCode: row.referral_code ?? null,
+    referredBy: row.referred_by ?? null,
   });
 }
 
@@ -178,6 +182,18 @@ export function toConversationMessageRecord(row: SupabaseRow): ConversationMessa
     providerName: row.provider_name ?? null,
     providerMetadata: coerceProviderMetadata(row.provider_metadata),
     createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
+  });
+}
+
+export function toReferralRecord(row: SupabaseRow): ReferralRecord {
+  return referralRecordSchema.parse({
+    id: row.id,
+    referrerId: row.referrer_id,
+    refereeId: row.referee_id,
+    rewardXu: row.reward_xu,
+    status: row.status,
+    createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
+    completedAt: normalizePostgresTimestamp(row.completed_at as string | null | undefined),
   });
 }
 

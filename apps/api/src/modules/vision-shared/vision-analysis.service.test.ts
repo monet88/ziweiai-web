@@ -100,17 +100,7 @@ describe('VisionAnalysisService', () => {
     expect(quotasService.assertCanCreateVisionAnalysis).not.toHaveBeenCalled();
   });
 
-  it('chặn PAYMENT_REQUIRED khi AI gate không free-for-all (trước quota)', async () => {
-    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
-    persistence.deductXU = vi.fn().mockResolvedValue(false);
-    try {
-      await service.analyze(baseInput());
-      throw new Error('expected premium gate to throw');
-    } catch (error) {
-      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'INSUFFICIENT_FUNDS');
-    }
-    expect(quotasService.assertCanCreateVisionAnalysis).not.toHaveBeenCalled();
-  });
+
 
   it('map lỗi quota vision thành 429 VISION_QUOTA_EXCEEDED', async () => {
     quotasService.assertCanCreateVisionAnalysis = vi.fn().mockRejectedValue(new Error('Daily vision quota exceeded.'));

@@ -1,13 +1,82 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import type { PageData } from './$types';
 
   export let data: PageData;
-  let logs = data.logs;
+  $: logs = data.logs;
+
+  let filterAction = $page.url.searchParams.get('action') || '';
+  let startDate = $page.url.searchParams.get('startDate') || '';
+  let endDate = $page.url.searchParams.get('endDate') || '';
+
+  function applyFilters() {
+    const url = new URL($page.url);
+    url.searchParams.set('page', '1');
+    
+    if (filterAction) url.searchParams.set('action', filterAction);
+    else url.searchParams.delete('action');
+    
+    if (startDate) url.searchParams.set('startDate', startDate);
+    else url.searchParams.delete('startDate');
+    
+    if (endDate) url.searchParams.set('endDate', endDate);
+    else url.searchParams.delete('endDate');
+    
+    goto(url.toString(), { keepFocus: true, noScroll: true });
+  }
+
+  function clearFilters() {
+    filterAction = '';
+    startDate = '';
+    endDate = '';
+    const url = new URL($page.url);
+    url.searchParams.delete('action');
+    url.searchParams.delete('startDate');
+    url.searchParams.delete('endDate');
+    url.searchParams.set('page', '1');
+    goto(url.toString(), { keepFocus: true, noScroll: true });
+  }
+
+  function changePage(newPage: number) {
+    if (newPage < 1) return;
+    const url = new URL($page.url);
+    url.searchParams.set('page', newPage.toString());
+    goto(url.toString(), { keepFocus: true });
+  }
 </script>
 
 <div class="header-section">
   <h3 class="page-title">Nhật ký hoạt động (Audit Logs)</h3>
   <p class="page-desc">Danh sách các hành động nhạy cảm của Admin.</p>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-group">
+    <label for="filterAction" class="filter-label">Hành động:</label>
+    <select id="filterAction" class="filter-input" bind:value={filterAction}>
+      <option value="">Tất cả</option>
+      <option value="TOPUP_XU">Nạp/Trừ XU (Admin)</option>
+      <option value="BAN_USER">Ban User</option>
+      <option value="UNBAN_USER">Unban User</option>
+      <option value="UPDATE_CONFIG">Cập nhật cấu hình</option>
+    </select>
+  </div>
+  
+  <div class="filter-group">
+    <label for="startDate" class="filter-label">Từ ngày:</label>
+    <input type="date" id="startDate" class="filter-input" bind:value={startDate} />
+  </div>
+
+  <div class="filter-group">
+    <label for="endDate" class="filter-label">Đến ngày:</label>
+    <input type="date" id="endDate" class="filter-input" bind:value={endDate} />
+  </div>
+
+  <div class="filter-actions">
+    <button class="btn btn-primary" onclick={applyFilters}>Lọc</button>
+    <button class="btn btn-outline" onclick={clearFilters}>Xoá</button>
+  </div>
 </div>
 
 <div class="data-table-container">
@@ -22,7 +91,7 @@
       </tr>
     </thead>
     <tbody>
-      {#each logs as log}
+      {#each logs as log (log.id ?? log.created_at)}
         <tr>
           <td class="secondary-cell">
             {new Date(log.created_at).toLocaleString('vi-VN')}
@@ -52,7 +121,104 @@
   </table>
 </div>
 
+<div class="pagination">
+  <button 
+    class="btn btn-outline" 
+    disabled={data.page <= 1} 
+    onclick={() => changePage(data.page - 1)}
+  >
+    Trang trước
+  </button>
+  <span class="page-info">Trang {data.page} (Tổng: {data.count} GD)</span>
+  <button 
+    class="btn btn-outline" 
+    disabled={logs.length < 50} 
+    onclick={() => changePage(data.page + 1)}
+  >
+    Trang sau
+  </button>
+</div>
+
 <style>
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    background: var(--color-bg-surface);
+    padding: var(--space-md);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border-hairline);
+    box-shadow: var(--shadow-card);
+    align-items: flex-end;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .filter-label {
+    font-size: var(--text-caption);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+  }
+
+  .filter-input {
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    font-size: var(--text-body-sm);
+    font-family: inherit;
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: var(--space-sm);
+  }
+
+  .btn {
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: var(--text-body-sm);
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid transparent;
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--color-accent-primary);
+    color: var(--color-text-on-primary);
+  }
+
+  .btn-outline {
+    background: transparent;
+    border-color: var(--color-border-strong);
+    color: var(--color-text-primary);
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--space-lg);
+  }
+
+  .page-info {
+    font-size: var(--text-body-sm);
+    color: var(--color-text-secondary);
+  }
+
+
   .header-section {
     margin-bottom: var(--space-xl);
   }

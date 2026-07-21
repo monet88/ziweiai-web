@@ -18,6 +18,7 @@ import {
   type DivinationContextRecord,
   type DivinationPurposeKey,
   type ProfileRecord,
+  type ReferralRecord,
 } from '@ziweiai/contracts';
 import { SUPABASE_CLIENT } from './supabase-client';
 import {
@@ -34,6 +35,7 @@ import {
   toHistoryViewRecord,
   toVisionResultRecord,
   toProfileRecord,
+  toReferralRecord,
 } from './persistence-mappers';
 
 export type { AnnualReportRecord } from './persistence-mappers';
@@ -57,6 +59,16 @@ export class SupabasePersistenceGateway {
       .maybeSingle();
     this.throwIfError(error);
     return data ? toProfileRecord(data) : null;
+  }
+
+  async listReferralsByReferrerId(userId: string): Promise<ReferralRecord[]> {
+    const { data, error } = await this.client
+      .from('referrals')
+      .select('*')
+      .eq('referrer_id', userId)
+      .order('created_at', { ascending: false });
+    this.throwIfError(error);
+    return data ? data.map(toReferralRecord) : [];
   }
 
   async findLatestBirthProfileByInputHash(ownerUserId: string, inputHashDigest: string): Promise<BirthProfileRecord | null> {
@@ -820,21 +832,46 @@ export class SupabasePersistenceGateway {
     return true;
   }
 
-  async adminListTransactions(limit: number = 200): Promise<any[]> {
-    const { data: logs, error } = await this.client
+  async adminListTransactions(
+    page: number = 1,
+    limit: number = 50,
+    type?: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<{ data: any[]; count: number }> {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    let query = this.client
       .from('xu_transactions')
-      .select('*, profiles!inner(email, full_name)')
+      .select('*, profiles!inner(email, full_name)', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .range(from, to);
+
+    if (type) {
+      if (type === 'topup') {
+        query = query.gt('amount', 0);
+      } else if (type === 'consume') {
+        query = query.lt('amount', 0);
+      } else {
+        query = query.eq('transaction_type', type);
+      }
+    }
     
+    if (startDate) query = query.gte('created_at', startDate);
+    if (endDate) query = query.lte('created_at', endDate);
+
+    const { data: logs, count, error } = await query;
     this.throwIfError(error);
-    return logs || [];
+    return { data: logs || [], count: count || 0 };
   }
 
-  async adminGetAnalytics(days: number = 30): Promise<any> {
-    const { data, error } = await this.client.rpc('get_admin_analytics', {
-      days,
-    });
+  async adminGetAnalytics(startDate?: string, endDate?: string): Promise<any> {
+    const params: any = {};
+    if (startDate) params.p_start_date = startDate;
+    if (endDate) params.p_end_date = endDate;
+
+    const { data, error } = await this.client.rpc('get_admin_analytics', params);
     this.throwIfError(error);
     return data;
   }
@@ -869,15 +906,29 @@ export class SupabasePersistenceGateway {
     }
   }
 
-  async adminGetAuditLogs(limit: number = 200): Promise<any[]> {
-    const { data: logs, error } = await this.client
+  async adminGetAuditLogs(
+    page: number = 1,
+    limit: number = 50,
+    action?: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<{ data: any[]; count: number }> {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    let query = this.client
       .from('admin_audit_logs')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
-      .limit(limit);
-    
+      .range(from, to);
+
+    if (action) query = query.eq('action', action);
+    if (startDate) query = query.gte('created_at', startDate);
+    if (endDate) query = query.lte('created_at', endDate);
+
+    const { data: logs, count, error } = await query;
     this.throwIfError(error);
-    return logs || [];
+    return { data: logs || [], count: count || 0 };
   }
 
   async getSystemConfigs(): Promise<Record<string, any>> {

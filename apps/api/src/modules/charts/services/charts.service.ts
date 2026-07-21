@@ -54,14 +54,7 @@ export class ChartsService {
     if (input.chartSystem === 'mangpai') {
       this.assertMangpaiEnabled();
       // GATE 3: Trừ XU cho tính năng premium (Mạnh Phái). Tốn 1 XU.
-      const success = await this.persistenceGateway.deductXU(userId, 1);
-      if (!success) {
-        throw new ApiErrorHttpException(
-          HttpStatus.PAYMENT_REQUIRED,
-          'PAYMENT_REQUIRED',
-          'Tính năng Mạnh Phái yêu cầu 1 XU. Vui lòng nạp thêm XU để tiếp tục.'
-        );
-      }
+      // NOTE: Đã được chuyển sang BillingInterceptor để tránh Domain Leak.
     }
 
     await this.assertCanCreateChart(userId, ipAddress, isAnonymous);

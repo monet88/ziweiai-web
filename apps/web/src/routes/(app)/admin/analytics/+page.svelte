@@ -1,8 +1,33 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import type { PageData } from './$types';
 
   export let data: PageData;
   $: analytics = data.analytics;
+
+  let startDate = $page.url.searchParams.get('startDate') || '';
+  let endDate = $page.url.searchParams.get('endDate') || '';
+
+  function applyFilters() {
+    const url = new URL($page.url);
+    if (startDate) url.searchParams.set('startDate', startDate);
+    else url.searchParams.delete('startDate');
+    
+    if (endDate) url.searchParams.set('endDate', endDate);
+    else url.searchParams.delete('endDate');
+    
+    goto(url.toString(), { keepFocus: true, noScroll: true });
+  }
+
+  function clearFilters() {
+    startDate = '';
+    endDate = '';
+    const url = new URL($page.url);
+    url.searchParams.delete('startDate');
+    url.searchParams.delete('endDate');
+    goto(url.toString(), { keepFocus: true, noScroll: true });
+  }
 </script>
 
 <svelte:head>
@@ -10,6 +35,23 @@
 </svelte:head>
 
 
+
+<div class="filter-bar">
+  <div class="filter-group">
+    <label for="startDate" class="filter-label">Từ ngày:</label>
+    <input type="date" id="startDate" class="filter-input" bind:value={startDate} />
+  </div>
+
+  <div class="filter-group">
+    <label for="endDate" class="filter-label">Đến ngày:</label>
+    <input type="date" id="endDate" class="filter-input" bind:value={endDate} />
+  </div>
+
+  <div class="filter-actions">
+    <button class="btn btn-primary" onclick={applyFilters}>Lọc</button>
+    <button class="btn btn-outline" onclick={clearFilters}>Xoá</button>
+  </div>
+</div>
 
 {#if !analytics}
   <div class="alert alert-danger">
@@ -28,16 +70,42 @@
 
     <!-- Total XU Topup -->
     <div class="stat-card">
-      <dt class="stat-label">Tổng XU được nạp</dt>
+      <dt class="stat-label">XU nạp (trong kỳ)</dt>
       <dd class="stat-value text-success">{analytics.total_xu_topup}</dd>
     </div>
 
     <!-- Total XU Consumed -->
     <div class="stat-card">
-      <dt class="stat-label">Tổng XU tiêu thụ</dt>
+      <dt class="stat-label">XU tiêu (trong kỳ)</dt>
       <dd class="stat-value text-warning">{analytics.total_xu_consumed}</dd>
     </div>
   </div>
+
+  {#if analytics.feature_usage && analytics.feature_usage.length > 0}
+  <div class="table-section">
+    <h2 class="section-title">Tiêu thụ XU theo tính năng</h2>
+    <div class="feature-usage-grid">
+      {#each analytics.feature_usage as feature}
+        <div class="feature-card">
+          <div class="feature-name">
+            {#if feature.feature === 'ai_usage'}
+              Giải mã AI (Tử Vi)
+            {:else if feature.feature === 'vision_tarot'}
+              Tarot AI
+            {:else if feature.feature === 'vision_face'}
+              Xem Tướng Mặt AI
+            {:else if feature.feature === 'vision_palm'}
+              Chỉ Tay AI
+            {:else}
+              {feature.feature}
+            {/if}
+          </div>
+          <div class="feature-value">{feature.consumed} XU</div>
+        </div>
+      {/each}
+    </div>
+  </div>
+  {/if}
 
   <div class="table-section">
     <h2 class="section-title">Biến động 30 ngày gần nhất</h2>
@@ -98,9 +166,105 @@
 
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(1, 1fr);
-    gap: var(--space-lg);
-    margin-top: var(--space-lg);
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+  }
+
+  .feature-usage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-sm);
+  }
+
+  .feature-card {
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border-hairline);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: var(--shadow-card);
+  }
+
+  .feature-name {
+    font-size: var(--text-body-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-xs);
+    text-align: center;
+  }
+
+  .feature-value {
+    font-size: var(--text-heading-3);
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    background: var(--color-bg-surface);
+    padding: var(--space-md);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border-hairline);
+    box-shadow: var(--shadow-card);
+    align-items: flex-end;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .filter-label {
+    font-size: var(--text-caption);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+  }
+
+  .filter-input {
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    font-size: var(--text-body-sm);
+    font-family: inherit;
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: var(--space-sm);
+  }
+
+  .btn {
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: var(--text-body-sm);
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid transparent;
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--color-accent-primary);
+    color: var(--color-text-on-primary);
+  }
+
+  .btn-outline {
+    background: transparent;
+    border-color: var(--color-border-strong);
+    color: var(--color-text-primary);
   }
 
   @media (min-width: 640px) {

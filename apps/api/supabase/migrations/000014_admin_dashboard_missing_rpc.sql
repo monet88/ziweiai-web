@@ -12,14 +12,18 @@ create index if not exists xu_transactions_user_id_idx on public.xu_transactions
 create index if not exists xu_transactions_created_at_idx on public.xu_transactions (created_at desc);
 
 alter table public.xu_transactions enable row level security;
-create policy "xu_transactions_select_admin" on public.xu_transactions
-  for select using (
-    exists (
-      select 1 from public.admin_roles 
-      where email = auth.jwt()->>'email' 
-      and role in ('SUPER_ADMIN', 'MODERATOR')
-    )
-  );
+DO $$ BEGIN
+  create policy "xu_transactions_select_admin" on public.xu_transactions
+    for select using (
+      exists (
+        select 1 from public.admin_roles 
+        where email = auth.jwt()->>'email' 
+        and role in ('SUPER_ADMIN', 'MODERATOR')
+      )
+    );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- RPC for logging and performing XU transactions (e.g. Admin Topup)
 create or replace function public.log_xu_transaction(

@@ -114,6 +114,9 @@ importers:
       '@mediapipe/tasks-vision':
         specifier: ^0.10.35
         version: 0.10.35
+      '@resvg/resvg-wasm':
+        specifier: ^2.6.2
+        version: 2.6.2
       '@sentry/sveltekit':
         specifier: ^10.66.0
         version: 10.66.0(@sveltejs/kit@2.65.0(@opentelemetry/api@1.9.1)(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.56.3(@typescript-eslint/types@8.60.1))(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)))(svelte@5.56.3(@typescript-eslint/types@8.60.1))(typescript@5.9.3)(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)))(svelte@5.56.3(@typescript-eslint/types@8.60.1))(vite@8.0.16(@types/node@24.12.4)(esbuild@0.28.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))(webpack@5.106.0(esbuild@0.28.0)(postcss@8.5.15))
@@ -126,6 +129,12 @@ importers:
       '@ziweiai/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      satori:
+        specifier: ^0.28.0
+        version: 0.28.0
+      satori-html:
+        specifier: ^0.3.2
+        version: 0.3.2
     devDependencies:
       '@fontsource-variable/inter':
         specifier: 5.2.8
@@ -1016,6 +1025,10 @@ packages:
 
   '@resvg/resvg-js@2.6.2':
     resolution: {integrity: sha512-xBaJish5OeGmniDj9cW5PRa/PtmuVU3ziqrbr5xJj901ZDN4TosrVaNZpEiLZAxdfnhAe7uQ7QFWfjPe9d9K2Q==}
+    engines: {node: '>= 10'}
+
+  '@resvg/resvg-wasm@2.6.2':
+    resolution: {integrity: sha512-FqALmHI8D4o6lk/LRWDnhw95z5eO+eAa6ORjVg09YRR7BkcM6oPHU9uyC0gtQG5vpFLvgpeU4+zEAz2H8APHNw==}
     engines: {node: '>= 10'}
 
   '@rolldown/binding-android-arm64@1.0.3':
@@ -4535,6 +4548,8 @@ snapshots:
       '@resvg/resvg-js-win32-arm64-msvc': 2.6.2
       '@resvg/resvg-js-win32-ia32-msvc': 2.6.2
       '@resvg/resvg-js-win32-x64-msvc': 2.6.2
+
+  '@resvg/resvg-wasm@2.6.2': {}
 
   '@rolldown/binding-android-arm64@1.0.3':
     optional: true

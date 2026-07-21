@@ -256,6 +256,9 @@
           Playwright/SvelteKit gate hiện có, không thay thế contract trong <code>AGENTS.md</code> và
           <code>spec.md</code>.
         </li>
+        <li>
+          Migration <code>000015_harden_wallet_security.sql</code> thu hồi quyền execute các RPC thao tác XU và Admin khỏi <code>public</code>, <code>anon</code>, <code>authenticated</code>. Trigger <code>protect_xu_balance</code> chặn người dùng tự sửa số dư <code>xu_balance</code> trực tiếp qua bảng <code>profiles</code>.
+        </li>
       </ul>
     </main>
   </body>

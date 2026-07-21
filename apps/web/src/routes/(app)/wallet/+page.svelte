@@ -1,12 +1,12 @@
 <script lang="ts">
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { AppScaffold, Button, Surface } from '$lib/components/ui';
-  import { WalletModel } from '$lib/features/payment/wallet-model.svelte';
+  import { AppScaffold, PrimaryButton } from '$lib/components/ui';
+  import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
   import { browser } from '$app/environment';
   import { env } from '$env/dynamic/public';
 
   const auth = getAuthStore();
-  const walletModel = new WalletModel();
+  const walletModel = createWalletModel(auth);
 
   // Package definitions
   const packages = [
@@ -16,7 +16,7 @@
   ];
 
   let selectedPackage = $state(packages[1]); // Default to 50 XU
-  let shortUuid = $derived(auth.user?.userId?.substring(0, 8).toUpperCase() ?? '');
+  let shortUuid = $derived(auth.user?.id?.substring(0, 8).toUpperCase() ?? '');
   let qrUrl = $derived.by(() => {
     if (!shortUuid) return '';
     const acc = env.PUBLIC_SEPAY_ACCOUNT || '0123456789';
@@ -29,7 +29,7 @@
   async function handleRefresh() {
     refreshing = true;
     try {
-      await walletModel.refreshBalance();
+      await walletModel.refresh();
     } finally {
       setTimeout(() => {
         refreshing = false;
@@ -39,7 +39,7 @@
 
   $effect(() => {
     if (browser && auth.user) {
-      walletModel.refreshBalance();
+      walletModel.refresh();
     }
   });
 </script>
@@ -67,7 +67,7 @@
     </div>
 
     <div class="payment-section">
-      <Surface variant="glass">
+      <div class="surface-glass">
         <div class="payment-card">
           <h2 class="section-title">Quét mã QR để thanh toán</h2>
           <p class="instruction">Mở ứng dụng ngân hàng và quét mã QR bên dưới.</p>
@@ -93,18 +93,16 @@
           {/if}
 
           <div class="actions">
-            <Button
-              variant="primary"
-              size="lg"
+            <PrimaryButton
               disabled={refreshing}
               onclick={handleRefresh}
             >
               {refreshing ? 'Đang kiểm tra...' : 'Tôi đã chuyển khoản'}
-            </Button>
+            </PrimaryButton>
             <p class="refresh-hint">Ấn nút trên để cập nhật số dư sau khi thanh toán.</p>
           </div>
         </div>
-      </Surface>
+      </div>
     </div>
   </div>
 </AppScaffold>
@@ -283,5 +281,13 @@
   .refresh-hint {
     font-size: var(--text-xs);
     color: var(--color-text-muted);
+  }
+
+  .surface-glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--color-border-hairline);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
   }
 </style>

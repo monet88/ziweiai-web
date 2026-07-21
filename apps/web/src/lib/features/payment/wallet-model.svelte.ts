@@ -81,6 +81,9 @@ export function createWalletModel(auth: AuthStore) {
     get isError() {
       return query.isError;
     },
+    refresh() {
+      return queryClient.invalidateQueries({ queryKey: queryKey() });
+    },
     subscribe,
     unsubscribe
   };

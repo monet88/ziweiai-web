@@ -1,10 +1,14 @@
 -- Migration: Admin Security Hardening
 -- Creates admin_roles, admin_audit_logs, system_configs tables
 
-CREATE TYPE public.admin_role_enum AS ENUM ('SUPER_ADMIN', 'MODERATOR');
+DO $$ BEGIN
+    CREATE TYPE public.admin_role_enum AS ENUM ('SUPER_ADMIN', 'MODERATOR');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- 1. admin_roles Table
-CREATE TABLE public.admin_roles (
+CREATE TABLE IF NOT EXISTS public.admin_roles (
     email TEXT PRIMARY KEY,
     role public.admin_role_enum NOT NULL DEFAULT 'MODERATOR',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -17,7 +21,7 @@ ALTER TABLE public.admin_roles ENABLE ROW LEVEL SECURITY;
 -- we don't strictly need complex policies for now, just close it off to public.
 
 -- 2. admin_audit_logs Table
-CREATE TABLE public.admin_audit_logs (
+CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_email TEXT NOT NULL,
     action TEXT NOT NULL,
@@ -29,7 +33,7 @@ CREATE TABLE public.admin_audit_logs (
 ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- 3. system_configs Table
-CREATE TABLE public.system_configs (
+CREATE TABLE IF NOT EXISTS public.system_configs (
     key TEXT PRIMARY KEY,
     value JSONB NOT NULL,
     updated_by TEXT,
@@ -42,4 +46,5 @@ ALTER TABLE public.system_configs ENABLE ROW LEVEL SECURITY;
 INSERT INTO public.system_configs (key, value)
 VALUES 
     ('RATE_LIMIT_ANON', '{"limit": 10, "ttl": 60}'::jsonb),
-    ('RATE_LIMIT_AUTH', '{"limit": 60, "ttl": 60}'::jsonb);
+    ('RATE_LIMIT_AUTH', '{"limit": 60, "ttl": 60}'::jsonb)
+ON CONFLICT (key) DO NOTHING;

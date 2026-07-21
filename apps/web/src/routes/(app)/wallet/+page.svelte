@@ -37,6 +37,24 @@
     }
   }
 
+  let checkinBusy = $state(false);
+  let checkinError = $state<string | null>(null);
+
+  async function handleCheckin() {
+    checkinBusy = true;
+    checkinError = null;
+    try {
+      const res = await walletModel.checkin();
+      if (!res.success) {
+        checkinError = 'Không thể điểm danh lúc này, vui lòng thử lại sau.';
+      }
+    } catch (err) {
+      checkinError = err instanceof Error ? err.message : 'Lỗi hệ thống';
+    } finally {
+      checkinBusy = false;
+    }
+  }
+
   $effect(() => {
     if (browser && auth.user) {
       walletModel.refresh();
@@ -49,20 +67,47 @@
   subtitle="Nạp XU để sử dụng các tính năng cao cấp như Xem Tướng, Xem Tay và Luận Giải Chuyên Sâu."
 >
   <div class="wallet-layout">
-    <div class="packages-section">
-      <h2 class="section-title">Chọn gói XU</h2>
-      <div class="packages-grid">
-        {#each packages as pkg}
-          <button
-            class="package-card"
-            class:selected={selectedPackage.xu === pkg.xu}
-            onclick={() => (selectedPackage = pkg)}
+    <div class="left-column">
+      <div class="rewards-section">
+        <h2 class="section-title">Quà Tặng Hàng Ngày</h2>
+        <div class="reward-card surface-glass">
+          <div class="reward-info">
+            <h3>Điểm danh nhận XU</h3>
+            <p>Nhận ngay 5 XU mỗi ngày khi quay lại ứng dụng.</p>
+            {#if checkinError}
+              <p class="error-text">{checkinError}</p>
+            {/if}
+          </div>
+          <PrimaryButton
+            disabled={!walletModel.canCheckin || checkinBusy}
+            onclick={handleCheckin}
           >
-            <div class="pkg-label">{pkg.label}</div>
-            <div class="pkg-xu">{pkg.xu} XU</div>
-            <div class="pkg-price">{pkg.price.toLocaleString('vi-VN')} VNĐ</div>
-          </button>
-        {/each}
+            {#if checkinBusy}
+              Đang xử lý...
+            {:else if !walletModel.canCheckin}
+              Đã nhận hôm nay
+            {:else}
+              Nhận 5 XU
+            {/if}
+          </PrimaryButton>
+        </div>
+      </div>
+
+      <div class="packages-section">
+        <h2 class="section-title">Chọn gói XU</h2>
+        <div class="packages-grid">
+          {#each packages as pkg}
+            <button
+              class="package-card"
+              class:selected={selectedPackage.xu === pkg.xu}
+              onclick={() => (selectedPackage = pkg)}
+            >
+              <div class="pkg-label">{pkg.label}</div>
+              <div class="pkg-xu">{pkg.xu} XU</div>
+              <div class="pkg-price">{pkg.price.toLocaleString('vi-VN')} VNĐ</div>
+            </button>
+          {/each}
+        </div>
       </div>
     </div>
 
@@ -123,8 +168,11 @@
       align-items: flex-start;
     }
     
-    .packages-section {
+    .left-column {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
     }
     
     .payment-section {
@@ -132,6 +180,46 @@
       position: sticky;
       top: 100px;
     }
+  }
+
+  .left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .rewards-section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .reward-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    gap: 16px;
+  }
+
+  .reward-info h3 {
+    margin: 0 0 4px;
+    font-size: var(--text-body);
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .reward-info p {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .error-text {
+    color: var(--color-danger) !important;
+    font-size: var(--text-xs) !important;
+    margin-top: 4px !important;
   }
 
   .section-title {

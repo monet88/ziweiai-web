@@ -100,6 +100,12 @@ export class GeminiChatAdapter implements LlmChatAdapter {
             parts: [{ text: EXPLANATION_SYSTEM_PROMPT }],
           },
           contents: [{ parts }],
+          safetySettings: [
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+          ],
         }),
         signal: params.signal,
       },

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'dart:io' show Platform;
 import '../data/repositories/auth_repository.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
@@ -95,6 +97,64 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     }
   }
 
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _isLoading = true);
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final success = await repo.signInWithGoogle();
+      if (!success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Không thể đăng nhập bằng Google')),
+          );
+        }
+      }
+      // Note: For OAuth with deep links, the app will be suspended and reopened
+      // via the intent filter. The auth state will be updated automatically.
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi không xác định: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleAppleLogin() async {
+    setState(() => _isLoading = true);
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      await repo.signInWithApple();
+      // Auth state will be updated automatically, and user can proceed.
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi đăng nhập Apple: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Optional: listen to authStateProvider to close automatically if logged in from another tab?
@@ -107,9 +167,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
                   'Tử Vi Toàn Tập',
@@ -150,10 +211,22 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 else ...[
                   FilledButton(
                     onPressed: () => _handleAuth(true),
-                    child: const Text('Đăng nhập'),
+                    child: const Text('Đăng nhập với Email'),
                   ),
                   const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _handleGoogleLogin,
+                    icon: const Icon(Icons.g_mobiledata, size: 24),
+                    label: const Text('Tiếp tục với Google'),
+                  ),
                   const SizedBox(height: 16),
+                  if (Platform.isIOS) ...[
+                    SignInWithAppleButton(
+                      onPressed: _handleAppleLogin,
+                      text: 'Tiếp tục với Apple',
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   OutlinedButton(
                     onPressed: () => _handleAuth(false),
                     child: const Text('Đăng ký tài khoản mới'),
@@ -167,6 +240,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               ],
             ),
           ),
+        ),
         ),
       ),
     );

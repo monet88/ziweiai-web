@@ -41,7 +41,7 @@ export class ExplanationsService {
       chartSnapshotId: input.chartSnapshotId,
       providerName,
       explanationKind: input.explanationKind,
-      palaceScope: input.palaceScope,
+      palaceScope: input.palaceScope ?? undefined,
     });
 
     const existingRequest = await this.persistenceGateway.findExplanationRequestByIdempotencyKey(user.userId, idempotencyKey);
@@ -52,7 +52,7 @@ export class ExplanationsService {
         user.userId,
         idempotencyKey,
         existingRequest,
-        input.palaceScope,
+        input.palaceScope ?? undefined,
       );
 
       if (resolution.isCompleted) {
@@ -95,7 +95,7 @@ export class ExplanationsService {
     if (input.palaceScope) {
       this.logger.log(`Per-palace explanation (contributes to 14x quota per chart)`, {
         chartSnapshotId: input.chartSnapshotId,
-        palaceScope: input.palaceScope,
+        palaceScope: input.palaceScope ?? undefined,
         explanationKind: input.explanationKind,
       });
     }
@@ -120,7 +120,7 @@ export class ExplanationsService {
         chartSnapshot: chartRecord!.snapshot,
         explanationKind: input.explanationKind,
         explanationContext,
-        palaceScope: input.palaceScope,
+        palaceScope: input.palaceScope ?? undefined,
         divinationInquiry,
       });
 

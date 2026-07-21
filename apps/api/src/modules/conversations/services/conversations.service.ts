@@ -271,7 +271,7 @@ export class ConversationsService {
         explanationContext,
         messages: previousMessages,
         userMessage: userContent,
-        quickPromptKey: input.quickPromptKey,
+        quickPromptKey: input.quickPromptKey ?? undefined,
         divinationInquiry,
       },
     };

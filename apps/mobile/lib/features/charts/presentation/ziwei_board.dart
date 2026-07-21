@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../data/models/chart_snapshot.dart';
+import 'package:screenshot/screenshot.dart';
 
 class ZiweiBoard extends StatelessWidget {
   final ChartSnapshot snapshot;
+  final ScreenshotController? screenshotController;
 
-  const ZiweiBoard({super.key, required this.snapshot});
+  const ZiweiBoard({super.key, required this.snapshot, this.screenshotController});
 
   @override
   Widget build(BuildContext context) {
@@ -42,14 +44,16 @@ class ZiweiBoard extends StatelessWidget {
       boundaryMargin: const EdgeInsets.all(32),
       minScale: 0.2,
       maxScale: 2.0,
-      child: Container(
-        width: boardSize,
-        height: boardSize,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.black12),
-          color: Theme.of(context).colorScheme.surface,
-        ),
-        child: Stack(
+      child: Screenshot(
+        controller: screenshotController ?? ScreenshotController(),
+        child: Container(
+          width: boardSize,
+          height: boardSize,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.black12),
+            color: Theme.of(context).colorScheme.surface,
+          ),
+          child: Stack(
           children: [
             // Center info area
             Positioned(
@@ -126,6 +130,7 @@ class ZiweiBoard extends StatelessWidget {
               ),
           ],
         ),
+      ),
       ),
     );
   }

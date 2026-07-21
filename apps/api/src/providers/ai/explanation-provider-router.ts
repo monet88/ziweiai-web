@@ -34,14 +34,8 @@ export class ExplanationProviderRouter extends ProviderRouterBase<AiExplanationP
       ? this.getProviderChain(preference).filter((provider) => provider.isVisionCapable(payload.modelOverride))
       : this.getProviderChain(preference);
 
-    // Tối ưu chi phí: Luôn ưu tiên Gemini (nếu khả dụng) cho tính năng Vision thay vì OpenAI/gpt-4o-mini
-    if (payload.imageInput && preference === 'auto') {
-      const gemini = providers.find((p) => p.providerName === 'gemini');
-      if (gemini) {
-        providers = [gemini, ...providers.filter((p) => p !== gemini)];
-      }
-    }
-
+    // Khi có ảnh và preference === 'auto', chain sẽ giữ nguyên order mặc định (openai-compat -> deepseek -> gemini)
+    // Các provider ở đầu chain (như openai-compat) sẽ đảm nhiệm xử lý ảnh, vì Gemini từ chối phân tích sinh trắc học.
     if (payload.imageInput && providers.length === 0) {
       throw new ProviderUnavailableError('Chưa cấu hình nhà cung cấp AI có khả năng đọc ảnh.');
     }

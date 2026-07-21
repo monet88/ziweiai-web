@@ -38,6 +38,19 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Future<void> signOut() async {}
+
+  @override
+  Future<bool> signInWithGoogle() async {
+    return true;
+  }
+
+  @override
+  Future<AuthResponse> signInWithApple() async {
+    return AuthResponse(
+      session: null,
+      user: User(id: '789', appMetadata: {}, userMetadata: {}, aud: 'authenticated', createdAt: ''),
+    );
+  }
 }
 
 void main() {
@@ -57,11 +70,11 @@ void main() {
     expect(find.text('Đăng nhập để lưu lá số và xem luận giải AI'), findsOneWidget);
     expect(find.text('Email'), findsOneWidget);
     expect(find.text('Mật khẩu'), findsOneWidget);
-    expect(find.text('Đăng nhập'), findsOneWidget);
+    expect(find.text('Đăng nhập với Email'), findsOneWidget);
     expect(find.text('Đăng ký tài khoản mới'), findsOneWidget);
 
     // Tap submit without data
-    await tester.tap(find.text('Đăng nhập'));
+    await tester.tap(find.text('Đăng nhập với Email'));
     await tester.pump();
 
     // Check validation messages
@@ -74,7 +87,7 @@ void main() {
     await tester.pump();
 
     // Tap submit again (the validation errors should disappear, and it will close the screen)
-    await tester.tap(find.text('Đăng nhập'));
+    await tester.tap(find.text('Đăng nhập với Email'));
     await tester.pumpAndSettle(); // Need to pump and settle to allow context.pop() or UI updates to settle
 
     // If context.pop happens, the screen might be unmounted, or the widget might disappear.

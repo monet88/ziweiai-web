@@ -44,6 +44,13 @@ dependencies:
   flutter_markdown_plus: ^1.0.12
   purchases_flutter: ^10.4.2
   confetti: ^0.8.0
+  sign_in_with_apple: ^8.1.0
+  crypto: ^3.0.7
+  firebase_core: ^4.12.1
+  firebase_messaging: ^16.4.3
+  screenshot: ^3.0.0
+  path_provider: ^2.1.6
+  share_plus: ^13.2.1
 
 dev_dependencies:
   flutter_test:

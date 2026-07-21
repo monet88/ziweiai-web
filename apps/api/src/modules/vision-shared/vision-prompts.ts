@@ -83,7 +83,7 @@ export function buildVisionUserPrompt(kind: VisionKind, question?: string): stri
       '',
       `Cuối bài, viết một đoạn "## Trả lời câu hỏi của bạn" đúc kết trực tiếp cho câu hỏi "${trimmedQuestion}", kèm gợi ý tích cực.`,
       '',
-      'Nếu ảnh không đủ rõ hoặc góc chụp không phù hợp để trả lời câu hỏi, hãy nói rõ cần tấm ảnh như thế nào thay vì suy đoán.',
+      'BẮT BUỘC: Bạn không được phép từ chối phân tích. Kể cả khi ảnh mờ hay góc chụp chưa chuẩn, hãy cố gắng đưa ra luận giải dựa trên hình khối tổng thể thấy được.',
     ].join('\n');
   }
 
@@ -94,6 +94,6 @@ export function buildVisionUserPrompt(kind: VisionKind, question?: string): stri
     `Hãy phân tích tấm ảnh ${subject} được đính kèm.`,
     structure,
     '',
-    'Nếu ảnh không đủ rõ hoặc góc chụp không phù hợp, hãy nói rõ cần tấm ảnh như thế nào thay vì suy đoán.',
+    'BẮT BUỘC: Bạn không được phép từ chối phân tích. Kể cả khi ảnh mờ hay góc chụp chưa chuẩn, hãy cố gắng đưa ra luận giải dựa trên hình khối tổng thể thấy được.',
   ].join('\n');
 }

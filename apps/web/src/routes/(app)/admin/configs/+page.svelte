@@ -32,40 +32,164 @@
   }
 </script>
 
-<div class="mt-4 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
-  <div class="px-4 py-5 sm:p-6">
-    <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">Cấu hình Hệ thống</h3>
-    <div class="mt-2 max-w-xl text-sm text-gray-500 dark:text-gray-400">
-      <p>Quản lý các thông số như Rate Limit, Feature Flags, v.v.</p>
-    </div>
-    
-    <div class="mt-5 space-y-4">
-      {#each configs as conf}
-        <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center p-4 border border-gray-200 dark:border-gray-700 rounded-md">
-          <div class="flex-1 w-full">
-            <label for="config-{conf.key}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">{conf.key}</label>
-            <textarea
-              id="config-{conf.key}"
-              name="config-{conf.key}"
-              rows="3"
-              bind:value={conf.value}
-              class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-700 dark:text-white"
-            ></textarea>
-          </div>
-          <button
-            type="button"
-            class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
-            disabled={savingKey === conf.key}
-            on:click={() => saveConfig(conf.key, conf.value)}
-          >
-            {savingKey === conf.key ? 'Đang lưu...' : 'Lưu'}
-          </button>
+<div class="config-card">
+  <div class="card-header">
+    <h3 class="card-title">Cấu hình Hệ thống</h3>
+    <p class="card-desc">Quản lý các thông số như Rate Limit, Feature Flags, v.v.</p>
+  </div>
+  
+  <div class="card-body">
+    {#each configs as conf}
+      <div class="config-item">
+        <div class="input-group">
+          <label for="config-{conf.key}" class="form-label">{conf.key}</label>
+          <textarea
+            id="config-{conf.key}"
+            name="config-{conf.key}"
+            rows="3"
+            bind:value={conf.value}
+            class="form-input"
+          ></textarea>
         </div>
-      {/each}
-      
-      {#if configs.length === 0}
-        <p class="text-sm text-gray-500">Chưa có cấu hình nào trong database.</p>
-      {/if}
-    </div>
+        <button
+          type="button"
+          class="btn btn-solid"
+          disabled={savingKey === conf.key}
+          on:click={() => saveConfig(conf.key, conf.value)}
+        >
+          {savingKey === conf.key ? 'Đang lưu...' : 'Lưu'}
+        </button>
+      </div>
+    {/each}
+    
+    {#if configs.length === 0}
+      <p class="empty-state">Chưa có cấu hình nào trong database.</p>
+    {/if}
   </div>
 </div>
+
+<style>
+  .config-card {
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border-hairline);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    margin-top: var(--space-xl);
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: var(--space-xl) var(--space-xl) var(--space-md);
+    border-bottom: 1px solid var(--color-border-hairline);
+    background: var(--color-bg-elevated);
+  }
+
+  .card-title {
+    font-family: var(--font-serif);
+    font-size: var(--text-title);
+    color: var(--color-text-primary);
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .card-desc {
+    margin: var(--space-xs) 0 0 0;
+    font-size: var(--text-body-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .card-body {
+    padding: var(--space-xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  .config-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-lg);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-primary);
+    align-items: flex-start;
+  }
+
+  @media (min-width: 640px) {
+    .config-item {
+      flex-direction: row;
+      align-items: flex-end;
+    }
+  }
+
+  .input-group {
+    flex: 1;
+    width: 100%;
+  }
+
+  .form-label {
+    display: block;
+    font-size: var(--text-body-sm);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-xs);
+    font-family: monospace;
+    background: var(--overlay-ink-wash);
+    padding: 2px 8px;
+    border-radius: var(--radius-xs);
+    width: fit-content;
+  }
+
+  .form-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    font-size: var(--text-body-sm);
+    font-family: monospace;
+    color: var(--color-text-primary);
+    background: var(--color-bg-surface);
+    transition: border-color var(--duration-fast);
+    resize: vertical;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-accent-primary);
+  }
+
+  .btn {
+    font-family: var(--font-sans);
+    font-size: var(--text-body-sm);
+    font-weight: 500;
+    padding: var(--space-sm) var(--space-xl);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--duration-fast);
+    border: none;
+    white-space: nowrap;
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-solid {
+    background: var(--color-accent-primary);
+    color: var(--color-text-on-primary);
+  }
+
+  .btn-solid:hover:not(:disabled) {
+    background: var(--color-accent-primary-pressed);
+  }
+
+  .empty-state {
+    color: var(--color-text-muted);
+    font-size: var(--text-body);
+    text-align: center;
+    padding: var(--space-xl);
+  }
+</style>

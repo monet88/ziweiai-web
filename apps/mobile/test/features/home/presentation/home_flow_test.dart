@@ -5,6 +5,34 @@ import 'package:ziweiai_mobile/core/router/app_router.dart';
 import 'package:ziweiai_mobile/features/charts/presentation/ziwei_board.dart';
 import 'package:ziweiai_mobile/features/charts/data/repositories/charts_repository.dart';
 import 'package:ziweiai_mobile/features/charts/data/models/create_chart_request.dart';
+import 'package:ziweiai_mobile/features/auth/data/repositories/auth_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class MockAuthRepository implements AuthRepository {
+  @override
+  User? get currentUser => null;
+
+  @override
+  Stream<AuthState> get authStateChanges => const Stream.empty();
+
+  @override
+  Future<AuthResponse> signInAnonymously() async => AuthResponse(user: null);
+
+  @override
+  Future<AuthResponse> signInWithEmail(String email, String password) async => AuthResponse(user: null);
+
+  @override
+  Future<AuthResponse> signUpWithEmail(String email, String password) async => AuthResponse(user: null);
+
+  @override
+  Future<bool> signInWithGoogle() async => true;
+
+  @override
+  Future<AuthResponse> signInWithApple() async => AuthResponse(user: null);
+
+  @override
+  Future<void> signOut() async {}
+}
 
 class MockChartsRepository implements ChartsRepository {
   @override
@@ -54,6 +82,7 @@ void main() {
       ProviderScope(
         overrides: [
           chartsRepositoryProvider.overrideWithValue(MockChartsRepository()),
+          authRepositoryProvider.overrideWithValue(MockAuthRepository()),
         ],
         child: MaterialApp.router(
           routerConfig: appRouter,

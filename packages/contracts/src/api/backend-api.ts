@@ -50,13 +50,13 @@ export const quickPromptKeySchema = z.enum(['overview', 'love', 'career', 'healt
 
 export const createConversationRequestSchema = z.object({
   chartSnapshotId: z.uuid(),
-  title: z.string().trim().min(1).max(120).optional(),
+  title: z.string().trim().min(1).max(120).nullish(),
 });
 
 export const createConversationMessageRequestSchema = z
   .object({
-    content: z.string().trim().min(1).max(2_000).optional(),
-    quickPromptKey: quickPromptKeySchema.optional(),
+    content: z.string().trim().min(1).max(2_000).nullish(),
+    quickPromptKey: quickPromptKeySchema.nullish(),
     providerPreference: providerPreferenceSchema.default('auto'),
   })
   .refine((value) => Boolean(value.content) !== Boolean(value.quickPromptKey), {
@@ -104,7 +104,7 @@ export const createChartRequestSchema = z.object({
   birthInput: birthInputSchema,
   chartSystem: createChartSystemSchema,
   makeActiveBirthProfile: z.boolean().default(true),
-  viewYear: z.int().min(1900).max(2200).optional(),
+  viewYear: z.int().min(1900).max(2200).nullish(),
 });
 
 export const createChartResponseSchema = z.object({
@@ -149,10 +149,10 @@ export const createDivinationRequestSchema = z
     question: z.string().trim().min(1).max(500),
     purposeKey: divinationPurposeKeySchema,
     // Required (and only allowed) when purposeKey === 'custom'.
-    purposeCustom: z.string().trim().min(1).max(120).optional(),
+    purposeCustom: z.string().trim().min(1).max(120).nullish(),
     castMethod: divinationCastMethodSchema.default('time'),
-    meihuaManual: meihuaManualCastSchema.optional(),
-    liuyaoManual: liuyaoManualCastSchema.optional(),
+    meihuaManual: meihuaManualCastSchema.nullish(),
+    liuyaoManual: liuyaoManualCastSchema.nullish(),
   })
   .superRefine((value, ctx) => {
     if (value.purposeKey === 'custom' && !value.purposeCustom) {
@@ -208,7 +208,7 @@ export const createExplanationRequestSchema = z.object({
   explanationKind: explanationKindSchema,
   // Khi có palaceScope, luận giải sinh riêng cho cung/vận hạn đó (14 mục Tử Vi).
   // Bỏ trống = luận giải tổng quan cả lá số (luồng overview cũ, giữ tương thích).
-  palaceScope: palaceScopeSchema.optional(),
+  palaceScope: palaceScopeSchema.nullish(),
   providerPreference: providerPreferenceSchema.default('auto'),
   userConsentedToStorePrompt: z.boolean().default(false),
 });

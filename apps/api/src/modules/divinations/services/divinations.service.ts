@@ -58,8 +58,8 @@ export class DivinationsService {
     // the manual payload matches the system, so we pass both through; other adapters
     // ignore them. Time method leaves both undefined (cast by server "now").
     const snapshot = await adapter.calculateChart(birthInput, {
-      meihuaManual: input.castMethod === 'manual' ? input.meihuaManual : undefined,
-      liuyaoManual: input.castMethod === 'manual' ? input.liuyaoManual : undefined,
+      meihuaManual: input.castMethod === 'manual' ? (input.meihuaManual ?? undefined) : undefined,
+      liuyaoManual: input.castMethod === 'manual' ? (input.liuyaoManual ?? undefined) : undefined,
     });
 
     const dedupeKey = buildChartSnapshotDedupeKey({

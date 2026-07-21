@@ -2,57 +2,132 @@
   import { page } from '$app/stores';
 </script>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-  <div class="sm:flex sm:items-center">
-    <div class="sm:flex-auto">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-      <p class="mt-2 text-sm text-gray-700 dark:text-gray-300">Quản lý hệ thống và người dùng.</p>
+<div class="admin-container">
+  <div class="admin-header">
+    <div class="admin-title-group">
+      <h1 class="admin-title">Admin Dashboard</h1>
+      <p class="admin-subtitle">Quản lý hệ thống và người dùng.</p>
     </div>
   </div>
 
-  <div class="mt-4">
-    <div class="border-b border-gray-200 dark:border-gray-700">
-      <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-        <a
-          href="/admin"
-          class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm { $page.url.pathname === '/admin' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }"
-          aria-current={$page.url.pathname === '/admin' ? 'page' : undefined}
-        >
-          Người dùng
-        </a>
-        <a
-          href="/admin/transactions"
-          class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm { $page.url.pathname === '/admin/transactions' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }"
-          aria-current={$page.url.pathname === '/admin/transactions' ? 'page' : undefined}
-        >
-          Lịch sử giao dịch
-        </a>
-        <a
-          href="/admin/analytics"
-          class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm { $page.url.pathname === '/admin/analytics' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }"
-          aria-current={$page.url.pathname === '/admin/analytics' ? 'page' : undefined}
-        >
-          Thống kê
-        </a>
-        <a
-          href="/admin/configs"
-          class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm { $page.url.pathname === '/admin/configs' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }"
-          aria-current={$page.url.pathname === '/admin/configs' ? 'page' : undefined}
-        >
-          Cấu hình
-        </a>
-        <a
-          href="/admin/audit-logs"
-          class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm { $page.url.pathname === '/admin/audit-logs' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300' }"
-          aria-current={$page.url.pathname === '/admin/audit-logs' ? 'page' : undefined}
-        >
-          Nhật ký
-        </a>
-      </nav>
-    </div>
+  <div class="admin-nav-container">
+    <nav class="admin-nav" aria-label="Tabs">
+      <a
+        href="/admin"
+        class="admin-tab {$page.url.pathname === '/admin' ? 'active' : ''}"
+        aria-current={$page.url.pathname === '/admin' ? 'page' : undefined}
+      >
+        Người dùng
+      </a>
+      <a
+        href="/admin/transactions"
+        class="admin-tab {$page.url.pathname === '/admin/transactions' ? 'active' : ''}"
+        aria-current={$page.url.pathname === '/admin/transactions' ? 'page' : undefined}
+      >
+        Lịch sử giao dịch
+      </a>
+      <a
+        href="/admin/analytics"
+        class="admin-tab {$page.url.pathname === '/admin/analytics' ? 'active' : ''}"
+        aria-current={$page.url.pathname === '/admin/analytics' ? 'page' : undefined}
+      >
+        Thống kê
+      </a>
+      <a
+        href="/admin/configs"
+        class="admin-tab {$page.url.pathname === '/admin/configs' ? 'active' : ''}"
+        aria-current={$page.url.pathname === '/admin/configs' ? 'page' : undefined}
+      >
+        Cấu hình
+      </a>
+      <a
+        href="/admin/audit-logs"
+        class="admin-tab {$page.url.pathname === '/admin/audit-logs' ? 'active' : ''}"
+        aria-current={$page.url.pathname === '/admin/audit-logs' ? 'page' : undefined}
+      >
+        Nhật ký
+      </a>
+    </nav>
   </div>
 
-  <div class="mt-8">
+  <div class="admin-content">
     <slot />
   </div>
 </div>
+
+<style>
+  .admin-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--space-xl) var(--space-md);
+    font-family: var(--font-sans);
+  }
+
+  @media (min-width: 640px) {
+    .admin-container {
+      padding: var(--space-xxl) var(--space-xl);
+    }
+  }
+
+  .admin-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--space-xl);
+  }
+
+  .admin-title-group {
+    flex: 1;
+  }
+
+  .admin-title {
+    font-family: var(--font-serif);
+    font-size: var(--text-h2);
+    line-height: var(--text-h2-line);
+    color: var(--color-text-primary);
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .admin-subtitle {
+    margin-top: var(--space-xs);
+    font-size: var(--text-body-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .admin-nav-container {
+    margin-bottom: var(--space-xl);
+    border-bottom: 1px solid var(--color-border-hairline);
+  }
+
+  .admin-nav {
+    display: flex;
+    gap: var(--space-xl);
+    margin-bottom: -1px;
+    overflow-x: auto;
+  }
+
+  .admin-tab {
+    padding: var(--space-md) var(--space-xs);
+    border-bottom: 2px solid transparent;
+    font-size: var(--text-body-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color var(--duration-fast), border-color var(--duration-fast);
+  }
+
+  .admin-tab:hover {
+    color: var(--color-text-primary);
+    border-bottom-color: var(--color-border-strong);
+  }
+
+  .admin-tab.active {
+    color: var(--color-accent-primary);
+    border-bottom-color: var(--color-accent-primary);
+  }
+
+  .admin-content {
+    margin-top: var(--space-xl);
+  }
+</style>

@@ -6,12 +6,23 @@ import 'core/env/env.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'core/services/push_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Initialize Environment variables
   await Env.init();
+
+  // Initialize Firebase & Push Notifications
+  try {
+    await Firebase.initializeApp();
+    final pushService = PushNotificationService();
+    await pushService.initialize();
+  } catch (e) {
+    print('Firebase initialization failed: $e');
+  }
 
   // Initialize Supabase
   await Supabase.initialize(

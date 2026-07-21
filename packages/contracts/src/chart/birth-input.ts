@@ -22,7 +22,7 @@ export const birthTimeSchema = z
       return;
     }
 
-    if (value.hour === null || value.minute === null) {
+    if (value.hour == null || value.minute == null) {
       ctx.addIssue({
         code: 'custom',
         message: 'Known birth time requires both hour and minute.',
@@ -63,7 +63,7 @@ export const birthInputSchema = z
     source: z.enum(birthInputSources),
   })
   .superRefine((value, ctx) => {
-    if (value.calendar === 'lunar' && value.date.isLeapMonth === null) {
+    if (value.calendar === 'lunar' && value.date.isLeapMonth == null) {
       ctx.addIssue({
         code: 'custom',
         path: ['date', 'isLeapMonth'],
@@ -71,7 +71,7 @@ export const birthInputSchema = z
       });
     }
 
-    if (value.calendar === 'gregorian' && value.date.isLeapMonth !== null) {
+    if (value.calendar === 'gregorian' && value.date.isLeapMonth != null) {
       ctx.addIssue({
         code: 'custom',
         path: ['date', 'isLeapMonth'],

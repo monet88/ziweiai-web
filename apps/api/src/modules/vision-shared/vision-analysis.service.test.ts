@@ -107,7 +107,7 @@ describe('VisionAnalysisService', () => {
       await service.analyze(baseInput());
       throw new Error('expected premium gate to throw');
     } catch (error) {
-      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'PAYMENT_REQUIRED');
+      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'INSUFFICIENT_FUNDS');
     }
     expect(quotasService.assertCanCreateVisionAnalysis).not.toHaveBeenCalled();
   });

@@ -33,23 +33,19 @@ export class ExplanationBillingService {
     return { requiresXu };
   }
 
-  /**
-   * Consumes XU if it is required (either due to premium feature or over daily limit).
-   * Throws PAYMENT_REQUIRED if the user doesn't have enough XU.
-   */
   async consumeXuIfNeeded(userId: string, input: CreateExplanationRequest, isOverDailyQuota: boolean): Promise<void> {
     const isPremium = input.explanationKind !== 'overview';
     const needsXu = (isPremium || isOverDailyQuota) && !apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
 
     if (needsXu) {
-      const success = await this.persistenceGateway.deductXU(userId, 1);
+      const success = await this.persistenceGateway.deductXU(userId, 10);
       if (!success) {
         const message = isPremium 
-          ? 'Tính năng luận giải chuyên sâu yêu cầu 1 XU. Vui lòng nạp thêm XU để sử dụng.'
-          : 'Bạn đã hết lượt luận giải miễn phí trong ngày. Vui lòng nạp XU (1 XU/lượt) để tiếp tục.';
+          ? 'Tính năng luận giải chuyên sâu yêu cầu 10 XU. Vui lòng nạp thêm XU để sử dụng.'
+          : 'Bạn đã hết lượt luận giải miễn phí trong ngày. Vui lòng nạp XU (10 XU/lượt) để tiếp tục.';
         throw new ApiErrorHttpException(
           HttpStatus.PAYMENT_REQUIRED,
-          'PAYMENT_REQUIRED',
+          'INSUFFICIENT_FUNDS',
           message
         );
       }

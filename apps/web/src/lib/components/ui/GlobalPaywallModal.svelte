@@ -6,7 +6,7 @@
 
   function handleGoToPricing() {
     paywallStore.close();
-    goto(resolve('/pricing'));
+    goto(resolve('/wallet'));
   }
 </script>
 

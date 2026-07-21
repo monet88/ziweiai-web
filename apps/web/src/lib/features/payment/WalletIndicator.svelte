@@ -18,7 +18,7 @@
   });
 
   function handleTopup() {
-    goto(resolve('/pricing'));
+    goto(resolve('/wallet'));
   }
 </script>
 

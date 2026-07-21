@@ -65,13 +65,13 @@ export class VisionAnalysisService {
     // danh → bắt buộc danh tính email (decision 0009 + 0012). Helper ném 403 IDENTITY_REQUIRED.
     assertEmailIdentityRequired(user);
 
-    // GATE 3: Trừ XU cho tính năng premium (Vision). Vision tốn 2 XU mỗi lượt.
-    const success = await this.persistence.deductXU(user.userId, 2);
+    // GATE 3: Trừ XU cho tính năng premium (Vision). Vision tốn 10 XU mỗi lượt.
+    const success = await this.persistence.deductXU(user.userId, 10);
     if (!success) {
       throw new ApiErrorHttpException(
         HttpStatus.PAYMENT_REQUIRED,
-        'PAYMENT_REQUIRED',
-        'Tính năng Xem Tướng / Xem Tay yêu cầu 2 XU. Vui lòng nạp thêm XU để sử dụng.',
+        'INSUFFICIENT_FUNDS',
+        'Tính năng Xem Tướng / Xem Tay yêu cầu 10 XU. Vui lòng nạp thêm XU để sử dụng.',
       );
     }
 

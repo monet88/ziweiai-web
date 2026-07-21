@@ -258,6 +258,10 @@ export const historyListResponseSchema = z.object({
   items: z.array(historyItemSchema),
 });
 
+export const walletBalanceResponseSchema = z.object({
+  xuBalance: z.number().int().min(0),
+});
+
 export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>;
 export type AuthenticatedUser = z.infer<typeof authenticatedUserSchema>;
 export type ExplanationKind = z.infer<typeof explanationKindSchema>;
@@ -284,3 +288,5 @@ export type ConversationListResponse = z.infer<typeof conversationListResponseSc
 export type ChartDetailResponse = z.infer<typeof chartDetailResponseSchema>;
 export type HistoryItem = z.infer<typeof historyItemSchema>;
 export type HistoryListResponse = z.infer<typeof historyListResponseSchema>;
+export type WalletBalanceResponse = z.infer<typeof walletBalanceResponseSchema>;
+

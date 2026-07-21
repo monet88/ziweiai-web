@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:go_router/go_router.dart';
 import 'package:ziweiai_mobile/features/assistant/presentation/assistant_provider.dart';
 
 class AssistantPanel extends ConsumerStatefulWidget {
@@ -51,9 +52,14 @@ class _AssistantPanelState extends ConsumerState<AssistantPanel> {
     // Listen to error to show snackbar
     ref.listen(assistantProvider, (previous, next) {
       if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: ${next.errorMessage}')),
-        );
+        if (next.errorMessage!.contains('402') || next.errorMessage!.contains('PAYMENT_REQUIRED') || next.errorMessage!.contains('INSUFFICIENT_FUNDS')) {
+          Navigator.of(context).pop(); // Đóng AssistantPanel
+          context.push('/wallet'); // Chuyển hướng sang WalletScreen
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Lỗi: ${next.errorMessage}')),
+          );
+        }
       }
       if (next.messages.length != previous?.messages.length || next.isGenerating) {
         // give it a bit more time for the UI to lay out the new text/markdown

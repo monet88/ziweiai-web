@@ -80,6 +80,41 @@
     detail.selectedPalace ? copy.generatePalaceExplanation : copy.generateOverviewExplanation,
   );
 
+  // Phase 11 Ticket 3: dynamic document title / description from chart system + birth extras.
+  const systemTitleByKey: Record<string, string> = {
+    'zi-wei-dou-shu': 'Lá số Tử Vi',
+    'ba-zi': 'Lá số Bát Tự',
+    mangpai: 'Lá số Mạnh Phái',
+    'mei-hua-yi-shu': 'Quẻ Mai Hoa',
+    'liu-yao': 'Quẻ Lục Hào',
+    'da-liu-ren': 'Quẻ Đại Lục Nhâm',
+    'qi-men-dun-jia': 'Kỳ Môn Độn Giáp',
+  };
+
+  const pageTitle = $derived.by(() => {
+    if (!detail.snapshot) {
+      return `${copy.heroTitle} | Tử Vi Toàn Tập`;
+    }
+    const base = systemTitleByKey[detail.chartSystem ?? ''] ?? copy.heroTitle;
+    const birth = detail.snapshot.birth?.originalInput;
+    const year = birth?.date?.year;
+    const sex = birth?.sexOrGenderForChart;
+    const gender =
+      sex === 'male' ? 'Nam Mạng' : sex === 'female' ? 'Nữ Mạng' : null;
+    const bits = [base];
+    if (gender) bits.push(gender);
+    if (year) bits.push(String(year));
+    return `${bits.join(' · ')} | Tử Vi Toàn Tập`;
+  });
+
+  const pageDescription = $derived.by(() => {
+    if (!detail.snapshot) {
+      return copy.heroSubtitle ?? 'Lập lá số và luận giải AI trên Tử Vi Toàn Tập.';
+    }
+    const base = systemTitleByKey[detail.chartSystem ?? ''] ?? 'lá số';
+    return `Xem ${base.toLowerCase()} trên Tử Vi Toàn Tập. Luận giải AI, vận hạn và chia sẻ an toàn.`;
+  });
+
   // Áp đại vận mặc định khi snapshot Tử Vi sẵn sàng. ensureDefault có guard `locked` (chỉ
   // áp 1 lần + dừng nếu user đã tương tác) nên gọi lại an toàn; đọc snapshot/palaces trong
   // effect → tự rerun khi data tới muộn. KHÔNG ghi ngược selection ngoài lần default này.
@@ -109,8 +144,8 @@
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Tử Vi Toàn Tập - Xem Lá Số',
-          text: 'Xem chi tiết lá số của tôi trên Tử Vi Toàn Tập',
+          title: pageTitle,
+          text: pageDescription,
           url: shareUrl
         });
         return;
@@ -128,7 +163,8 @@
 </script>
 
 <svelte:head>
-  <title>{copy.heroTitle} - ziweiai</title>
+  <title>{pageTitle}</title>
+  <meta name="description" content={pageDescription} />
 </svelte:head>
 
 <AppScaffold

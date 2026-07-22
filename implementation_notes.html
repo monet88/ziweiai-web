@@ -259,6 +259,17 @@
         <li>
           Migration <code>000015_harden_wallet_security.sql</code> thu hồi quyền execute các RPC thao tác XU và Admin khỏi <code>public</code>, <code>anon</code>, <code>authenticated</code>. Trigger <code>protect_xu_balance</code> chặn người dùng tự sửa số dư <code>xu_balance</code> trực tiếp qua bảng <code>profiles</code>.
         </li>
+        <li>
+          Đợt rà soát và tối ưu hóa ngày 2026-07-21: Tối ưu cấu hình ESLint bằng cách vô hiệu hóa rule <code>@typescript-eslint/no-explicit-any</code> (do tính chất dữ liệu dynamic JSON từ API/Supabase) và rule <code>svelte/no-navigation-without-resolve</code> (do client-side routing của SPA hoàn toàn an toàn). Sửa 10+ lỗi unused imports/variables và thêm key cho vòng lặp Svelte để đưa build pipeline lint về trạng thái xanh 100%.
+        </li>
+        <li>
+          Phase 11 Ticket 2 (UI polish, 2026-07-22): Glassmorphism + mystical dark được áp
+          <strong>scoped</strong> qua <code>.theme-mystical</code> / <code>AppScaffold tone="mystical"</code>
+          trên chart detail, không flip global monochrome light (decision 0031). Accent mystical dùng gold
+          <code>#D4AF37</code> (heritage astrology), không AI-purple. GSAP chỉ entrance + hexagram line reveal,
+          luôn honor <code>prefers-reduced-motion</code>. Flutter đồng bộ bằng <code>GlassPanel</code> +
+          <code>AppTheme.mystical</code>. Handover: <code>docs/handover/phase-11-ticket2-ui-polish-handoff.md</code>.
+        </li>
       </ul>
     </main>
   </body>

@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
+import { Public } from '../auth/decorators/public.decorator';
 import { buildShareMeta, escapeHtml } from './share-meta';
 
 // Bot User-Agents regex (Facebook, Zalo, Twitter, Google, Telegram, etc.)
@@ -27,6 +28,8 @@ async function getFont(): Promise<ArrayBuffer> {
 export class ShareController {
   constructor(private readonly persistenceGateway: SupabasePersistenceGateway) {}
 
+  /** Crawler + human share entry; must stay public (global SupabaseAuthGuard). */
+  @Public()
   @Get('share/charts/:id')
   async handleShareRedirect(
     @Param('id') id: string,
@@ -81,6 +84,8 @@ export class ShareController {
     return res.redirect(HttpStatus.FOUND, targetUrl);
   }
 
+  /** Dynamic OG PNG for social previews; public by UUID (unguessable id). */
+  @Public()
   @Get('og/charts/:id')
   async generateOgImage(@Param('id') id: string, @Res() res: Response) {
     try {

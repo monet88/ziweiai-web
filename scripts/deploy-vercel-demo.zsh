@@ -25,6 +25,7 @@ trap 'rm -f "${deploy_log}"' EXIT
 
 npx --yes vercel@latest deploy --prod --yes --token "${VERCEL_GALAXY}" | tee "${deploy_log}"
 
+# Vercel CLI output formats vary (JSON, "Production  https://...", bare URL lines).
 deployment_url="$(
   sed -nE 's/.*"url": "(https:\/\/[^"]+)".*/\1/p' "${deploy_log}" | tail -n 1
 )"
@@ -32,15 +33,28 @@ deployment_url="$(
 if [[ -z "${deployment_url}" ]]; then
   deployment_url="$(
     sed -E 's/\x1b\[[0-9;]*m//g' "${deploy_log}" \
-      | awk '/Production[[:space:]]+https:\/\// { print $2 }' \
+      | grep -Eo 'https://[a-zA-Z0-9][-a-zA-Z0-9]*-galaxypro710-7060s-projects\.vercel\.app' \
+      | tail -n 1
+  )"
+fi
+
+if [[ -z "${deployment_url}" ]]; then
+  deployment_url="$(
+    sed -E 's/\x1b\[[0-9;]*m//g' "${deploy_log}" \
+      | grep -Eo 'https://[a-zA-Z0-9][-a-zA-Z0-9.]*\.vercel\.app' \
+      | grep -v 'tuvitoantap\.vercel\.app' \
       | tail -n 1
   )"
 fi
 
 if [[ -z "${deployment_url}" ]]; then
   echo "Could not find production deployment URL in Vercel output." >&2
+  echo "--- last 40 lines of deploy log ---" >&2
+  tail -n 40 "${deploy_log}" >&2
   exit 1
 fi
+
+echo "Resolved deployment URL: ${deployment_url}"
 
 npx --yes vercel@latest alias set "${deployment_url}" "${DOMAIN}" --token "${VERCEL_GALAXY}"
 npx --yes vercel@latest inspect "https://${DOMAIN}" --token "${VERCEL_GALAXY}"

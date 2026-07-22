@@ -1,11 +1,15 @@
 import { Controller, Get, Param, Req, Res, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { z } from 'zod';
 import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { Public } from '../auth/decorators/public.decorator';
 import { buildMysticalOgTree } from './og-element';
 import { buildShareMeta, escapeHtml } from './share-meta';
+
+const chartIdPipe = new ZodValidationPipe(z.uuid(), 'Mã lá số không hợp lệ.');
 
 // Bot User-Agents regex (Facebook, Zalo, Twitter, Google, Telegram, etc.)
 const BOT_USER_AGENTS =
@@ -47,7 +51,7 @@ export class ShareController {
   @Public()
   @Get('share/charts/:id')
   async handleShareRedirect(
-    @Param('id') id: string,
+    @Param('id', chartIdPipe) id: string,
     @Req() req: Request,
     @Res() res: Response,
   ) {
@@ -57,15 +61,32 @@ export class ShareController {
 
     if (isBot) {
       const chart = await this.persistenceGateway.findPublicChartSnapshotById(id);
-      const meta = buildShareMeta({
-        chartSystem: chart?.chartSystem ?? 'zi-wei-dou-shu',
-        snapshot: (chart?.snapshot as ShareMetaSnapshot | undefined) ?? null,
-      });
 
-      const ogImageUrl = `${PUBLIC_ORIGIN}/api/og/charts/${id}`;
+      // Missing chart: brand fallback (do not pretend default system is Tử Vi).
+      // Valid chart: dynamic title/description + OG image.
+      const meta = chart
+        ? buildShareMeta({
+            chartSystem: chart.chartSystem,
+            snapshot: chart.snapshot as ShareMetaSnapshot,
+          })
+        : {
+            title: 'Tử Vi Toàn Tập',
+            documentTitle: 'Tử Vi Toàn Tập',
+            description:
+              'Lập lá số, xem lại lịch sử và hỏi đáp AI trên Tử Vi Toàn Tập.',
+          };
+
+      const ogImageUrl = chart ? `${PUBLIC_ORIGIN}/api/og/charts/${id}` : null;
       const safeTitle = escapeHtml(meta.documentTitle);
       const safeDescription = escapeHtml(meta.description);
       const safeOgTitle = escapeHtml(meta.title);
+
+      const ogImageTags = ogImageUrl
+        ? `    <meta property="og:image" content="${ogImageUrl}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:image" content="${ogImageUrl}" />`
+        : '';
 
       const htmlString = `<!DOCTYPE html>
 <html lang="vi">
@@ -75,17 +96,14 @@ export class ShareController {
     <meta name="description" content="${safeDescription}" />
     <meta property="og:title" content="${safeOgTitle}" />
     <meta property="og:description" content="${safeDescription}" />
-    <meta property="og:image" content="${ogImageUrl}" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+${ogImageTags}
     <meta property="og:url" content="${targetUrl}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Tử Vi Toàn Tập" />
     <meta property="og:locale" content="vi_VN" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content="${ogImageUrl ? 'summary_large_image' : 'summary'}" />
     <meta name="twitter:title" content="${safeOgTitle}" />
     <meta name="twitter:description" content="${safeDescription}" />
-    <meta name="twitter:image" content="${ogImageUrl}" />
     <meta http-equiv="refresh" content="0; url=${targetUrl}" />
   </head>
   <body>
@@ -102,7 +120,10 @@ export class ShareController {
   /** Dynamic OG PNG for social previews; public by UUID (unguessable id). */
   @Public()
   @Get('og/charts/:id')
-  async generateOgImage(@Param('id') id: string, @Res() res: Response) {
+  async generateOgImage(
+    @Param('id', chartIdPipe) id: string,
+    @Res() res: Response,
+  ) {
     try {
       const chart = await this.persistenceGateway.findPublicChartSnapshotById(id);
       if (!chart) {

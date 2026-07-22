@@ -21,12 +21,25 @@ explanation -> xem lại history
 | Deploy/alias | Vercel inspect | Xác nhận domain đang trỏ deployment Ready, đúng account. |
 | Public API | `pnpm smoke:vercel-demo` | Kiểm tra root, `/api/health`, `/api/features`, SPA fallback. |
 | Live mutation flow | `pnpm smoke:vercel-live-mutation` | Mặc định skip; khi bật cờ sẽ tạo anonymous session, Lục Hào, detail và AI explanation thật. |
-| API 5xx | Vercel Function logs | Lọc `/api/*`, ưu tiên lỗi `502`, `503`, `504`. |
-| Provider AI | API logs + response code | Theo dõi `PROVIDER_TIMEOUT`, `PROVIDER_UNAVAILABLE`, provider name. |
+| API 5xx | Vercel Function logs + **ops-alert** | Lọc `[ops-alert]` / `5xx`. `ApiErrorFilter` báo 5xx + `INTERNAL_ERROR`. |
+| Provider AI | API logs + **ops-alert** + Sentry (nếu DSN) | `PROVIDER_TIMEOUT` (504), `PROVIDER_UNAVAILABLE` (502) luôn alert. |
+| Push alert (optional) | `OPS_ALERT_WEBHOOK_URL` | Telegram/Slack/Discord webhook; throttle 60s/code+path. |
+| Sentry (optional) | `SENTRY_DSN` | Init trên **Vercel serverless entry** (`api/[...path].ts`) + local `main.ts`. |
 | Quota/cost gate | API logs + response code | Theo dõi `RATE_LIMITED`, `quota-store.unavailable`, feature gate warning. |
 | AI token spend | Provider metadata trong logs/DB | Tổng hợp `tokensIn`, `tokensOut`, `totalTokens`, `providerName`. |
 | Supabase schema | `pnpm check:supabase-migrations` | Kiểm tra migration local; linked ledger cần project đã `supabase link`. |
 | UI regression | Playwright/TestSprite/browser smoke | Xác nhận route detail không 404 và UI không báo lỗi rỗng. |
+
+### Env production (Vercel)
+
+```bash
+# Optional but recommended for beta:
+SENTRY_DSN=https://...@....ingest.sentry.io/...
+# Telegram example (chat_id in query):
+OPS_ALERT_WEBHOOK_URL=https://api.telegram.org/bot<token>/sendMessage?chat_id=<id>
+```
+
+Không set env → vẫn có structured log `[ops-alert]` trên Vercel (lọc trong Function logs).
 
 ## Alert Tối Thiểu
 

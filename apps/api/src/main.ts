@@ -1,16 +1,11 @@
 import { NestFactory } from '@nestjs/core';
-import * as Sentry from '@sentry/node';
 import { ApiErrorFilter } from './common/http/api-error.filter';
 import { AppModule } from './app.module';
 import { allowedCorsOrigins, apiEnv } from './config/env';
+import { initSentry } from './observability/init-sentry';
 
 async function bootstrap() {
-  if (apiEnv.SENTRY_DSN) {
-    Sentry.init({
-      dsn: apiEnv.SENTRY_DSN,
-      tracesSampleRate: 0,
-    });
-  }
+  initSentry(apiEnv.SENTRY_DSN);
 
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 

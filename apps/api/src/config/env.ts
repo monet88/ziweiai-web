@@ -149,6 +149,12 @@ export const apiEnvSchema = z.object({
   SEPAY_WEBHOOK_SECRET: z.string().optional(),
   REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
   SENTRY_DSN: z.string().optional(),
+  // Optional ops push (Telegram sendMessage URL, Slack/Discord webhook, etc.).
+  // Empty string → undefined so local/demo boots without alert channel.
+  OPS_ALERT_WEBHOOK_URL: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? undefined : val),
+    z.url().optional(),
+  ),
   ADMIN_EMAILS: z.string().default(''),
   npm_package_version: z.string().min(1).optional(),
 });

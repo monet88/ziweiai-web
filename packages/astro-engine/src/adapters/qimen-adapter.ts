@@ -6,8 +6,6 @@ import { createBaseSnapshotFields, createBlockedChartSnapshot } from './runtime-
 import type { AstrologyChartAdapter, ChartCalculationOptions } from './astro-adapter';
 import {
   buildXuanshuBridgeSettings,
-  buildXuanshuRuntimeUnavailableConfidence,
-  isXuanshuReferenceRuntimeAvailable,
 } from './xuanshu-bridge';
 import { createQiMenPaiPan } from '@ziweiai/xuanshu-runtime';
 import {
@@ -57,18 +55,6 @@ export class QimenAdapter implements AstrologyChartAdapter {
         adapterVersion: QIMEN_ADAPTER_VERSION,
         confidence: normalizedBirth.normalizationConfidence,
         warnings,
-      });
-    }
-
-    if (!isXuanshuReferenceRuntimeAvailable()) {
-      return createBlockedChartSnapshot({
-        input,
-        normalizedBirth,
-        chartSystem: 'qi-men-dun-jia',
-        canonicalLibrary: CANONICAL_LIBRARY,
-        adapterVersion: QIMEN_ADAPTER_VERSION,
-        confidence: buildXuanshuRuntimeUnavailableConfidence(normalizedBirth.normalizationConfidence),
-        warnings: [...warnings, 'XUANSHU_REFERENCE_RUNTIME_UNAVAILABLE'],
       });
     }
 

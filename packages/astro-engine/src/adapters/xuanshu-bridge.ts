@@ -1,6 +1,5 @@
-import type { BirthInput, CalculationConfidence } from '@ziweiai/contracts';
+import type { BirthInput } from '@ziweiai/contracts';
 
-export const XUANSHU_REFERENCE_RUNTIME_REASON = 'XUANSHU_REFERENCE_RUNTIME_UNAVAILABLE' as const;
 
 export type XuanshuBridgeSettings = {
   name: string;
@@ -11,21 +10,7 @@ export type XuanshuBridgeSettings = {
   leapMonthType: 0 | 1;
 };
 
-export function isXuanshuReferenceRuntimeAvailable(): boolean {
-  return true;
-}
 
-export function buildXuanshuRuntimeUnavailableConfidence(
-  confidence: CalculationConfidence,
-): CalculationConfidence {
-  return {
-    ...confidence,
-    level: 'blocked',
-    reasons: [...new Set([...confidence.reasons, XUANSHU_REFERENCE_RUNTIME_REASON])],
-    visibleMessageKey: 'chart.runtime.reference-unavailable',
-    blocksExactReading: true,
-  };
-}
 
 export function formatXuanshuDateTime(input: BirthInput): string {
   const hour = input.time.hour ?? 0;

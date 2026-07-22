@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chartSnapshotSchema, type LiuyaoLineStateKey } from '@ziweiai/contracts';
+import { type LiuyaoLineStateKey } from '@ziweiai/contracts';
 import { buildNumberBasedNumbers } from './adapters/meihua-maps';
 import { IztroChartAdapter } from './adapters/iztro-chart-adapter';
 import { DaliurenAdapter } from './adapters/daliuren-adapter';

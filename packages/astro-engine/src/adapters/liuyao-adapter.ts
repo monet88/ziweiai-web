@@ -1,13 +1,8 @@
 import type {
   BirthInput,
   ChartSnapshot,
-  LiuyaoHexagram,
-  LiuyaoLine,
   LiuyaoLineStateKey,
   LiuyaoMethod,
-  LiuyaoRoleKey,
-  LiuyaoSixKinKey,
-  LiuyaoSixSpiritKey,
 } from '@ziweiai/contracts';
 import { chartSystemRequiresGender } from '@ziweiai/contracts';
 
@@ -25,8 +20,6 @@ import { createBaseSnapshotFields, createBlockedChartSnapshot } from './runtime-
 import type { AstrologyChartAdapter, ChartCalculationOptions } from './astro-adapter';
 import {
   buildXuanshuBridgeSettings,
-  buildXuanshuRuntimeUnavailableConfidence,
-  isXuanshuReferenceRuntimeAvailable,
 } from './xuanshu-bridge';
 import { createLiuYaoPaiPan } from '@ziweiai/xuanshu-runtime';
 import {
@@ -37,7 +30,7 @@ import {
   buildLiuyaoRoleLineLabel,
   buildPillarsFromGanZhi,
 } from './liuyao-maps';
-import { buildHexagramKey, formatMeihuaHexagramLabel, getTrigramKeyByLines } from './meihua-maps';
+
 
 const LIUYAO_ADAPTER_VERSION = {
   name: 'xuanshu-liuyao-bridge',
@@ -109,146 +102,7 @@ function extractBaseStateKeys(result: XuanshuLiuyaoResult): LiuyaoLineStateKey[]
   });
 }
 
-const FALLBACK_BRANCH_KEYS: LiuyaoLine['earthlyBranchKey'][] = [
-  'ziEarthly',
-  'chouEarthly',
-  'yinEarthly',
-  'maoEarthly',
-  'chenEarthly',
-  'siEarthly',
-];
-const FALLBACK_ELEMENT_KEYS: LiuyaoLine['fiveElementKey'][] = ['water', 'earth', 'wood', 'wood', 'earth', 'fire'];
-const FALLBACK_SIX_KIN_KEYS: LiuyaoSixKinKey[] = ['parent', 'officerGhost', 'wifeWealth', 'sibling', 'childDescendant', 'parent'];
-const FALLBACK_SIX_SPIRIT_KEYS: LiuyaoSixSpiritKey[] = [
-  'azureDragon',
-  'vermilionBird',
-  'hookSnake',
-  'soaringSerpent',
-  'whiteTiger',
-  'blackTortoise',
-];
-function stateToValue(state: LiuyaoLineStateKey): LiuyaoLine['value'] {
-  return state === 'youngYang' || state === 'oldYang' ? 'yang' : 'yin';
-}
 
-function buildFallbackLineStates(input: BirthInput, manualLineStates?: readonly LiuyaoLineStateKey[]): LiuyaoLineStateKey[] {
-  if (manualLineStates) {
-    return [...manualLineStates];
-  }
-
-  const seed =
-    input.date.year * 10_000 +
-    input.date.month * 100 +
-    input.date.day +
-    (input.time.hour ?? 0) * 13 +
-    (input.time.minute ?? 0) * 7;
-  const movingIndex = Math.abs(seed) % 6;
-
-  return Array.from({ length: 6 }, (_, index) => {
-    const isYang = ((seed >> index) & 1) === 1;
-    if (index === movingIndex) {
-      return isYang ? 'oldYang' : 'oldYin';
-    }
-    return isYang ? 'youngYang' : 'youngYin';
-  });
-}
-
-function buildFallbackHexagram(
-  states: readonly LiuyaoLineStateKey[],
-  changed = false,
-): LiuyaoHexagram {
-  const values = states.map((state) => {
-    const base = stateToValue(state);
-    return changed && (state === 'oldYang' || state === 'oldYin')
-      ? base === 'yang'
-        ? 'yin'
-        : 'yang'
-      : base;
-  });
-  const bottomTrigramKey = getTrigramKeyByLines(values.slice(0, 3));
-  const topTrigramKey = getTrigramKeyByLines(values.slice(3, 6));
-  const shiPosition = states.findIndex((state) => state === 'oldYang' || state === 'oldYin') + 1 || 1;
-  const yingPosition = ((shiPosition + 2) % 6) + 1;
-
-  const lines = values.map((value, index) => {
-    const position = index + 1;
-    const roleKey: LiuyaoRoleKey = position === shiPosition ? 'shi' : position === yingPosition ? 'ying' : 'none';
-
-    return {
-      position,
-      value,
-      stateKey: states[index]!,
-      isMoving: states[index] === 'oldYang' || states[index] === 'oldYin',
-      roleKey,
-      sixKinKey: FALLBACK_SIX_KIN_KEYS[index]!,
-      earthlyBranchKey: FALLBACK_BRANCH_KEYS[index]!,
-      fiveElementKey: FALLBACK_ELEMENT_KEYS[index]!,
-      naYin: 'Nạp âm tham khảo',
-      sixSpiritKey: FALLBACK_SIX_SPIRIT_KEYS[index]!,
-      hiddenSpirit: null,
-    } satisfies LiuyaoLine;
-  });
-
-  return {
-    key: buildHexagramKey(topTrigramKey, bottomTrigramKey),
-    topTrigramKey,
-    bottomTrigramKey,
-    name: formatMeihuaHexagramLabel({ topTrigramKey, bottomTrigramKey }),
-    symbol: values.map((value) => (value === 'yang' ? '1' : '0')).join(''),
-    lines,
-  };
-}
-
-function buildFallbackLiuyaoSnapshot(
-  input: BirthInput,
-  normalizedBirth: ReturnType<typeof normalizeBirthInput>,
-  warnings: string[],
-  manualLineStates?: readonly LiuyaoLineStateKey[],
-): ChartSnapshot {
-  const method: LiuyaoMethod = manualLineStates ? 'manual' : 'time-based';
-  const states = buildFallbackLineStates(input, manualLineStates);
-  const baseHexagram = buildFallbackHexagram(states);
-  const changedHexagram = buildFallbackHexagram(states, true);
-  const nuclearHexagram = buildDerivedNuclearHexagram(baseHexagram);
-  const base = createBaseSnapshotFields({
-    input,
-    chartSystem: 'liu-yao',
-    canonicalLibrary: { name: 'ziweiai-internal', version: 'liuyao-fallback-v1' },
-    adapterVersion: {
-      ...LIUYAO_ADAPTER_VERSION,
-      version: `${LIUYAO_ADAPTER_VERSION.version}+fallback`,
-    },
-    normalizedBirth,
-    calculationConfidence: {
-      ...normalizedBirth.normalizationConfidence,
-      level: normalizedBirth.normalizationConfidence.level === 'high' ? 'medium' : normalizedBirth.normalizationConfidence.level,
-      blocksExactReading: false,
-    },
-    warnings: [...warnings, 'XUANSHU_REFERENCE_RUNTIME_FALLBACK'],
-  });
-
-  return {
-    ...base,
-    birth: normalizedBirth,
-    palaces: [],
-    pillars: [],
-    summary: {
-      method: buildLiuyaoMethodLabel(method),
-      baseHexagram: baseHexagram.name,
-      changedHexagram: changedHexagram.name,
-      movingLines: buildLiuyaoMovingLinesLabel(baseHexagram.lines),
-      shiLine: buildLiuyaoRoleLineLabel(baseHexagram.lines, 'shi'),
-      yingLine: buildLiuyaoRoleLineLabel(baseHexagram.lines, 'ying'),
-    },
-    liuyao: {
-      method,
-      movingLinePositions: baseHexagram.lines.filter((line) => line.isMoving).map((line) => line.position),
-      baseHexagram,
-      changedHexagram,
-      nuclearHexagram,
-    },
-  };
-}
 
 export class LiuyaoAdapter implements AstrologyChartAdapter {
   readonly system = 'liu-yao' as const;
@@ -273,23 +127,14 @@ export class LiuyaoAdapter implements AstrologyChartAdapter {
       });
     }
 
-    if (!isXuanshuReferenceRuntimeAvailable()) {
-      return buildFallbackLiuyaoSnapshot(input, normalizedBirth, warnings, manualLineStates);
-    }
-
-    let result: XuanshuLiuyaoResult;
-    try {
-      result = createLiuYaoPaiPan({
-        ...buildXuanshuBridgeSettings(input),
-        sex: toXuanshuSex(input),
-        paiPanType: manualLineStates ? 2 : 0,
-        ...(manualLineStates
-          ? { manualYaoShu: manualLineStates.map((state) => LIUYAO_STATE_TO_MANUAL_CODE[state]) }
-          : {}),
-      }) as XuanshuLiuyaoResult;
-    } catch {
-      return buildFallbackLiuyaoSnapshot(input, normalizedBirth, warnings, manualLineStates);
-    }
+    const result = createLiuYaoPaiPan({
+      ...buildXuanshuBridgeSettings(input),
+      sex: toXuanshuSex(input),
+      paiPanType: manualLineStates ? 2 : 0,
+      ...(manualLineStates
+        ? { manualYaoShu: manualLineStates.map((state) => LIUYAO_STATE_TO_MANUAL_CODE[state]) }
+        : {}),
+    }) as XuanshuLiuyaoResult;
     const method: LiuyaoMethod = manualLineStates ? 'manual' : 'time-based';
     const baseHexagram = buildHexagramFromXuanshuLines({
       lineData: result.liuYao.benGua,

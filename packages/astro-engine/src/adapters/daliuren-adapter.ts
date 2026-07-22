@@ -6,8 +6,6 @@ import { createBaseSnapshotFields, createBlockedChartSnapshot } from './runtime-
 import type { AstrologyChartAdapter, ChartCalculationOptions } from './astro-adapter';
 import {
   buildXuanshuBridgeSettings,
-  buildXuanshuRuntimeUnavailableConfidence,
-  isXuanshuReferenceRuntimeAvailable,
 } from './xuanshu-bridge';
 import { createDaLiuRenPaiPan } from '@ziweiai/xuanshu-runtime';
 import {
@@ -43,18 +41,6 @@ export class DaliurenAdapter implements AstrologyChartAdapter {
         adapterVersion: DALIUREN_ADAPTER_VERSION,
         confidence: normalizedBirth.normalizationConfidence,
         warnings,
-      });
-    }
-
-    if (!isXuanshuReferenceRuntimeAvailable()) {
-      return createBlockedChartSnapshot({
-        input,
-        normalizedBirth,
-        chartSystem: 'da-liu-ren',
-        canonicalLibrary: CANONICAL_LIBRARY,
-        adapterVersion: DALIUREN_ADAPTER_VERSION,
-        confidence: buildXuanshuRuntimeUnavailableConfidence(normalizedBirth.normalizationConfidence),
-        warnings: [...warnings, 'XUANSHU_REFERENCE_RUNTIME_UNAVAILABLE'],
       });
     }
 

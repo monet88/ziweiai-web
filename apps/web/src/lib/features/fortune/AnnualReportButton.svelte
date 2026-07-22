@@ -9,7 +9,6 @@
   import { ApiError, createAnnualReport } from '$lib/api-client';
   import { PrimaryButton } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
-  import { resolve } from '$app/paths';
   import { currentYear } from './fortune-dates';
   import AnnualReportModal from './AnnualReportModal.svelte';
 

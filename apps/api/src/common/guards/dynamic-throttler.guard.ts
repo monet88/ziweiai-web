@@ -1,5 +1,5 @@
-import { Injectable, ExecutionContext, Inject } from '@nestjs/common';
-import { ThrottlerGuard, ThrottlerOptions } from '@nestjs/throttler';
+import { Injectable, Inject } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class DynamicThrottlerGuard extends ThrottlerGuard {
   }
 
   protected async handleRequest(requestProps: any): Promise<boolean> {
-    const { context, limit, ttl, throttler, getTracker, generateKey } = requestProps;
+    const { context, limit, ttl } = requestProps;
     const request = context.switchToHttp().getRequest();
     const user = request.user;
     const isAuth = !!(user && user.email);

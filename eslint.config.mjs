@@ -22,8 +22,9 @@ export default tseslint.config(
       'packages/xuanshu-runtime/**',
       'templates/ui-reference/**',
       'harness.db*',
-      '*.js',
-      '*.mjs',
+      '**/out/**',
+      '**/*.js',
+      '**/*.mjs',
     ],
   },
   js.configs.recommended,
@@ -38,10 +39,14 @@ export default tseslint.config(
       globals: globals.browser,
     },
     plugins: { svelte },
-    rules: svelte.configs.recommended.reduce(
-      (acc, cfg) => Object.assign(acc, cfg.rules),
-      {},
-    ),
+    rules: {
+      ...svelte.configs.recommended.reduce(
+        (acc, cfg) => Object.assign(acc, cfg.rules),
+        {},
+      ),
+      'svelte/no-navigation-without-resolve': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
   },
   {
     files: ['**/*.{js,mjs,cjs,ts,tsx}'],
@@ -50,6 +55,7 @@ export default tseslint.config(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
   {

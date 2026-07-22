@@ -7,7 +7,7 @@
   import { env } from '$lib/env';
   import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
   import { onMount, onDestroy } from 'svelte';
-  import { CheckCircle2, ArrowRight } from 'lucide-svelte';
+  import { CheckCircle2 } from 'lucide-svelte';
 
   const copy = viCopy.pricing;
   const auth = getAuthStore();

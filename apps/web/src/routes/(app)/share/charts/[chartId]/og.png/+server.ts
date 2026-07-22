@@ -22,7 +22,7 @@ const systemNames: Record<string, string> = {
 let fontRegular: Buffer;
 let fontBold: Buffer;
 
-export const GET: RequestHandler = async ({ params, fetch }) => {
+export const GET: RequestHandler = async ({ params }) => {
   const chartId = params.chartId;
   if (!chartId) {
     throw error(400, 'Missing chartId');

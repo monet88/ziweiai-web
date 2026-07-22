@@ -3,7 +3,6 @@ import { Request, Response } from 'express';
 import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
-import { ChartSnapshotRecord } from '@ziweiai/contracts';
 
 // Bot User-Agents regex (Facebook, Zalo, Twitter, Google, Telegram, etc.)
 const BOT_USER_AGENTS = /(bot|facebookexternalhit|zalo|discordbot|telegrambot|slackbot|vkShare|whatsapp|skype|twitterbot|linkedinbot|pinterest|applebot|yandex)/i;
@@ -34,7 +33,7 @@ export class ShareController {
       const chart = await this.persistenceGateway.findPublicChartSnapshotById(id);
       
       let title = 'Lá số Tử Vi';
-      let description = 'Xem luận giải chi tiết lá số tại Tử Vi Toàn Tập.';
+      const description = 'Xem luận giải chi tiết lá số tại Tử Vi Toàn Tập.';
       
       if (chart) {
         if (chart.chartSystem === 'zi-wei-dou-shu') title = 'Lá số Tử Vi';
@@ -43,10 +42,6 @@ export class ShareController {
         else if (chart.chartSystem === 'mei-hua-yi-shu') title = 'Quẻ Mai Hoa';
         else if (chart.chartSystem === 'da-liu-ren') title = 'Quẻ Đại Lục Nhâm';
         else if (chart.chartSystem === 'qi-men-dun-jia') title = 'Kỳ Môn Độn Giáp';
-        
-        const birth = (chart.snapshot as any).birth?.originalInput;
-        // const name = birth?.name ? ` của ${birth.name}` : '';
-        // title = `${title}${name}`;
       }
 
       const ogImageUrl = `https://tuvitoantap.vercel.app/api/og/charts/${id}`;

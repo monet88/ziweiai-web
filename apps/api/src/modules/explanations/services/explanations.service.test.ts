@@ -11,7 +11,7 @@ import { ExplanationValidatorService } from './explanation-validator.service';
 import { ExplanationBillingService } from './explanation-billing.service';
 import { ExplanationRaceControllerService } from './explanation-race-controller.service';
 
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Test file sử dụng any cho mock fixture phức tạp (snapshot, persistence records) — phổ biến trong Nest/Vitest.
 // Không ảnh hưởng production. Nếu cần strict hơn, thay bằng interface mock chi tiết.
 

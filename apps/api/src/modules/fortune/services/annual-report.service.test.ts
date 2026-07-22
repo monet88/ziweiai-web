@@ -5,8 +5,6 @@ import { AnnualReportService } from './annual-report.service';
 import { apiEnv } from '../../../config/env';
 import { ProviderTimeoutError } from '../../../providers/ai/provider-errors';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const user: AuthenticatedUser = { userId: 'user-1', email: 'a@b.com' } as any;
 const CHART_ID = '11111111-1111-4111-8111-111111111111';
 

@@ -4,7 +4,7 @@ import { throwQuotaRateLimited } from '../../quotas/quota-http';
 import { DailyQuotaExceededError } from '../../quotas/quota-errors';
 import { QuotasService } from '../../quotas/quotas.service';
 import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
-import type { AuthenticatedUser, CreateExplanationRequest } from '@ziweiai/contracts';
+import type { CreateExplanationRequest } from '@ziweiai/contracts';
 import { apiEnv } from '../../../config/env';
 
 @Injectable()

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { SuperAdminGuard } from '../../common/guards/super-admin.guard';
 import { ModeratorGuard } from '../../common/guards/moderator.guard';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';

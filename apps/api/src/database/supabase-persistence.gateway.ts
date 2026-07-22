@@ -783,7 +783,7 @@ export class SupabasePersistenceGateway {
       if (!authError && authData?.users) {
         authUsers = authData.users;
       }
-    } catch (e) {
+    } catch {
       // Fallback if auth.admin fails
     }
 

@@ -3,8 +3,6 @@ import { HttpStatus } from '@nestjs/common';
 import type { AuthenticatedUser } from '@ziweiai/contracts';
 import { FortuneService } from './fortune.service';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const user: AuthenticatedUser = { userId: 'user-1', email: 'a@b.com' } as any;
 
 const frame = {

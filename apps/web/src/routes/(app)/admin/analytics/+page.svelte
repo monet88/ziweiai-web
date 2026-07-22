@@ -85,7 +85,7 @@
   <div class="table-section">
     <h2 class="section-title">Tiêu thụ XU theo tính năng</h2>
     <div class="feature-usage-grid">
-      {#each analytics.feature_usage as feature}
+      {#each analytics.feature_usage as feature (feature.feature)}
         <div class="feature-card">
           <div class="feature-name">
             {#if feature.feature === 'ai_usage'}

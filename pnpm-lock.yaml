@@ -89,9 +89,6 @@ importers:
       satori:
         specifier: ^0.28.0
         version: 0.28.0
-      satori-html:
-        specifier: ^0.3.2
-        version: 0.3.2
       tyme4ts:
         specifier: ^1.5.2
         version: 1.5.2

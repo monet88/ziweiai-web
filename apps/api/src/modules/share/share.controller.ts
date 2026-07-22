@@ -5,6 +5,8 @@ import { SupabasePersistenceGateway } from '../../database/supabase-persistence.
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
+import { apiEnv } from '../../config/env';
+import { reportOpsAlert } from '../../observability/ops-alert';
 import { Public } from '../auth/decorators/public.decorator';
 import { buildMysticalOgTree } from './og-element';
 import { buildShareMeta, escapeHtml } from './share-meta';
@@ -164,7 +166,20 @@ ${ogImageTags}
       res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
       return res.status(HttpStatus.OK).send(pngBuffer);
     } catch (error) {
+      // @Res() path bypasses ApiErrorFilter — alert explicitly (Phase 11 OG 500 lesson).
       console.error('Failed to generate OG image:', error);
+      void reportOpsAlert(
+        {
+          level: 'error',
+          code: 'INTERNAL_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to generate OG image',
+          path: `/og/charts/${id}`,
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          cause: error,
+          tags: { surface: 'og_image' },
+        },
+        { webhookUrl: apiEnv.OPS_ALERT_WEBHOOK_URL },
+      );
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send('Failed to generate image');
     }
   }

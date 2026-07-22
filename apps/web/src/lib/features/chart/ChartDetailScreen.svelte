@@ -28,6 +28,7 @@
   import DailyFortuneCard from '$lib/features/fortune/DailyFortuneCard.svelte';
   import MonthlyFortuneCard from '$lib/features/fortune/MonthlyFortuneCard.svelte';
   import AnnualReportButton from '$lib/features/fortune/AnnualReportButton.svelte';
+  import { revealElements, revealHexagramLines } from '$lib/motion/reveal';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
@@ -36,6 +37,7 @@
   }
 
   let { chartId }: Props = $props();
+  let detailRoot: HTMLDivElement | undefined = $state();
 
   const auth = getAuthStore();
   const queryClient = useQueryClient();
@@ -87,6 +89,21 @@
     }
   });
 
+  // Phase 11 Ticket 2: GSAP entrance for sections + hexagram line rows when snapshot ready.
+  $effect(() => {
+    if (!detailRoot || detail.isPending || detail.isError || !detail.snapshot) {
+      return;
+    }
+    // Read snapshot id so remount/new chart re-triggers reveal.
+    void detail.chartId;
+    const cleanupReveal = revealElements(detailRoot);
+    const cleanupLines = revealHexagramLines(detailRoot);
+    return () => {
+      cleanupReveal();
+      cleanupLines();
+    };
+  });
+
   async function handleShare() {
     const shareUrl = `${window.location.origin}/share/charts/${detail.chartId}`;
     if (navigator.share) {
@@ -97,7 +114,7 @@
           url: shareUrl
         });
         return;
-      } catch (err) {
+      } catch {
         // ignore aborts
       }
     }
@@ -118,6 +135,7 @@
   eyebrow={copy.heroEyebrow}
   title={copy.heroTitle}
   subtitle={copy.heroSubtitle}
+  tone="mystical"
 >
   {#snippet action()}
     <div style="display: flex; gap: 8px;">
@@ -139,11 +157,11 @@
   {:else if detail.isError || !detail.snapshot}
     <NoticeBanner tone="danger" message={copy.chartNotAvailableFallback} />
   {:else}
-    <div class="detail-page">
+    <div class="detail-page" bind:this={detailRoot}>
       {#if showBoard}
-        <section class="board-section" aria-labelledby="palace-board-title">
+        <section class="board-section" data-reveal aria-labelledby="palace-board-title">
           <h2 class="section-title" id="palace-board-title">{copy.twelvePalaceTitle}</h2>
-          <div class="board-layout">
+          <div class="board-layout board-glass surface-glass">
             <PalaceGrid
               palaces={detail.palaces}
               selectedPalaceKey={detail.selectedPalaceKey}
@@ -184,11 +202,11 @@
       {:else if detailState === 'qimen'}
         <QimenDetailCard snapshot={detail.snapshot} />
       {:else}
-        <SummaryCard title={copy.chartSummary} items={summaryItems} />
+        <SummaryCard variant="glass" title={copy.chartSummary} items={summaryItems} />
       {/if}
 
       {#if showBoard}
-        <section class="fortune-section" aria-labelledby="fortune-title">
+        <section class="fortune-section" data-reveal aria-labelledby="fortune-title">
           <h2 class="section-title" id="fortune-title">{viCopy.fortune.sectionTitle}</h2>
           <div class="fortune-grid">
             <DailyFortuneCard {auth} chartId={detail.chartId} />
@@ -198,7 +216,7 @@
         </section>
       {/if}
 
-      <section class="explanation-section" aria-labelledby="explanation-title">
+      <section class="explanation-section" data-reveal aria-labelledby="explanation-title">
         <h2 class="section-title" id="explanation-title">{copy.explanationTitle}</h2>
         <p class="hint">{explanationHint}</p>
 
@@ -215,7 +233,7 @@
         {:else if explanation.isError && explanation.errorMessage}
           <NoticeBanner tone="danger" message={explanation.errorMessage} />
         {:else if explanation.hasResult && explanation.renderedMarkdown}
-          <article class="result">
+          <article class="result surface-glass">
             <MarkdownView markdown={explanation.renderedMarkdown} />
           </article>
         {:else}
@@ -223,7 +241,7 @@
         {/if}
       </section>
 
-      <section class="assistant-section" aria-labelledby="assistant-title">
+      <section class="assistant-section" data-reveal aria-labelledby="assistant-title">
         <AssistantPanel
           chartSnapshotId={detail.chartId}
           onConversationCreated={() => {
@@ -293,6 +311,11 @@
     gap: var(--space-lg);
   }
 
+  .board-glass {
+    padding: var(--space-md);
+    border-radius: var(--radius-xl);
+  }
+
   .center-title {
     margin: 0 0 var(--space-sm);
     color: var(--color-text-primary);
@@ -340,9 +363,7 @@
   .result {
     margin-top: var(--space-md);
     padding: var(--space-lg);
-    border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-xl);
-    background: var(--color-bg-surface);
   }
 
   @media (min-width: 1080px) {

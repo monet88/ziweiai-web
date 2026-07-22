@@ -13,12 +13,14 @@
     action?: Snippet;
     sidebar?: Snippet;
     children: Snippet;
+    /** default = monochrome light product; mystical = dark glass chart surfaces */
+    tone?: 'default' | 'mystical';
   }
 
-  let { eyebrow, title, subtitle, action, sidebar, children }: Props = $props();
+  let { eyebrow, title, subtitle, action, sidebar, children, tone = 'default' }: Props = $props();
 </script>
 
-<div class="screen">
+<div class="screen" class:theme-mystical={tone === 'mystical'} data-tone={tone}>
   <div class="container" class:has-sidebar={Boolean(sidebar)}>
     <header class="hero">
       <div class="hero-text">
@@ -54,6 +56,16 @@
       linear-gradient(180deg, var(--color-bg-surface) 0%, var(--color-bg-primary) 260px),
       var(--color-bg-primary);
     color: var(--color-text-primary);
+  }
+
+  /* Phase 11 Ticket 2: mystical ambient for chart detail — soft gold + violet glows
+     over deep ink, without changing routes that keep tone=default. */
+  .screen.theme-mystical {
+    background:
+      radial-gradient(ellipse 70% 45% at 12% 0%, var(--mystical-glow-a), transparent 58%),
+      radial-gradient(ellipse 55% 40% at 88% 8%, var(--mystical-glow-b), transparent 52%),
+      radial-gradient(ellipse 80% 60% at 50% 100%, var(--mystical-glow-c), transparent 60%),
+      linear-gradient(180deg, #14121c 0%, var(--color-bg-primary) 42%, #09080f 100%);
   }
 
   .container {

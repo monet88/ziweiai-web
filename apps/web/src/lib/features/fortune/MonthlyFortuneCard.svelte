@@ -38,7 +38,7 @@
   });
 </script>
 
-<article class="fortune-card" aria-labelledby="monthly-fortune-title">
+<article class="fortune-card surface-glass" data-reveal aria-labelledby="monthly-fortune-title">
   <header class="fortune-card__head">
     <h3 class="fortune-card__title" id="monthly-fortune-title">{copy.title}</h3>
     <span class="fortune-card__date">{date.month}</span>
@@ -61,9 +61,7 @@
     flex-direction: column;
     gap: var(--space-sm);
     padding: var(--space-lg);
-    border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-lg);
-    background: var(--color-bg-surface);
   }
 
   .fortune-card__head {

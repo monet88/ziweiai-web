@@ -17,10 +17,10 @@
 
 <div class="cards">
   {#if metaItems.length > 0}
-    <SummaryCard title="Thông tin quẻ" items={metaItems} />
+    <SummaryCard variant="glass" title="Thông tin quẻ" items={metaItems} />
   {/if}
   {#if hexagramItems.length > 0}
-    <SummaryCard title="Quẻ tượng" items={hexagramItems} />
+    <SummaryCard variant="glass" title="Quẻ tượng" items={hexagramItems} />
   {/if}
 </div>
 

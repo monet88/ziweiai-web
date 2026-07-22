@@ -504,10 +504,8 @@
     color: var(--color-text-muted);
   }
 
+  /* Uses shared .surface-glass from tokens.css; local radius/overflow only. */
   .surface-glass {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-xl);
     overflow: hidden;
   }

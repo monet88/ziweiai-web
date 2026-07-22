@@ -39,6 +39,17 @@ class ZiweiBoard extends StatelessWidget {
 
     final palaces = snapshot.palaces ?? [];
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final borderColor = isDark ? Colors.white24 : Colors.black12;
+    final boardBg = isDark ? const Color(0xFF1A1724) : theme.colorScheme.surface;
+    final centerBg = isDark ? const Color(0xFF221F2E) : Colors.white;
+    final bodyTint = isDark
+        ? const Color(0xFFD4AF37).withValues(alpha: 0.12)
+        : Colors.yellow.withValues(alpha: 0.1);
+    final palaceNameColor = isDark ? const Color(0xFFE8B4B4) : Colors.red;
+    final textColor = theme.colorScheme.onSurface;
+
     return InteractiveViewer(
       constrained: false,
       boundaryMargin: const EdgeInsets.all(32),
@@ -50,8 +61,8 @@ class ZiweiBoard extends StatelessWidget {
           width: boardSize,
           height: boardSize,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.black12),
-            color: Theme.of(context).colorScheme.surface,
+            border: Border.all(color: borderColor),
+            color: boardBg,
           ),
           child: Stack(
           children: [
@@ -63,8 +74,8 @@ class ZiweiBoard extends StatelessWidget {
               height: cellSize * 2,
               child: Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black12),
-                  color: Colors.white,
+                  border: Border.all(color: borderColor),
+                  color: centerBg,
                 ),
                 padding: const EdgeInsets.all(16),
                 child: Center(
@@ -72,14 +83,18 @@ class ZiweiBoard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        snapshot.summary?['name'] ?? 'Tử Vi Toàn Tập',
-                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        snapshot.summary?['name']?.toString() ?? 'Tử Vi Toàn Tập',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
                       Text(
                         'Năm sinh: ${snapshot.birth?['solarYear'] ?? ''}',
-                        style: const TextStyle(fontSize: 16),
+                        style: TextStyle(fontSize: 16, color: textColor),
                       ),
                     ],
                   ),
@@ -95,8 +110,8 @@ class ZiweiBoard extends StatelessWidget {
                 height: cellSize,
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black12),
-                    color: palace.isBodyPalace ? Colors.yellow.withValues(alpha: 0.1) : Colors.transparent,
+                    border: Border.all(color: borderColor),
+                    color: palace.isBodyPalace ? bodyTint : Colors.transparent,
                   ),
                   padding: const EdgeInsets.all(8),
                   child: Column(
@@ -106,22 +121,42 @@ class ZiweiBoard extends StatelessWidget {
                       Center(
                         child: Text(
                           palace.displayName ?? palace.nameKey,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: palaceNameColor,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
                       // Major stars
                       ...palace.majorStars.map((s) => Text(
                         s.displayName ?? s.nameKey,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: textColor,
+                        ),
                       )),
                       const Spacer(),
                       // Heavenly stem & Earthly branch
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Flexible(child: Text('${palace.ages.isNotEmpty ? palace.ages.first : ''}', overflow: TextOverflow.ellipsis)),
-                          Flexible(child: Text('${palace.heavenlyStemKey.split('.').last} ${palace.earthlyBranchKey.split('.').last}', overflow: TextOverflow.ellipsis)),
+                          Flexible(
+                            child: Text(
+                              '${palace.ages.isNotEmpty ? palace.ages.first : ''}',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: textColor),
+                            ),
+                          ),
+                          Flexible(
+                            child: Text(
+                              '${palace.heavenlyStemKey.split('.').last} ${palace.earthlyBranchKey.split('.').last}',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: textColor),
+                            ),
+                          ),
                         ],
                       ),
                     ],

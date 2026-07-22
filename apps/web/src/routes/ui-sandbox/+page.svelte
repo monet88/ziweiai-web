@@ -80,6 +80,7 @@
     <section class="demo">
       <h2>Thẻ + banner</h2>
       <SummaryCard title="Tóm tắt lá số" items={summaryItems} />
+      <SummaryCard variant="glass" title="Tóm tắt glass" items={summaryItems} />
       <NoticeBanner message="Thiếu giờ sinh sẽ chặn luận giải chính xác." tone="warning" />
       <NoticeBanner message="Xác thực thất bại. Vui lòng thử lại." tone="danger" />
       <NoticeBanner message="Đây là thông tin tham khảo." tone="info" />

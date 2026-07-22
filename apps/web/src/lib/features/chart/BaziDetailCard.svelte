@@ -17,9 +17,9 @@
 </script>
 
 <div class="cards">
-  <SummaryCard title="Tứ trụ" items={pillarRows} />
+  <SummaryCard variant="glass" title="Tứ trụ" items={pillarRows} />
   {#if metaItems.length > 0}
-    <SummaryCard title="Mệnh bàn" items={metaItems} />
+    <SummaryCard variant="glass" title="Mệnh bàn" items={metaItems} />
   {/if}
 </div>
 

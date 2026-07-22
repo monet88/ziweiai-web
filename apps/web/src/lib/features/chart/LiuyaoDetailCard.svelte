@@ -31,13 +31,13 @@
 
 <div class="cards">
   {#if hexagramItems.length > 0}
-    <SummaryCard title="Quẻ" items={hexagramItems} />
+    <SummaryCard variant="glass" title="Quẻ" items={hexagramItems} />
   {/if}
   {#if metaItems.length > 0}
-    <SummaryCard title="Tóm tắt quẻ" items={metaItems} />
+    <SummaryCard variant="glass" title="Tóm tắt quẻ" items={metaItems} />
   {/if}
   {#if lineRows.length > 0}
-    <SummaryCard title="Sáu hào" items={lineRows} />
+    <SummaryCard variant="glass" title="Sáu hào" items={lineRows} />
   {/if}
 </div>
 

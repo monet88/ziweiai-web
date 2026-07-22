@@ -40,7 +40,7 @@
   });
 </script>
 
-<article class="fortune-card" aria-labelledby="daily-fortune-title">
+<article class="fortune-card surface-glass" data-reveal aria-labelledby="daily-fortune-title">
   <header class="fortune-card__head">
     <h3 class="fortune-card__title" id="daily-fortune-title">{copy.title}</h3>
     <span class="fortune-card__date">{date.today}</span>
@@ -63,9 +63,7 @@
     flex-direction: column;
     gap: var(--space-sm);
     padding: var(--space-lg);
-    border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-lg);
-    background: var(--color-bg-surface);
   }
 
   .fortune-card__head {

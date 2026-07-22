@@ -39,6 +39,12 @@ export const colors = {
   border: {
     hairline: '#E7E7E7',
   },
+  // Phase 11 Ticket 2 glass tokens (mirror of tokens.css defaults).
+  glass: {
+    blur: 16,
+    mysticalAccent: '#D4AF37',
+    mysticalBg: '#0C0B12',
+  },
 } as const;
 
 export const spacing = {

@@ -23,13 +23,13 @@
 
 <div class="cards">
   {#if metaItems.length > 0}
-    <SummaryCard title="Thiên địa bàn" items={metaItems} />
+    <SummaryCard variant="glass" title="Thiên địa bàn" items={metaItems} />
   {/if}
   {#if lessonItems.length > 0}
-    <SummaryCard title="Tứ khóa" items={lessonItems} />
+    <SummaryCard variant="glass" title="Tứ khóa" items={lessonItems} />
   {/if}
   {#if transmissionItems.length > 0}
-    <SummaryCard title="Tam truyền" items={transmissionItems} />
+    <SummaryCard variant="glass" title="Tam truyền" items={transmissionItems} />
   {/if}
 </div>
 

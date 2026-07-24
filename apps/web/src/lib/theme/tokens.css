@@ -273,6 +273,36 @@
   }
 }
 
+/* ---------------------------------------------------------------------------
+   Dark Theme Token Overrides
+   --------------------------------------------------------------------------- */
+[data-theme="dark"] {
+  --color-bg-primary: #0f1117;
+  --color-bg-elevated: #1a1d27;
+  --color-bg-surface: #161822;
+
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #d1d5db;
+  --color-text-muted: #9ca3af;
+
+  --color-accent-primary: #f3f4f6;
+  --color-accent-primary-pressed: #ffffff;
+  --color-accent-primary-soft: #272a38;
+  --color-text-on-primary: #0f1117;
+
+  --color-link: #f3f4f6;
+
+  --color-border-hairline: #2e3245;
+  --color-border-strong: #4b5563;
+
+  --overlay-border: rgba(255, 255, 255, 0.12);
+  --overlay-border-strong: rgba(255, 255, 255, 0.22);
+  --overlay-ink-wash: rgba(255, 255, 255, 0.06);
+  --overlay-hairline: rgba(255, 255, 255, 0.1);
+  --overlay-surface-veil: rgba(22, 24, 34, 0.85);
+  --shadow-card: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+
 /* Nền + phông toàn cục (tokens.css import ở root layout nên các selector phần tử
    ở đây áp dụng toàn app; style scoped của component vẫn ghi đè được). */
 html {

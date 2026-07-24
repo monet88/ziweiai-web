@@ -296,6 +296,12 @@
     color: var(--color-text-primary);
   }
 
+  :global([data-theme="dark"]) .dashboard-page {
+    background:
+      radial-gradient(circle at 15% 10%, rgba(30, 34, 48, 0.6), transparent 24rem),
+      linear-gradient(180deg, #0b0d13 0%, var(--color-bg-primary) 46%, var(--color-bg-surface) 100%);
+  }
+
   .shell {
     box-sizing: border-box;
     width: min(100%, 1220px);

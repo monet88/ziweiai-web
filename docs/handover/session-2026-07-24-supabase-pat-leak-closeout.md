@@ -1,5 +1,9 @@
 # Security closeout — Supabase PAT leak via ziweiai-demo.zip (2026-07-24)
 
+Báo cáo đầy đủ (mục tiêu, việc đã làm, kết quả, pre-check):
+
+→ [`docs/security/2026-07-24-supabase-pat-leak-incident.md`](../security/2026-07-24-supabase-pat-leak-incident.md)
+
 ## Cause
 Public GitHub commit packaged `.env*` inside `ziweiai-demo.zip`. Supabase scanners
 found PAT `sbp_f618…` (token name `nh`) and revoked it.
@@ -14,6 +18,7 @@ found PAT `sbp_f618…` (token name `nh`) and revoked it.
 5. Added `.githooks/pre-commit` + `pnpm prepare` → `scripts/install-git-hooks.sh`
    to block env/keys/zip/apk/aab/ipa/mp4 and secret-like staged content.
 6. Scrubbed local backup env copies that still held the revoked PAT.
+7. Fixed pre-commit to use portable `grep` (no `rg` dependency).
 
 ## Rollback
 Offline bundle (local machine only, not in git):

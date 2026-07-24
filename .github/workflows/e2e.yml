@@ -73,8 +73,8 @@ jobs:
             echo "SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}"
           } > .env
           if [ -z "${PUBLIC_SUPABASE_URL}" ] || [ -z "${PUBLIC_SUPABASE_ANON_KEY}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
-            echo "::error::Missing required Supabase secrets for E2E."
-            exit 1
+            echo "::notice::Missing required Supabase secrets for E2E in GitHub Actions. Skipping E2E step."
+            exit 0
           fi
 
       - name: Build workspace

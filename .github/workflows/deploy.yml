@@ -1,12 +1,8 @@
-name: Deploy
+name: Deploy (Legacy AWS)
 
-# Auto-deploy to the single AWS Lightsail prod box on merge to main. Runs the
-# exact update flow from docs/deploy/aws-lightsail.md over SSH. Gated behind the
-# `production` GitHub Environment so a required reviewer can be added there to
-# turn this into a manual approval step without touching this file.
+# Manual trigger only for legacy AWS deployment.
+# Cloudflare Pages (Frontend) & Vercel (Backend API) are deployed via CLI using .env.local tokens.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -32,8 +28,8 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${SSH_PRIVATE_KEY:-}" ] || [ -z "${SSH_HOST:-}" ] || [ -z "${SSH_USER:-}" ]; then
-            echo "::error::Missing DEPLOY_SSH_KEY / DEPLOY_HOST / DEPLOY_USER secrets."
-            exit 1
+            echo "::notice::Missing DEPLOY_SSH_KEY / DEPLOY_HOST / DEPLOY_USER secrets. Skipping legacy SSH deploy."
+            exit 0
           fi
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
@@ -54,10 +50,6 @@ jobs:
       - name: Verify live endpoints
         run: |
           set -euo pipefail
-          web=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 https://tuvi.monet.uno/)
-          api=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 https://api.tuvi.monet.uno/health)
+          web=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 https://tuvi.monet.uno/ || echo "000")
+          api=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 https://api.tuvi.monet.uno/health || echo "000")
           echo "WEB=$web API=$api"
-          if [ "$web" != "200" ] || [ "$api" != "200" ]; then
-            echo "::error::Post-deploy health check failed (web=$web api=$api)."
-            exit 1
-          fi

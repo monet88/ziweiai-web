@@ -99,7 +99,7 @@
           <div class="referral-info">
             <h3>Chia sẻ mã giới thiệu</h3>
             {#if walletModel.referralCode}
-              <p>Gửi link này cho bạn bè. Khi họ đăng ký và điểm danh lần đầu, cả hai đều nhận được 10 XU!</p>
+              <p>Gửi link này cho bạn bè. Khi họ đăng nhập và điểm danh lần đầu (ever), bạn nhận +10 XU và họ nhận +15 XU (điểm danh +5 kèm thưởng giới thiệu +10).</p>
               <div class="ref-code-box">
                 <code>https://tuvitoantap.vercel.app/?ref={walletModel.referralCode}</code>
                 <PrimaryButton 

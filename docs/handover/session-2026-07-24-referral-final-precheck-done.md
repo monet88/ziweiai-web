@@ -129,8 +129,16 @@ Referral growth loop (share → capture → first-check-in redeem) **hoàn thàn
 
 ---
 
+## Ship trong cùng turn (sau pre-check)
+
+| Step | Result |
+|------|--------|
+| Commit `a77f8e7` | Copy Ví + closeout (author team) |
+| `pnpm deploy:vercel-demo` | `dpl_5rzHgDnbD2ZNLSFeSQhnqtzTqneC` READY |
+| Live re-smoke | health ok; `?ref=ab12cd34` → `ref=AB12CD34` |
+
 ## Next (khuyến nghị CEO)
 
-1. **Default:** Commit + deploy copy Ví (để live khớp số XU) nếu chưa ship trong cùng turn.  
-2. **Hoặc:** Push `main` remote để sync.  
-3. **Sau đó:** SePay live smoke nếu ưu tiên thu tiền.
+1. **Default:** Push `main` remote để sync (nếu muốn).  
+2. **Sau đó:** SePay live smoke nếu ưu tiên thu tiền.  
+3. Giữ quy ước deploy author team email (Hobby).

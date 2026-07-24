@@ -2,6 +2,7 @@ import { Controller, Post, Body, Headers, UnauthorizedException, BadRequestExcep
 import { PaymentService } from './payment.service';
 import { apiEnv } from '../../config/env';
 import { sepayWebhookSchema, revenuecatWebhookSchema } from '@ziweiai/contracts';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('webhooks/sepay')
 export class PaymentController {
@@ -9,6 +10,7 @@ export class PaymentController {
 
   constructor(private readonly paymentService: PaymentService) {}
 
+  @Public()
   @Post()
   async handleSepayWebhook(
     @Headers('Authorization') authHeader: string,
@@ -32,6 +34,7 @@ export class PaymentController {
     return { success: true };
   }
 
+  @Public()
   @Post('revenuecat')
   async handleRevenueCatWebhook(
     @Headers('Authorization') authHeader: string,

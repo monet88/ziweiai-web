@@ -27,6 +27,117 @@ export class AdminService {
     return data ?? [];
   }
 
+  async listUsers(search?: string) {
+    let query = this.client
+      .from('profiles')
+      .select('user_id, display_name, xu_balance, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      query = query.or(`user_id.ilike.${term},display_name.ilike.${term}`);
+    }
+
+    const { data: profiles, error } = await query;
+    if (error) {
+      this.logger.error('Failed to list users', error);
+      throw new BadRequestException('Could not list users');
+    }
+
+    // Try fetching emails from auth.users via admin client if available
+    let authUsers: any[] = [];
+    try {
+      const { data } = await this.client.auth.admin.listUsers();
+      if (data && data.users) {
+        authUsers = data.users;
+      }
+    } catch {
+      // Ignore if auth admin is not permitted or restricted
+    }
+
+    const emailMap = new Map(authUsers.map((u) => [u.id, u.email]));
+
+    return (profiles || []).map((p) => ({
+      ...p,
+      email: emailMap.get(p.user_id) || p.display_name || null,
+      is_anonymous: !emailMap.get(p.user_id) && !p.display_name,
+    }));
+  }
+
+  async topupUser(userId: string, amount: number, actorEmail?: string) {
+    if (!userId || amount === 0) {
+      throw new BadRequestException('Invalid userId or amount');
+    }
+
+    if (amount > 0) {
+      const success = await this.walletEngine.addXU(userId, amount, 'admin_topup', actorEmail);
+      if (!success) throw new BadRequestException('Failed to add XU');
+    } else {
+      const success = await this.walletEngine.deductXU(userId, Math.abs(amount), 'admin_deduct');
+      if (!success) throw new BadRequestException('Failed to deduct XU (Insufficient balance or user not found)');
+    }
+
+    this.logger.log(`Admin topup/deduct ${amount} XU for user ${userId} by ${actorEmail || 'system'}`);
+    return { success: true, userId, amount };
+  }
+
+  async cleanupAnonUsers() {
+    this.logger.log('Cleaning up anonymous/unused profiles...');
+    const { data: profiles, error } = await this.client
+      .from('profiles')
+      .select('user_id, display_name')
+      .is('display_name', null)
+      .limit(500);
+
+    if (error || !profiles) {
+      throw new BadRequestException('Could not query anon users');
+    }
+
+    let deletedCount = 0;
+    for (const p of profiles) {
+      try {
+        await this.client.auth.admin.deleteUser(p.user_id);
+        deletedCount++;
+      } catch {
+        // Skip user deletion failures gracefully
+      }
+    }
+
+    this.logger.log(`Cleaned up ${deletedCount} anonymous users.`);
+    return { success: true, deletedCount };
+  }
+
+  async getReferralAnalytics() {
+    const { data: referrals, error } = await this.client
+      .from('referrals')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) {
+      this.logger.error('Failed to fetch referrals', error);
+      return { totalReferrals: 0, topReferrers: [], recentReferrals: [] };
+    }
+
+    const referrerCounts = new Map<string, number>();
+    for (const ref of referrals || []) {
+      const count = referrerCounts.get(ref.referrer_id) || 0;
+      referrerCounts.set(ref.referrer_id, count + 1);
+    }
+
+    const topReferrers = Array.from(referrerCounts.entries())
+      .map(([referrerId, count]) => ({ referrerId, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    return {
+      totalReferrals: (referrals || []).length,
+      topReferrers,
+      recentReferrals: referrals || [],
+    };
+  }
+
   async reconcileTransaction(transactionId: string, targetUserId: string) {
     const { data: tx, error: txFetchErr } = await this.client
       .from('transactions')
@@ -38,7 +149,6 @@ export class AdminService {
       throw new NotFoundException(`Transaction with id ${transactionId} not found`);
     }
 
-    // Verify user exists in profiles
     const { data: profile, error: profileErr } = await this.client
       .from('profiles')
       .select('user_id')
@@ -49,7 +159,6 @@ export class AdminService {
       throw new NotFoundException(`Target user ${targetUserId} not found`);
     }
 
-    // Update owner_user_id on transaction
     const { error: updateErr } = await this.client
       .from('transactions')
       .update({ owner_user_id: targetUserId })
@@ -60,7 +169,6 @@ export class AdminService {
       throw new BadRequestException('Could not update transaction owner');
     }
 
-    // Call addXU via WalletEngineService
     const xuToAdd = tx.xu_added || Math.floor((tx.amount_vnd || 0) / 1000);
     if (xuToAdd > 0) {
       const success = await this.walletEngine.addXU(targetUserId, xuToAdd, 'admin_reconcile');

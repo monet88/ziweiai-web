@@ -3,6 +3,7 @@
   import { GlobalPaywallModal } from '$lib/components/ui';
   import type { Snippet } from 'svelte';
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import { browser } from '$app/environment';
   import { sanitizeReferralCode } from '$lib/features/referral/append-referral-query';
 
@@ -23,11 +24,15 @@
     }
   });
 
-  // Không còn tường đăng nhập (decision 0009 / US-009): AuthStore.init() cấp phiên ẩn
-  // danh khi chưa có session, nên sau init mọi khách đều có JWT thật → dashboard + lập +
-  // xem lá số chạy dưới phiên ẩn danh. Guard chỉ còn nhiệm vụ CHỜ init xong, không đá ai
-  // về /sign-in. (Trường hợp anonymous sign-in chưa bật → session null; vẫn render để UI
-  // báo lỗi tại tầng request thay vì redirect mù.)
+  $effect(() => {
+    if (browser && !auth.isInitializing && !auth.session) {
+      const pathname = $page.url.pathname;
+      const isPublic = pathname === '/sign-in' || pathname === '/terms' || pathname === '/privacy';
+      if (!isPublic) {
+        void goto('/sign-in');
+      }
+    }
+  });
 </script>
 
 {#if auth.isInitializing}

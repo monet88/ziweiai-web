@@ -1,195 +1,137 @@
 <script lang="ts">
-  import type { PageData } from './$types';
-  import { adminUpdateConfig } from '$lib/api-client';
+  import { onMount } from 'svelte';
 
-  export let data: PageData;
+  interface ConfigData {
+    dailyCheckinXu: number;
+    rateVndToXu: number;
+    features: Record<string, boolean>;
+  }
 
-  let configs = Object.entries(data.configs).map(([key, value]) => {
-    let parsedValue = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
-    return { key, value: parsedValue, original: value };
-  });
+  let config = $state<ConfigData | null>(null);
+  let loading = $state(true);
+  let errorMsg = $state('');
 
-  let savingKey: string | null = null;
-
-  async function saveConfig(key: string, valueStr: string) {
-    if (!data.session?.token) return;
+  async function loadConfigs() {
+    loading = true;
+    errorMsg = '';
     try {
-      savingKey = key;
-      let parsedValue;
-      try {
-        parsedValue = JSON.parse(valueStr);
-      } catch {
-        parsedValue = valueStr;
-      }
-
-      await adminUpdateConfig(data.session.token, key, parsedValue);
-      alert(`Đã cập nhật ${key}`);
+      const res = await fetch('/api/admin/configs');
+      if (!res.ok) throw new Error('Không thể tải cấu hình');
+      config = await res.json();
     } catch (err: any) {
-      alert(err.message || 'Lỗi cập nhật cấu hình');
+      errorMsg = err.message || 'Lỗi kết nối';
     } finally {
-      savingKey = null;
+      loading = false;
     }
   }
+
+  onMount(() => {
+    void loadConfigs();
+  });
 </script>
 
-<div class="config-card">
-  <div class="card-header">
-    <h3 class="card-title">Cấu hình Hệ thống</h3>
-    <p class="card-desc">Quản lý các thông số như Rate Limit, Feature Flags, v.v.</p>
-  </div>
-  
-  <div class="card-body">
-    {#each configs as conf (conf.key)}
+<svelte:head>
+  <title>Cấu hình Hệ thống - Admin ViOS</title>
+</svelte:head>
+
+{#if errorMsg}
+  <div class="alert-error">{errorMsg}</div>
+{/if}
+
+{#if loading}
+  <div class="loading-state">Đang tải cấu hình hệ thống...</div>
+{:else if config}
+  <div class="config-section">
+    <h2>⚙️ Cấu Hình Thưởng & Tỷ Giá XU</h2>
+    <div class="config-card">
       <div class="config-item">
-        <div class="input-group">
-          <label for="config-{conf.key}" class="form-label">{conf.key}</label>
-          <textarea
-            id="config-{conf.key}"
-            name="config-{conf.key}"
-            rows="3"
-            bind:value={conf.value}
-            class="form-input"
-          ></textarea>
-        </div>
-        <button
-          type="button"
-          class="btn btn-solid"
-          disabled={savingKey === conf.key}
-          on:click={() => saveConfig(conf.key, conf.value)}
-        >
-          {savingKey === conf.key ? 'Đang lưu...' : 'Lưu'}
-        </button>
+        <span class="label">Mức XU Thưởng Điểm Danh Hàng Ngày</span>
+        <span class="value badge-gold">+{config.dailyCheckinXu} XU / ngày</span>
       </div>
-    {/each}
-    
-    {#if configs.length === 0}
-      <p class="empty-state">Chưa có cấu hình nào trong database.</p>
-    {/if}
+      <div class="config-item">
+        <span class="label">Tỷ giá nạp SePay VietQR</span>
+        <span class="value">1.000 VNĐ = 1 XU</span>
+      </div>
+    </div>
+
+    <h2>🧩 Trạng Thái Cờ Tính Năng AI (Feature Flags)</h2>
+    <div class="features-grid">
+      {#each Object.entries(config.features) as [featureKey, isEnabled]}
+        <div class="feature-card {isEnabled ? 'enabled' : 'disabled'}">
+          <div class="feature-info">
+            <span class="feature-name">{featureKey.toUpperCase()}</span>
+            <span class="feature-status">{isEnabled ? '🟢 Đang bật' : '🔴 Đã tắt'}</span>
+          </div>
+        </div>
+      {/each}
+    </div>
   </div>
-</div>
+{/if}
 
 <style>
-  .config-card {
-    background: var(--color-bg-surface);
-    border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
-    margin-top: var(--space-xl);
-    overflow: hidden;
-  }
-
-  .card-header {
-    padding: var(--space-xl) var(--space-xl) var(--space-md);
-    border-bottom: 1px solid var(--color-border-hairline);
-    background: var(--color-bg-elevated);
-  }
-
-  .card-title {
-    font-family: var(--font-serif);
-    font-size: var(--text-title);
-    color: var(--color-text-primary);
-    margin: 0;
-    font-weight: 600;
-  }
-
-  .card-desc {
-    margin: var(--space-xs) 0 0 0;
-    font-size: var(--text-body-sm);
-    color: var(--color-text-secondary);
-  }
-
-  .card-body {
-    padding: var(--space-xl);
+  .config-section {
     display: flex;
     flex-direction: column;
     gap: var(--space-lg);
   }
 
-  .config-item {
+  .config-section h2 {
+    font-size: var(--text-h3);
+    font-family: var(--font-serif);
+    margin: 0;
+  }
+
+  .config-card {
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border-hairline);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
-    padding: var(--space-lg);
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-primary);
-    align-items: flex-start;
   }
 
-  @media (min-width: 640px) {
-    .config-item {
-      flex-direction: row;
-      align-items: flex-end;
-    }
+  .config-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border-hairline);
   }
 
-  .input-group {
-    flex: 1;
-    width: 100%;
+  .config-item:last-child { border-bottom: none; }
+
+  .label { font-weight: 500; color: var(--color-text-secondary); }
+  .value { font-weight: 700; color: var(--color-text-primary); }
+  .badge-gold { color: var(--color-accent-gold, #d97706); }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-md);
   }
 
-  .form-label {
-    display: block;
-    font-size: var(--text-body-sm);
-    font-weight: 600;
-    color: var(--color-text-primary);
-    margin-bottom: var(--space-xs);
-    font-family: monospace;
-    background: var(--overlay-ink-wash);
-    padding: 2px 8px;
-    border-radius: var(--radius-xs);
-    width: fit-content;
-  }
-
-  .form-input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: var(--space-sm) var(--space-md);
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-md);
-    font-size: var(--text-body-sm);
-    font-family: monospace;
-    color: var(--color-text-primary);
+  .feature-card {
     background: var(--color-bg-surface);
-    transition: border-color var(--duration-fast);
-    resize: vertical;
+    border: 1px solid var(--color-border-hairline);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
   }
 
-  .form-input:focus {
-    outline: none;
-    border-color: var(--color-accent-primary);
+  .feature-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
-  .btn {
-    font-family: var(--font-sans);
-    font-size: var(--text-body-sm);
-    font-weight: 500;
-    padding: var(--space-sm) var(--space-xl);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--duration-fast);
-    border: none;
-    white-space: nowrap;
-  }
+  .feature-name { font-weight: 700; font-family: var(--font-mono); }
+  .feature-status { font-size: 13px; }
 
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .btn-solid {
-    background: var(--color-accent-primary);
-    color: var(--color-text-on-primary);
-  }
-
-  .btn-solid:hover:not(:disabled) {
-    background: var(--color-accent-primary-pressed);
-  }
-
-  .empty-state {
-    color: var(--color-text-muted);
-    font-size: var(--text-body);
-    text-align: center;
-    padding: var(--space-xl);
+  .alert-error {
+    padding: var(--space-md);
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
   }
 </style>

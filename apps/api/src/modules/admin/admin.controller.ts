@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, BadRequestException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { reconcileTransactionSchema } from '@ziweiai/contracts';
 
@@ -9,6 +9,47 @@ export class AdminController {
   @Get('transactions')
   async getTransactions() {
     return this.adminService.getRecentTransactions();
+  }
+
+  @Get('users')
+  async listUsers(@Query('search') search?: string) {
+    return this.adminService.listUsers(search);
+  }
+
+  @Post('users/:userId/topup')
+  async topupUser(@Param('userId') userId: string, @Body() body: { amount: number; reason?: string }) {
+    if (typeof body?.amount !== 'number') {
+      throw new BadRequestException('Amount is required and must be a number');
+    }
+    return this.adminService.topupUser(userId, body.amount, body.reason);
+  }
+
+  @Post('users/cleanup-anon')
+  async cleanupAnonUsers() {
+    return this.adminService.cleanupAnonUsers();
+  }
+
+  @Get('referrals')
+  async getReferralAnalytics() {
+    return this.adminService.getReferralAnalytics();
+  }
+
+  @Get('configs')
+  async getConfigs() {
+    return {
+      dailyCheckinXu: 5,
+      rateVndToXu: 1000,
+      features: {
+        face: true,
+        palm: true,
+        annualReport: true,
+        hepan: true,
+        mangpai: true,
+        tarot: true,
+        sticks: true,
+        almanac: true,
+      },
+    };
   }
 
   @Post('reconcile')

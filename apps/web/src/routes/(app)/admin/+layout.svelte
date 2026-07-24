@@ -6,8 +6,8 @@
 <div class="admin-container">
   <div class="admin-header">
     <div class="admin-title-group">
-      <h1 class="admin-title">Admin Dashboard</h1>
-      <p class="admin-subtitle">Quản lý hệ thống và người dùng.</p>
+      <h1 class="admin-title">ViOS Admin Dashboard</h1>
+      <p class="admin-subtitle">Quản lý hệ thống, người dùng, giao dịch và giới thiệu.</p>
     </div>
   </div>
 
@@ -16,37 +16,38 @@
       <a
         href={resolve('/admin')}
         class="admin-tab {$page.url.pathname === '/admin' ? 'active' : ''}"
-        aria-current={$page.url.pathname === '/admin' ? 'page' : undefined}
       >
-        Người dùng
+        Tổng quan
       </a>
       <a
         href={resolve('/admin/transactions')}
         class="admin-tab {$page.url.pathname === '/admin/transactions' ? 'active' : ''}"
-        aria-current={$page.url.pathname === '/admin/transactions' ? 'page' : undefined}
       >
-        Lịch sử giao dịch
+        Giao dịch
+      </a>
+      <a
+        href={resolve('/admin/users')}
+        class="admin-tab {$page.url.pathname === '/admin/users' ? 'active' : ''}"
+      >
+        Người dùng
+      </a>
+      <a
+        href={resolve('/admin/referrals')}
+        class="admin-tab {$page.url.pathname === '/admin/referrals' ? 'active' : ''}"
+      >
+        Giới thiệu
       </a>
       <a
         href={resolve('/admin/analytics')}
         class="admin-tab {$page.url.pathname === '/admin/analytics' ? 'active' : ''}"
-        aria-current={$page.url.pathname === '/admin/analytics' ? 'page' : undefined}
       >
         Thống kê
       </a>
       <a
         href={resolve('/admin/configs')}
         class="admin-tab {$page.url.pathname === '/admin/configs' ? 'active' : ''}"
-        aria-current={$page.url.pathname === '/admin/configs' ? 'page' : undefined}
       >
         Cấu hình
-      </a>
-      <a
-        href={resolve('/admin/audit-logs')}
-        class="admin-tab {$page.url.pathname === '/admin/audit-logs' ? 'active' : ''}"
-        aria-current={$page.url.pathname === '/admin/audit-logs' ? 'page' : undefined}
-      >
-        Nhật ký
       </a>
     </nav>
   </div>

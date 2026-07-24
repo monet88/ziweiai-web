@@ -9,7 +9,7 @@
 </script>
 
 <svelte:head>
-  <title>{viCopy.history.heroTitle} - ziweiai</title>
+  <title>{viCopy.history.heroTitle} - ViOS</title>
 </svelte:head>
 
 <AppScaffold

@@ -62,7 +62,26 @@ Trước đó các commit tính năng mới (`fe3810a` và `cb70d2f`) đã đư�
 
 ---
 
-## 5. Kết Luận
-Mọi kiểm tra logic, workflow, static diagnostics (`svelte-check` 0 error 0 warning), E2E smoke tests (7/7 PASS) và deployment pipeline đều đã **ĐẠT 100%**. 
+## 5. Kiểm Tra Bảo Mật .gitignore & Giữ Nguyên Kỹ Năng AI Agents
+
+- **Bảo mật**: Đã cấu hình chặn tuyệt đối toàn bộ file nhạy cảm (`.env`, `*.key`, `*.pem`, `*credentials*.json`, `*service-account*.json`) và các file binary dung lượng lớn (`*.apk`, `*.aab`, `*.ipa`, `*.mp4`, `*.mov`, `*.zip`).
+- **AI Agent Skills Preservation**: Đã loại bỏ thư mục rác/log (`.agents/logs/`, `.agents/cache/`), đồng thời giữ lại và đã commit toàn bộ kỹ năng bền vững trong `.agents/skills/` lên GitHub `origin/main` (commit `34bdf5e`). Khi clone repo sang máy mới, AI Agent sẽ tự động khôi phục trọn vẹn bộ kỹ năng làm việc.
+
+---
+
+## 6. Đề Xuất Quy Trình Đào Tạo & Chiến Lược Branching / Rollback
+
+1. **Quy trình Phát triển Tính năng Mới (Dev Branching Strategy)**:
+   - Với các tính năng lớn tiếp theo (ví dụ: Báo cáo Vận hạn Năm US-016), tạo nhánh mới: `git checkout -b feat/us-016-annual-report`.
+   - Tiến hành phát triển, kiểm thử local và push PR preview độc lập trước khi merge vào `main`.
+
+2. **Chiến Lược Backup & Rollback An Toàn**:
+   - **Vercel Instant Rollback**: Trên Vercel Dashboard, bất kỳ khi nào có sự cố, Admin có thể promote lại bản build gần nhất (`build-e8qapteu6`) chỉ với 1 click.
+   - **Git Reset**: Luôn giữ `main` sạch sẽ với các commit có thẻ Conventional Commits để dễ dàng `git revert` nếu cần thiết.
+
+---
+
+## 7. Kết Luận
+Mọi kiểm tra logic, workflow, security gitignore, static diagnostics (`svelte-check` 0 error 0 warning), E2E smoke tests (7/7 PASS) và deployment pipeline đều đã **ĐẠT 100%**. 
 
 Dự án ở trạng thái **DONE** cho đợt cập nhật này.

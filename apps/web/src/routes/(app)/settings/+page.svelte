@@ -4,18 +4,35 @@
   import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { AlertCircle, Trash2, ArrowLeft, Share2, Copy, Check } from 'lucide-svelte';
+  import {
+    AlertTriangle,
+    Trash2,
+    ArrowLeft,
+    Share2,
+    Copy,
+    Check,
+    User,
+    Coins,
+    Shield,
+    Sparkles,
+  } from 'lucide-svelte';
 
   const auth = getAuthStore();
   const walletModel = createWalletModel(auth);
+
   let isDeleting = $state(false);
   let showConfirmModal = $state(false);
   let copied = $state(false);
 
+  const referralLink = $derived.by(() => {
+    if (!walletModel.referralCode) return '';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://tuvitoantap.pages.dev';
+    return `${origin}/?ref=${walletModel.referralCode}`;
+  });
+
   function copyRefLink() {
-    if (!walletModel.referralCode) return;
-    const link = `https://tuvitoantap.vercel.app/?ref=${walletModel.referralCode}`;
-    navigator.clipboard.writeText(link);
+    if (!referralLink) return;
+    navigator.clipboard.writeText(referralLink);
     copied = true;
     setTimeout(() => (copied = false), 2000);
   }
@@ -39,116 +56,574 @@
 </script>
 
 <svelte:head>
-  <title>Cài đặt - Tử Vi Toàn Tập</title>
+  <title>Cài đặt tài khoản - Tử Vi Toàn Tập</title>
 </svelte:head>
 
-<div class="max-w-2xl mx-auto p-4 md:p-8 space-y-6">
-  <div class="mb-8 flex items-center gap-4">
-    <a href={resolve('/')} class="p-2 -ml-2 rounded-full hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-900" title="Quay lại">
-      <ArrowLeft class="w-5 h-5" />
+<div class="settings-page">
+  <!-- Header section -->
+  <header class="settings-header">
+    <a href={resolve('/')} class="btn-back" title="Quay lại Trang chủ">
+      <ArrowLeft class="icon" />
     </a>
-    <div>
-      <h1 class="text-2xl font-semibold text-slate-900">Cài đặt tài khoản</h1>
-      <p class="text-slate-500 text-sm mt-1">Quản lý thông tin và chương trình giới thiệu</p>
+    <div class="header-titles">
+      <h1 class="page-title">Cài Đặt Tài Khoản</h1>
+      <p class="page-subtitle">Quản lý thông tin cá nhân, liên kết chia sẻ & thiết lập ứng dụng</p>
     </div>
-  </div>
+  </header>
 
-  {#if !auth.isAnonymous}
-    <!-- Affiliate & Referral Card -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="p-6">
-        <h2 class="text-lg font-medium text-slate-900 mb-2 flex items-center gap-2">
-          <Share2 class="w-5 h-5 text-indigo-600" />
-          Chương trình Giới Thiệu (Affiliate / Referral)
-        </h2>
-        <p class="text-slate-600 mb-4 text-sm">
-          Chia sẻ link giới thiệu với bạn bè. Khi bạn bè tạo tài khoản và điểm danh lần đầu:
-          <strong>Bạn nhận +10 XU</strong> và <strong>Bạn bè nhận +15 XU</strong>.
-        </p>
-
-        {#if walletModel.referralCode}
-          <div class="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
-            <input
-              type="text"
-              readonly
-              value={`https://tuvitoantap.vercel.app/?ref=${walletModel.referralCode}`}
-              class="flex-1 bg-transparent text-sm font-mono text-slate-800 focus:outline-none"
-            />
-            <button
-              type="button"
-              onclick={copyRefLink}
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-medium transition-colors"
-            >
-              {#if copied}
-                <Check class="w-3.5 h-3.5" /> Đã Copy
-              {:else}
-                <Copy class="w-3.5 h-3.5" /> Copy Link
-              {/if}
-            </button>
+  <div class="settings-content">
+    <!-- Account Information Card -->
+    <section class="card surface-glass">
+      <header class="card-head">
+        <div class="card-icon-title">
+          <User class="section-icon icon-primary" />
+          <h2 class="card-title">Thông Tin Danh Tính</h2>
+        </div>
+        {#if auth.isAnonymous}
+          <span class="badge badge-anon">Khách vãng lai</span>
+        {:else}
+          <span class="badge badge-verified">Đã xác thực</span>
+        {/if}
+      </header>
+      <div class="card-body">
+        {#if auth.isAnonymous}
+          <div class="notice-box notice-warning">
+            <Shield class="box-icon" />
+            <div class="notice-text">
+              <strong>Bạn đang dùng tài khoản Ẩn danh.</strong>
+              <p>Dữ liệu lá số và lịch sử hội thoại sẽ lưu tạm trên trình duyệt này. Hãy đăng nhập Email để bảo lưu dữ liệu bền vững khi đổi thiết bị.</p>
+              <a href={resolve('/sign-in')} class="btn-link">Đăng nhập / Đăng ký ngay &rarr;</a>
+            </div>
           </div>
         {:else}
-          <p class="text-xs text-slate-400 italic">Đang tải mã giới thiệu...</p>
+          <div class="info-row">
+            <span class="info-label">Email tài khoản</span>
+            <span class="info-value">{auth.user?.email ?? 'Chưa cập nhật'}</span>
+          </div>
         {/if}
+
+        <div class="info-row">
+          <span class="info-label">Số dư ví XU</span>
+          <span class="info-value xu-balance">
+            <Coins class="xu-icon" />
+            {walletModel.balance} XU
+          </span>
+        </div>
       </div>
-    </div>
-  {/if}
+    </section>
 
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-    <div class="p-6">
-      <h2 class="text-lg font-medium text-slate-900 mb-4 flex items-center gap-2">
-        <AlertCircle class="w-5 h-5 text-red-500" />
-        Khu vực nguy hiểm
-      </h2>
-      <p class="text-slate-600 mb-6 text-sm">
-        Hành động này sẽ xoá vĩnh viễn tài khoản của bạn, bao gồm toàn bộ lá số đã lập, lịch sử hội thoại và các luận giải.
-        Dữ liệu không thể khôi phục sau khi xoá.
-      </p>
+    <!-- Referral / Affiliate Card -->
+    {#if !auth.isAnonymous}
+      <section class="card surface-glass">
+        <header class="card-head">
+          <div class="card-icon-title">
+            <Share2 class="section-icon icon-accent" />
+            <h2 class="card-title">Chương Trình Giới Thiệu (Affiliate)</h2>
+          </div>
+          <span class="badge badge-bonus"><Sparkles class="badge-icon" /> Nhận XU Thưởng</span>
+        </header>
+        <div class="card-body">
+          <p class="description">
+            Chia sẻ link giới thiệu với bạn bè. Khi bạn bè truy cập và tạo tài khoản:
+            <strong>Bạn nhận ngay +10 XU</strong> và <strong>Bạn bè nhận +15 XU</strong> vào ví.
+          </p>
 
-      <button
-        type="button"
-        class="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-lg font-medium transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled={isDeleting}
-        onclick={() => showConfirmModal = true}
-      >
-        <Trash2 class="w-4 h-4" />
-        Xoá tài khoản vĩnh viễn
-      </button>
-    </div>
+          {#if walletModel.referralCode}
+            <div class="copy-field">
+              <input
+                type="text"
+                readonly
+                value={referralLink}
+                class="copy-input"
+              />
+              <button
+                type="button"
+                onclick={copyRefLink}
+                class="btn-copy"
+              >
+                {#if copied}
+                  <Check class="btn-icon" /> Đã Copy
+                {:else}
+                  <Copy class="btn-icon" /> Sao chép Link
+                {/if}
+              </button>
+            </div>
+          {:else}
+            <p class="loading-text">Đang nạp mã giới thiệu...</p>
+          {/if}
+        </div>
+      </section>
+    {/if}
+
+    <!-- Danger Zone Card -->
+    <section class="card card-danger surface-glass">
+      <header class="card-head">
+        <div class="card-icon-title">
+          <AlertTriangle class="section-icon icon-danger" />
+          <h2 class="card-title danger-title">Khu Vực Nguy Hiểm</h2>
+        </div>
+      </header>
+      <div class="card-body">
+        <p class="description">
+          Hành động này sẽ xoá vĩnh viễn tài khoản của bạn, bao gồm toàn bộ lá số đã lập, lịch sử hội thoại và các luận giải AI. Dữ liệu không thể khôi phục sau khi xoá.
+        </p>
+
+        <button
+          type="button"
+          class="btn-danger-outline"
+          disabled={isDeleting}
+          onclick={() => (showConfirmModal = true)}
+        >
+          <Trash2 class="btn-icon" />
+          Xoá tài khoản vĩnh viễn
+        </button>
+      </div>
+    </section>
   </div>
 </div>
 
+<!-- Confirmation Modal -->
 {#if showConfirmModal}
-  <div class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-      <div class="p-6">
-        <h3 class="text-xl font-semibold text-slate-900 mb-2">Xác nhận xoá tài khoản?</h3>
-        <p class="text-slate-600 text-sm mb-6">
-          Bạn đang thực hiện thao tác xoá tài khoản vĩnh viễn. Hành động này không thể hoàn tác. Bạn có chắc chắn muốn tiếp tục?
-        </p>
-        <div class="flex items-center justify-end gap-3">
-          <button
-            type="button"
-            class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 disabled:opacity-50"
-            disabled={isDeleting}
-            onclick={() => showConfirmModal = false}
-          >
-            Huỷ bỏ
-          </button>
-          <button
-            type="button"
-            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50"
-            disabled={isDeleting}
-            onclick={handleDeleteAccount}
-          >
-            {#if isDeleting}
-              <div class="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
-              Đang xoá...
-            {:else}
-              Xác nhận xoá
-            {/if}
-          </button>
-        </div>
+  <div class="modal-wrapper">
+    <div class="modal-backdrop" role="presentation" onclick={() => (showConfirmModal = false)}></div>
+    <div class="modal-dialog surface-glass" role="dialog" aria-modal="true">
+      <header class="modal-head">
+        <h3 class="modal-title">Xác Nhận Xoá Tài Khoản?</h3>
+      </header>
+      <div class="modal-body">
+        <p>Bạn đang thực hiện thao tác xoá tài khoản vĩnh viễn. Hành động này không thể hoàn tác. Bạn có chắc chắn muốn tiếp tục?</p>
       </div>
+      <footer class="modal-footer">
+        <button
+          type="button"
+          class="btn-modal-cancel"
+          disabled={isDeleting}
+          onclick={() => (showConfirmModal = false)}
+        >
+          Huỷ bỏ
+        </button>
+        <button
+          type="button"
+          class="btn-modal-delete"
+          disabled={isDeleting}
+          onclick={handleDeleteAccount}
+        >
+          {#if isDeleting}
+            <span class="spinner"></span> Đang xoá...
+          {:else}
+            Xác nhận xoá
+          {/if}
+        </button>
+      </footer>
     </div>
   </div>
 {/if}
+
+<style>
+  .settings-page {
+    max-width: 768px;
+    margin: 0 auto;
+    padding: var(--space-xl) var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+  }
+
+  .settings-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  .btn-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-hairline);
+    color: var(--color-text-secondary);
+    transition: all var(--duration-fast);
+  }
+
+  .btn-back:hover {
+    color: var(--color-text-primary);
+    background: var(--overlay-ink-wash);
+  }
+
+  .btn-back .icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .header-titles {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .page-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 750;
+    color: var(--color-text-primary);
+    line-height: 1.2;
+  }
+
+  .page-subtitle {
+    margin: 4px 0 0;
+    font-size: 14px;
+    color: var(--color-text-muted);
+  }
+
+  .settings-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  .card {
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border-hairline);
+    overflow: hidden;
+    background: var(--color-bg-surface);
+  }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--color-border-hairline);
+  }
+
+  .card-icon-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .section-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .icon-primary { color: var(--color-accent-primary); }
+  .icon-accent { color: var(--color-accent-gold, #d97706); }
+  .icon-danger { color: var(--color-accent-danger, #ef4444); }
+
+  .card-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 650;
+    color: var(--color-text-primary);
+  }
+
+  .danger-title {
+    color: var(--color-accent-danger, #ef4444);
+  }
+
+  .card-body {
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .description {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+  }
+
+  .info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) 0;
+    border-bottom: 1px dashed var(--color-border-hairline);
+  }
+
+  .info-row:last-child {
+    border-bottom: none;
+  }
+
+  .info-label {
+    font-size: 14px;
+    color: var(--color-text-muted);
+  }
+
+  .info-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .xu-balance {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-accent-sienna, #c2410c);
+  }
+
+  .xu-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Notice Box */
+  .notice-box {
+    display: flex;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-hairline);
+  }
+
+  .notice-warning {
+    border-color: rgba(217, 119, 6, 0.3);
+  }
+
+  .box-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--color-accent-gold, #d97706);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .notice-text {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+  }
+
+  .notice-text strong {
+    color: var(--color-text-primary);
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .btn-link {
+    display: inline-block;
+    margin-top: 6px;
+    color: var(--color-accent-primary);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .btn-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Copy field */
+  .copy-field {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 6px var(--space-sm);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-strong);
+  }
+
+  .copy-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-family: var(--font-mono, monospace);
+    font-size: 13px;
+    color: var(--color-text-primary);
+    outline: none;
+  }
+
+  .btn-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--color-accent-primary);
+    color: var(--color-text-on-primary, #fff);
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: filter var(--duration-fast);
+  }
+
+  .btn-copy:hover {
+    filter: brightness(1.1);
+  }
+
+  .btn-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .loading-text {
+    font-size: 13px;
+    font-style: italic;
+    color: var(--color-text-muted);
+  }
+
+  /* Danger Button */
+  .btn-danger-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    align-self: flex-start;
+    padding: var(--space-sm) var(--space-lg);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-accent-danger, #ef4444);
+    background: transparent;
+    color: var(--color-accent-danger, #ef4444);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast);
+  }
+
+  .btn-danger-outline:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-anon {
+    background: var(--color-bg-elevated);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border-hairline);
+  }
+
+  .badge-verified {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .badge-bonus {
+    background: rgba(217, 119, 6, 0.15);
+    color: var(--color-accent-gold, #d97706);
+    border: 1px solid rgba(217, 119, 6, 0.3);
+  }
+
+  .badge-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* Modal */
+  .modal-wrapper {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg);
+  }
+
+  .modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-dialog {
+    position: relative;
+    width: min(440px, 100%);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border-hairline);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .modal-head {
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--color-border-hairline);
+  }
+
+  .modal-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  .modal-body {
+    padding: var(--space-lg);
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--color-bg-elevated);
+    border-top: 1px solid var(--color-border-hairline);
+  }
+
+  .btn-modal-cancel {
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-strong);
+    background: transparent;
+    color: var(--color-text-primary);
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-modal-delete {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: var(--color-accent-danger, #ef4444);
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+</style>

@@ -26,6 +26,8 @@
 
 3. **Chương Trình Giới Thiệu (Referral / Affiliate)**:
    - Thêm thẻ **Chương trình Giới thiệu** vào trang Cài đặt cá nhân (`/settings`) với nút **Copy Link** (`https://tuvitoantap.vercel.app/?ref=...`).
+- **Primary Vercel Demo**: [https://tuvitoantap.vercel.app](https://tuvitoantap.vercel.app)
+- **Backup Cloudflare Pages**: [https://tuvitoantap.pages.dev](https://tuvitoantap.pages.dev).
    - Thưởng +10 XU cho người giới thiệu và +15 XU cho người được giới thiệu.
 
 4. **Trang Quản Trị Admin (`/admin`)**:

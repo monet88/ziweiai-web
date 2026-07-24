@@ -21,15 +21,15 @@
 
 {#if auth.isAuthenticated && !auth.isAnonymous}
   <div class="wallet-badge">
-    <div class="balance" title={viCopy.pricing.balanceLabel}>
+    <a href={resolve('/wallet')} class="balance" title="Ví XU & Điểm danh hàng ngày">
       <Coins class="w-4 h-4 text-amber-500" />
       {#if wallet.isLoading}
         <span class="loading"><Spinner size="sm" /></span>
       {:else}
         <strong class="amount">{wallet.balance}</strong>
       {/if}
-    </div>
-    <a href={resolve('/pricing')} class="add-btn" aria-label={viCopy.pricing.addXuAction}>
+    </a>
+    <a href={resolve('/pricing')} class="add-btn" aria-label={viCopy.pricing.addXuAction} title="Nạp XU">
       <Plus class="w-3 h-3" strokeWidth={3} />
     </a>
   </div>
@@ -58,6 +58,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    text-decoration: none;
+    color: inherit;
   }
 
   .amount {

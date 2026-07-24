@@ -152,8 +152,8 @@
       </div>
       <div class="session">
         <ThemeToggle />
+        <a class="session-cta wallet-btn" href={resolve('/wallet')}>Ví & Điểm danh</a>
         {#if !isMember}
-          <a class="session-cta wallet-btn" href={resolve('/wallet')}>Ví & Điểm danh</a>
           <span class="session-email">{viCopy.dashboard.anonymousSession}</span>
           <a class="session-cta" href={resolve('/sign-in')}>{viCopy.dashboard.signInOrSignUp}</a>
         {:else}

@@ -8,6 +8,7 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { apiEnv } from '../../config/env';
 import { reportOpsAlert } from '../../observability/ops-alert';
 import { Public } from '../auth/decorators/public.decorator';
+import { appendReferralQuery } from './append-referral-query';
 import { buildMysticalOgTree } from './og-element';
 import { buildShareMeta, escapeHtml } from './share-meta';
 
@@ -59,7 +60,10 @@ export class ShareController {
   ) {
     const userAgent = req.headers['user-agent'] || '';
     const isBot = BOT_USER_AGENTS.test(userAgent);
-    const targetUrl = `${PUBLIC_ORIGIN}/charts/${id}`;
+    const canonicalUrl = `${PUBLIC_ORIGIN}/charts/${id}`;
+    // Forward safe ?ref= for human redirect + bot refresh; keep og:url canonical (no ref).
+    const rawRef = Array.isArray(req.query.ref) ? req.query.ref[0] : req.query.ref;
+    const targetUrl = appendReferralQuery(canonicalUrl, rawRef);
 
     if (isBot) {
       const chart = await this.persistenceGateway.findPublicChartSnapshotById(id);
@@ -99,7 +103,7 @@ export class ShareController {
     <meta property="og:title" content="${safeOgTitle}" />
     <meta property="og:description" content="${safeDescription}" />
 ${ogImageTags}
-    <meta property="og:url" content="${targetUrl}" />
+    <meta property="og:url" content="${canonicalUrl}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Tử Vi Toàn Tập" />
     <meta property="og:locale" content="vi_VN" />

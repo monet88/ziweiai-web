@@ -28,9 +28,12 @@
   import DailyFortuneCard from '$lib/features/fortune/DailyFortuneCard.svelte';
   import MonthlyFortuneCard from '$lib/features/fortune/MonthlyFortuneCard.svelte';
   import AnnualReportButton from '$lib/features/fortune/AnnualReportButton.svelte';
+  import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
+  import { appendReferralQuery, sanitizeReferralCode } from '$lib/features/referral/append-referral-query';
   import { revealElements, revealHexagramLines } from '$lib/motion/reveal';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
+  import { supabase } from '$lib/supabase/supabase-client';
 
   interface Props {
     chartId: string;
@@ -41,6 +44,7 @@
 
   const auth = getAuthStore();
   const queryClient = useQueryClient();
+  const wallet = createWalletModel(auth);
 
   // getChartId là getter reactive (Svelte 5): model luôn đọc chartId mới nhất trong
   // queryKey/queryFn mà không cần snapshot lúc mount. +page.svelte vẫn bọc {#key chartId}
@@ -140,7 +144,21 @@
   });
 
   async function handleShare() {
-    const shareUrl = `${window.location.origin}/share/charts/${detail.chartId}`;
+    let referralCode = wallet.referralCode;
+    // Avoid race: wallet query may still be loading when user taps Chia Sẻ.
+    if (!referralCode && auth.user?.id && !auth.isAnonymous) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('referral_code')
+        .eq('user_id', auth.user.id)
+        .maybeSingle();
+      referralCode = sanitizeReferralCode(data?.referral_code ?? null);
+    }
+
+    const shareUrl = appendReferralQuery(
+      `${window.location.origin}/share/charts/${detail.chartId}`,
+      referralCode,
+    );
     if (navigator.share) {
       try {
         await navigator.share({

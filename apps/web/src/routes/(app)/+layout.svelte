@@ -4,6 +4,7 @@
   import type { Snippet } from 'svelte';
   import { page } from '$app/stores';
   import { browser } from '$app/environment';
+  import { sanitizeReferralCode } from '$lib/features/referral/append-referral-query';
 
   interface Props {
     children: Snippet;
@@ -15,7 +16,7 @@
 
   $effect(() => {
     if (browser) {
-      const refCode = $page.url.searchParams.get('ref');
+      const refCode = sanitizeReferralCode($page.url.searchParams.get('ref'));
       if (refCode) {
         localStorage.setItem('ziweiai_ref_code', refCode);
       }

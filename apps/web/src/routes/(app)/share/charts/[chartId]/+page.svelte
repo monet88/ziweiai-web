@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/state';
+  import { appendReferralQuery } from '$lib/features/referral/append-referral-query';
   import type { PageData } from './$types';
 
   interface Props {
@@ -9,8 +10,12 @@
   let { data }: Props = $props();
 
   onMount(() => {
-    // Redirect to the actual app route for the chart
-    window.location.replace(`/charts/${page.params.chartId}`);
+    // Redirect to the actual app route for the chart; keep safe ?ref= for referral capture.
+    const target = appendReferralQuery(
+      `/charts/${page.params.chartId}`,
+      page.url.searchParams.get('ref'),
+    );
+    window.location.replace(target);
   });
 </script>
 

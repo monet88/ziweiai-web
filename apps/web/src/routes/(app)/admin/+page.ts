@@ -18,10 +18,15 @@ export const load: PageLoad = async () => {
       session,
     };
   } catch (err) {
-    const error = err as { status?: number };
-    if (error.status === 403 || error.status === 401) {
+    const error = err as { status?: number; kind?: string };
+    if (
+      error.status === 403 ||
+      error.status === 401 ||
+      error.kind === 'forbidden' ||
+      error.kind === 'unauthorized'
+    ) {
       throw redirect(303, '/');
     }
-    return { users: [] };
+    return { users: [], session };
   }
 };

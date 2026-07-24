@@ -9,7 +9,7 @@
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
   import { fetchFeatures } from '$lib/api-client';
-  import { PrimaryButton, ThemeToggle } from '$lib/components/ui';
+  import { PrimaryButton, ThemeToggle, ViOSLogo } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { createDashboardModel } from '$lib/features/dashboard/dashboard-model.svelte';
   import BirthForm from '$lib/features/dashboard/BirthForm.svelte';
@@ -136,7 +136,7 @@
 </script>
 
 <svelte:head>
-  <title>{viCopy.dashboard.heroTitle} - ziweiai</title>
+  <title>{viCopy.dashboard.heroTitle} - ViOS</title>
 </svelte:head>
 
 <main class="dashboard-page">

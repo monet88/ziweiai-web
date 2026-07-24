@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { NoticeBanner } from '$lib/components/ui';
+  import { NoticeBanner, ViOSLogo } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
 
   const t = viCopy.signIn;
@@ -71,13 +71,15 @@
 </script>
 
 <svelte:head>
-  <title>{mode === 'sign-in' ? t.headTitleSignIn : t.headTitleSignUp} - ziweiai</title>
+  <title>{mode === 'sign-in' ? t.headTitleSignIn : t.headTitleSignUp} - ViOS</title>
 </svelte:head>
 
 <main class="screen">
   <div class="shell">
-    <section class="intro" aria-label="ziweiai">
-      <p class="brand">{t.brand}</p>
+    <section class="intro" aria-label="ViOS">
+      <div class="brand-wrapper">
+        <ViOSLogo size="lg" showTagline={true} />
+      </div>
       <p class="intro-copy">{t.introCopy}</p>
     </section>
 

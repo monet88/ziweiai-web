@@ -13,4 +13,5 @@ export { default as Spinner } from './Spinner.svelte';
 export { default as ConfirmDialog } from './ConfirmDialog.svelte';
 export { default as GlobalPaywallModal } from './GlobalPaywallModal.svelte';
 export { default as ThemeToggle } from './ThemeToggle.svelte';
+export { default as ViOSLogo } from './ViOSLogo.svelte';
 

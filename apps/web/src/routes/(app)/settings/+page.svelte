@@ -56,7 +56,7 @@
 </script>
 
 <svelte:head>
-  <title>Cài đặt tài khoản - Tử Vi Toàn Tập</title>
+  <title>Cài đặt tài khoản - ViOS</title>
 </svelte:head>
 
 <div class="settings-page">

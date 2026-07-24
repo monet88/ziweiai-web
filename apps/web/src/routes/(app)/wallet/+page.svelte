@@ -4,27 +4,41 @@
   import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
   import { browser } from '$app/environment';
   import { env } from '$env/dynamic/public';
+  import { onMount, onDestroy } from 'svelte';
+  import { Copy, Check, RefreshCw, Zap, ShieldAlert } from 'lucide-svelte';
 
   const auth = getAuthStore();
   const walletModel = createWalletModel(auth);
 
+  const accountNo = env.PUBLIC_SEPAY_ACCOUNT || '0123456789';
+  const bankName = env.PUBLIC_SEPAY_BANK || 'MBBank';
+
   // Package definitions
   const packages = [
-    { xu: 20, price: 20000, label: 'Gói Cơ Bản' },
-    { xu: 50, price: 50000, label: 'Gói Phổ Biến' },
-    { xu: 100, price: 100000, label: 'Gói Nâng Cao' },
+    { xu: 20, price: 20000, label: 'Gói Cơ Bản', badge: null },
+    { xu: 50, price: 50000, label: 'Gói Phổ Biến', badge: 'Bán Chạy' },
+    { xu: 120, price: 100000, label: 'Gói Nâng Cao', badge: '+20% XU' },
+    { xu: 600, price: 500000, label: 'Gói Thưởng Lớn', badge: '+20% XU' },
   ];
 
   let selectedPackage = $state(packages[1]); // Default to 50 XU
   let shortUuid = $derived(auth.user?.id?.substring(0, 8).toUpperCase() ?? '');
   let qrUrl = $derived.by(() => {
     if (!shortUuid) return '';
-    const acc = env.PUBLIC_SEPAY_ACCOUNT || '0123456789';
-    const bank = env.PUBLIC_SEPAY_BANK || 'MBBank';
-    return `https://qr.sepay.vn/img?acc=${acc}&bank=${bank}&amount=${selectedPackage.price}&des=TVTT%20${shortUuid}`;
+    return `https://qr.sepay.vn/img?acc=${accountNo}&bank=${bankName}&amount=${selectedPackage.price}&des=TVTT%20${shortUuid}`;
   });
 
   let refreshing = $state(false);
+  let copiedField = $state<string | null>(null);
+
+  function copyToClipboard(text: string, fieldName: string) {
+    if (!browser) return;
+    navigator.clipboard.writeText(text);
+    copiedField = fieldName;
+    setTimeout(() => {
+      if (copiedField === fieldName) copiedField = null;
+    }, 2000);
+  }
 
   async function handleRefresh() {
     refreshing = true;
@@ -33,7 +47,7 @@
     } finally {
       setTimeout(() => {
         refreshing = false;
-      }, 1000);
+      }, 800);
     }
   }
 
@@ -54,6 +68,22 @@
       checkinBusy = false;
     }
   }
+
+  onMount(() => {
+    walletModel.subscribe();
+
+    // Auto-polling every 5s while wallet page is active
+    const interval = setInterval(() => {
+      if (browser && auth.user && !auth.isAnonymous) {
+        walletModel.refresh();
+      }
+    }, 5000);
+
+    return () => {
+      walletModel.unsubscribe();
+      clearInterval(interval);
+    };
+  });
 
   $effect(() => {
     if (browser && auth.user) {
@@ -78,7 +108,7 @@
         <div class="anon-notice-banner surface-glass">
           <div class="anon-notice-text">
             <h3>🔒 Bạn đang sử dụng tài khoản vãng lai</h3>
-            <p>Đăng nhập bằng Email để Điểm danh nhận 5 XU hàng ngày và lấy Mã giới thiệu bạn bè nhận thêm XU!</p>
+            <p>Đăng nhập bằng Email để Điểm danh nhận 5 XU hàng ngày, tự động lưu lịch sử giao dịch và bảo vệ số dư XU của bạn!</p>
           </div>
           <a href="/sign-in" class="btn-anon-login">Đăng nhập ngay</a>
         </div>
@@ -95,7 +125,7 @@
             {/if}
           </div>
           <PrimaryButton
-            disabled={!walletModel.canCheckin || checkinBusy}
+            disabled={!walletModel.canCheckin || checkinBusy || auth.isAnonymous}
             onclick={handleCheckin}
           >
             {#if checkinBusy}
@@ -117,14 +147,17 @@
             {#if walletModel.referralCode}
               <p>Gửi link này cho bạn bè. Khi họ đăng nhập và điểm danh lần đầu (ever), bạn nhận +10 XU và họ nhận +15 XU (điểm danh +5 kèm thưởng giới thiệu +10).</p>
               <div class="ref-code-box">
-                <code>https://tuvitoantap.vercel.app/?ref={walletModel.referralCode}</code>
+                <code>https://tuvitoantap.pages.dev/?ref={walletModel.referralCode}</code>
                 <PrimaryButton 
                   onclick={() => {
-                    navigator.clipboard.writeText(`https://tuvitoantap.vercel.app/?ref=${walletModel.referralCode}`);
-                    alert('Đã copy link giới thiệu!');
+                    copyToClipboard(`https://tuvitoantap.pages.dev/?ref=${walletModel.referralCode}`, 'refLink');
                   }}
                 >
-                  Copy Link
+                  {#if copiedField === 'refLink'}
+                    <Check size={14} /> Đã Copy
+                  {:else}
+                    <Copy size={14} /> Copy Link
+                  {/if}
                 </PrimaryButton>
               </div>
             {:else}
@@ -158,7 +191,12 @@
               class:selected={selectedPackage.xu === pkg.xu}
               onclick={() => (selectedPackage = pkg)}
             >
-              <div class="pkg-label">{pkg.label}</div>
+              <div class="pkg-header">
+                <span class="pkg-label">{pkg.label}</span>
+                {#if pkg.badge}
+                  <span class="pkg-badge">{pkg.badge}</span>
+                {/if}
+              </div>
               <div class="pkg-xu">{pkg.xu} XU</div>
               <div class="pkg-price">{pkg.price.toLocaleString('vi-VN')} VNĐ</div>
             </button>
@@ -170,8 +208,14 @@
     <div class="payment-section">
       <div class="surface-glass">
         <div class="payment-card">
-          <h2 class="section-title">Quét mã QR để thanh toán</h2>
-          <p class="instruction">Mở ứng dụng ngân hàng và quét mã QR bên dưới.</p>
+          <div class="payment-header">
+            <h2 class="section-title">Quét mã QR để thanh toán</h2>
+            <div class="live-pulse-badge">
+              <span class="pulse-dot"></span>
+              <span>Đang chờ chuyển khoản...</span>
+            </div>
+          </div>
+          <p class="instruction">Mở app Ngân hàng (MBBank, Vietcombank, Momo...) quét mã QR để thanh toán tự động.</p>
           
           {#if qrUrl}
             <div class="qr-container">
@@ -180,15 +224,69 @@
             
             <div class="transfer-info">
               <div class="info-row">
-                <span class="info-label">Số tiền:</span>
-                <span class="info-value price">{selectedPackage.price.toLocaleString('vi-VN')} VNĐ</span>
+                <span class="info-label">Ngân hàng:</span>
+                <span class="info-value">{bankName}</span>
               </div>
+
               <div class="info-row">
-                <span class="info-label">Nội dung chuyển khoản:</span>
-                <span class="info-value highlight">TVTT {shortUuid}</span>
+                <span class="info-label">Số tài khoản:</span>
+                <div class="info-value-group">
+                  <span class="info-value">{accountNo}</span>
+                  <button 
+                    type="button" 
+                    class="btn-copy-small" 
+                    onclick={() => copyToClipboard(accountNo, 'accountNo')}
+                    aria-label="Copy số tài khoản"
+                  >
+                    {#if copiedField === 'accountNo'}
+                      <Check size={14} class="text-success" />
+                    {:else}
+                      <Copy size={14} />
+                    {/if}
+                  </button>
+                </div>
               </div>
+
+              <div class="info-row">
+                <span class="info-label">Số tiền:</span>
+                <div class="info-value-group">
+                  <span class="info-value price">{selectedPackage.price.toLocaleString('vi-VN')} VNĐ</span>
+                  <button 
+                    type="button" 
+                    class="btn-copy-small" 
+                    onclick={() => copyToClipboard(selectedPackage.price.toString(), 'price')}
+                    aria-label="Copy số tiền"
+                  >
+                    {#if copiedField === 'price'}
+                      <Check size={14} class="text-success" />
+                    {:else}
+                      <Copy size={14} />
+                    {/if}
+                  </button>
+                </div>
+              </div>
+
+              <div class="info-row">
+                <span class="info-label">Nội dung CK:</span>
+                <div class="info-value-group">
+                  <span class="info-value highlight">TVTT {shortUuid}</span>
+                  <button 
+                    type="button" 
+                    class="btn-copy-small btn-copy-highlight" 
+                    onclick={() => copyToClipboard(`TVTT ${shortUuid}`, 'content')}
+                    aria-label="Copy nội dung chuyển khoản"
+                  >
+                    {#if copiedField === 'content'}
+                      <Check size={14} class="text-success" />
+                    {:else}
+                      <Copy size={14} />
+                    {/if}
+                  </button>
+                </div>
+              </div>
+
               <p class="warning">
-                Lưu ý: Bắt buộc ghi đúng nội dung chuyển khoản để hệ thống tự động cộng XU (1-3 phút).
+                ⚠️ Lưu ý: Bắt buộc giữ nguyên nội dung <strong>TVTT {shortUuid}</strong> để hệ thống tự động cộng XU trong 1-3 phút.
               </p>
             </div>
           {/if}
@@ -198,9 +296,13 @@
               disabled={refreshing}
               onclick={handleRefresh}
             >
-              {refreshing ? 'Đang kiểm tra...' : 'Tôi đã chuyển khoản'}
+              {#if refreshing}
+                <RefreshCw size={16} class="spin-icon" /> Đang kiểm tra số dư...
+              {:else}
+                Tôi đã chuyển khoản
+              {/if}
             </PrimaryButton>
-            <p class="refresh-hint">Ấn nút trên để cập nhật số dư sau khi thanh toán.</p>
+            <p class="refresh-hint">Hệ thống tự động cộng XU ngay khi nhận tiền từ VietQR.</p>
           </div>
         </div>
       </div>
@@ -506,6 +608,114 @@
     font-size: var(--text-xs);
     color: var(--color-danger);
     font-style: italic;
+  }
+
+  .pkg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 4px;
+  }
+
+  .pkg-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    background: var(--color-accent-primary);
+    color: var(--color-text-on-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .payment-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .live-pulse-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: var(--color-success, #22c55e);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--color-success, #22c55e);
+    box-shadow: 0 0 0 rgba(34, 197, 94, 0.4);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    }
+  }
+
+  .info-value-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-copy-small {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border-hairline);
+    background: var(--color-bg-surface);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+  }
+
+  .btn-copy-small:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  .btn-copy-highlight {
+    border-color: var(--color-primary-subtle);
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
+  }
+
+  .text-success {
+    color: var(--color-success, #22c55e);
+  }
+
+  :global(.spin-icon) {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
   .actions {

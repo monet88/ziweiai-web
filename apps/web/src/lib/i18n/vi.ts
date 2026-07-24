@@ -31,7 +31,7 @@ export const viCopy = {
   signIn: {
     headTitleSignIn: 'Đăng nhập',
     headTitleSignUp: 'Tạo tài khoản',
-    brand: 'ZIWEIAI',
+    brand: 'ViOS',
     introCopy: 'Luận giải Tử Vi và chiêm tinh cá nhân hoá trong một không gian đọc tĩnh.',
     eyebrowSignIn: 'Phiên cá nhân',
     eyebrowSignUp: 'Tài khoản mới',

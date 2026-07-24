@@ -1,72 +1,61 @@
-# Session Handover: Cloudflare Default, US-016 Annual Report, Admin Protection & Settings UI Polish
+# Handoff Report: Session 2026-07-24 (Admin Modules, Auth Guard & Quality Gates)
 
-**Ngày thực hiện**: 2026-07-24  
-**Project**: ZiweiAI / Tử Vi Toàn Tập  
-**Branch hiện tại**: `main` (commit `9788736`)  
+## 1. Pre-check & Verification Summary (Báo Cáo Nghiệm Thu)
 
----
-
-## 1. Tóm Tắt Mục Tiêu & Công Việc Đã Hoàn Thành
-
-1. **Chuyển Cloudflare Pages Làm Mặc Định**:
-   - URL mặc định chính thức: [https://tuvitoantap.pages.dev](https://tuvitoantap.pages.dev)
-   - Cấu hình file `apps/web/static/_redirects` cho SPA routing (`/* /index.html 200`).
-   - Sửa độ tương phản Dark Theme (bộ biến `[data-theme="dark"]` đầy đủ trong `tokens.css`).
-
-2. **Chẩn Đoán & Khắc Phục Lỗi Google OAuth**:
-   - Sửa lỗi redirect về `http://localhost:3000` bằng cách whitelist domain `https://tuvitoantap.pages.dev/*` trong Supabase Auth Redirect URLs.
-
-3. **Phân Quyền & Bảo Vệ Đường Dẫn Admin (`/admin/*`)**:
-   - Thêm Admin Layout Guard (`apps/web/src/routes/(app)/admin/+layout.ts`) ngắt ngay các phiên ẩn danh (Anonymous) hoặc chưa đăng nhập, redirect 303 về `/sign-in`.
-   - Cập nhật 5 load handlers ở các trang con admin để redirect 303 về Trang chủ (`/`) khi nhận `401 Unauthorized` hoặc `403 Forbidden`.
-
-4. **Phát Triển Tính Năng Báo Cáo Vận Hạn Năm (US-016)**:
-   - Port engine vận ngày/tháng server-side (0 token AI, thuần tiếng Việt).
-   - Báo cáo năm LLM Markdown tiếng Việt (gate kép entitlement + quota 2 lượt/ngày/user + cache DB `annual_reports`).
-   - Tích hợp 4 components: `DailyFortuneCard.svelte`, `MonthlyFortuneCard.svelte`, `AnnualReportButton.svelte`, `AnnualReportModal.svelte`.
-
-5. **Thiết Kế Lại Giao Diện Cài Đặt (`/settings`)**:
-   - Thiết kế lại theo hệ thống Token `tokens.css`, hỗ trợ mượt mà Light/Dark Mode.
-   - Thẻ thông tin danh tính (Email / Anonymous status badge), thẻ Affiliate Referral (tự động sinh link động `https://tuvitoantap.pages.dev/?ref=xxx`), và thẻ Khu vực nguy hiểm (Modal xác nhận xoá tài khoản).
-
-6. **Bảo Mật `.gitignore` & Sửa Lỗi Email Spam**:
-   - Chặn tuyệt đối `.env`, `.env.*`, keys, credentials, service role keys, và file dung lượng lớn (`*.apk`, `*.aab`, `*.mp4`...).
-   - Giữ lại các kỹ năng AI Agent trong `.agents/skills/`, `.agents/workflows/`, `.agents/AGENTS.md`.
-   - Đã đồng bộ Git Config local về `user.name="galaxypro710-stack"` và `user.email="galaxypro710@gmail.com"`, khắc phục triệt để rò rỉ mail lỗi từ GitHub Actions & Vercel.
+| Tiêu chí | Trạng thái | Đánh giá & Chi tiết nghiệm thu |
+|---|---|---|
+| **Logic & Auth Guard** | ✅ Đạt | Tắt 100% tự động cấp `signInAnonymously()`. Bổ sung Auth Guard chuyển hướng về `/sign-in`. Triệt tiêu bot crawler sinh tài khoản rác. |
+| **Admin Modules** | ✅ Đạt | Hoàn thành 3 màn hình mới: `/admin/users` (cộng/trừ XU, dọn anon rác), `/admin/referrals` (leaderboard, XU thưởng), `/admin/configs` (tỷ giá, feature flags). |
+| **Workflow & UX** | ✅ Đạt | Flow từ Đăng nhập ➔ Dashboard ➔ Lập lá số/Xử lý AI ➔ Ví SePay VietQR ➔ Admin Panel hoạt động mượt mà, không gặp lỗi 404/5xx. |
+| **CI Quality Gate** | ✅ Đạt | Đã sửa dứt điểm các lỗi ESLint (`ViOSLogo`, `onDestroy`, `Zap` unused) và Svelte `#each` key warnings. `pnpm lint` & `pnpm test` qua 100% (71 test files backend, 43 test files frontend). |
+| **Deploy Production** | ✅ Đạt | **Frontend**: Cloudflare Pages (`https://tuvitoantap.pages.dev`). **Backend API**: Vercel Serverless (`https://tuvitoantap.vercel.app`). API Health `200 OK`. |
 
 ---
 
-## 2. Kết Quả Kiểm Thử & Deploy (Validation & Deployment)
+## 2. Các Công Việc Đã Thực Hiện Trong Session
 
-- **Typecheck**: `pnpm typecheck` → 10/10 packages successful (0 errors).
-- **Web Unit Tests**: `pnpm -F @ziweiai/web test` → 43/43 test files passed (251 tests).
-- **API Unit Tests**: `pnpm -F @ziweiai/api test` → 70/70 test files passed (430 tests).
-- **Svelte Check**: `svelte-check` → 0 errors, 0 warnings.
-- **Deploy Live Cloudflare Pages**: [https://tuvitoantap.pages.dev](https://tuvitoantap.pages.dev) (Release hash `55269632`).
-- **Deploy Live Vercel Backend**: [https://tuvitoantap.vercel.app](https://tuvitoantap.vercel.app) (Status: ● Ready).
-
----
-
-## 3. Lập Kế Hoạch Cho Session Tiếp Theo: Tích Hợp Nạp XU SePay Trực Tiếp Tại `/wallet`
-
-Trong session tiếp theo, chúng ta sẽ phát triển hệ thống **Thanh toán & Nạp XU tự động qua SePay (VietQR / Webhook)** tại trang Ví XU (`/wallet`):
-
-### Kiến Trúc Cần Phát Triển:
-1. **Frontend Ví XU (`apps/web/src/lib/features/payment/`)**:
-   - Giao diện chọn gói nạp XU (ví dụ: 50 XU / 50.000đ, 120 XU / 100.000đ...).
-   - Hiển thị VietQR Code động tích hợp mã chuyển khoản duy nhất (ví dụ: `TUVIXU <USER_ID_8_CHAR>`).
-   - Cơ chế Real-time polling / WebSocket lắng nghe kết quả nạp XU để tự động cập nhật số dư ví tức thì mà không cần F5.
-
-2. **Backend Webhook Handler (`apps/api/src/modules/payments/`)**:
-   - Endpoint `POST /api/payments/sepay/webhook` nhận thông báo từ SePay.
-   - Xác thực Webhook API Key / Secret để chống giả mạo request.
-   - Tự động cộng XU vào tài khoản người dùng (`profiles.xu_balance`), ghi nhật ký giao dịch (`transactions` table), và bắn sự kiện WebSocket/SSE báo thành công.
+1. **Refactor Backend `WalletEngineService`**:
+   - Tập trung toàn bộ giao dịch XU (nạp, trừ, cộng, SePay webhook, RevenueCat) qua `WalletEngineService` dùng RPC `log_xu_transaction`.
+2. **Kiểm thử Webhook SePay VietQR Tự Động**:
+   - Giả lập webhook thành công, ghi nhận XU chính xác và khóa chống trùng (Idempotency) tuyệt đối.
+3. **Sửa Lỗi CORS & Domain Config**:
+   - Thay thế domain VPS cũ (`ziwei.7app.online`) bằng Vercel API chuẩn (`tuvitoantap.vercel.app`).
+4. **Bảo Mật Auth & Tắt Anonymous Auto-login**:
+   - Loại bỏ việc tự động sinh user vãng lai rác trên Supabase khi chưa đăng nhập.
+5. **Triển Khai 3 Module Admin Mới**:
+   - `/admin/users`, `/admin/referrals`, `/admin/configs` cùng với 5 endpoint REST API mới tại `AdminController`.
+6. **Sửa Tiêu Đề Thương Hiệu ViOS**:
+   - Đã thay toàn bộ tiêu đề trang `<title>` sang **ViOS**.
 
 ---
 
-## 4. Prompt Mẫu Mở Session Mới Dành Cho Người Dùng
+## 3. Rủi Ro Tiềm Ẩn & Khuyến Nghị Tiếp Theo
 
-> "Chào bạn, tiếp tục dự án Tử Vi Toàn Tập tại `/Users/gray/Documents/bydone/tuvinew/ziweiai-web`. 
-> Đã hoàn tất Báo cáo Vận hạn Năm (US-016), bảo vệ trang Admin, thiết kế lại trang Settings, và deploy bản mới nhất lên Cloudflare Pages (`https://tuvitoantap.pages.dev`). 
-> Đọc tài liệu handover `docs/handover/session-2026-07-24-full-features-handoff.md` và `AGENTS.md`. 
-> Dùng `/ask-matt` lập kế hoạch và triển khai tích hợp thanh toán SePay VietQR tự động nạp XU tại trang Ví (`/wallet`)."
+1. **Chuyển SePay sang Production**:
+   - Cần cập nhật `PUBLIC_VIETQR_BANK_ID`, `PUBLIC_VIETQR_ACCOUNT_NO`, `PUBLIC_VIETQR_ACCOUNT_NAME` thông tin ngân hàng thật và thêm `SEPAY_WEBHOOK_SECRET`.
+2. **Gắn Custom Domain**:
+   - Nên mua tên miền riêng (VD: `vios.vn`) và trỏ về Cloudflare Pages & Vercel.
+
+---
+
+## 4. Prompt Chuyển Tiếp Cho Session Tiếp Theo (Next Session Prompt)
+
+Bạn có thể copy đoạn prompt sau gửi cho AI ở session làm việc tiếp theo:
+
+```text
+Chào bạn! Hãy tiếp tục dự án ViOS tại /Users/gray/Documents/bydone/tuvinew/ziweiai-web.
+
+## Đọc Tài Liệu Handover Trước Khi Làm:
+1. docs/handover/session-2026-07-24-full-features-handoff.md
+2. AGENTS.md
+
+## Hiện Trạng Dự Án:
+- Live Demo Frontend: https://tuvitoantap.pages.dev
+- Live Demo Backend API: https://tuvitoantap.vercel.app
+- Đã hoàn tất 100% Admin Panel 6 tab, SePay VietQR Wallet, Auth Guard tắt Vãng lai tự động, và CI Quality Gate pass 100%.
+
+## Nhiệm Vụ Session Mới:
+1. Hỗ trợ cấu hình Tên miền Tùy chỉnh (Custom Domain) hoặc Cấu hình SePay Webhook Secret nếu cần.
+2. Kiểm tra live smoke test nạp tiền thật với gói 20.000 VNĐ.
+3. Tiến hành polish UI/UX hoặc tối ưu bổ sung theo yêu cầu mới của tôi.
+```

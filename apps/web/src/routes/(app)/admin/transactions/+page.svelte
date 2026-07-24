@@ -153,8 +153,22 @@
     {/if}
 
     {#if targetTxId}
-      <div class="modal-overlay" role="presentation" onclick={() => (targetTxId = null)}>
-        <div class="modal-card surface-glass" role="dialog" aria-modal="true" onclick={(e) => e.stopPropagation()}>
+      <div
+        class="modal-overlay"
+        role="presentation"
+        onclick={() => (targetTxId = null)}
+        onkeydown={(e) => {
+          if (e.key === 'Escape') targetTxId = null;
+        }}
+      >
+        <div
+          class="modal-card surface-glass"
+          role="dialog"
+          aria-modal="true"
+          tabindex="-1"
+          onclick={(e) => e.stopPropagation()}
+          onkeydown={(e) => e.stopPropagation()}
+        >
           <h3>Gán XU Thủ Công Cho Giao Dịch</h3>
           <p class="tx-ref">Mã giao dịch: <code>{targetTxId}</code></p>
 

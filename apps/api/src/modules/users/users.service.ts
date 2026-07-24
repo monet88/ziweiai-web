@@ -3,7 +3,7 @@ import { type SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../database/supabase-client';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { HttpStatus } from '@nestjs/common';
-import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { WalletEngineService } from '../wallet/wallet-engine.service';
 
 @Injectable()
 export class UsersService {
@@ -11,7 +11,7 @@ export class UsersService {
 
   constructor(
     @Inject(SUPABASE_CLIENT) private readonly client: SupabaseClient,
-    private readonly gateway: SupabasePersistenceGateway,
+    private readonly walletEngine: WalletEngineService,
   ) {}
 
   async deleteAccount(userId: string): Promise<void> {
@@ -25,14 +25,13 @@ export class UsersService {
     
     this.logger.log(`Account deleted successfully for user: ${userId}`);
   }
-  async getWalletBalance(userId: string): Promise<number> {
-    const profile = await this.gateway.findProfileByUserId(userId);
 
-    if (!profile) {
-      this.logger.error(`Failed to get wallet balance for user ${userId}: Profile not found`);
+  async getWalletBalance(userId: string): Promise<number> {
+    try {
+      return await this.walletEngine.getBalance(userId);
+    } catch (err: any) {
+      this.logger.error(`Failed to get wallet balance for user ${userId}: ${err.message}`);
       throw new ApiErrorHttpException(HttpStatus.INTERNAL_SERVER_ERROR, 'INTERNAL_ERROR', 'Failed to fetch wallet balance');
     }
-
-    return profile.xuBalance;
   }
 }

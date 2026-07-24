@@ -26,6 +26,7 @@ import { UsersModule } from './modules/users/users.module';
 import { ShareModule } from './modules/share/share.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { RewardsModule } from './modules/rewards/rewards.module';
+import { WalletModule } from './modules/wallet/wallet.module';
 
 @Module({
   imports: [
@@ -34,7 +35,7 @@ import { RewardsModule } from './modules/rewards/rewards.module';
       limit: 10,
     }]),
     DatabaseModule,
-    AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsTarotModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule, ShareModule, AdminModule, RewardsModule
+    WalletModule, AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsTarotModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule, ShareModule, AdminModule, RewardsModule
   ],
   providers: [
     {

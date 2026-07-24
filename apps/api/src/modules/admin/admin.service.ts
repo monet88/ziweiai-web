@@ -1,12 +1,16 @@
 import { Injectable, Logger, BadRequestException, NotFoundException, Inject } from '@nestjs/common';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../database/supabase-client';
+import { WalletEngineService } from '../wallet/wallet-engine.service';
 
 @Injectable()
 export class AdminService {
   private readonly logger = new Logger(AdminService.name);
 
-  constructor(@Inject(SUPABASE_CLIENT) private readonly client: SupabaseClient) {}
+  constructor(
+    @Inject(SUPABASE_CLIENT) private readonly client: SupabaseClient,
+    private readonly walletEngine: WalletEngineService,
+  ) {}
 
   async getRecentTransactions() {
     const { data, error } = await this.client
@@ -56,16 +60,12 @@ export class AdminService {
       throw new BadRequestException('Could not update transaction owner');
     }
 
-    // Call add_xu RPC
+    // Call addXU via WalletEngineService
     const xuToAdd = tx.xu_added || Math.floor((tx.amount_vnd || 0) / 1000);
     if (xuToAdd > 0) {
-      const { error: rpcError } = await this.client.rpc('add_xu', {
-        user_id: targetUserId,
-        amount: xuToAdd,
-      });
-
-      if (rpcError) {
-        this.logger.error(`Failed to add XU for user ${targetUserId}`, rpcError);
+      const success = await this.walletEngine.addXU(targetUserId, xuToAdd, 'admin_reconcile');
+      if (!success) {
+        this.logger.error(`Failed to add XU for user ${targetUserId}`);
         throw new BadRequestException('Failed to add XU to user');
       }
     }

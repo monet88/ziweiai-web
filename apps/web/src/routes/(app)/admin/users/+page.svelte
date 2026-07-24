@@ -131,7 +131,7 @@
         </tr>
       </thead>
       <tbody>
-        {#each users as u}
+        {#each users as u (u.user_id)}
           <tr>
             <td class="user-email">
               {u.email || u.display_name || 'Khách vãng lai'}

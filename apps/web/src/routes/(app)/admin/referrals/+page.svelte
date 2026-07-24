@@ -83,7 +83,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each data.topReferrers as top, idx}
+          {#each data.topReferrers as top, idx (top.referrerId)}
             <tr>
               <td class="rank-col">#{idx + 1}</td>
               <td class="id-col"><code>{top.referrerId}</code></td>
@@ -114,7 +114,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each data.recentReferrals as ref}
+          {#each data.recentReferrals as ref (ref.id)}
             <tr>
               <td>{new Date(ref.created_at).toLocaleString('vi-VN')}</td>
               <td><code>{ref.referrer_id.substring(0, 8)}...</code></td>

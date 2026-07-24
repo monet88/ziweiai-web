@@ -4,8 +4,8 @@
   import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
   import { browser } from '$app/environment';
   import { env } from '$env/dynamic/public';
-  import { onMount, onDestroy } from 'svelte';
-  import { Copy, Check, RefreshCw, Zap, ShieldAlert } from 'lucide-svelte';
+  import { onMount } from 'svelte';
+  import { Copy, Check, RefreshCw } from 'lucide-svelte';
 
   const auth = getAuthStore();
   const walletModel = createWalletModel(auth);

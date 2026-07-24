@@ -56,7 +56,7 @@
 
     <h2>🧩 Trạng Thái Cờ Tính Năng AI (Feature Flags)</h2>
     <div class="features-grid">
-      {#each Object.entries(config.features) as [featureKey, isEnabled]}
+      {#each Object.entries(config.features) as [featureKey, isEnabled] (featureKey)}
         <div class="feature-card {isEnabled ? 'enabled' : 'disabled'}">
           <div class="feature-info">
             <span class="feature-name">{featureKey.toUpperCase()}</span>

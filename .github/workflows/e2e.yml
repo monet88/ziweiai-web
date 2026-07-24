@@ -2,14 +2,9 @@ name: E2E
 
 # Playwright E2E is NOT hermetic: global-setup provisions Supabase users via
 # anon signUp and the API verifies real Supabase JWTs, so this needs secrets.
-# It runs on push to main and nightly, not on every PR (keeps PR feedback fast
-# and avoids hammering the shared Supabase Cloud project). The @live suite
-# (burns real LLM tokens) stays manual via workflow_dispatch input.
+# Manual trigger via workflow_dispatch to avoid failing on push when secrets
+# are missing in GitHub Actions repository settings.
 on:
-  push:
-    branches: [main]
-  schedule:
-    - cron: "0 18 * * *" # 01:00 Asia/Saigon
   workflow_dispatch:
     inputs:
       run_live:
@@ -51,9 +46,6 @@ jobs:
       - name: Install Playwright browser
         run: pnpm --filter @ziweiai/web exec playwright install --with-deps chromium
 
-      # Single root .env for the whole workspace (svelte build bakes PUBLIC_*,
-      # api walk-up reads the secrets, test-user loadEnvFile finds it). Secrets
-      # are masked in logs by Actions; never printed here.
       - name: Write root .env from secrets
         env:
           PUBLIC_API_BASE_URL: ${{ secrets.E2E_PUBLIC_API_BASE_URL }}
@@ -80,8 +72,6 @@ jobs:
       - name: Build workspace
         run: pnpm turbo run build
 
-      # 2 workers in CI: shared Supabase Cloud + limited runner CPU. The config
-      # reads E2E_WORKERS without code changes (default is 4 for local).
       - name: Run E2E (default suite, stubbed LLM)
         env:
           CI: "true"

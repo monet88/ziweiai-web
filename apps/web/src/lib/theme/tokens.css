@@ -191,6 +191,7 @@
 
 /* Chart detail (and other product highlight surfaces) can opt into a deeper mystical
    palette without flipping the whole app. Tokens remapped here cascade to cards/buttons. */
+[data-theme="dark"],
 .theme-mystical {
   --color-bg-primary: #0c0b12;
   --color-bg-elevated: #15131d;

@@ -66,6 +66,12 @@
   title="Ví XU"
   subtitle="Nạp XU để sử dụng các tính năng cao cấp như Xem Tướng, Xem Tay và Luận Giải Chuyên Sâu."
 >
+  {#snippet action()}
+    <a href="/" class="btn-back-home">
+      ← Trang chủ
+    </a>
+  {/snippet}
+
   <div class="wallet-layout">
     <div class="left-column">
       <div class="rewards-section">
@@ -508,5 +514,24 @@
   .surface-glass {
     border-radius: var(--radius-xl);
     overflow: hidden;
+  }
+
+  .btn-back-home {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--overlay-border-strong);
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-back-home:hover {
+    background: var(--overlay-surface-veil);
+    border-color: var(--color-accent-primary);
   }
 </style>

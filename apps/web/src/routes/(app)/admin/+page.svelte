@@ -2,11 +2,18 @@
   import type { PageData } from './$types';
   import { adminTopupXU, adminBanUser, adminUnbanUser } from '$lib/api-client';
 
-  export let data: PageData;
-  let topupAmount = 50;
-  let selectedUserId = '';
-  let isLoading = false;
-  let showModal = false;
+  let { data }: { data: PageData } = $props();
+  let topupAmount = $state(50);
+  let selectedUserId = $state('');
+  let isLoading = $state(false);
+  let showModal = $state(false);
+  let filterType = $state<'all' | 'registered'>('all');
+
+  let filteredUsers = $derived(
+    filterType === 'registered'
+      ? data.users.filter((u: any) => Boolean(u.email && u.email.trim()))
+      : data.users
+  );
 
   function openTopupModal(userId: string) {
     selectedUserId = userId;
@@ -64,7 +71,7 @@
     }
   }
 
-  let isBanning = false;
+  let isBanning = $state(false);
   async function handleBan(userId: string, isBanned: boolean) {
     if (!confirm(isBanned ? 'Bạn có chắc chắn muốn KHÓA tài khoản này?' : 'Bạn có chắc chắn muốn MỞ KHÓA tài khoản này?')) return;
     if (!data.session) return;
@@ -92,13 +99,32 @@
   <title>Admin Dashboard - Tử Vi Toàn Tập</title>
 </svelte:head>
 
-
+<div class="admin-user-toolbar">
+  <div class="filter-tabs">
+    <button
+      type="button"
+      class="tab-btn"
+      class:active={filterType === 'all'}
+      onclick={() => (filterType = 'all')}
+    >
+      Tất cả người dùng ({data.users.length})
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      class:active={filterType === 'registered'}
+      onclick={() => (filterType = 'registered')}
+    >
+      Có Email ({data.users.filter((u: any) => u.email).length})
+    </button>
+  </div>
+</div>
 
 <div class="data-table-container">
   <table class="data-table">
     <thead>
       <tr>
-        <th>Tên</th>
+        <th>Tên / ID</th>
         <th>Email</th>
         <th>XU Balance</th>
         <th>Premium</th>
@@ -106,15 +132,25 @@
       </tr>
     </thead>
     <tbody>
-      {#each data.users as user (user.user_id)}
+      {#each filteredUsers as user (user.user_id)}
         <tr>
           <td class="primary-cell">
-            <span class="user-name">{user.full_name || 'N/A'}</span>
+            {#if user.full_name}
+              <span class="user-name">{user.full_name}</span>
+            {:else}
+              <span class="badge badge-anon" title="Tài khoản tự động tạo cho khách vãng lai">Vãng lai (Anon)</span>
+            {/if}
             {#if user.is_banned}
               <span class="badge badge-danger">Banned</span>
             {/if}
           </td>
-          <td class="secondary-cell">{user.email || 'N/A'}</td>
+          <td class="secondary-cell">
+            {#if user.email}
+              {user.email}
+            {:else}
+              <span class="anon-text">Chưa liên kết email</span>
+            {/if}
+          </td>
           <td class="highlight-cell">{user.xu_balance || 0}</td>
           <td class="secondary-cell">{user.is_premium ? 'Có' : 'Không'}</td>
           <td class="actions-cell">
@@ -307,6 +343,39 @@
     background: var(--overlay-ink-wash);
   }
 
+  /* Toolbar & Filter Tabs */
+  .admin-user-toolbar {
+    margin-bottom: var(--space-md);
+  }
+
+  .filter-tabs {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-hairline);
+  }
+
+  .tab-btn {
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .tab-btn.active {
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
   /* Badge */
   .badge {
     display: inline-flex;
@@ -317,6 +386,17 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: var(--tracking-eyebrow);
+  }
+
+  .badge-anon {
+    background: var(--color-bg-elevated);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border-hairline);
+  }
+
+  .anon-text {
+    font-style: italic;
+    opacity: 0.6;
   }
 
   .badge-danger {

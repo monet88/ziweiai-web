@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import WalletIndicator from '$lib/features/payment/WalletIndicator.svelte';
+  import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 
   // AppScaffold: khung layout nền cho các màn hình US-006..008. Header (eyebrow/title/
   // subtitle + slot action) + <main> semantic + container responsive. Bố cục 2 cột
@@ -33,6 +34,7 @@
         {/if}
       </div>
       <div class="hero-actions">
+        <ThemeToggle />
         <WalletIndicator />
         {#if action}
           {@render action()}

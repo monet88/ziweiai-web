@@ -109,6 +109,9 @@ export default defineConfig({
         API_EXPLANATIONS_PER_DAY_PER_USER: '100000',
         API_VISION_REQUESTS_PER_DAY_PER_USER: '100000',
         API_ANNUAL_REPORTS_PER_DAY_PER_USER: '100000',
+        // Shell/.env may set OPS_ALERT_WEBHOOK_URL to a non-URL → Zod fails API boot.
+        // E2E does not need ops alerts; empty → env.ts preprocess → undefined.
+        OPS_ALERT_WEBHOOK_URL: '',
         // US-017b: bật cờ MBTI cho e2e (mặc định false ở mọi nơi khác → fail-closed).
         EXTENDED_SYSTEM_MBTI_ENABLED: 'true',
         // US-017c: bật cờ Hợp Hôn cho e2e (mặc định false ở mọi nơi khác → fail-closed).

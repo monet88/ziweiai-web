@@ -2,6 +2,7 @@ import { Injectable, Logger, BadRequestException, Inject } from '@nestjs/common'
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../database/supabase-client';
 import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { sanitizeReferralCode } from '../share/append-referral-query';
 
 @Injectable()
 export class RewardsService {
@@ -16,7 +17,7 @@ export class RewardsService {
     // Call the RPC function we created in the database
     const { data: rewardXu, error } = await this.client.rpc('daily_checkin', {
       p_user_id: userId,
-      p_referral_code: referralCode ?? null,
+      p_referral_code: sanitizeReferralCode(referralCode) ?? null,
     });
 
     if (error) {

@@ -139,7 +139,8 @@ export function createWalletModel(auth: AuthStore) {
         xu_added: z.number()
       });
 
-      const refCode = localStorage.getItem('ziweiai_ref_code');
+      const { sanitizeReferralCode } = await import('$lib/features/referral/append-referral-query');
+      const refCode = sanitizeReferralCode(localStorage.getItem('ziweiai_ref_code'));
       const body = refCode ? { referralCode: refCode } : undefined;
 
       const result = await fetchJson('/api/rewards/checkin', schema, {
@@ -149,7 +150,7 @@ export function createWalletModel(auth: AuthStore) {
       });
       
       if (result.success) {
-        if (refCode) {
+        if (localStorage.getItem('ziweiai_ref_code')) {
           localStorage.removeItem('ziweiai_ref_code');
         }
         this.refresh();

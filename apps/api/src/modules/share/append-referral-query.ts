@@ -5,7 +5,8 @@ export function sanitizeReferralCode(raw: unknown): string | null {
   if (typeof raw !== 'string') return null;
   const trimmed = raw.trim();
   if (!REFERRAL_CODE_RE.test(trimmed)) return null;
-  return trimmed;
+  // DB codes are upper(md5 hex); normalize so messenger/URL lowercasing still redeems.
+  return trimmed.toUpperCase();
 }
 
 /**

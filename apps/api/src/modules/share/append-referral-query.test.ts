@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { appendReferralQuery, sanitizeReferralCode } from './append-referral-query';
 
 describe('sanitizeReferralCode', () => {
-  it('chấp nhận mã alphanumeric 4–16 ký tự', () => {
-    expect(sanitizeReferralCode('Ab12Cd34')).toBe('Ab12Cd34');
+  it('chấp nhận mã alphanumeric 4–16 ký tự và chuẩn hóa uppercase', () => {
+    expect(sanitizeReferralCode('Ab12Cd34')).toBe('AB12CD34');
     expect(sanitizeReferralCode('  CODE1234  ')).toBe('CODE1234');
+    expect(sanitizeReferralCode('smokeref1')).toBe('SMOKEREF1');
   });
 
   it('từ chối mã không hợp lệ', () => {
@@ -20,13 +21,13 @@ describe('sanitizeReferralCode', () => {
 describe('appendReferralQuery', () => {
   it('gắn ?ref= khi URL chưa có query', () => {
     expect(appendReferralQuery('https://tuvitoantap.vercel.app/charts/x', 'Ab12Cd34')).toBe(
-      'https://tuvitoantap.vercel.app/charts/x?ref=Ab12Cd34',
+      'https://tuvitoantap.vercel.app/charts/x?ref=AB12CD34',
     );
   });
 
   it('gắn &ref= khi URL đã có query', () => {
     expect(appendReferralQuery('https://example.com/charts/x?foo=1', 'Ab12Cd34')).toBe(
-      'https://example.com/charts/x?foo=1&ref=Ab12Cd34',
+      'https://example.com/charts/x?foo=1&ref=AB12CD34',
     );
   });
 

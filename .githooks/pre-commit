@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Blocks committing secrets, credentials, and large leak-prone binaries.
+# Install: ./scripts/install-git-hooks.sh
+set -euo pipefail
+
+blocked_patterns=(
+  '\.env$'
+  '\.env\.'
+  '\.pem$'
+  '\.key$'
+  '\.p12$'
+  '\.p8$'
+  '\.keystore$'
+  '\.jks$'
+  'credentials\.json$'
+  'service-account.*\.json$'
+  'google-services\.json$'
+  'GoogleService-Info\.plist$'
+  'firebase-adminsdk'
+  '\.apk$'
+  '\.aab$'
+  '\.ipa$'
+  '\.mp4$'
+  '\.zip$'
+  '\.7z$'
+  '\.rar$'
+  'ziweiai-demo\.zip$'
+  'logcat\.txt$'
+  'window_dump\.xml$'
+)
+
+# Allow .env.example only
+allowlist=(
+  '\.env\.example$'
+)
+
+staged="$(git diff --cached --name-only --diff-filter=ACMR || true)"
+if [[ -z "${staged}" ]]; then
+  exit 0
+fi
+
+fail=0
+while IFS= read -r file; do
+  [[ -z "$file" ]] && continue
+  allowed=0
+  for a in "${allowlist[@]}"; do
+    if [[ "$file" =~ $a ]]; then
+      allowed=1
+      break
+    fi
+  done
+  [[ $allowed -eq 1 ]] && continue
+
+  for p in "${blocked_patterns[@]}"; do
+    if [[ "$file" =~ $p ]]; then
+      echo "ERROR: blocked sensitive/large path from commit: $file" >&2
+      fail=1
+      break
+    fi
+  done
+
+  # Content scan for common secret prefixes in newly staged blobs
+  if git diff --cached -U0 -- "$file" | rg -q 'sbp_[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|SUPABASE_SERVICE_ROLE_KEY\s*=\s*eyJ|-----BEGIN (RSA |OPENSSH )?PRIVATE KEY-----'; then
+    # Ignore if only in docs with placeholders
+    if ! [[ "$file" =~ \.md$ ]]; then
+      echo "ERROR: staged content looks like a live secret in: $file" >&2
+      fail=1
+    fi
+  fi
+done <<< "$staged"
+
+if [[ $fail -ne 0 ]]; then
+  echo >&2
+  echo "Commit aborted by .githooks/pre-commit (secret/binary guard)." >&2
+  echo "Remove the file from staging, or use .env.example for placeholders only." >&2
+  exit 1
+fi
+
+exit 0

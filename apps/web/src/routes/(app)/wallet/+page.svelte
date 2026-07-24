@@ -74,6 +74,16 @@
 
   <div class="wallet-layout">
     <div class="left-column">
+      {#if auth.isAnonymous}
+        <div class="anon-notice-banner surface-glass">
+          <div class="anon-notice-text">
+            <h3>🔒 Bạn đang sử dụng tài khoản vãng lai</h3>
+            <p>Đăng nhập bằng Email để Điểm danh nhận 5 XU hàng ngày và lấy Mã giới thiệu bạn bè nhận thêm XU!</p>
+          </div>
+          <a href="/sign-in" class="btn-anon-login">Đăng nhập ngay</a>
+        </div>
+      {/if}
+
       <div class="rewards-section">
         <h2 class="section-title">Quà Tặng Hàng Ngày</h2>
         <div class="reward-card surface-glass">
@@ -533,5 +543,48 @@
   .btn-back-home:hover {
     background: var(--overlay-surface-veil);
     border-color: var(--color-accent-primary);
+  }
+
+  .anon-notice-banner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 20px;
+    border-radius: var(--radius-lg);
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    margin-bottom: 8px;
+  }
+
+  .anon-notice-text h3 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  .anon-notice-text p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+
+  .btn-anon-login {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    background: var(--color-accent-primary);
+    color: var(--color-text-on-primary);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    align-self: flex-start;
+    transition: opacity 0.2s ease;
+  }
+
+  .btn-anon-login:hover {
+    opacity: 0.9;
   }
 </style>

@@ -9,7 +9,7 @@
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
   import { fetchFeatures } from '$lib/api-client';
-  import { PrimaryButton } from '$lib/components/ui';
+  import { PrimaryButton, ThemeToggle } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { createDashboardModel } from '$lib/features/dashboard/dashboard-model.svelte';
   import BirthForm from '$lib/features/dashboard/BirthForm.svelte';
@@ -151,7 +151,9 @@
         <a href="#systems">{viCopy.dashboard.homeNavSystems}</a>
       </div>
       <div class="session">
+        <ThemeToggle />
         {#if !isMember}
+          <a class="session-cta wallet-btn" href={resolve('/wallet')}>Ví & Điểm danh</a>
           <span class="session-email">{viCopy.dashboard.anonymousSession}</span>
           <a class="session-cta" href={resolve('/sign-in')}>{viCopy.dashboard.signInOrSignUp}</a>
         {:else}

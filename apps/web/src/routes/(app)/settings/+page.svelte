@@ -1,13 +1,24 @@
 <script lang="ts">
   import { getAuthStore } from '$lib/auth/auth-context';
   import { deleteAccount } from '$lib/api-client';
+  import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { AlertCircle, Trash2, ArrowLeft } from 'lucide-svelte';
+  import { AlertCircle, Trash2, ArrowLeft, Share2, Copy, Check } from 'lucide-svelte';
 
   const auth = getAuthStore();
+  const walletModel = createWalletModel(auth);
   let isDeleting = $state(false);
   let showConfirmModal = $state(false);
+  let copied = $state(false);
+
+  function copyRefLink() {
+    if (!walletModel.referralCode) return;
+    const link = `https://tuvitoantap.vercel.app/?ref=${walletModel.referralCode}`;
+    navigator.clipboard.writeText(link);
+    copied = true;
+    setTimeout(() => (copied = false), 2000);
+  }
 
   async function handleDeleteAccount() {
     const token = auth.getAccessToken();
@@ -31,16 +42,56 @@
   <title>Cài đặt - Tử Vi Toàn Tập</title>
 </svelte:head>
 
-<div class="max-w-2xl mx-auto p-4 md:p-8">
+<div class="max-w-2xl mx-auto p-4 md:p-8 space-y-6">
   <div class="mb-8 flex items-center gap-4">
     <a href={resolve('/')} class="p-2 -ml-2 rounded-full hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-900" title="Quay lại">
       <ArrowLeft class="w-5 h-5" />
     </a>
     <div>
       <h1 class="text-2xl font-semibold text-slate-900">Cài đặt tài khoản</h1>
-      <p class="text-slate-500 text-sm mt-1">Quản lý thông tin và dữ liệu của bạn</p>
+      <p class="text-slate-500 text-sm mt-1">Quản lý thông tin và chương trình giới thiệu</p>
     </div>
   </div>
+
+  {#if !auth.isAnonymous}
+    <!-- Affiliate & Referral Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="p-6">
+        <h2 class="text-lg font-medium text-slate-900 mb-2 flex items-center gap-2">
+          <Share2 class="w-5 h-5 text-indigo-600" />
+          Chương trình Giới Thiệu (Affiliate / Referral)
+        </h2>
+        <p class="text-slate-600 mb-4 text-sm">
+          Chia sẻ link giới thiệu với bạn bè. Khi bạn bè tạo tài khoản và điểm danh lần đầu:
+          <strong>Bạn nhận +10 XU</strong> và <strong>Bạn bè nhận +15 XU</strong>.
+        </p>
+
+        {#if walletModel.referralCode}
+          <div class="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+            <input
+              type="text"
+              readonly
+              value={`https://tuvitoantap.vercel.app/?ref=${walletModel.referralCode}`}
+              class="flex-1 bg-transparent text-sm font-mono text-slate-800 focus:outline-none"
+            />
+            <button
+              type="button"
+              onclick={copyRefLink}
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-medium transition-colors"
+            >
+              {#if copied}
+                <Check class="w-3.5 h-3.5" /> Đã Copy
+              {:else}
+                <Copy class="w-3.5 h-3.5" /> Copy Link
+              {/if}
+            </button>
+          </div>
+        {:else}
+          <p class="text-xs text-slate-400 italic">Đang tải mã giới thiệu...</p>
+        {/if}
+      </div>
+    </div>
+  {/if}
 
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
     <div class="p-6">

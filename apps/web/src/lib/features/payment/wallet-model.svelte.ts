@@ -76,6 +76,12 @@ export function createWalletModel(auth: AuthStore) {
             const newBalance = payload.new.xu_balance;
             const newCheckinDate = payload.new.last_checkin_date;
             queryClient.setQueryData(queryKey(), (oldData: any) => {
+              if (oldData && newBalance !== undefined && newBalance > (oldData.xu_balance ?? 0)) {
+                const added = newBalance - (oldData.xu_balance ?? 0);
+                import('$lib/stores/toast').then(({ toast }) => {
+                  toast.show(`🎉 Nạp XU thành công! +${added} XU đã được cộng vào ví.`, 'success');
+                });
+              }
               if (!oldData) return { xu_balance: newBalance, last_checkin_date: newCheckinDate, referral_code: undefined };
               return {
                 ...oldData,

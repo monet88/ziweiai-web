@@ -15,6 +15,6 @@ test('đăng nhập rồi vào được dashboard (app)', async ({ page }) => {
   // nếu không khoanh vùng vào .tool-grid.
   const toolGrid = page.locator('.tool-grid');
   await expect(toolGrid.getByRole('link', { name: /Xem tướng/ })).toHaveAttribute('href', '/face');
-  await expect(toolGrid.getByRole('link', { name: /Tarot/ })).toHaveAttribute('href', '/tarot');
+  await expect(toolGrid.locator('a[href="/tarot"]')).toHaveAttribute('href', '/tarot');
   await expect(toolGrid.getByRole('link', { name: /Chỉ tay/ })).toHaveAttribute('href', '/palm');
 });

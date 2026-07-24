@@ -24,6 +24,7 @@
   import DaliurenDetailCard from '$lib/features/chart/DaliurenDetailCard.svelte';
   import QimenDetailCard from '$lib/features/chart/QimenDetailCard.svelte';
   import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
+  import AIExplanationLoader from '$lib/features/explanation/AIExplanationLoader.svelte';
   import AssistantPanel from '$lib/features/assistant/AssistantPanel.svelte';
   import DailyFortuneCard from '$lib/features/fortune/DailyFortuneCard.svelte';
   import MonthlyFortuneCard from '$lib/features/fortune/MonthlyFortuneCard.svelte';
@@ -283,7 +284,7 @@
         {#if explanationBlocked}
           <NoticeBanner tone="warning" message={copy.explanationBlockedDescription} />
         {:else if explanation.isPending && !explanation.hasResult}
-          <p class="status">{viCopy.explanation.statusPending}</p>
+          <AIExplanationLoader isPending={explanation.isPending} />
         {:else if explanation.isError && explanation.errorMessage}
           <NoticeBanner tone="danger" message={explanation.errorMessage} />
         {:else if explanation.hasResult && explanation.renderedMarkdown}
@@ -406,12 +407,6 @@
     color: var(--color-text-muted);
     font-size: 14px;
     line-height: 1.5;
-  }
-
-  .status {
-    margin: var(--space-md) 0 0;
-    color: var(--color-text-muted);
-    font-size: 14px;
   }
 
   .result {

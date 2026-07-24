@@ -8,6 +8,7 @@
   import type { Snippet } from 'svelte';
   import { AuthStore } from '$lib/auth/auth-store.svelte';
   import { setAuthStore } from '$lib/auth/auth-context';
+  import ToastContainer from '$lib/components/ui/ToastContainer.svelte';
 
   interface Props {
     data: LayoutData;
@@ -31,4 +32,5 @@
 
 <QueryClientProvider client={data.queryClient}>
   {@render children()}
+  <ToastContainer />
 </QueryClientProvider>

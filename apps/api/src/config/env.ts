@@ -55,12 +55,12 @@ export const apiEnvSchema = z.object({
   // app cũ — không còn dùng sau khi migrate sang SvelteKit). Khớp với .env.example.
   API_CORS_ORIGINS: z
     .string()
-    .default('http://localhost:5173,http://localhost:4173,http://localhost:3000'),
+    .default('http://localhost:5173,http://localhost:4173,http://localhost:3000,https://tuvitoantap.vercel.app'),
   API_REQUESTS_PER_MINUTE_PER_IP: z.coerce.number().int().positive().default(60),
   API_REQUESTS_PER_MINUTE_PER_USER: z.coerce.number().int().positive().default(30),
   API_CHARTS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(20),
   API_EXPLANATIONS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(50),
-  AI_PROVIDER_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
+  AI_PROVIDER_TIMEOUT_MS: z.coerce.number().int().positive().default(55000),
   // US-016: timeout riêng cho đường báo cáo năm. Báo cáo năm tổng hợp lưu niên + 12 lưu nguyệt
   // (~600-1200 từ) nên thời gian sinh thực tế của LLM thường vượt 15s mặc định (đo deepseek ~18s) →
   // 504 PROVIDER_TIMEOUT, tính năng gần như không dùng được. Cho phép phanh độc lập, mặc định 60s.
@@ -129,7 +129,7 @@ export const apiEnvSchema = z.object({
   // gấp ~3-5 lần một explanation nên cần phanh độc lập với AI_EXPLANATION_FREE_FOR_ALL. Mặc định
   // `false` (fail-closed): bật lên mới sinh báo cáo mới được. Dùng z.stringbool cùng lý do ở trên
   // (z.coerce.boolean() khiến "false" → true). Annual gate fail-closed cả hai cờ: một on một off → 402.
-  AI_ANNUAL_REPORT_ENABLED: z.stringbool().default(false),
+  AI_ANNUAL_REPORT_ENABLED: z.stringbool().default(true),
   // US-016: quota riêng cho báo cáo năm, KHÔNG dùng chung API_EXPLANATIONS_PER_DAY_PER_USER.
   // Số thấp (mặc định 2/ngày/user) vì mỗi báo cáo đốt token đáng kể.
   API_ANNUAL_REPORTS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(2),

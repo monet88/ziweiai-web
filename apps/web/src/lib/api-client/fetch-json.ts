@@ -119,6 +119,15 @@ async function parseResponseOrThrow<T>(response: Response, schema: ZodType<T>): 
   return parsed.data;
 }
 
+export function buildUrl(baseUrl: string, path: string): string {
+  const cleanBase = baseUrl.replace(/\/+$/, '');
+  let cleanPath = path.startsWith('/') ? path : `/${path}`;
+  if (cleanBase.endsWith('/api') && cleanPath.startsWith('/api/')) {
+    cleanPath = cleanPath.slice(4);
+  }
+  return `${cleanBase}${cleanPath}`;
+}
+
 /**
  * Gọi backend và parse response bằng schema từ @ziweiai/contracts.
  * Mọi response UI dùng đều phải đi qua đây — không trust raw JSON.
@@ -133,7 +142,7 @@ export async function fetchJson<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${env.apiBaseUrl}${path}`, {
+    response = await fetch(buildUrl(env.apiBaseUrl, path), {
       method,
       headers: createHeaders(options.token, hasBody),
       body: hasBody ? JSON.stringify(options.body) : undefined,
@@ -156,7 +165,7 @@ export async function fetchNoContent(
 ): Promise<void> {
   let response: Response;
   try {
-    response = await fetch(`${env.apiBaseUrl}${path}`, {
+    response = await fetch(buildUrl(env.apiBaseUrl, path), {
       method: options.method,
       headers: createHeaders(options.token, false),
     });
@@ -187,7 +196,7 @@ export async function fetchMultipart<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${env.apiBaseUrl}${path}`, { method: 'POST', headers, body: form });
+    response = await fetch(buildUrl(env.apiBaseUrl, path), { method: 'POST', headers, body: form });
   } catch {
     throw new ApiError('network', 'Không kết nối được máy chủ. Thử lại sau.');
   }

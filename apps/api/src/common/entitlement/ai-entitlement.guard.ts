@@ -14,8 +14,8 @@ export function assertAnnualReportEnabled(logger?: Logger): void {
   }
   logger?.warn('[annual] feature locked — AI_ANNUAL_REPORT_ENABLED=false');
   throw new ApiErrorHttpException(
-    HttpStatus.PAYMENT_REQUIRED,
-    'PAYMENT_REQUIRED',
+    HttpStatus.FORBIDDEN,
+    'FORBIDDEN',
     'Báo cáo năm AI tạm khoá ở giai đoạn beta. Vui lòng quay lại sau.',
   );
 }

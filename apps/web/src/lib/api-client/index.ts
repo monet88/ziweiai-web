@@ -68,8 +68,12 @@ import {
   type StickDraw,
   type AlmanacSelection,
   type AlmanacTopic,
+  adminUserListResponseSchema,
+  type AdminUserListResponse,
+  adminAnalyticsResponseSchema,
+  type AdminAnalyticsResponse,
 } from '@ziweiai/contracts';
-import { fetchJson, fetchMultipart, fetchNoContent } from './fetch-json';
+import { buildUrl, fetchJson, fetchMultipart, fetchNoContent } from './fetch-json';
 import { env } from '$lib/env';
 
 export { ApiError } from './fetch-json';
@@ -245,7 +249,7 @@ export async function* streamConversationMessage(
   conversationId: string,
   request: CreateConversationMessageRequest,
 ): AsyncGenerator<ConversationStreamEvent> {
-  const res = await fetch(`${env.apiBaseUrl}/conversations/${conversationId}/messages/stream`, {
+  const res = await fetch(buildUrl(env.apiBaseUrl, `/conversations/${conversationId}/messages/stream`), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -551,13 +555,21 @@ export function adminUnbanUser(token: string, userId: string): Promise<any> {
   return fetchJson(`/admin/users/${userId}/unban`, z.any(), { method: 'POST', token });
 }
 
-export function adminGetAnalytics(token: string, params?: { startDate?: string; endDate?: string }): Promise<any> {
+export function adminGetAnalytics(token: string, params?: { startDate?: string; endDate?: string }): Promise<AdminAnalyticsResponse> {
   const query = new URLSearchParams();
   if (params?.startDate) query.append('startDate', params.startDate);
   if (params?.endDate) query.append('endDate', params.endDate);
   
   const queryString = query.toString() ? `?${query.toString()}` : '';
-  return fetchJson(`/admin/analytics${queryString}`, z.any(), { method: 'GET', token });
+  return fetchJson(`/admin/analytics${queryString}`, adminAnalyticsResponseSchema, { method: 'GET', token });
+}
+
+export function adminGetUsers(token: string, search?: string): Promise<AdminUserListResponse> {
+  const query = new URLSearchParams();
+  if (search) query.append('search', search);
+  
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+  return fetchJson(`/admin/users${queryString}`, adminUserListResponseSchema, { method: 'GET', token });
 }
 
 export function adminGetConfigs(token: string): Promise<any> {

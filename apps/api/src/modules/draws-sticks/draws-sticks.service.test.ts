@@ -1,6 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { stickDrawSchema, type AuthenticatedUser } from '@ziweiai/contracts';
+import type { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
 import type { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
@@ -23,11 +24,13 @@ describe('DrawsSticksService', () => {
   const user: AuthenticatedUser = { userId: '11111111-1111-1111-1111-111111111111', email: 'user@example.com' };
   let quotasService: Pick<QuotasService, 'assertCanCreateStickDraw'>;
   let providerRouter: Pick<ExplanationProviderRouter, 'generate'>;
+  let persistenceGateway: Pick<SupabasePersistenceGateway, 'deductXU'>;
   let service: DrawsSticksService;
 
   beforeEach(() => {
     apiEnv.EXTENDED_SYSTEM_STICKS_ENABLED = true;
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
+    persistenceGateway = { deductXU: vi.fn().mockResolvedValue(true) };
     quotasService = {
       assertCanCreateStickDraw: vi.fn().mockResolvedValue(undefined),
     };
@@ -40,6 +43,7 @@ describe('DrawsSticksService', () => {
     service = new DrawsSticksService(
       quotasService as QuotasService,
       providerRouter as ExplanationProviderRouter,
+      persistenceGateway as SupabasePersistenceGateway
     );
   });
 
@@ -62,14 +66,15 @@ describe('DrawsSticksService', () => {
     expect(quotasService.assertCanCreateStickDraw).not.toHaveBeenCalled();
   });
 
-  it('chặn PAYMENT_REQUIRED khi đã bật nhưng AI gate không free-for-all', async () => {
+  it('chặn INSUFFICIENT_FUNDS khi đã bật nhưng AI gate không free-for-all', async () => {
+    persistenceGateway.deductXU = vi.fn().mockResolvedValue(false);
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
 
     try {
       await service.drawStick(user, '127.0.0.1', 'Công việc sắp tới thế nào?', 'seed-1');
       throw new Error('expected premium gate to throw');
     } catch (error) {
-      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'PAYMENT_REQUIRED');
+      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'INSUFFICIENT_FUNDS');
     }
   });
 

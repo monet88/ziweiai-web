@@ -1,6 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { lenormandDrawSchema, type AuthenticatedUser } from '@ziweiai/contracts';
+import type { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
 import type { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
@@ -22,11 +23,13 @@ describe('DrawsLenormandService', () => {
   const user: AuthenticatedUser = { userId: '11111111-1111-1111-1111-111111111111', email: 'user@example.com' };
   let quotasService: Pick<QuotasService, 'assertCanCreateLenormandDraw'>;
   let providerRouter: Pick<ExplanationProviderRouter, 'generate'>;
+  let persistenceGateway: Pick<SupabasePersistenceGateway, 'deductXU'>;
   let service: DrawsLenormandService;
 
   beforeEach(() => {
     apiEnv.EXTENDED_SYSTEM_LENORMAND_ENABLED = true;
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
+    persistenceGateway = { deductXU: vi.fn().mockResolvedValue(true) };
     quotasService = { assertCanCreateLenormandDraw: vi.fn().mockResolvedValue(undefined) };
     providerRouter = {
       generate: vi.fn().mockResolvedValue({
@@ -37,6 +40,7 @@ describe('DrawsLenormandService', () => {
     service = new DrawsLenormandService(
       quotasService as QuotasService,
       providerRouter as ExplanationProviderRouter,
+      persistenceGateway as SupabasePersistenceGateway
     );
   });
 
@@ -57,13 +61,14 @@ describe('DrawsLenormandService', () => {
     expect(quotasService.assertCanCreateLenormandDraw).not.toHaveBeenCalled();
   });
 
-  it('chặn PAYMENT_REQUIRED khi bật nhưng AI gate không free-for-all', async () => {
+  it('chặn INSUFFICIENT_FUNDS khi bật nhưng AI gate không free-for-all', async () => {
+    persistenceGateway.deductXU = vi.fn().mockResolvedValue(false);
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
     try {
       await service.drawLenormand(user, '127.0.0.1', 'Tôi nên tập trung điều gì?', 'three', 'seed-1');
       throw new Error('expected premium gate to throw');
     } catch (error) {
-      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'PAYMENT_REQUIRED');
+      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'INSUFFICIENT_FUNDS');
     }
   });
 

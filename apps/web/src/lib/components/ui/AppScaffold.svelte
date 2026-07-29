@@ -2,6 +2,8 @@
   import type { Snippet } from 'svelte';
   import WalletIndicator from '$lib/features/payment/WalletIndicator.svelte';
   import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
+  import { Home, LayoutDashboard, User } from 'lucide-svelte';
+  import { fadeUp } from '$lib/animations/gsap';
 
   // AppScaffold: khung layout nền cho các màn hình US-006..008. Header (eyebrow/title/
   // subtitle + slot action) + <main> semantic + container responsive. Bố cục 2 cột
@@ -22,7 +24,10 @@
 </script>
 
 <div class="screen" class:theme-mystical={tone === 'mystical'} data-tone={tone}>
-  <div class="container" class:has-sidebar={Boolean(sidebar)}>
+  {#if tone === 'mystical'}
+    <div class="bg-mystical-aurora"></div>
+  {/if}
+  <div class="container" class:has-sidebar={Boolean(sidebar)} use:fadeUp={{ duration: 0.8, y: 30 }}>
     <header class="hero">
       <div class="hero-text">
         {#if eyebrow}
@@ -49,6 +54,23 @@
       {/if}
     </div>
   </div>
+
+  <nav class="mobile-bottom-nav surface-glass">
+    <a href="/" class="nav-item">
+      <Home size={22} />
+      <span>Nhà</span>
+    </a>
+    <a href="/admin/analytics" class="nav-item">
+      <LayoutDashboard size={22} />
+      <span>Admin</span>
+    </a>
+    <div class="nav-item wallet-wrapper">
+      <WalletIndicator />
+    </div>
+    <div class="nav-item">
+      <ThemeToggle />
+    </div>
+  </nav>
 </div>
 
 <style>
@@ -60,9 +82,15 @@
     color: var(--color-text-primary);
   }
 
-  /* Phase 11 Ticket 2: mystical ambient for chart detail — soft gold + violet glows
-     over deep ink, without changing routes that keep tone=default. */
   .screen.theme-mystical {
+    background:
+      radial-gradient(ellipse 70% 45% at 12% 0%, var(--mystical-glow-a), transparent 58%),
+      radial-gradient(ellipse 55% 40% at 88% 8%, var(--mystical-glow-b), transparent 52%),
+      linear-gradient(180deg, var(--color-bg-surface) 0%, var(--color-bg-primary) 320px),
+      var(--color-bg-primary);
+  }
+
+  :global([data-theme="dark"]) .screen.theme-mystical {
     background:
       radial-gradient(ellipse 70% 45% at 12% 0%, var(--mystical-glow-a), transparent 58%),
       radial-gradient(ellipse 55% 40% at 88% 8%, var(--mystical-glow-b), transparent 52%),
@@ -213,6 +241,50 @@
 
     .container.has-sidebar .sidebar {
       width: 420px;
+    }
+  }
+
+  .mobile-bottom-nav {
+    display: none;
+  }
+
+  @media (max-width: 767px) {
+    .hero-actions {
+      display: none; /* Hide top actions on mobile */
+    }
+
+    .container {
+      padding-bottom: 100px; /* Space for bottom nav */
+    }
+
+    .mobile-bottom-nav {
+      display: flex;
+      position: fixed;
+      bottom: 20px;
+      left: var(--space-md);
+      right: var(--space-md);
+      height: 64px;
+      padding: 0 var(--space-md);
+      justify-content: space-between;
+      align-items: center;
+      z-index: 50;
+      /* Using GSAP interactions instead of raw CSS hover */
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-size: 10px;
+      font-weight: 600;
+      transition: color var(--duration-fast) ease;
+    }
+
+    .nav-item:active {
+      color: var(--color-text-primary);
     }
   }
 

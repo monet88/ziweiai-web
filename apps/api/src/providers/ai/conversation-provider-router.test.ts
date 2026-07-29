@@ -11,7 +11,7 @@ import { OpenAiCompatibleExplanationProvider } from './openai-compatible-explana
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
 
 // Build a router with hand-rolled provider doubles so we can flip availability + streaming support
-// per case without going through env. The real chain order is openai-compat -> deepseek -> gemini.
+// per case without going through env. The real chain order is gemini -> openai-compat -> deepseek.
 function buildRouter(overrides: {
   openAiCompat?: Partial<AiConversationProvider>;
   deepseek?: Partial<AiConversationProvider>;
@@ -51,14 +51,14 @@ describe('ConversationProviderRouter.resolveStreamingProvider', () => {
     vi.restoreAllMocks();
   });
 
-  it('returns the openai-compat provider when it is available and supports streaming (auto)', () => {
+  it('returns the gemini provider when it is available and supports streaming (auto)', () => {
     apiEnv.AI_DEFAULT_PROVIDER = 'auto';
     const router = buildRouter({
-      openAiCompat: { generateConversationStream: () => fakeStream(['a']) },
+      gemini: { generateConversationStream: () => fakeStream(['a']) },
     });
 
     const provider = router.resolveStreamingProvider('auto');
-    expect(provider?.providerName).toBe('openai-compat');
+    expect(provider?.providerName).toBe('gemini');
   });
 
   it('returns null when the first available provider does not support streaming', () => {
@@ -92,42 +92,42 @@ describe('ConversationProviderRouter.generate', () => {
   it('falls back to the next configured provider when the first provider times out', async () => {
     apiEnv.AI_DEFAULT_PROVIDER = 'auto';
     const router = buildRouter({
-      openAiCompat: {
+      gemini: {
         generateConversation: vi.fn(async () => {
-          throw new ProviderTimeoutError('openai slow');
+          throw new ProviderTimeoutError('gemini slow');
         }),
       },
-      deepseek: {
+      openAiCompat: {
         generateConversation: vi.fn(async () => ({
-          renderedMarkdown: 'deepseek fallback',
-          providerMetadata: { provider: 'deepseek' },
+          renderedMarkdown: 'openai fallback',
+          providerMetadata: { provider: 'openai-compat' },
         })),
       },
     });
 
     const result = await router.generate('auto', {} as never);
 
-    expect(result.renderedMarkdown).toBe('deepseek fallback');
+    expect(result.renderedMarkdown).toBe('openai fallback');
   });
 
   it('does not fail over when a provider returns CJK-guard content', async () => {
     apiEnv.AI_DEFAULT_PROVIDER = 'auto';
-    const deepseekGenerate = vi.fn(async () => ({
-      renderedMarkdown: 'deepseek fallback',
-      providerMetadata: { provider: 'deepseek' },
+    const openaiGenerate = vi.fn(async () => ({
+      renderedMarkdown: 'openai fallback',
+      providerMetadata: { provider: 'openai-compat' },
     }));
     const router = buildRouter({
-      openAiCompat: {
+      gemini: {
         generateConversation: vi.fn(async () => {
           throw new ProviderUnavailableError('Provider returned chữ Hán; nội dung không hợp lệ.');
         }),
       },
-      deepseek: {
-        generateConversation: deepseekGenerate,
+      openAiCompat: {
+        generateConversation: openaiGenerate,
       },
     });
 
     await expect(router.generate('auto', {} as never)).rejects.toThrow('chữ Hán');
-    expect(deepseekGenerate).not.toHaveBeenCalled();
+    expect(openaiGenerate).not.toHaveBeenCalled();
   });
 });

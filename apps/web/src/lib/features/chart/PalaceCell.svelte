@@ -242,8 +242,15 @@
   }
 
   .cell.selected {
-    border-color: var(--color-accent-primary);
-    background: var(--color-bg-elevated);
+    border-color: #d97706;
+    background: #fffbeb;
+    box-shadow: 0 0 12px rgba(217, 119, 6, 0.15);
+  }
+
+  :global([data-theme="dark"]) .cell.selected {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, #1a1d27 100%);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
   }
 
   .cell-head {

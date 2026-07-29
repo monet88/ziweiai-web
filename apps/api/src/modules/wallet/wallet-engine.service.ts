@@ -106,23 +106,29 @@ export class WalletEngineService {
       return;
     }
 
-    // Resolve user
+    // Resolve user by matching first 8 chars of user_id UUID
     const { data: userProfiles, error: userError } = await this.client
       .from('profiles')
-      .select('user_id')
-      .ilike('user_id', `${shortUuid}-%`);
+      .select('user_id');
 
     if (userError || !userProfiles || userProfiles.length === 0) {
-      this.logger.error(`Could not find user with short UUID prefix: ${shortUuid}`, userError);
+      this.logger.error(`Failed to fetch profiles to match short UUID: ${shortUuid}`, userError);
       return;
     }
 
-    if (userProfiles.length > 1) {
+    const matchedUsers = userProfiles.filter((p) => p.user_id.toLowerCase().startsWith(shortUuid));
+
+    if (matchedUsers.length === 0) {
+      this.logger.error(`Could not find user with short UUID prefix: ${shortUuid}`);
+      return;
+    }
+
+    if (matchedUsers.length > 1) {
       this.logger.error(`Multiple users found for short UUID prefix: ${shortUuid}`);
       return;
     }
 
-    const userId = userProfiles[0].user_id;
+    const userId = matchedUsers[0].user_id;
     const xuAdded = Math.floor(payload.transferAmount / 1000);
 
     if (xuAdded <= 0) {

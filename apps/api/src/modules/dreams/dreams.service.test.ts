@@ -1,6 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { dreamInterpretationSchema, type AuthenticatedUser } from '@ziweiai/contracts';
+import type { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
 import type { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
@@ -22,11 +23,13 @@ describe('DreamsService', () => {
   const user: AuthenticatedUser = { userId: '11111111-1111-1111-1111-111111111111', email: 'user@example.com' };
   let quotasService: Pick<QuotasService, 'assertCanCreateDreamReading'>;
   let providerRouter: Pick<ExplanationProviderRouter, 'generate'>;
+  let persistenceGateway: Pick<SupabasePersistenceGateway, 'deductXU'>;
   let service: DreamsService;
 
   beforeEach(() => {
     apiEnv.EXTENDED_SYSTEM_DREAM_ENABLED = true;
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
+    persistenceGateway = { deductXU: vi.fn().mockResolvedValue(true) };
     quotasService = { assertCanCreateDreamReading: vi.fn().mockResolvedValue(undefined) };
     providerRouter = {
       generate: vi.fn().mockResolvedValue({
@@ -34,7 +37,7 @@ describe('DreamsService', () => {
         providerMetadata: { provider: 'mock' },
       }),
     };
-    service = new DreamsService(quotasService as QuotasService, providerRouter as ExplanationProviderRouter);
+    service = new DreamsService(quotasService as QuotasService, providerRouter as ExplanationProviderRouter, persistenceGateway as SupabasePersistenceGateway);
   });
 
   afterEach(() => {
@@ -54,13 +57,14 @@ describe('DreamsService', () => {
     expect(quotasService.assertCanCreateDreamReading).not.toHaveBeenCalled();
   });
 
-  it('chặn PAYMENT_REQUIRED khi không free-for-all', async () => {
+  it('chặn INSUFFICIENT_FUNDS khi không free-for-all', async () => {
+    persistenceGateway.deductXU = vi.fn().mockResolvedValue(false);
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
     try {
       await service.interpretDream(user, '127.0.0.1', 'Tôi mơ thấy rắn');
       throw new Error('expected premium gate to throw');
     } catch (error) {
-      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'PAYMENT_REQUIRED');
+      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'INSUFFICIENT_FUNDS');
     }
   });
 

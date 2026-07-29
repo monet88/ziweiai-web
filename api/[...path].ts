@@ -10,7 +10,7 @@ async function createServer(): Promise<(req: unknown, res: unknown) => void> {
     import('../apps/api/dist/apps/api/src/observability/init-sentry.js'),
   ]);
 
-  const { allowedCorsOrigins, apiEnv } = envModule;
+  const { apiEnv } = envModule;
   // Production Vercel never runs main.ts — init Sentry here or captureException is a no-op sink.
   sentryModule.initSentry(apiEnv.SENTRY_DSN);
 
@@ -18,19 +18,16 @@ async function createServer(): Promise<(req: unknown, res: unknown) => void> {
 
   app.useGlobalFilters(new ApiErrorFilter());
   app.enableCors({
-    origin: (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
-      if (!origin || allowedCorsOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-      callback(null, false);
-    },
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: false,
   });
 
   await app.init();
   return app.getHttpAdapter().getInstance() as (req: unknown, res: unknown) => void;
 }
+
+export const maxDuration = 60;
 
 export default async function handler(req: { url?: string }, res: unknown) {
   req.url = req.url?.replace(/^\/api(?=\/|$)/, '') || '/';

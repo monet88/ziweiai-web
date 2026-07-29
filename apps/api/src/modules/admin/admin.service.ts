@@ -108,6 +108,19 @@ export class AdminService {
     return { success: true, deletedCount };
   }
 
+  async getAnalytics(startDate?: string, endDate?: string) {
+    const params: any = {};
+    if (startDate) params.p_start_date = startDate;
+    if (endDate) params.p_end_date = endDate;
+
+    const { data, error } = await this.client.rpc('get_admin_analytics', params);
+    if (error) {
+      this.logger.error('Failed to get admin analytics', error);
+      throw new BadRequestException('Could not get admin analytics');
+    }
+    return { analytics: data };
+  }
+
   async getReferralAnalytics() {
     const { data: referrals, error } = await this.client
       .from('referrals')

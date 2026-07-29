@@ -39,19 +39,22 @@
   .wallet-badge {
     display: inline-flex;
     align-items: center;
-    background: var(--color-bg-surface);
-    border: 1px solid var(--overlay-border-strong);
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(245, 158, 11, 0.3);
     border-radius: var(--radius-pill);
     height: 36px;
     padding-left: 12px;
     padding-right: 4px;
     gap: 8px;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   }
 
   .wallet-badge:hover {
-    border-color: var(--color-accent-primary);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border-color: rgba(245, 158, 11, 0.6);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+    transform: translateY(-1px);
   }
 
   .balance {

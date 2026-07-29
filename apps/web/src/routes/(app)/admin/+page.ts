@@ -14,7 +14,7 @@ export const load: PageLoad = async () => {
   try {
     const res = await adminListUsers(session.token);
     return {
-      users: res.users,
+      users: Array.isArray(res) ? res : (res?.users || []),
       session,
     };
   } catch (err) {

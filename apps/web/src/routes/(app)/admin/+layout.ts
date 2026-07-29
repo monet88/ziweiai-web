@@ -17,4 +17,11 @@ export const load: LayoutLoad = async () => {
   if (!rawSession?.access_token || isAnonymous) {
     throw redirect(303, '/sign-in');
   }
+  
+  return {
+    session: {
+      token: rawSession.access_token,
+      user: rawSession.user,
+    }
+  };
 };

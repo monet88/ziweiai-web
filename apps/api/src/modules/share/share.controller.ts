@@ -9,7 +9,7 @@ import { apiEnv } from '../../config/env';
 import { reportOpsAlert } from '../../observability/ops-alert';
 import { Public } from '../auth/decorators/public.decorator';
 import { appendReferralQuery } from './append-referral-query';
-import { buildMysticalOgTree } from './og-element';
+import { buildMysticalOgTree, buildReferralOgTree } from './og-element';
 import { buildShareMeta, escapeHtml } from './share-meta';
 
 const chartIdPipe = new ZodValidationPipe(z.uuid(), 'Mã lá số không hợp lệ.');
@@ -181,6 +181,109 @@ ${ogImageTags}
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           cause: error,
           tags: { surface: 'og_image' },
+        },
+        { webhookUrl: apiEnv.OPS_ALERT_WEBHOOK_URL },
+      );
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send('Failed to generate image');
+    }
+  }
+
+  /** Crawler + human share entry for referrals. */
+  @Public()
+  @Get('share/ref/:code')
+  async handleReferralShareRedirect(
+    @Param('code') code: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const userAgent = req.headers['user-agent'] || '';
+    const isBot = BOT_USER_AGENTS.test(userAgent);
+    const canonicalUrl = `${PUBLIC_ORIGIN}/?ref=${code}`;
+    const targetUrl = canonicalUrl;
+
+    if (isBot) {
+      const safeTitle = escapeHtml('Tử Vi Toàn Tập - Nhận ngay 15 XU');
+      const safeDescription = escapeHtml(
+        'Đăng nhập và điểm danh lần đầu qua link giới thiệu để nhận ngay 15 XU miễn phí (5 XU điểm danh + 10 XU thưởng).',
+      );
+      const ogImageUrl = `${PUBLIC_ORIGIN}/api/og/ref/${code}`;
+
+      const ogImageTags = `    <meta property="og:image" content="${ogImageUrl}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:image" content="${ogImageUrl}" />`;
+
+      const htmlString = `<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <title>${safeTitle}</title>
+    <meta name="description" content="${safeDescription}" />
+    <meta property="og:title" content="${safeTitle}" />
+    <meta property="og:description" content="${safeDescription}" />
+${ogImageTags}
+    <meta property="og:url" content="${canonicalUrl}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tử Vi Toàn Tập" />
+    <meta property="og:locale" content="vi_VN" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${safeTitle}" />
+    <meta name="twitter:description" content="${safeDescription}" />
+    <meta http-equiv="refresh" content="0; url=${targetUrl}" />
+  </head>
+  <body>
+    Redirecting to <a href="${targetUrl}">${targetUrl}</a>...
+  </body>
+</html>`;
+
+      return res.status(HttpStatus.OK).type('text/html').send(htmlString);
+    }
+
+    return res.redirect(HttpStatus.FOUND, targetUrl);
+  }
+
+  /** Dynamic OG PNG for referral sharing. */
+  @Public()
+  @Get('og/ref/:code')
+  async generateReferralOgImage(
+    @Param('code') code: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const fonts = await getInterFonts();
+      const template = buildReferralOgTree({ referralCode: code });
+
+      const svg = await satori(template as never, {
+        width: 1200,
+        height: 630,
+        fonts: fonts.map((data) => ({
+          name: 'Inter',
+          data,
+          weight: 400 as const,
+          style: 'normal' as const,
+        })),
+      });
+
+      const resvg = new Resvg(svg, {
+        background: '#0c0b12',
+      });
+      const pngData = resvg.render();
+      const pngBuffer = pngData.asPng();
+
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+      return res.status(HttpStatus.OK).send(pngBuffer);
+    } catch (error) {
+      console.error('Failed to generate referral OG image:', error);
+      void reportOpsAlert(
+        {
+          level: 'error',
+          code: 'INTERNAL_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to generate referral OG image',
+          path: `/og/ref/${code}`,
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          cause: error,
+          tags: { surface: 'og_image_referral' },
         },
         { webhookUrl: apiEnv.OPS_ALERT_WEBHOOK_URL },
       );

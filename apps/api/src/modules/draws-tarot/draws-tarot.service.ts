@@ -12,6 +12,7 @@ import { apiEnv } from '../../config/env';
 import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
 import { QuotasService } from '../quotas/quotas.service';
+import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 import { drawDeterministic, type TarotCardDraw } from './tarot-deck';
 import { buildTarotReadingPrompt, SPREAD_LABELS_VI } from './tarot-prompts';
 
@@ -22,6 +23,7 @@ export class DrawsTarotService {
   constructor(
     private readonly quotasService: QuotasService,
     private readonly providerRouter: ExplanationProviderRouter,
+    private readonly persistenceGateway: SupabasePersistenceGateway,
   ) {}
 
   async drawTarot(
@@ -50,9 +52,8 @@ export class DrawsTarotService {
       );
     }
 
-    // Gate AI (premium) TRƯỚC quota: nếu không free-for-all thì chặn 402 ngay, không để
-    // user non-premium "tiêu" lần kiểm tra quota cho thao tác chắc chắn bị từ chối.
-    this.assertPremiumEntitlement();
+    // Gate AI (premium) TRƯỚC quota: kiểm tra/trừ XU nếu không free-for-all
+    await this.assertPremiumEntitlement(user.userId);
     // email rỗng/null ⟺ phiên ẩn danh (decision 0009): anon JWT có thể mang email="" (không chỉ
     // null), nên dùng !user.email để không bỏ lọt nhánh anon. Đồng bộ với assertEmailIdentityRequired.
     await this.assertCanCreateTarotDraw(user.userId, ipAddress, !user.email);
@@ -70,17 +71,28 @@ export class DrawsTarotService {
     });
   }
 
-  private assertPremiumEntitlement(): void {
+  private async assertPremiumEntitlement(userId?: string): Promise<void> {
     if (apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
-      this.logger.warn('AI_EXPLANATION_FREE_FOR_ALL=true — Tarot AI gate bypassed (free for all). Set false in production.');
       return;
     }
 
-    throw new ApiErrorHttpException(
-      HttpStatus.PAYMENT_REQUIRED,
-      'PAYMENT_REQUIRED',
-      'Tính năng luận giải AI yêu cầu gói trả phí. Vui lòng nâng cấp để tiếp tục.',
-    );
+    if (!userId) {
+      throw new ApiErrorHttpException(
+        HttpStatus.PAYMENT_REQUIRED,
+        'PAYMENT_REQUIRED',
+        'Tính năng gieo quẻ Tarot yêu cầu đăng nhập và có XU. Vui lòng đăng nhập hoặc nạp XU.',
+      );
+    }
+
+    const cost = 3;
+    const success = await this.persistenceGateway.deductXU(userId, cost);
+    if (!success) {
+      throw new ApiErrorHttpException(
+        HttpStatus.PAYMENT_REQUIRED,
+        'INSUFFICIENT_FUNDS',
+        `Tính năng rút Tarot yêu cầu ${cost} XU. Số dư XU của bạn không đủ, vui lòng nạp thêm XU.`,
+      );
+    }
   }
 
   // Bọc lỗi quota (raw Error từ QuotasService) thành 429 RATE_LIMITED cho đồng bộ với /charts và

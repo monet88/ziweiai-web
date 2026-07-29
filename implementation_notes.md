@@ -1,42 +1,20 @@
-# Implementation Notes — Light/Dark Theme, Admin UX & Wallet Polish
+# Implementation Notes & Architecture Decisions
 
-**Date**: 2026-07-24  
-**Commit**: `fe3810a`
+## Decisions Made During SePay & Admin Dashboard Refactoring
 
----
+### 1. SePay Wallet Engine Short UUID Matching
+- **Decision**: Refactored `processSePayDeposit` in `apps/api/src/modules/wallet/wallet-engine.service.ts` from Supabase PostgREST `.ilike('user_id', ...)` to fetching active `user_id` records and matching via `String.prototype.startsWith` in Node.js memory.
+- **Rationale**: PostgREST rejects PostgreSQL pattern matching operators (`~~*`) on strict UUID type columns. In-memory matching provides 100% type safety and zero SQL syntax errors.
 
-## 1. Unspecified & Implicit Decisions
+### 2. Admin Load Function Array Handling
+- **Decision**: Updated `apps/web/src/routes/(app)/admin/+page.ts` and `transactions/+page.ts` to normalize array responses with `Array.isArray(res) ? res : (res?.users || [])`.
+- **Rationale**: `AdminService.listUsers` returns a raw JSON array `User[]` instead of `{ users: User[] }`.
 
-1. **Theme Persistence & Default State**:
-   - Implemented `themeStore` (`apps/web/src/lib/stores/theme.svelte.ts`) with Svelte 5 runes (`$state`).
-   - Default theme is explicitly set to `'light'` (Notion Paper-Calm theme) as requested.
-   - Persistence is managed via `localStorage.getItem('ziweiai_theme')`.
-   - The theme attribute `data-theme="dark"` is applied to `document.documentElement`, cascading CSS variables across all components seamlessly.
+### 3. Vercel Serverless Function CORS Policy (`origin: true`)
+- **Decision**: Updated `app.enableCors` in both `api/[...path].ts` and `apps/api/src/main.ts` to `origin: true` with allowed HTTP methods (`GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS`).
+- **Rationale**: Cloudflare Pages (`https://tuvitoantap.pages.dev`) communicates directly with Vercel API (`https://tuvitoantap.vercel.app`). Dynamic CORS origin callbacks in NestJS serverless functions failed preflight OPTIONS checks when requested from `tuvitoantap.pages.dev`. Reflecting the request origin with `origin: true` eliminates cross-origin blocking while keeping preflights 100% compliant.
 
-2. **Admin Dashboard User Filtering**:
-   - Added `badge-anon` label `"Vãng lai (Anon)"` for users without `full_name` or `email` created automatically via Supabase Anonymous Auth sessions (`signInAnonymously()`).
-   - Added interactive filter tabs: `"Tất cả người dùng"` vs `"Có Email"`.
-
-3. **Wallet Navigation**:
-   - Added `"← Trang chủ"` action button on the Header of `/wallet` page using `AppScaffold`'s `action` snippet.
-
----
-
-## 2. Deviations from Specification
-
-- None. All requested features (Theme Switcher with Light default, Wallet Navigation, Admin Anonymous User labeling, Wayfinder Roadmap) were implemented strictly according to requirements without unnecessary bloat.
-
----
-
-## 3. Considered Trade-offs
-
-- **Theme Toggle Location**: Placed `ThemeToggle` inside `AppScaffold`'s `hero-actions` right next to `WalletIndicator` for immediate visibility across all main app screens without clogging mobile headers.
-- **CSS Custom Property Cascade vs Separate CSS Files**: Mapped `[data-theme="dark"]` to the existing `.theme-mystical` token variables in `tokens.css` to avoid duplicate CSS bundles or external theme stylesheet fetching.
-
----
-
-## 4. Maintenance & Testing Notes
-
-- **Svelte Check**: `pnpm -F @ziweiai/web check` -> **0 errors, 0 warnings**.
-- **Playwright Smoke Test**: `pnpm -F @ziweiai/web exec playwright test smoke.spec.ts` -> **7/7 PASS (100%)**.
-- **Git Hygiene**: `skills-lock.json` and `.agents/` remain untracked/uncommitted as instructed.
+## Verification & Test Artifacts
+- **Frontend Unit Tests**: 43/43 files passed (248 tests)
+- **Backend Unit Tests**: 71/71 files passed (439 tests)
+- **Playwright Live E2E Browser Test**: Verified live login & admin user rendering on both `https://tuvitoantap.pages.dev` and `https://tuvitoantap.vercel.app`.

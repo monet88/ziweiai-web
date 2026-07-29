@@ -24,45 +24,49 @@ describe('AlmanacService', () => {
   let providerRouter: Pick<ExplanationProviderRouter, 'generate'>;
   let service: AlmanacService;
 
-  beforeEach(() => {
-    apiEnv.EXTENDED_SYSTEM_ALMANAC_ENABLED = true;
-    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
-    quotasService = { assertCanCreateAlmanacSelection: vi.fn().mockResolvedValue(undefined) };
-    providerRouter = {
-      generate: vi.fn().mockResolvedValue({
-        renderedMarkdown: 'Luận giải chọn ngày từ LLM.\n\n## Tóm lại\nTự cân nhắc lịch thực tế.',
-        providerMetadata: { provider: 'mock' },
-      }),
-    };
-    service = new AlmanacService(quotasService as QuotasService, providerRouter as ExplanationProviderRouter);
-  });
-
-  afterEach(() => {
-    apiEnv.EXTENDED_SYSTEM_ALMANAC_ENABLED = originalEnabled;
-    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = originalFreeForAll;
-    vi.restoreAllMocks();
-  });
-
-  it('chặn FEATURE_DISABLED khi flag tắt', async () => {
-    apiEnv.EXTENDED_SYSTEM_ALMANAC_ENABLED = false;
-    try {
-      await service.select(user, '127.0.0.1', 'marriage', '2026-01-01', '2026-01-05');
-      throw new Error('expected flag gate to throw');
-    } catch (error) {
-      expectApiError(error, HttpStatus.FORBIDDEN, 'FEATURE_DISABLED');
-    }
-    expect(quotasService.assertCanCreateAlmanacSelection).not.toHaveBeenCalled();
-  });
-
-  it('chặn PAYMENT_REQUIRED khi không free-for-all', async () => {
-    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
-    try {
-      await service.select(user, '127.0.0.1', 'marriage', '2026-01-01', '2026-01-05');
-      throw new Error('expected premium gate to throw');
-    } catch (error) {
-      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'PAYMENT_REQUIRED');
-    }
-  });
+    let persistenceGateway: Pick<SupabasePersistenceGateway, 'deductXU'>;
+    
+    beforeEach(() => {
+      apiEnv.EXTENDED_SYSTEM_ALMANAC_ENABLED = true;
+      apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
+      quotasService = { assertCanCreateAlmanacSelection: vi.fn().mockResolvedValue(undefined) };
+      providerRouter = {
+        generate: vi.fn().mockResolvedValue({
+          renderedMarkdown: 'Luận giải chọn ngày từ LLM.\n\n## Tóm lại\nTự cân nhắc lịch thực tế.',
+          providerMetadata: { provider: 'mock' },
+        }),
+      };
+      persistenceGateway = { deductXU: vi.fn().mockResolvedValue(true) };
+      service = new AlmanacService(quotasService as QuotasService, providerRouter as ExplanationProviderRouter, persistenceGateway as SupabasePersistenceGateway);
+    });
+  
+    afterEach(() => {
+      apiEnv.EXTENDED_SYSTEM_ALMANAC_ENABLED = originalEnabled;
+      apiEnv.AI_EXPLANATION_FREE_FOR_ALL = originalFreeForAll;
+      vi.restoreAllMocks();
+    });
+  
+    it('chặn FEATURE_DISABLED khi flag tắt', async () => {
+      apiEnv.EXTENDED_SYSTEM_ALMANAC_ENABLED = false;
+      try {
+        await service.select(user, '127.0.0.1', 'marriage', '2026-01-01', '2026-01-05');
+        throw new Error('expected flag gate to throw');
+      } catch (error) {
+        expectApiError(error, HttpStatus.FORBIDDEN, 'FEATURE_DISABLED');
+      }
+      expect(quotasService.assertCanCreateAlmanacSelection).not.toHaveBeenCalled();
+    });
+  
+    it('chặn INSUFFICIENT_FUNDS khi trừ XU thất bại', async () => {
+      apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
+      persistenceGateway.deductXU = vi.fn().mockResolvedValue(false);
+      try {
+        await service.select(user, '127.0.0.1', 'marriage', '2026-01-01', '2026-01-05');
+        throw new Error('expected premium gate to throw');
+      } catch (error) {
+        expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'INSUFFICIENT_FUNDS');
+      }
+    });
 
   it('trả payload hợp lệ + gọi quota khi bật + free-for-all', async () => {
     const result = await service.select(user, '127.0.0.1', 'marriage', '2026-01-01', '2026-01-07');

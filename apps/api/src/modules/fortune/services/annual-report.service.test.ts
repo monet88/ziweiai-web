@@ -71,7 +71,7 @@ describe('AnnualReportService', () => {
     (apiEnv as any).AI_ANNUAL_REPORT_ENABLED = false;
     const { service, providerRouter } = makeService();
     await expect(service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026)).rejects.toMatchObject({
-      status: HttpStatus.PAYMENT_REQUIRED,
+      status: HttpStatus.FORBIDDEN,
     });
     expect(providerRouter.generate).not.toHaveBeenCalled();
   });

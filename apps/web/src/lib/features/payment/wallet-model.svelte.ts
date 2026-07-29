@@ -47,7 +47,7 @@ export function createWalletModel(auth: AuthStore) {
         createdAt: z.string(),
         completedAt: z.string().nullable()
       }));
-      return fetchJson('/api/rewards/referrals', schema, {
+      return fetchJson('/rewards/referrals', schema, {
         method: 'GET',
         token: auth.session?.access_token,
       });
@@ -149,7 +149,7 @@ export function createWalletModel(auth: AuthStore) {
       const refCode = sanitizeReferralCode(localStorage.getItem('ziweiai_ref_code'));
       const body = refCode ? { referralCode: refCode } : undefined;
 
-      const result = await fetchJson('/api/rewards/checkin', schema, {
+      const result = await fetchJson('/rewards/checkin', schema, {
         method: 'POST',
         token: auth.session?.access_token,
         body,

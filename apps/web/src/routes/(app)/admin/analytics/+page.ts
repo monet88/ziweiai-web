@@ -3,11 +3,8 @@ import type { PageLoad } from './$types';
 import { adminGetAnalytics } from '$lib/api-client';
 import { supabase } from '$lib/supabase/supabase-client';
 
-export const load: PageLoad = async ({ url }) => {
-  const {
-    data: { session: rawSession },
-  } = await supabase.auth.getSession();
-  const session = rawSession ? { token: rawSession.access_token, user: rawSession.user } : null;
+export const load: PageLoad = async ({ url, parent }) => {
+  const { session } = await parent();
   if (!session?.token) {
     throw redirect(303, '/sign-in');
   }

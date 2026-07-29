@@ -11,9 +11,9 @@
   title={themeStore.current === 'light' ? 'Chuyển sang giao diện tối' : 'Chuyển sang giao diện sáng'}
 >
   {#if themeStore.current === 'light'}
-    <Sun size={18} />
-  {:else}
     <Moon size={18} />
+  {:else}
+    <Sun size={18} />
   {/if}
 </button>
 

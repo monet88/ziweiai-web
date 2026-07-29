@@ -26,8 +26,8 @@ export const load: PageLoad = async ({ url }) => {
       endDate,
     });
     return {
-      transactions: res.transactions || [],
-      count: res.count || 0,
+      transactions: Array.isArray(res) ? res : (res?.transactions || []),
+      count: Array.isArray(res) ? res.length : (res?.count || 0),
       page,
     };
   } catch (err) {

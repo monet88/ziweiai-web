@@ -68,9 +68,8 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
-    border: 1px solid var(--overlay-border);
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border-hairline);
+    background: var(--color-bg-surface);
   }
 
   .loader-header {

@@ -5,7 +5,22 @@
   import { browser } from '$app/environment';
   import { env } from '$env/dynamic/public';
   import { onMount } from 'svelte';
-  import { Copy, Check, RefreshCw } from 'lucide-svelte';
+  import {
+    Copy,
+    Check,
+    RefreshCw,
+    Coins,
+    Gift,
+    Sparkles,
+    Share2,
+    ShieldCheck,
+    AlertCircle,
+    Users,
+    CreditCard,
+    Zap,
+    CheckCircle2,
+    Lock
+  } from 'lucide-svelte';
 
   const auth = getAuthStore();
   const walletModel = createWalletModel(auth);
@@ -13,12 +28,20 @@
   const accountNo = env.PUBLIC_SEPAY_ACCOUNT || '0123456789';
   const bankName = env.PUBLIC_SEPAY_BANK || 'MBBank';
 
-  // Package definitions
+  // Package definitions with cost-efficiency guidance
   const packages = [
-    { xu: 20, price: 20000, label: 'Gói Cơ Bản', badge: null },
-    { xu: 50, price: 50000, label: 'Gói Phổ Biến', badge: 'Bán Chạy' },
-    { xu: 120, price: 100000, label: 'Gói Nâng Cao', badge: '+20% XU' },
-    { xu: 600, price: 500000, label: 'Gói Thưởng Lớn', badge: '+20% XU' },
+    { xu: 20, price: 20000, label: 'Gói Cơ Bản', badge: null, desc: 'Dùng cho 4 lượt luận giải AI' },
+    { xu: 50, price: 50000, label: 'Gói Phổ Biến', badge: 'Bán Chạy', desc: 'Dùng cho 10 lượt luận giải AI' },
+    { xu: 120, price: 100000, label: 'Gói Nâng Cao', badge: '+20% XU', desc: 'Tặng thêm 20 XU thưởng' },
+    { xu: 600, price: 500000, label: 'Gói VIP Thưởng Lớn', badge: '+20% XU', desc: 'Tặng thêm 100 XU thưởng' },
+  ];
+
+  const featureCosts = [
+    { name: 'Luận giải AI Chuyên sâu', cost: '5 XU / lượt', tag: 'Xem nhiều nhất', icon: Sparkles },
+    { name: 'Xem Tướng Mặt / Bàn Tay AI', cost: '10 XU / lượt', tag: 'Phân tích ảnh', icon: Zap },
+    { name: 'Gieo Quẻ Kinh Dịch / Lục Hào', cost: '3 XU / lượt', tag: 'Dự đoán vận hạn', icon: CreditCard },
+    { name: 'Rút Bài Tarot / Lenormand', cost: '3 XU / lượt', tag: 'Lời khuyên ngày', icon: Gift },
+    { name: 'Lập lá số Tử Vi / Bát Tự', cost: '0 XU', tag: 'Miễn phí 100%', icon: CheckCircle2 },
   ];
 
   let selectedPackage = $state(packages[1]); // Default to 50 XU
@@ -69,6 +92,21 @@
     }
   }
 
+  function shareOnFacebook(url: string) {
+    if (!browser) return;
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank', 'noopener,noreferrer');
+  }
+
+  function shareOnTelegram(url: string, text: string) {
+    if (!browser) return;
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+  }
+
+  function shareOnZalo(url: string) {
+    if (!browser) return;
+    window.open(`https://sp.zalo.me/share_inline?link=${encodeURIComponent(url)}`, '_blank', 'noopener,noreferrer');
+  }
+
   onMount(() => {
     walletModel.subscribe();
 
@@ -93,8 +131,8 @@
 </script>
 
 <AppScaffold
-  title="Ví XU"
-  subtitle="Nạp XU để sử dụng các tính năng cao cấp như Xem Tướng, Xem Tay và Luận Giải Chuyên Sâu."
+  title="Ví XU & Điểm Danh"
+  subtitle="Nạp XU tự động qua VietQR để mở khoá Luận Giải AI Chuyên Sâu, Xem Tướng và Gieo Quẻ."
 >
   {#snippet action()}
     <a href="/" class="btn-back-home">
@@ -102,139 +140,234 @@
     </a>
   {/snippet}
 
-  <div class="wallet-layout">
-    <div class="left-column">
-      {#if auth.isAnonymous}
-        <div class="anon-notice-banner surface-glass">
-          <div class="anon-notice-text">
-            <h3>🔒 Bạn đang sử dụng tài khoản vãng lai</h3>
-            <p>Đăng nhập bằng Email để Điểm danh nhận 5 XU hàng ngày, tự động lưu lịch sử giao dịch và bảo vệ số dư XU của bạn!</p>
-          </div>
-          <a href="/sign-in" class="btn-anon-login">Đăng nhập ngay</a>
+  <div class="wallet-page-wrapper">
+    <!-- Top Hero Overview Card -->
+    <section class="hero-overview-card glass-panel">
+      <div class="balance-meta">
+        <div class="balance-icon-ring">
+          <Coins size={28} class="gold-icon" />
         </div>
-      {/if}
-
-      <div class="rewards-section">
-        <h2 class="section-title">Quà Tặng Hàng Ngày</h2>
-        <div class="reward-card surface-glass">
-          <div class="reward-info">
-            <h3>Điểm danh nhận XU</h3>
-            <p>Nhận ngay 5 XU mỗi ngày khi quay lại ứng dụng.</p>
-            {#if checkinError}
-              <p class="error-text">{checkinError}</p>
+        <div class="balance-details">
+          <div class="balance-label">
+            <span>Số dư Ví hiện tại</span>
+            {#if auth.isAnonymous}
+              <span class="user-tier-tag anon"><Lock size={12} /> Tài khoản vãng lai</span>
+            {:else}
+              <span class="user-tier-tag member"><ShieldCheck size={12} /> Thành viên Email</span>
             {/if}
           </div>
-          <PrimaryButton
-            disabled={!walletModel.canCheckin || checkinBusy || auth.isAnonymous}
-            onclick={handleCheckin}
-          >
-            {#if checkinBusy}
-              Đang xử lý...
-            {:else if !walletModel.canCheckin}
-              Đã nhận hôm nay
-            {:else}
-              Nhận 5 XU
-            {/if}
-          </PrimaryButton>
+          <div class="balance-amount">
+            <span class="num">{walletModel.balance}</span>
+            <span class="unit">XU</span>
+          </div>
         </div>
       </div>
 
-      <div class="referrals-section">
-        <h2 class="section-title">Giới thiệu bạn bè</h2>
-        <div class="referral-card surface-glass">
-          <div class="referral-info">
-            <h3>Chia sẻ mã giới thiệu</h3>
-            {#if walletModel.referralCode}
-              <p>Gửi link này cho bạn bè. Khi họ đăng nhập và điểm danh lần đầu (ever), bạn nhận +10 XU và họ nhận +15 XU (điểm danh +5 kèm thưởng giới thiệu +10).</p>
-              <div class="ref-code-box">
-                <code>https://tuvitoantap.pages.dev/?ref={walletModel.referralCode}</code>
-                <PrimaryButton 
-                  onclick={() => {
-                    copyToClipboard(`https://tuvitoantap.pages.dev/?ref=${walletModel.referralCode}`, 'refLink');
-                  }}
-                >
-                  {#if copiedField === 'refLink'}
-                    <Check size={14} /> Đã Copy
-                  {:else}
-                    <Copy size={14} /> Copy Link
-                  {/if}
-                </PrimaryButton>
-              </div>
-            {:else}
-              <p class="loading-text">Đang tải mã giới thiệu...</p>
-            {/if}
+      <!-- Quick Checkin Widget -->
+      <div class="hero-checkin-box">
+        <div class="checkin-info">
+          <div class="checkin-title">
+            <Gift size={18} class="text-gold" />
+            <strong>Điểm Danh Hàng Ngày</strong>
           </div>
-          
-          {#if walletModel.referrals.length > 0}
-            <div class="referral-history">
-              <h4>Lịch sử giới thiệu ({walletModel.referrals.length})</h4>
-              <ul>
-                {#each walletModel.referrals as ref (ref.createdAt)}
-                  <li>
-                    <span class="ref-date">{new Date(ref.createdAt).toLocaleDateString('vi-VN')}</span>
-                    <span class="ref-desc">Giới thiệu thành công</span>
-                    <span class="ref-reward">+{ref.rewardXu} XU</span>
-                  </li>
-                {/each}
-              </ul>
-            </div>
+          <p>Nhận ngay <strong>+5 XU</strong> mỗi ngày khi đăng nhập vào ViOS</p>
+          {#if checkinError}
+            <p class="error-text">{checkinError}</p>
           {/if}
         </div>
-      </div>
 
-      <div class="packages-section">
-        <h2 class="section-title">Chọn gói XU</h2>
-        <div class="packages-grid">
-          {#each packages as pkg (pkg.xu)}
-            <button
-              class="package-card"
-              class:selected={selectedPackage.xu === pkg.xu}
-              onclick={() => (selectedPackage = pkg)}
-            >
-              <div class="pkg-header">
-                <span class="pkg-label">{pkg.label}</span>
-                {#if pkg.badge}
-                  <span class="pkg-badge">{pkg.badge}</span>
-                {/if}
+        <PrimaryButton
+          disabled={!walletModel.canCheckin || checkinBusy || auth.isAnonymous}
+          onclick={handleCheckin}
+        >
+          {#if checkinBusy}
+            <RefreshCw size={14} class="spin-icon" /> Đang nhận...
+          {:else if !walletModel.canCheckin}
+            <Check size={14} /> Đã nhận hôm nay
+          {:else if auth.isAnonymous}
+            Đăng nhập để nhận
+          {:else}
+            <Gift size={14} /> Nhận 5 XU
+          {/if}
+        </PrimaryButton>
+      </div>
+    </section>
+
+    <!-- Main Content 2-Column Grid -->
+    <div class="wallet-grid">
+      <!-- Left Column: Packages, Costs, Referral -->
+      <div class="left-pane">
+        {#if auth.isAnonymous}
+          <div class="anon-warning-card glass-panel">
+            <AlertCircle size={24} class="warning-icon" />
+            <div class="warning-content">
+              <h3>Bạn đang dùng tài khoản vãng lai</h3>
+              <p>Hãy đăng nhập bằng Email để giữ bảo mật số dư XU bền vững và nhận 5 XU điểm danh mỗi ngày!</p>
+            </div>
+            <a href="/sign-in" class="btn-anon-login">Đăng nhập ngay</a>
+          </div>
+        {/if}
+
+        <!-- Section 1: Choose XU Package -->
+        <section class="packages-section">
+          <div class="section-header">
+            <h2><Coins size={20} class="text-gold" /> Chọn gói nạp XU</h2>
+            <span class="sub-tag">Nạp tự động qua VietQR</span>
+          </div>
+
+          <div class="packages-grid">
+            {#each packages as pkg (pkg.xu)}
+              <button
+                type="button"
+                class="package-card"
+                class:selected={selectedPackage.xu === pkg.xu}
+                onclick={() => (selectedPackage = pkg)}
+              >
+                <div class="pkg-header">
+                  <span class="pkg-label">{pkg.label}</span>
+                  {#if pkg.badge}
+                    <span class="pkg-badge">{pkg.badge}</span>
+                  {/if}
+                </div>
+                <div class="pkg-main">
+                  <span class="pkg-xu">{pkg.xu} <small>XU</small></span>
+                  <span class="pkg-price">{pkg.price.toLocaleString('vi-VN')} VNĐ</span>
+                </div>
+                <div class="pkg-footer">
+                  <span>{pkg.desc}</span>
+                </div>
+              </button>
+            {/each}
+          </div>
+        </section>
+
+        <!-- Section 2: XU Feature Costs Table -->
+        <section class="costs-section glass-panel">
+          <div class="section-header">
+            <h2><Sparkles size={20} class="text-gold" /> Bảng giá sử dụng XU</h2>
+          </div>
+          <div class="costs-list">
+            {#each featureCosts as item (item.name)}
+              <div class="cost-item">
+                <div class="cost-item-left">
+                  <item.icon size={16} class="cost-icon" />
+                  <span class="cost-name">{item.name}</span>
+                </div>
+                <div class="cost-item-right">
+                  <span class="cost-tag">{item.tag}</span>
+                  <span class="cost-val">{item.cost}</span>
+                </div>
               </div>
-              <div class="pkg-xu">{pkg.xu} XU</div>
-              <div class="pkg-price">{pkg.price.toLocaleString('vi-VN')} VNĐ</div>
-            </button>
-          {/each}
-        </div>
-      </div>
-    </div>
+            {/each}
+          </div>
+        </section>
 
-    <div class="payment-section">
-      <div class="surface-glass">
-        <div class="payment-card">
+        <!-- Section 3: Referrals -->
+        <section class="referral-section glass-panel">
+          <div class="section-header">
+            <h2><Users size={20} class="text-gold" /> Giới thiệu bạn bè nhận XU</h2>
+          </div>
+          <p class="referral-desc">
+            Chia sẻ link giới thiệu của bạn. Khi người mới đăng nhập & điểm danh lần đầu, bạn nhận <strong>+10 XU</strong> và người đó nhận tổng <strong>15 XU</strong> (+5 điểm danh +10 thưởng giới thiệu).
+          </p>
+
+          {#if walletModel.referralCode}
+            <div class="ref-link-box">
+              <input
+                type="text"
+                readonly
+                value={`https://tuvitoantap.vercel.app/share/ref/${walletModel.referralCode}`}
+                class="ref-input"
+              />
+              <button
+                type="button"
+                class="btn-copy-ref"
+                onclick={() => copyToClipboard(`https://tuvitoantap.vercel.app/share/ref/${walletModel.referralCode}`, 'refLink')}
+              >
+                {#if copiedField === 'refLink'}
+                  <Check size={14} /> Đã Copy
+                {:else}
+                  <Copy size={14} /> Copy Link
+                {/if}
+              </button>
+            </div>
+
+            <!-- Social Share Bar -->
+            <div class="social-share-bar">
+              <span class="share-label"><Share2 size={14} /> Chia sẻ nhanh:</span>
+              <button
+                type="button"
+                class="btn-share-social zalo"
+                onclick={() => shareOnZalo(`https://tuvitoantap.vercel.app/share/ref/${walletModel.referralCode}`)}
+              >
+                Zalo
+              </button>
+              <button
+                type="button"
+                class="btn-share-social facebook"
+                onclick={() => shareOnFacebook(`https://tuvitoantap.vercel.app/share/ref/${walletModel.referralCode}`)}
+              >
+                Facebook
+              </button>
+              <button
+                type="button"
+                class="btn-share-social telegram"
+                onclick={() => shareOnTelegram(`https://tuvitoantap.vercel.app/share/ref/${walletModel.referralCode}`, 'Tham gia ViOS ngay để nhận XU thưởng Tử Vi & Chiêm Tinh AI!')}
+              >
+                Telegram
+              </button>
+            </div>
+          {:else}
+            <p class="loading-text">Đang tải mã giới thiệu...</p>
+          {/if}
+
+          {#if walletModel.referrals.length > 0}
+            <div class="referral-history">
+              <h4>Lịch sử giới thiệu thành công ({walletModel.referrals.length})</h4>
+              <div class="ref-list">
+                {#each walletModel.referrals as ref (ref.createdAt)}
+                  <div class="ref-item">
+                    <span class="ref-date">{new Date(ref.createdAt).toLocaleDateString('vi-VN')}</span>
+                    <span class="ref-desc">Bạn mới đăng ký & điểm danh</span>
+                    <span class="ref-reward">+{ref.rewardXu} XU</span>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </section>
+      </div>
+
+      <!-- Right Column: Sticky Payment VietQR SePay -->
+      <aside class="right-pane sticky-pane">
+        <div class="payment-card glass-panel">
           <div class="payment-header">
-            <h2 class="section-title">Quét mã QR để thanh toán</h2>
+            <h3>Thanh Toán Qua VietQR</h3>
             <div class="live-pulse-badge">
               <span class="pulse-dot"></span>
-              <span>Đang chờ chuyển khoản...</span>
+              <span>Đang chờ chuyển khoản</span>
             </div>
           </div>
-          <p class="instruction">Mở app Ngân hàng (MBBank, Vietcombank, Momo...) quét mã QR để thanh toán tự động.</p>
-          
+          <p class="instruction">Quét mã QR bằng ứng dụng Ngân hàng (MBBank, Vietcombank, Momo, Techcombank...) để thanh toán tự động.</p>
+
           {#if qrUrl}
-            <div class="qr-container">
+            <div class="qr-frame">
               <img src={qrUrl} alt="Mã QR thanh toán SePay" class="qr-image" />
             </div>
-            
-            <div class="transfer-info">
+
+            <div class="transfer-info-box">
               <div class="info-row">
-                <span class="info-label">Ngân hàng:</span>
-                <span class="info-value">{bankName}</span>
+                <span class="info-label">Ngân hàng</span>
+                <span class="info-val">{bankName}</span>
               </div>
 
               <div class="info-row">
-                <span class="info-label">Số tài khoản:</span>
-                <div class="info-value-group">
-                  <span class="info-value">{accountNo}</span>
-                  <button 
-                    type="button" 
-                    class="btn-copy-small" 
+                <span class="info-label">Số tài khoản</span>
+                <div class="info-val-group">
+                  <span class="info-val">{accountNo}</span>
+                  <button
+                    type="button"
+                    class="btn-copy-small"
                     onclick={() => copyToClipboard(accountNo, 'accountNo')}
                     aria-label="Copy số tài khoản"
                   >
@@ -248,12 +381,12 @@
               </div>
 
               <div class="info-row">
-                <span class="info-label">Số tiền:</span>
-                <div class="info-value-group">
-                  <span class="info-value price">{selectedPackage.price.toLocaleString('vi-VN')} VNĐ</span>
-                  <button 
-                    type="button" 
-                    class="btn-copy-small" 
+                <span class="info-label">Số tiền</span>
+                <div class="info-val-group">
+                  <span class="info-val price">{selectedPackage.price.toLocaleString('vi-VN')} VNĐ</span>
+                  <button
+                    type="button"
+                    class="btn-copy-small"
                     onclick={() => copyToClipboard(selectedPackage.price.toString(), 'price')}
                     aria-label="Copy số tiền"
                   >
@@ -266,13 +399,13 @@
                 </div>
               </div>
 
-              <div class="info-row">
-                <span class="info-label">Nội dung CK:</span>
-                <div class="info-value-group">
-                  <span class="info-value highlight">TVTT {shortUuid}</span>
-                  <button 
-                    type="button" 
-                    class="btn-copy-small btn-copy-highlight" 
+              <div class="info-row highlight-row">
+                <span class="info-label">Nội dung CK</span>
+                <div class="info-val-group">
+                  <span class="info-val highlight">TVTT {shortUuid}</span>
+                  <button
+                    type="button"
+                    class="btn-copy-small btn-copy-highlight"
                     onclick={() => copyToClipboard(`TVTT ${shortUuid}`, 'content')}
                     aria-label="Copy nội dung chuyển khoản"
                   >
@@ -285,8 +418,20 @@
                 </div>
               </div>
 
-              <p class="warning">
-                ⚠️ Lưu ý: Bắt buộc giữ nguyên nội dung <strong>TVTT {shortUuid}</strong> để hệ thống tự động cộng XU trong 1-3 phút.
+              <button
+                type="button"
+                class="btn-copy-all"
+                onclick={() => copyToClipboard(`STK: ${accountNo}\nNH: ${bankName}\nSo tien: ${selectedPackage.price}\nND: TVTT ${shortUuid}`, 'copyAll')}
+              >
+                {#if copiedField === 'copyAll'}
+                  <Check size={16} /> Đã sao chép tất cả thông tin!
+                {:else}
+                  <Copy size={16} /> Sao chép tất cả thông tin CK
+                {/if}
+              </button>
+
+              <p class="warning-text">
+                ⚠️ Bắt buộc giữ nguyên nội dung <strong>TVTT {shortUuid}</strong> để hệ thống tự động cộng XU trong 1 - 3 phút.
               </p>
             </div>
           {/if}
@@ -302,272 +447,675 @@
                 Tôi đã chuyển khoản
               {/if}
             </PrimaryButton>
-            <p class="refresh-hint">Hệ thống tự động cộng XU ngay khi nhận tiền từ VietQR.</p>
+            <p class="refresh-hint">Ví sẽ tự động cập nhật ngay khi nhận được tín hiệu từ VietQR.</p>
           </div>
         </div>
-      </div>
+      </aside>
     </div>
   </div>
 </AppScaffold>
 
 <style>
-  .wallet-layout {
+  .wallet-page-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 40px;
-    max-width: 800px;
-    margin: 0 auto;
+    gap: 28px;
     width: 100%;
   }
 
-  @media (min-width: 800px) {
-    .wallet-layout {
+  /* Glassmorphism Panel Base (Theme Adaptive) */
+  .glass-panel {
+    background: var(--color-bg-surface, #ffffff);
+    border: 1px solid var(--color-border-hairline, #e2e8f0);
+    border-radius: var(--radius-xl, 20px);
+    padding: 24px;
+    box-shadow: var(--shadow-card, 0 10px 30px rgba(0, 0, 0, 0.06));
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  :global([data-theme="dark"]) .glass-panel {
+    background: rgba(22, 24, 34, 0.85);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Hero Overview Card */
+  .hero-overview-card {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #f8fafc;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-overview-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  @media (min-width: 768px) {
+    .hero-overview-card {
       flex-direction: row;
-      align-items: flex-start;
-    }
-    
-    .left-column {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 32px;
-    }
-    
-    .payment-section {
-      flex: 1.2;
-      position: sticky;
-      top: 100px;
+      align-items: center;
+      justify-content: space-between;
     }
   }
 
-  .left-column {
+  .balance-meta {
     display: flex;
-    flex-direction: column;
-    gap: 32px;
-  }
-
-  .rewards-section,
-  .referrals-section {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .reward-card {
-    display: flex;
-    flex-direction: row;
     align-items: center;
-    justify-content: space-between;
-    padding: 20px;
-    border-radius: var(--radius-lg);
     gap: 16px;
   }
 
-  .reward-info h3 {
-    margin: 0 0 4px;
-    font-size: var(--text-body);
-    font-weight: 700;
-    color: var(--color-primary);
+  .balance-icon-ring {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.35));
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+    flex-shrink: 0;
   }
 
-  .reward-info p {
+  :global(.text-gold) {
+    color: #d97706;
+  }
+  :global([data-theme="dark"]) :global(.text-gold) {
+    color: #f59e0b;
+  }
+
+  :global(.gold-icon) {
+    color: #f59e0b;
+    filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
+  }
+
+  .balance-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .balance-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #cbd5e1;
+  }
+
+  .user-tier-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill, 999px);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .user-tier-tag.member {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+
+  .user-tier-tag.anon {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  .balance-amount {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .balance-amount .num {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: #ffffff;
+  }
+
+  .balance-amount .unit {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fbbf24;
+  }
+
+  .hero-checkin-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 16px 20px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-lg, 16px);
+  }
+
+  .checkin-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .checkin-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: #f8fafc;
+  }
+
+  .checkin-info p {
     margin: 0;
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
+    font-size: 12px;
+    color: #94a3b8;
   }
 
   .error-text {
-    color: var(--color-danger) !important;
-    font-size: var(--text-xs) !important;
-    margin-top: 4px !important;
+    color: var(--color-danger, #ef4444) !important;
+    font-size: 11px !important;
+    margin-top: 2px !important;
   }
 
-  .referral-card {
+  /* Wallet 2-Column Grid Layout */
+  .wallet-grid {
     display: flex;
     flex-direction: column;
-    padding: 20px;
-    border-radius: var(--radius-lg);
-    gap: 20px;
+    gap: 28px;
   }
 
-  .referral-info h3 {
-    margin: 0 0 8px;
-    font-size: var(--text-body);
-    font-weight: 700;
-    color: var(--color-primary);
+  @media (min-width: 960px) {
+    .wallet-grid {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      align-items: start;
+    }
   }
 
-  .referral-info p {
-    margin: 0 0 16px;
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-  }
-
-  .ref-code-box {
+  .left-pane {
     display: flex;
-    gap: 12px;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .sticky-pane {
+    position: sticky;
+    top: 90px;
+  }
+
+  /* Section Headers */
+  .section-header {
+    display: flex;
     align-items: center;
-    background: var(--color-bg-elevated);
-    padding: 12px;
-    border-radius: var(--radius-md);
-    border: 1px dashed var(--color-border-subtle);
-  }
-
-  .ref-code-box code {
-    flex: 1;
-    font-family: var(--font-mono);
-    font-size: var(--text-sm);
-    color: var(--color-text-primary);
-    word-break: break-all;
-  }
-
-  .loading-text {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    font-style: italic;
-  }
-
-  .referral-history {
-    border-top: 1px solid var(--color-border-hairline);
-    padding-top: 20px;
-  }
-
-  .referral-history h4 {
-    margin: 0 0 12px;
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--color-text-primary);
-  }
-
-  .referral-history ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .referral-history li {
-    display: flex;
     justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    background: var(--color-bg-surface);
-    border-radius: var(--radius-sm);
-    font-size: var(--text-sm);
+    margin-bottom: 16px;
   }
 
-  .ref-date {
-    color: var(--color-text-muted);
-    font-size: var(--text-xs);
-    min-width: 80px;
-  }
-
-  .ref-desc {
-    flex: 1;
-    color: var(--color-text-primary);
-  }
-
-  .ref-reward {
-    font-weight: 600;
-    color: var(--color-success);
-  }
-
-  .section-title {
-    font-size: var(--text-h3);
-    font-weight: 600;
-    margin: 0 0 16px;
-    color: var(--color-text-primary);
-  }
-
-  .packages-grid {
+  .section-header h2 {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--color-text-primary, #0f172a);
+  }
+
+  .sub-tag {
+    font-size: 12px;
+    color: var(--color-text-muted, #64748b);
+  }
+
+  /* Anonymous Warning Banner */
+  .anon-warning-card {
+    display: flex;
+    align-items: center;
     gap: 16px;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    padding: 16px 20px;
+  }
+  :global([data-theme="dark"]) .anon-warning-card {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  :global(.warning-icon) {
+    color: #d97706;
+    flex-shrink: 0;
+  }
+
+  .warning-content h3 {
+    margin: 0 0 2px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text-primary, #0f172a);
+  }
+
+  .warning-content p {
+    margin: 0;
+    font-size: 12px;
+    color: var(--color-text-secondary, #475569);
+  }
+
+  .btn-anon-login {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    border-radius: var(--radius-md, 10px);
+    background: #d97706;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .btn-anon-login:hover {
+    opacity: 0.9;
+  }
+
+  /* Packages Grid */
+  .packages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
   }
 
   .package-card {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    padding: 20px;
-    background: var(--color-bg-surface);
-    border: 2px solid var(--color-border-hairline);
-    border-radius: var(--radius-lg);
+    justify-content: space-between;
+    padding: 18px;
+    background: var(--color-bg-surface, #ffffff);
+    border: 2px solid var(--color-border-hairline, #e2e8f0);
+    border-radius: var(--radius-lg, 16px);
     cursor: pointer;
-    transition: all 0.2s ease;
     text-align: left;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  :global([data-theme="dark"]) .package-card {
+    background: rgba(22, 24, 34, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
   .package-card:hover {
-    border-color: var(--color-border-subtle);
-    background: var(--color-bg-elevated);
+    border-color: #d97706;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(217, 119, 6, 0.12);
   }
 
   .package-card.selected {
-    border-color: var(--color-primary);
-    background: var(--color-primary-subtle);
+    border-color: #d97706;
+    background: #fffbeb;
+    box-shadow: 0 0 20px rgba(217, 119, 6, 0.2);
+  }
+
+  :global([data-theme="dark"]) .package-card.selected {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(15, 23, 42, 0.8) 100%);
+  }
+
+  .pkg-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
   }
 
   .pkg-label {
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-    margin-bottom: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-secondary, #475569);
+  }
+
+  .pkg-badge {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #d97706;
+    color: #ffffff;
+    text-transform: uppercase;
+  }
+
+  .pkg-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 8px;
   }
 
   .pkg-xu {
-    font-size: var(--text-h2);
-    font-weight: 700;
-    color: var(--color-text-primary);
-    margin-bottom: 8px;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--color-text-primary, #0f172a);
   }
-  
+
   .package-card.selected .pkg-xu {
-    color: var(--color-primary);
+    color: #b45309;
+  }
+  :global([data-theme="dark"]) .package-card.selected .pkg-xu {
+    color: #f59e0b;
+  }
+
+  .pkg-xu small {
+    font-size: 14px;
+    font-weight: 700;
   }
 
   .pkg-price {
-    font-size: var(--text-body);
-    color: var(--color-text-primary);
-    font-weight: 500;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-secondary, #64748b);
   }
 
+  .pkg-footer {
+    font-size: 11px;
+    color: var(--color-text-muted, #64748b);
+    border-top: 1px dashed var(--color-border-hairline, #e2e8f0);
+    padding-top: 8px;
+  }
+
+  /* Costs List */
+  .costs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cost-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--color-bg-elevated, #f8fafc);
+    border-radius: var(--radius-md, 12px);
+    border: 1px solid var(--color-border-hairline, #e2e8f0);
+  }
+
+  :global([data-theme="dark"]) .cost-item {
+    background: rgba(30, 41, 59, 0.4);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .cost-item-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  :global(.cost-icon) {
+    color: #d97706;
+  }
+  :global([data-theme="dark"]) :global(.cost-icon) {
+    color: #f59e0b;
+  }
+
+  .cost-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary, #0f172a);
+  }
+
+  .cost-item-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .cost-tag {
+    font-size: 11px;
+    color: var(--color-text-muted, #64748b);
+    background: rgba(0, 0, 0, 0.04);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  :global([data-theme="dark"]) .cost-tag {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .cost-val {
+    font-size: 13px;
+    font-weight: 700;
+    color: #b45309;
+  }
+  :global([data-theme="dark"]) .cost-val {
+    color: #f59e0b;
+  }
+
+  /* Referral Section */
+  .referral-desc {
+    font-size: 13px;
+    color: var(--color-text-secondary, #475569);
+    margin: 0 0 16px;
+    line-height: 1.5;
+  }
+
+  .ref-link-box {
+    display: flex;
+    gap: 8px;
+    background: var(--color-bg-elevated, #f8fafc);
+    padding: 6px 6px 6px 14px;
+    border-radius: var(--radius-md, 12px);
+    border: 1px dashed #d97706;
+    margin-bottom: 12px;
+  }
+  :global([data-theme="dark"]) .ref-link-box {
+    background: rgba(30, 41, 59, 0.6);
+  }
+
+  .ref-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--color-text-primary, #0f172a);
+    font-family: var(--font-mono, monospace);
+    font-size: 12px;
+    outline: none;
+  }
+
+  .btn-copy-ref {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm, 8px);
+    background: #d97706;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+
+  .btn-copy-ref:hover {
+    opacity: 0.9;
+  }
+
+  .social-share-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .share-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--color-text-muted, #64748b);
+  }
+
+  .btn-share-social {
+    padding: 4px 10px;
+    border-radius: var(--radius-pill, 999px);
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid var(--color-border-hairline, #cbd5e1);
+    background: var(--color-bg-elevated, #f1f5f9);
+    color: var(--color-text-primary, #0f172a);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-share-social.zalo:hover { background: #0068ff; border-color: #0068ff; color: #fff; }
+  .btn-share-social.facebook:hover { background: #1877f2; border-color: #1877f2; color: #fff; }
+  .btn-share-social.telegram:hover { background: #229ed9; border-color: #229ed9; color: #fff; }
+
+  .referral-history {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--color-border-hairline, #e2e8f0);
+  }
+
+  .referral-history h4 {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-text-secondary, #475569);
+  }
+
+  .ref-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ref-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: var(--color-bg-elevated, #f8fafc);
+    border-radius: 6px;
+    font-size: 12px;
+  }
+
+  .ref-date {
+    color: var(--color-text-muted, #64748b);
+    min-width: 75px;
+  }
+
+  .ref-desc {
+    flex: 1;
+    color: var(--color-text-primary, #0f172a);
+  }
+
+  .ref-reward {
+    font-weight: 700;
+    color: #16a34a;
+  }
+
+  /* Right Sticky Payment Card */
   .payment-card {
-    padding: 32px 24px;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
   }
 
-  .instruction {
-    color: var(--color-text-secondary);
-    margin-bottom: 24px;
+  .payment-header h3 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--color-text-primary, #0f172a);
   }
 
-  .qr-container {
-    background: white;
-    padding: 16px;
-    border-radius: var(--radius-md);
-    margin-bottom: 24px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  .live-pulse-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill, 999px);
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #16a34a;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  :global([data-theme="dark"]) .live-pulse-badge {
+    color: #4ade80;
+  }
+
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #16a34a;
+    box-shadow: 0 0 0 rgba(34, 197, 94, 0.4);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+    70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  }
+
+  .instruction {
+    font-size: 12px;
+    color: var(--color-text-secondary, #475569);
+    margin: 0 0 16px;
+    line-height: 1.4;
+  }
+
+  .qr-frame {
+    background: #ffffff;
+    padding: 12px;
+    border-radius: var(--radius-lg, 16px);
+    margin-bottom: 16px;
+    box-shadow: 0 0 25px rgba(217, 119, 6, 0.18);
+    border: 2px solid #d97706;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .qr-frame:hover {
+    transform: scale(1.03);
   }
 
   .qr-image {
-    width: 240px;
-    height: 240px;
+    width: 210px;
+    height: 210px;
     object-fit: contain;
     display: block;
   }
 
-  .transfer-info {
+  .transfer-info-box {
     width: 100%;
-    background: var(--color-bg-primary);
-    border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-md);
-    padding: 16px;
-    margin-bottom: 32px;
+    background: var(--color-bg-elevated, #f8fafc);
+    border: 1px solid var(--color-border-hairline, #e2e8f0);
+    border-radius: var(--radius-md, 12px);
+    padding: 14px;
+    margin-bottom: 16px;
     text-align: left;
+    box-sizing: border-box;
+  }
+  :global([data-theme="dark"]) .transfer-info-box {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(245, 158, 11, 0.2);
   }
 
   .info-row {
@@ -575,138 +1123,142 @@
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px dashed var(--color-border-hairline);
+    border-bottom: 1px dashed var(--color-border-hairline, #e2e8f0);
   }
 
-  .info-row:last-of-type {
+  .highlight-row {
+    background: #fef3c7;
+    padding: 8px 10px;
+    border-radius: 8px;
+    margin: 4px 0;
     border-bottom: none;
+  }
+  :global([data-theme="dark"]) .highlight-row {
+    background: rgba(245, 158, 11, 0.1);
   }
 
   .info-label {
-    color: var(--color-text-secondary);
-    font-size: var(--text-sm);
+    color: var(--color-text-secondary, #475569);
+    font-size: 12px;
   }
 
-  .info-value {
-    font-weight: 600;
-    font-size: var(--text-body);
-  }
-
-  .info-value.price {
-    color: var(--color-text-primary);
-  }
-
-  .info-value.highlight {
-    color: var(--color-primary);
-    font-size: var(--text-lg);
+  .info-val {
     font-weight: 700;
-    letter-spacing: 1px;
+    font-size: 13px;
+    color: var(--color-text-primary, #0f172a);
   }
 
-  .warning {
-    margin-top: 12px;
-    font-size: var(--text-xs);
-    color: var(--color-danger);
-    font-style: italic;
+  .info-val.price {
+    color: #b45309;
+    font-size: 14px;
+  }
+  :global([data-theme="dark"]) .info-val.price {
+    color: #f59e0b;
   }
 
-  .pkg-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 4px;
-  }
-
-  .pkg-badge {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: var(--radius-pill);
-    background: var(--color-accent-primary);
-    color: var(--color-text-on-primary);
-    text-transform: uppercase;
+  .info-val.highlight {
+    color: #b45309;
+    font-size: 15px;
     letter-spacing: 0.5px;
   }
-
-  .payment-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
+  :global([data-theme="dark"]) .info-val.highlight {
+    color: #f59e0b;
   }
 
-  .live-pulse-badge {
-    display: inline-flex;
+  .info-val-group {
+    display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 10px;
-    border-radius: var(--radius-pill);
-    background: rgba(34, 197, 94, 0.1);
-    border: 1px solid rgba(34, 197, 94, 0.3);
-    color: var(--color-success, #22c55e);
-    font-size: var(--text-xs);
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-
-  .pulse-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: var(--color-success, #22c55e);
-    box-shadow: 0 0 0 rgba(34, 197, 94, 0.4);
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0% {
-      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
-    }
-    70% {
-      box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
-    }
-  }
-
-  .info-value-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
   }
 
   .btn-copy-small {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--color-border-hairline);
-    background: var(--color-bg-surface);
-    color: var(--color-text-secondary);
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border-hairline, #cbd5e1);
+    background: var(--color-bg-surface, #ffffff);
+    color: var(--color-text-secondary, #475569);
     cursor: pointer;
     transition: all 0.2s ease;
     padding: 0;
   }
 
   .btn-copy-small:hover {
-    background: var(--color-bg-elevated);
-    color: var(--color-primary);
-    border-color: var(--color-primary);
+    background: #fef3c7;
+    color: #b45309;
+    border-color: #d97706;
   }
 
   .btn-copy-highlight {
-    border-color: var(--color-primary-subtle);
-    background: var(--color-primary-subtle);
-    color: var(--color-primary);
+    border-color: #d97706;
+    background: #fef3c7;
+    color: #b45309;
   }
 
-  .text-success {
-    color: var(--color-success, #22c55e);
+  .btn-copy-all {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 12px;
+    margin-top: 10px;
+    border-radius: 8px;
+    background: #d97706;
+    border: 1px solid #b45309;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-copy-all:hover {
+    background: #b45309;
+    box-shadow: 0 0 15px rgba(217, 119, 6, 0.3);
+  }
+
+  .warning-text {
+    margin: 10px 0 0;
+    font-size: 11px;
+    color: #dc2626;
+    font-style: italic;
+    line-height: 1.4;
+  }
+
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .refresh-hint {
+    font-size: 11px;
+    color: var(--color-text-muted, #64748b);
+    margin: 0;
+  }
+
+  .btn-back-home {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill, 999px);
+    border: 1px solid var(--color-border-hairline, #cbd5e1);
+    background: var(--color-bg-surface, #ffffff);
+    color: var(--color-text-primary, #0f172a);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-back-home:hover {
+    background: var(--color-bg-elevated, #f1f5f9);
+    border-color: #d97706;
   }
 
   :global(.spin-icon) {
@@ -718,83 +1270,13 @@
     to { transform: rotate(360deg); }
   }
 
-  .actions {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    width: 100%;
+  .loading-text {
+    font-size: 12px;
+    color: var(--color-text-muted, #64748b);
+    font-style: italic;
   }
 
-  .refresh-hint {
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
-  }
-
-  /* Uses shared .surface-glass from tokens.css; local radius/overflow only. */
-  .surface-glass {
-    border-radius: var(--radius-xl);
-    overflow: hidden;
-  }
-
-  .btn-back-home {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 14px;
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--overlay-border-strong);
-    background: var(--color-bg-surface);
-    color: var(--color-text-primary);
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s ease;
-  }
-
-  .btn-back-home:hover {
-    background: var(--overlay-surface-veil);
-    border-color: var(--color-accent-primary);
-  }
-
-  .anon-notice-banner {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px 20px;
-    border-radius: var(--radius-lg);
-    background: rgba(245, 158, 11, 0.08);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    margin-bottom: 8px;
-  }
-
-  .anon-notice-text h3 {
-    margin: 0 0 4px;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--color-text-primary);
-  }
-
-  .anon-notice-text p {
-    margin: 0;
-    font-size: 13px;
-    color: var(--color-text-secondary);
-  }
-
-  .btn-anon-login {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 16px;
-    border-radius: var(--radius-md);
-    background: var(--color-accent-primary);
-    color: var(--color-text-on-primary);
-    font-size: 13px;
-    font-weight: 600;
-    text-decoration: none;
-    align-self: flex-start;
-    transition: opacity 0.2s ease;
-  }
-
-  .btn-anon-login:hover {
-    opacity: 0.9;
+  :global(.text-success) {
+    color: #16a34a;
   }
 </style>

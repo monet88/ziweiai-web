@@ -1,6 +1,7 @@
 <script lang="ts">
   import Spinner from './Spinner.svelte';
   import type { Snippet } from 'svelte';
+  import { pressInteraction } from '$lib/animations/gsap';
 
   // PrimaryButton: <button type> thật + focus-visible ring (a11y). Khi loading khoá
   // click (disabled) và đổi con trỏ. Chỉ animate transform/opacity (compositor-friendly).
@@ -36,6 +37,7 @@
   disabled={isDisabled}
   aria-busy={loading}
   {onclick}
+  use:pressInteraction
 >
   {#if loading}
     <Spinner tone={variant === 'primary' ? 'dark' : 'primary'} />

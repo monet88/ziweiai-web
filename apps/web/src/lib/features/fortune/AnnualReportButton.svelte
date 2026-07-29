@@ -12,6 +12,8 @@
   import { currentYear } from './fortune-dates';
   import AnnualReportModal from './AnnualReportModal.svelte';
 
+  import { toast } from '$lib/stores/toast';
+
   interface Props {
     auth: AuthStore;
     chartId: string;
@@ -34,10 +36,11 @@
       const year = currentYear();
       return createAnnualReport(token, { chartId, year });
     },
-    onSuccess: (): void => {
+    onSuccess: (data): void => {
       // Báo cáo năm dùng createMutation (không phải createQuery) — kết quả nằm trong mutation.data,
       // không có query nào cache theo (chartId, year) nên không cần invalidate. Chỉ mở modal.
       isModalOpen = true;
+      toast.show(`Đã khởi tạo thành công Báo cáo Vận hạn năm ${data.year}!`, 'success');
     },
   }));
 
@@ -69,22 +72,33 @@
     flex-direction: column;
     gap: var(--space-sm);
     align-items: flex-start;
+    padding: var(--space-md);
+    background: rgba(15, 23, 42, 0.4);
+    border-radius: var(--radius-lg, 16px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   .annual__title {
     margin: 0;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .annual__status {
     margin: 0;
     color: var(--color-text-secondary);
+    font-size: 14px;
   }
 
   .annual__error {
     margin: 0;
     color: var(--color-accent-danger);
+    font-size: 14px;
   }
 </style>

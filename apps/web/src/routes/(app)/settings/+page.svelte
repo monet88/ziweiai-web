@@ -26,7 +26,7 @@
 
   const referralLink = $derived.by(() => {
     if (!walletModel.referralCode) return '';
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://tuvitoantap.pages.dev';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://tuvitoantap.vercel.app';
     return `${origin}/?ref=${walletModel.referralCode}`;
   });
 

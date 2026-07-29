@@ -25,15 +25,15 @@ function mockProvider(opts: {
 }
 
 describe('ExplanationProviderRouter', () => {
-  it('prefers the first available auto provider (openai-compat by default)', () => {
+  it('prefers the first available auto provider (gemini by default)', () => {
     const router = new ExplanationProviderRouter(
       { providerName: 'deepseek', isAvailable: () => true, generateExplanation: async () => ({ renderedMarkdown: 'a', providerMetadata: {} }) } as never,
       { providerName: 'openai-compat', isAvailable: () => true, generateExplanation: async () => ({ renderedMarkdown: 'c', providerMetadata: {} }) } as never,
       { providerName: 'gemini', isAvailable: () => true, generateExplanation: async () => ({ renderedMarkdown: 'b', providerMetadata: {} }) } as never,
     );
 
-    // AI_DEFAULT_PROVIDER mặc định 'auto'; 'auto' resolve theo chain = [openai-compat, deepseek, gemini].
-    expect(router.resolveProviderName('auto')).toBe('openai-compat');
+    // AI_DEFAULT_PROVIDER mặc định 'auto'; 'auto' resolve theo chain = [gemini, openai-compat, deepseek].
+    expect(router.resolveProviderName('auto')).toBe('gemini');
   });
 
   it('resolves the openai-compat provider for the openai-compat preference', () => {
@@ -177,12 +177,12 @@ describe('ExplanationProviderRouter', () => {
   });
 
   it('falls back to the next configured provider when the first provider times out', async () => {
-    const openAiCompat = mockProvider({ name: 'openai-compat', rejectWith: new ProviderTimeoutError('openai slow') });
-    const deepseek = mockProvider({ name: 'deepseek', text: 'deepseek fallback' });
+    const gemini = mockProvider({ name: 'gemini', rejectWith: new ProviderTimeoutError('gemini slow') });
+    const openAiCompat = mockProvider({ name: 'openai-compat', text: 'openai fallback' });
     const router = new ExplanationProviderRouter(
-      deepseek,
+      mockProvider({ name: 'deepseek', text: 'deepseek fallback' }),
       openAiCompat,
-      mockProvider({ name: 'gemini', text: 'gemini fallback' }),
+      gemini,
     );
 
     const result = await router.generate('auto', {
@@ -190,21 +190,21 @@ describe('ExplanationProviderRouter', () => {
       promptOverride: 'luận giải',
     });
 
-    expect(result.renderedMarkdown).toBe('deepseek fallback');
+    expect(result.renderedMarkdown).toBe('openai fallback');
+    expect((gemini as { generateExplanation: ReturnType<typeof vi.fn> }).generateExplanation).toHaveBeenCalledTimes(1);
     expect((openAiCompat as { generateExplanation: ReturnType<typeof vi.fn> }).generateExplanation).toHaveBeenCalledTimes(1);
-    expect((deepseek as { generateExplanation: ReturnType<typeof vi.fn> }).generateExplanation).toHaveBeenCalledTimes(1);
   });
 
   it('does not fail over when a provider returns CJK-guard content', async () => {
-    const openAiCompat = mockProvider({
-      name: 'openai-compat',
+    const gemini = mockProvider({
+      name: 'gemini',
       rejectWith: new ProviderUnavailableError('Provider returned chữ Hán; nội dung không hợp lệ.'),
     });
-    const deepseek = mockProvider({ name: 'deepseek', text: 'deepseek fallback' });
+    const openAiCompat = mockProvider({ name: 'openai-compat', text: 'openai fallback' });
     const router = new ExplanationProviderRouter(
-      deepseek,
+      mockProvider({ name: 'deepseek', text: 'deepseek fallback' }),
       openAiCompat,
-      mockProvider({ name: 'gemini', text: 'gemini fallback' }),
+      gemini,
     );
 
     await expect(
@@ -214,7 +214,7 @@ describe('ExplanationProviderRouter', () => {
       }),
     ).rejects.toThrow('chữ Hán');
 
-    expect((openAiCompat as { generateExplanation: ReturnType<typeof vi.fn> }).generateExplanation).toHaveBeenCalledTimes(1);
-    expect((deepseek as { generateExplanation: ReturnType<typeof vi.fn> }).generateExplanation).not.toHaveBeenCalled();
+    expect((gemini as { generateExplanation: ReturnType<typeof vi.fn> }).generateExplanation).toHaveBeenCalledTimes(1);
+    expect((openAiCompat as { generateExplanation: ReturnType<typeof vi.fn> }).generateExplanation).not.toHaveBeenCalled();
   });
 });

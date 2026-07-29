@@ -1,19 +1,23 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import type { PageData } from './$types';
+  import type { AdminUser } from '@ziweiai/contracts';
+  import { adminGetUsers } from '$lib/api-client';
 
-  interface AdminUser {
-    user_id: string;
-    display_name: string | null;
-    email: string | null;
-    xu_balance: number;
-    created_at: string;
-    is_anonymous: boolean;
-  }
+  let { data }: { data: PageData } = $props();
+  const token = data.session?.token || '';
 
   let users = $state<AdminUser[]>([]);
+  let filteredUsers = $derived(users.filter(u => {
+    if (filterAnon === 'registered') return !u.is_anonymous;
+    if (filterAnon === 'anon') return u.is_anonymous;
+    return true;
+  }));
+
   let loading = $state(true);
   let errorMsg = $state('');
   let search = $state('');
+  let filterAnon = $state<'all' | 'registered' | 'anon'>('all');
   let isCleaning = $state(false);
 
   // Modal Topup
@@ -27,12 +31,7 @@
     loading = true;
     errorMsg = '';
     try {
-      const url = search.trim()
-        ? `/api/admin/users?search=${encodeURIComponent(search.trim())}`
-        : '/api/admin/users';
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Không thể tải danh sách người dùng');
-      users = await res.json();
+      users = await adminGetUsers(token, search.trim());
     } catch (err: any) {
       errorMsg = err.message || 'Lỗi kết nối';
     } finally {
@@ -95,6 +94,11 @@
 
 <div class="users-header">
   <div class="search-box">
+    <select bind:value={filterAnon} class="filter-select">
+      <option value="all">Tất cả tài khoản</option>
+      <option value="registered">Đã đăng ký (Thật)</option>
+      <option value="anon">Vãng lai (Anon)</option>
+    </select>
     <input
       type="text"
       bind:value={search}
@@ -115,7 +119,7 @@
 
 {#if loading}
   <div class="loading-state">Đang tải danh sách người dùng...</div>
-{:else if users.length === 0}
+{:else if filteredUsers.length === 0}
   <div class="empty-state">Không tìm thấy người dùng nào.</div>
 {:else}
   <div class="table-card">
@@ -131,7 +135,7 @@
         </tr>
       </thead>
       <tbody>
-        {#each users as u (u.user_id)}
+        {#each filteredUsers as u (u.user_id)}
           <tr>
             <td class="user-email">
               {u.email || u.display_name || 'Khách vãng lai'}
@@ -157,8 +161,8 @@
 {/if}
 
 {#if showModal && selectedUser}
-  <div class="modal-backdrop" onclick={() => (showModal = false)} role="dialog">
-    <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+  <div class="modal-backdrop" onclick={() => (showModal = false)} onkeydown={(e) => e.key === 'Escape' && (showModal = false)} role="dialog" tabindex="0">
+    <div class="modal-content" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="document" tabindex="0">
       <h3>Cộng / Trừ XU Direct</h3>
       <p class="target-name">Tài khoản: <strong>{selectedUser.email || selectedUser.user_id}</strong></p>
 
@@ -193,9 +197,24 @@
 
   .search-box {
     display: flex;
-    gap: var(--space-xs);
+    gap: 12px;
     flex: 1;
-    max-width: 480px;
+    max-width: 600px;
+  }
+
+  .filter-select {
+    padding: 10px 16px;
+    border: 1px solid var(--overlay-border-subtle);
+    border-radius: 8px;
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+  .filter-select:focus {
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 0 2px var(--color-accent-primary-alpha);
   }
 
   .search-box input {

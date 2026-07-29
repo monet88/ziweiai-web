@@ -9,7 +9,7 @@
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
   import { fetchFeatures } from '$lib/api-client';
-  import { PrimaryButton, ThemeToggle } from '$lib/components/ui';
+  import { PrimaryButton, ThemeToggle, ViOSLogo } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { createDashboardModel } from '$lib/features/dashboard/dashboard-model.svelte';
   import BirthForm from '$lib/features/dashboard/BirthForm.svelte';
@@ -142,7 +142,9 @@
 <main class="dashboard-page">
   <div class="shell">
     <nav class="topbar" aria-label={viCopy.dashboard.homeNavAria}>
-      <a class="brand" href={resolve('/')}>ziweiai</a>
+      <a class="brand-link" href={resolve('/')}>
+        <ViOSLogo size="sm" showTagline={false} />
+      </a>
       <div class="top-links">
         <a href="#create-chart">{viCopy.dashboard.homeNavCreate}</a>
         {#if isMember}
@@ -318,11 +320,9 @@
     border-bottom: 1px solid var(--overlay-hairline);
   }
 
-  .brand {
-    color: var(--color-text-primary);
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: 0;
+  .brand-link {
+    display: inline-flex;
+    align-items: center;
     text-decoration: none;
   }
 

@@ -130,11 +130,19 @@ describe('WalletEngineService', () => {
     it('should process deposit, insert transaction, and credit XU', async () => {
       // 1. Existing tx check -> null
       mockSupabaseClient.single.mockResolvedValueOnce({ data: null, error: null });
-      // 2. User lookup -> found user
-      mockSupabaseClient.ilike.mockResolvedValueOnce({
-        data: [{ user_id: '12345678-abcd-1234-5678-123456789012' }],
-        error: null,
-      });
+      // 2. User lookup -> found user list
+      mockSupabaseClient.from.mockImplementationOnce(() => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null, error: null }),
+          }),
+        }),
+      })).mockImplementationOnce(() => ({
+        select: async () => ({
+          data: [{ user_id: '12345678-abcd-1234-5678-123456789012' }],
+          error: null,
+        }),
+      }));
       // 3. Insert transaction -> ok
       mockSupabaseClient.insert.mockResolvedValueOnce({ error: null });
       // 4. add_xu RPC -> ok

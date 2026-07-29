@@ -24,6 +24,14 @@ export class AdminController {
     return this.adminService.topupUser(userId, body.amount, body.reason);
   }
 
+  @Post('users/:userId/xu')
+  async topupUserXu(@Param('userId') userId: string, @Body() body: { amount: number; reason?: string }) {
+    if (typeof body?.amount !== 'number') {
+      throw new BadRequestException('Amount is required and must be a number');
+    }
+    return this.adminService.topupUser(userId, body.amount, body.reason);
+  }
+
   @Post('users/cleanup-anon')
   async cleanupAnonUsers() {
     return this.adminService.cleanupAnonUsers();
@@ -32,6 +40,14 @@ export class AdminController {
   @Get('referrals')
   async getReferralAnalytics() {
     return this.adminService.getReferralAnalytics();
+  }
+
+  @Get('analytics')
+  async getAnalytics(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.adminService.getAnalytics(startDate, endDate);
   }
 
   @Get('configs')

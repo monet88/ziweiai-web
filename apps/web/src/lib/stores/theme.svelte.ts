@@ -35,11 +35,7 @@ class ThemeStore {
 
   private applyTheme(theme: Theme) {
     if (!browser) return;
-    if (theme === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-    }
+    document.documentElement.setAttribute('data-theme', theme);
   }
 }
 

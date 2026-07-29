@@ -99,14 +99,16 @@ describe('AuthStore', () => {
     expect(store.getAccessToken()).toBe('new');
   });
 
-  it('init() KHÔNG tự động cấp phiên ẩn danh khi chưa có session (đã tắt vãng lai tự động)', async () => {
+  it('init() tự động cấp phiên ẩn danh khi chưa có session', async () => {
     mockAuth.getSession.mockResolvedValue({ data: { session: null } });
+    mockAuth.signInAnonymously.mockResolvedValue({ data: { session: makeLegacyAnonSession('anon-tok') }, error: null });
     const store = new AuthStore();
     store.init();
     await vi.waitFor(() => expect(store.isInitializing).toBe(false));
-    expect(mockAuth.signInAnonymously).not.toHaveBeenCalled();
-    expect(store.isAuthenticated).toBe(false);
-    expect(store.session).toBeNull();
+    expect(mockAuth.signInAnonymously).toHaveBeenCalledOnce();
+    expect(store.isAuthenticated).toBe(true);
+    expect(store.session).not.toBeNull();
+    expect(store.getAccessToken()).toBe('anon-tok');
   });
 
   it('isAnonymous false cho phiên email thường', async () => {

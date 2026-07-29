@@ -46,27 +46,43 @@ export class AuthStore {
   init(): () => void {
     let active = true;
 
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!active) {
-        return;
-      }
+    void supabase.auth.getSession().then(async ({ data }) => {
+      if (!active) return;
+      
       if (data.session) {
         this.session = data.session;
         this.user = data.session.user;
+        this.isInitializing = false;
       } else {
-        this.session = null;
-        this.user = null;
+        // Tự động tạo phiên ẩn danh nếu không có session
+        const { data: anonData, error } = await supabase.auth.signInAnonymously();
+        if (!active) return;
+        
+        if (anonData.session) {
+          this.session = anonData.session;
+          this.user = anonData.session.user;
+        } else {
+          this.session = null;
+          this.user = null;
+          if (error) console.error('Auto anonymous sign-in failed:', error);
+        }
+        this.isInitializing = false;
       }
-      this.isInitializing = false;
     });
 
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!active) {
-        return;
+    const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!active) return;
+      
+      if (event === 'SIGNED_OUT') {
+        this.session = null;
+        this.user = null;
+        this.isInitializing = true;
+        void supabase.auth.signInAnonymously().catch(console.error);
+      } else if (nextSession) {
+        this.session = nextSession;
+        this.user = nextSession.user;
+        this.isInitializing = false;
       }
-      this.session = nextSession;
-      this.user = nextSession?.user ?? null;
-      this.isInitializing = false;
     });
 
     return () => {

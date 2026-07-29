@@ -1,4 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, Inject } from '@nestjs/common';
+import { type SupabaseClient } from '@supabase/supabase-js';
+import { SUPABASE_CLIENT } from '../../database/supabase-client';
 import { SepayWebhookPayload, RevenueCatWebhookPayload } from '@ziweiai/contracts';
 import { WalletEngineService } from '../wallet/wallet-engine.service';
 
@@ -6,13 +8,142 @@ import { WalletEngineService } from '../wallet/wallet-engine.service';
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
 
-  constructor(private readonly walletEngine: WalletEngineService) {}
+  constructor(
+    @Inject(SUPABASE_CLIENT) private readonly client: SupabaseClient,
+    private readonly walletEngine: WalletEngineService,
+  ) {}
 
-  async processTransaction(payload: SepayWebhookPayload) {
-    return this.walletEngine.processSePayDeposit(payload);
+  async processTransaction(payload: SepayWebhookPayload): Promise<void> {
+    const match = payload.content.match(/TVTT\s*([a-zA-Z0-9]{8})/i);
+    if (!match) {
+      this.logger.warn(`No valid TVTT code found in content: ${payload.content}`);
+      return;
+    }
+
+    const shortUuid = match[1].toLowerCase();
+
+    // Idempotency check
+    const { data: existingTx } = await this.client
+      .from('transactions')
+      .select('id')
+      .eq('sepay_transaction_id', payload.id.toString())
+      .single();
+
+    if (existingTx) {
+      this.logger.log(`Transaction ${payload.id} already processed. Skipping.`);
+      return;
+    }
+
+    // Resolve user by matching first 8 chars of user_id UUID
+    const { data: userProfiles, error: userError } = await this.client
+      .from('profiles')
+      .select('user_id');
+
+    if (userError || !userProfiles || userProfiles.length === 0) {
+      this.logger.error(`Failed to fetch profiles to match short UUID: ${shortUuid}`, userError);
+      return;
+    }
+
+    const matchedUsers = userProfiles.filter((p) => p.user_id.toLowerCase().startsWith(shortUuid));
+
+    if (matchedUsers.length === 0) {
+      this.logger.error(`Could not find user with short UUID prefix: ${shortUuid}`);
+      return;
+    }
+
+    if (matchedUsers.length > 1) {
+      this.logger.error(`Multiple users found for short UUID prefix: ${shortUuid}`);
+      return;
+    }
+
+    const userId = matchedUsers[0].user_id;
+    const xuAdded = Math.floor(payload.transferAmount / 1000);
+
+    if (xuAdded <= 0) {
+      this.logger.warn(`Transfer amount too small to add XU: ${payload.transferAmount}`);
+      return;
+    }
+
+    // Record transaction
+    const { error: txError } = await this.client
+      .from('transactions')
+      .insert({
+        owner_user_id: userId,
+        amount_vnd: payload.transferAmount,
+        xu_added: xuAdded,
+        sepay_transaction_id: payload.id.toString(),
+      });
+
+    if (txError) {
+      this.logger.error(`Failed to insert transaction ${payload.id}`, txError);
+      throw new BadRequestException('Database error');
+    }
+
+    // Add XU & log ledger
+    const success = await this.walletEngine.addXU(userId, xuAdded, 'topup');
+
+    if (!success) {
+      this.logger.error(`Failed to add XU for user ${userId}`);
+      throw new BadRequestException('Database error');
+    }
+
+    this.logger.log(`Successfully processed transaction ${payload.id}. Added ${xuAdded} XU to user ${userId}.`);
   }
 
-  async processRevenueCatTransaction(payload: RevenueCatWebhookPayload) {
-    return this.walletEngine.processRevenueCatDeposit(payload);
+  async processRevenueCatTransaction(payload: RevenueCatWebhookPayload): Promise<void> {
+    const event = payload.event;
+    if (event.type !== 'INITIAL_PURCHASE' && event.type !== 'NON_RENEWING_PURCHASE') {
+      this.logger.log(`Skipping RevenueCat event type ${event.type}`);
+      return;
+    }
+
+    const { data: existingTx } = await this.client
+      .from('transactions')
+      .select('id')
+      .eq('revenuecat_transaction_id', event.id)
+      .single();
+
+    if (existingTx) {
+      this.logger.log(`RevenueCat transaction ${event.id} already processed. Skipping.`);
+      return;
+    }
+
+    const userId = event.app_user_id;
+    let xuAdded = 0;
+    if (event.product_id.includes('100')) {
+      xuAdded = 100;
+    } else if (event.product_id.includes('500')) {
+      xuAdded = 500;
+    } else if (event.product_id.includes('2000')) {
+      xuAdded = 2000;
+    } else {
+      this.logger.warn(`Could not determine XU amount for product_id: ${event.product_id}`);
+      return;
+    }
+
+    const amountPaid = event.price_in_purchased_currency || event.price || 0;
+
+    const { error: txError } = await this.client
+      .from('transactions')
+      .insert({
+        owner_user_id: userId,
+        amount_vnd: amountPaid,
+        xu_added: xuAdded,
+        revenuecat_transaction_id: event.id,
+      });
+
+    if (txError) {
+      this.logger.error(`Failed to insert transaction ${event.id}`, txError);
+      throw new BadRequestException('Database error');
+    }
+
+    const success = await this.walletEngine.addXU(userId, xuAdded, 'topup');
+
+    if (!success) {
+      this.logger.error(`Failed to add XU for user ${userId}`);
+      throw new BadRequestException('Database error');
+    }
+
+    this.logger.log(`Successfully processed RevenueCat transaction ${event.id}. Added ${xuAdded} XU to user ${userId}.`);
   }
 }

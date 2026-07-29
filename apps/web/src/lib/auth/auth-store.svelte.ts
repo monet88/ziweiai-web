@@ -26,6 +26,13 @@ function isAnonymousUser(user: User | null): boolean {
   return !user.email && !user.phone;
 }
 
+export function isAdminUser(user: User | null): boolean {
+  if (!user) {
+    return false;
+  }
+  return user.app_metadata?.role === 'admin';
+}
+
 export class AuthStore {
   session = $state<Session | null>(null);
   user = $state<User | null>(null);
@@ -80,6 +87,10 @@ export class AuthStore {
   /** true khi phiên hiện tại là phiên ẩn danh (Supabase anonymous sign-in, decision 0009). */
   get isAnonymous(): boolean {
     return isAnonymousUser(this.session?.user ?? null);
+  }
+
+  get isAdmin(): boolean {
+    return isAdminUser(this.session?.user ?? null);
   }
 
   async signInWithPassword(email: string, password: string): Promise<void> {

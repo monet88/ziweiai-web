@@ -9,7 +9,7 @@
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
   import { fetchFeatures } from '$lib/api-client';
-  import { PrimaryButton, ThemeToggle, ViOSLogo } from '$lib/components/ui';
+  import { PrimaryButton, ThemeToggle, ViOSLogo, MobileBottomNav } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { createDashboardModel } from '$lib/features/dashboard/dashboard-model.svelte';
   import BirthForm from '$lib/features/dashboard/BirthForm.svelte';
@@ -287,6 +287,7 @@
       </div>
     </footer>
   </div>
+  <MobileBottomNav />
 </main>
 
 <style>
@@ -803,6 +804,20 @@
       grid-template-columns: repeat(4, minmax(180px, 1fr));
       overflow-x: auto;
       padding-bottom: var(--space-xs);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .shell {
+      padding-bottom: 100px;
+    }
+    
+    .top-links {
+      display: none;
+    }
+
+    .session > *:not(:first-child) {
+      display: none; /* Hide all except ThemeToggle */
     }
   }
 

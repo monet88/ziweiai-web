@@ -2,6 +2,7 @@
 //   import { AppScaffold, PrimaryButton, ... } from '$lib/components/ui';
 export { default as AppScaffold } from './AppScaffold.svelte';
 export { default as PrimaryButton } from './PrimaryButton.svelte';
+export { default as MobileBottomNav } from './MobileBottomNav.svelte';
 export { default as SummaryCard } from './SummaryCard.svelte';
 export { default as FormField } from './FormField.svelte';
 export { default as TextInputField } from './TextInputField.svelte';

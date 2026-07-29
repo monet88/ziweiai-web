@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte';
   import WalletIndicator from '$lib/features/payment/WalletIndicator.svelte';
   import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
-  import { Home, LayoutDashboard, User } from 'lucide-svelte';
+  import MobileBottomNav from './MobileBottomNav.svelte';
   import { fadeUp } from '$lib/animations/gsap';
 
   // AppScaffold: khung layout nền cho các màn hình US-006..008. Header (eyebrow/title/
@@ -55,22 +55,7 @@
     </div>
   </div>
 
-  <nav class="mobile-bottom-nav surface-glass">
-    <a href="/" class="nav-item">
-      <Home size={22} />
-      <span>Nhà</span>
-    </a>
-    <a href="/admin/analytics" class="nav-item">
-      <LayoutDashboard size={22} />
-      <span>Admin</span>
-    </a>
-    <div class="nav-item wallet-wrapper">
-      <WalletIndicator />
-    </div>
-    <div class="nav-item">
-      <ThemeToggle />
-    </div>
-  </nav>
+  <MobileBottomNav />
 </div>
 
 <style>
@@ -244,10 +229,6 @@
     }
   }
 
-  .mobile-bottom-nav {
-    display: none;
-  }
-
   @media (max-width: 767px) {
     .hero-actions {
       display: none; /* Hide top actions on mobile */
@@ -255,36 +236,6 @@
 
     .container {
       padding-bottom: 100px; /* Space for bottom nav */
-    }
-
-    .mobile-bottom-nav {
-      display: flex;
-      position: fixed;
-      bottom: 20px;
-      left: var(--space-md);
-      right: var(--space-md);
-      height: 64px;
-      padding: 0 var(--space-md);
-      justify-content: space-between;
-      align-items: center;
-      z-index: 50;
-      /* Using GSAP interactions instead of raw CSS hover */
-    }
-
-    .nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      color: var(--color-text-secondary);
-      text-decoration: none;
-      font-size: 10px;
-      font-weight: 600;
-      transition: color var(--duration-fast) ease;
-    }
-
-    .nav-item:active {
-      color: var(--color-text-primary);
     }
   }
 

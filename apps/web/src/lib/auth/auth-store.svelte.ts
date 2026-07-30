@@ -26,11 +26,16 @@ function isAnonymousUser(user: User | null): boolean {
   return !user.email && !user.phone;
 }
 
+export function getUserRoles(user: User | null): string[] {
+  if (!user) return [];
+  const role = user.app_metadata?.role;
+  if (Array.isArray(role)) return role;
+  if (typeof role === 'string') return [role];
+  return [];
+}
+
 export function isAdminUser(user: User | null): boolean {
-  if (!user) {
-    return false;
-  }
-  return user.app_metadata?.role === 'admin';
+  return getUserRoles(user).includes('admin');
 }
 
 export class AuthStore {
@@ -105,8 +110,12 @@ export class AuthStore {
     return isAnonymousUser(this.session?.user ?? null);
   }
 
+  get roles(): string[] {
+    return getUserRoles(this.session?.user ?? null);
+  }
+
   get isAdmin(): boolean {
-    return isAdminUser(this.session?.user ?? null);
+    return this.roles.includes('admin');
   }
 
   async signInWithPassword(email: string, password: string): Promise<void> {

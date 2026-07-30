@@ -6,8 +6,12 @@ EXPECTED_USER="galaxypro710-7060"
 
 source "${HOME}/.zshrc" >/dev/null 2>&1 || true
 
+if [[ -f ".env.local" ]]; then
+  export $(grep '^VERCEL_GALAXY=' .env.local | xargs)
+fi
+
 if [[ -z "${VERCEL_GALAXY:-}" ]]; then
-  echo "Missing VERCEL_GALAXY. Add the galaxypro710 Vercel token to ~/.zshrc." >&2
+  echo "Missing VERCEL_GALAXY. Add the galaxypro710 Vercel token to .env.local or ~/.zshrc." >&2
   exit 1
 fi
 

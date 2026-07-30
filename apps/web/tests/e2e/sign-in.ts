@@ -65,5 +65,6 @@ export async function signInViaUi(page: Page): Promise<void> {
   // Dashboard hiển thị BirthForm (ô #birth-day) — mốc xác nhận đã vào (app). Dùng id field
   // thay vì nút "Lập lá số" vì khi lịch sử rỗng, EmptyStateCard sidebar cũng render nút trùng
   // nhãn (strict mode bắt 2 phần tử).
+  await page.getByRole('button', { name: 'Lập lá số' }).first().click();
   await expect(page.locator('#birth-day')).toBeVisible();
 }

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture Review: ZiWei AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+    </script>
+    <style>
+        body { background-color: #0f172a; color: #f1f5f9; font-family: 'Inter', sans-serif; }
+        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 2rem; }
+        .badge-strong { background-color: #ef4444; color: #fff; padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .badge-explore { background-color: #eab308; color: #fff; padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .diagram-container { display: flex; gap: 1rem; margin-top: 1.5rem; }
+        .diagram-box { flex: 1; background: #0f172a; border-radius: 0.5rem; padding: 1rem; overflow: hidden; }
+        h1, h2, h3 { color: #f8fafc; }
+    </style>
+</head>
+<body class="p-8 max-w-5xl mx-auto">
+    <header class="mb-10 text-center">
+        <h1 class="text-4xl font-extrabold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Deepening Opportunities</h1>
+        <p class="text-slate-400">Codebase Architecture Review - ZiWei AI Platform</p>
+    </header>
+
+    <main>
+        <!-- Candidate 1 -->
+        <section class="card">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-2xl font-bold">1. The God Class: SupabasePersistenceGateway</h2>
+                <span class="badge-strong">Strong</span>
+            </div>
+            <div class="mb-4">
+                <p><strong>Files:</strong> <code>apps/api/src/database/supabase-persistence.gateway.ts</code> (955 lines)</p>
+                <p class="mt-2"><strong>Problem:</strong> The database gateway has become a shallow module. It acts as a dumping ground for every single database operation across all domains (Charts, Vision, Tarot, History). Because every service imports this massive interface, we have lost <strong>locality</strong>. When testing, developers are forced to mock irrelevant methods, leading to brittle test setups and high cognitive friction.</p>
+                <p class="mt-2"><strong>Solution:</strong> Deepen the database layer by applying the Repository Pattern. We will introduce a clean <strong>seam</strong> by splitting the gateway into domain-specific adapters (e.g., <code>ChartsRepository</code>, <code>VisionRepository</code>, <code>HistoryRepository</code>). The common Supabase client connection remains, but the exposed interfaces are heavily segregated.</p>
+                <p class="mt-2"><strong>Benefits:</strong> Feature modules only import the exact subset of DB operations they need (high <strong>leverage</strong>, high <strong>locality</strong>). Tests become trivial to mock because the interface is precisely sized to the feature.</p>
+            </div>
+            
+            <div class="diagram-container">
+                <div class="diagram-box">
+                    <h3 class="text-sm font-semibold text-slate-400 mb-2 uppercase">Before (Shallow & Leaky)</h3>
+                    <div class="mermaid">
+                        graph TD
+                            S1[ChartsService] --> G[SupabasePersistenceGateway]
+                            S2[VisionService] --> G
+                            S3[HistoryService] --> G
+                            G --> DB[(Supabase RPC)]
+                            style G fill:#991b1b,stroke:#f87171,stroke-width:2px
+                    </div>
+                </div>
+                <div class="diagram-box">
+                    <h3 class="text-sm font-semibold text-slate-400 mb-2 uppercase">After (Deep Modules & Clean Seams)</h3>
+                    <div class="mermaid">
+                        graph TD
+                            S1[ChartsService] --> R1[ChartsRepository]
+                            S2[VisionService] --> R2[VisionRepository]
+                            S3[HistoryService] --> R3[HistoryRepository]
+                            R1 --> DB[(Supabase DB)]
+                            R2 --> DB
+                            R3 --> DB
+                            style R1 fill:#166534,stroke:#4ade80,stroke-width:2px
+                            style R2 fill:#166534,stroke:#4ade80,stroke-width:2px
+                            style R3 fill:#166534,stroke:#4ade80,stroke-width:2px
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Candidate 2 -->
+        <section class="card">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-2xl font-bold">2. Hardcoded Rules: QuotasService</h2>
+                <span class="badge-explore">Worth Exploring</span>
+            </div>
+            <div class="mb-4">
+                <p><strong>Files:</strong> <code>apps/api/src/modules/quotas/quotas.service.ts</code></p>
+                <p class="mt-2"><strong>Problem:</strong> The Quotas service currently hardcodes the quota definitions and check logic for every distinct feature. While functional, it is becoming a bottleneck. Adding a new AI feature requires digging into this core service to add new limits, violating the Open-Closed Principle and reducing <strong>locality</strong>.</p>
+                <p class="mt-2"><strong>Solution:</strong> Refactor into a Strategy pattern or a Rules Engine. Define an <code>IQuotaStrategy</code> interface that individual modules can register. The <code>QuotasService</code> becomes a deep module that evaluates rules dynamically based on the requested action.</p>
+                <p class="mt-2"><strong>Benefits:</strong> New features can define their own quota rules in their own directory (improving locality). The core Quota engine gains <strong>leverage</strong> by being ignorant of specific feature names.</p>
+            </div>
+        </section>
+
+        <!-- Top Recommendation -->
+        <div class="mt-12 border-t border-slate-700 pt-8">
+            <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 mb-4">Top Recommendation</h2>
+            <p class="text-lg">Tackling <strong>Candidate 1 (SupabasePersistenceGateway)</strong> is the highest impact move right now. The gateway currently stands at nearly 1,000 lines. Refactoring it into Domain Repositories will instantly reduce cognitive load for developers and drastically clean up our unit testing mocks across the entire backend.</p>
+        </div>
+    </main>
+</body>
+</html>

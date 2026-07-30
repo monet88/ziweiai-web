@@ -14,7 +14,9 @@ import {
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { apiEnv } from '../../../config/env';
-import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+import { ConversationsRepository } from '../../../database/repositories/conversations.repository';
+import { ChartsRepository } from '../../../database/repositories/charts.repository';
+import { DivinationsRepository } from '../../../database/repositories/divinations.repository';
 import { ConversationProviderRouter } from '../../../providers/ai/conversation-provider-router';
 import type {
   ConversationPromptPayload,
@@ -25,15 +27,19 @@ import { ProviderTimeoutError, ProviderUnavailableError } from '../../../provide
 import { DailyQuotaExceededError, RateLimitWindowError } from '../../quotas/quota-errors';
 import { resolveQuickPrompt } from '../../../providers/ai/quick-prompts';
 import { QuotasService } from '../../quotas/quotas.service';
+import { WalletEngineService } from '../../wallet/wallet-engine.service';
 
 @Injectable()
 export class ConversationsService {
   private readonly logger = new Logger(ConversationsService.name);
 
   constructor(
-    private readonly persistenceGateway: SupabasePersistenceGateway,
+    private readonly conversationsRepository: ConversationsRepository,
+    private readonly chartsRepository: ChartsRepository,
+    private readonly divinationsRepository: DivinationsRepository,
     private readonly quotasService: QuotasService,
     private readonly conversationRouter: ConversationProviderRouter,
+    private readonly walletEngine: WalletEngineService,
   ) {}
 
   async createConversation(
@@ -42,12 +48,12 @@ export class ConversationsService {
   ): Promise<CreateConversationResponse> {
     this.assertConversationEnabled();
 
-    const chartRecord = await this.persistenceGateway.findChartSnapshotById(user.userId, input.chartSnapshotId);
+    const chartRecord = await this.chartsRepository.findChartSnapshotById(user.userId, input.chartSnapshotId);
     if (!chartRecord) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số đã lưu.');
     }
 
-    const conversation = await this.persistenceGateway.createConversation({
+    const conversation = await this.conversationsRepository.createConversation({
       ownerUserId: user.userId,
       chartSnapshotId: input.chartSnapshotId,
       title: input.title ?? null,
@@ -192,19 +198,19 @@ export class ConversationsService {
   ): Promise<{ promptPayload: ConversationPromptPayload }> {
     this.assertConversationEnabled();
 
-    const conversation = await this.persistenceGateway.findConversationById(user.userId, conversationId);
+    const conversation = await this.conversationsRepository.findConversationById(user.userId, conversationId);
     if (!conversation) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy cuộc hội thoại.');
     }
 
-    const chartRecord = await this.persistenceGateway.findChartSnapshotById(user.userId, conversation.chartSnapshotId);
+    const chartRecord = await this.chartsRepository.findChartSnapshotById(user.userId, conversation.chartSnapshotId);
     if (!chartRecord) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số liên kết.');
     }
 
     // GATE 3: Trừ XU cho tính năng premium (Hội thoại AI). Tốn 1 XU mỗi tin nhắn.
     if (!apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
-      const success = await this.persistenceGateway.deductXU(user.userId, 1);
+      const success = await this.walletEngine.deductXU(user.userId, 1, 'ai_usage');
       if (!success) {
         throw new ApiErrorHttpException(
           HttpStatus.PAYMENT_REQUIRED,
@@ -230,14 +236,14 @@ export class ConversationsService {
     // Fetch recent history BEFORE inserting the new user turn so the prompt context
     // contains only prior turns. The current user message is passed separately as
     // `userMessage` and rendered under "Câu hỏi hiện tại".
-    const previousMessages = await this.persistenceGateway.listRecentConversationMessages(
+    const previousMessages = await this.conversationsRepository.listRecentConversationMessages(
       user.userId,
       conversationId,
       historyLimit,
     );
 
     // Persist user message (durable even if AI fails later)
-    await this.persistenceGateway.createConversationMessage({
+    await this.conversationsRepository.createConversationMessage({
       ownerUserId: user.userId,
       conversationId,
       role: 'user',
@@ -252,7 +258,7 @@ export class ConversationsService {
     // question + purpose so the conversation prompt targets the original inquiry even when
     // a quick prompt / follow-up does not restate it. Undefined for natal/other systems.
     const divinationInquiry = await resolveDivinationInquiry(
-      this.persistenceGateway,
+      this.divinationsRepository,
       user.userId,
       conversation.chartSnapshotId,
       chartRecord.snapshot.chartSystem,
@@ -284,7 +290,7 @@ export class ConversationsService {
     conversationId: string,
     providerResult: ConversationProviderResult,
   ): Promise<ConversationMessageRecord> {
-    return this.persistenceGateway.createConversationMessage({
+    return this.conversationsRepository.createConversationMessage({
       ownerUserId: userId,
       conversationId,
       role: 'assistant',
@@ -314,22 +320,22 @@ export class ConversationsService {
   // The returned list is bounded: the gateway applies a defensive MAX_CONVERSATIONS_PER_CHART cap
   // (newest-first), so this never returns an unbounded set even for a chart with many conversations.
   async listConversationsForChart(userId: string, chartSnapshotId: string): Promise<ConversationListResponse> {
-    const chartRecord = await this.persistenceGateway.findChartSnapshotById(userId, chartSnapshotId);
+    const chartRecord = await this.chartsRepository.findChartSnapshotById(userId, chartSnapshotId);
     if (!chartRecord) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số đã lưu.');
     }
 
-    const items = await this.persistenceGateway.listConversationsForChart(userId, chartSnapshotId);
+    const items = await this.conversationsRepository.listConversationsForChart(userId, chartSnapshotId);
     return conversationListResponseSchema.parse({ items });
   }
 
   async getConversationDetail(userId: string, conversationId: string): Promise<ConversationDetailResponse> {
-    const conversation = await this.persistenceGateway.findConversationById(userId, conversationId);
+    const conversation = await this.conversationsRepository.findConversationById(userId, conversationId);
     if (!conversation) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy cuộc hội thoại.');
     }
 
-    const messages = await this.persistenceGateway.listRecentConversationMessages(userId, conversationId, 200);
+    const messages = await this.conversationsRepository.listRecentConversationMessages(userId, conversationId, 200);
     return conversationDetailResponseSchema.parse({
       conversation,
       messages,
@@ -351,7 +357,7 @@ export class ConversationsService {
 
   private async assertCanCreateConversationMessage(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateConversationMessage(userId, ipAddress, isAnonymous);
+      await this.quotasService.assertCanExecute('conversation', userId, ipAddress, isAnonymous);
     } catch (error) {
       // Only typed quota/rate-limit errors map to 429. Anything else (e.g. a quota-store outage or
       // a persistence failure) must NOT be disguised as RATE_LIMITED — that masks real backend

@@ -1,10 +1,10 @@
 import { CanActivate, ExecutionContext, HttpStatus, Injectable } from '@nestjs/common';
 import { ApiErrorHttpException } from '../http/api-error';
-import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { AdminRepository } from '../../database/repositories/admin.repository';
 
 @Injectable()
 export class ModeratorGuard implements CanActivate {
-  constructor(private readonly persistenceGateway: SupabasePersistenceGateway) {}
+  constructor(private readonly adminRepository: AdminRepository) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -14,7 +14,7 @@ export class ModeratorGuard implements CanActivate {
       throw new ApiErrorHttpException(HttpStatus.UNAUTHORIZED, 'UNAUTHORIZED', 'Vui lòng đăng nhập.');
     }
 
-    const role = await this.persistenceGateway.checkAdminRole(user.email);
+    const role = await this.adminRepository.checkAdminRole(user.email);
     
     if (role !== 'SUPER_ADMIN' && role !== 'MODERATOR') {
       throw new ApiErrorHttpException(HttpStatus.FORBIDDEN, 'FORBIDDEN', 'Bạn không có quyền truy cập trang quản trị.');

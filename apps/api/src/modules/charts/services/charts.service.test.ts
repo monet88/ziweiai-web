@@ -164,13 +164,12 @@ describe('ChartsService', () => {
         viewedAt: snapshot.createdAt,
       })),
       listExplanationResultsForChart: vi.fn(async () => []),
-      deductXU: vi.fn(async () => true),
     };
     const quotasService = {
-      assertCanCreateChart: vi.fn(async () => undefined),
+      assertCanExecute: vi.fn(async () => undefined),
     };
 
-    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
     (service as unknown as { adapters: Record<string, { calculateChart: typeof adapterCalculateChart; usesViewYear: boolean }> }).adapters['zi-wei-dou-shu'] = {
       calculateChart: adapterCalculateChart,
       usesViewYear: true,
@@ -226,9 +225,9 @@ describe('ChartsService', () => {
       })),
     };
     const quotasService = {
-      assertCanCreateChart: vi.fn(async () => undefined),
+      assertCanExecute: vi.fn(async () => undefined),
     };
-    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
     (service as unknown as { adapters: Record<string, { calculateChart: typeof adapterCalculateChart; usesViewYear: boolean }> }).adapters['zi-wei-dou-shu'] = {
       calculateChart: adapterCalculateChart,
       usesViewYear: true,
@@ -303,9 +302,9 @@ describe('ChartsService', () => {
       })),
     };
     const quotasService = {
-      assertCanCreateChart: vi.fn(async () => undefined),
+      assertCanExecute: vi.fn(async () => undefined),
     };
-    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
     (service as unknown as { adapters: Record<string, { calculateChart: typeof adapterCalculateChart; usesViewYear: boolean }> }).adapters['ba-zi'] = {
       calculateChart: adapterCalculateChart,
       usesViewYear: false,
@@ -429,9 +428,9 @@ describe('ChartsService', () => {
       })),
     };
     const quotasService = {
-      assertCanCreateChart: vi.fn(async () => undefined),
+      assertCanExecute: vi.fn(async () => undefined),
     };
-    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
     (service as unknown as { adapters: Record<string, { calculateChart: typeof adapterCalculateChart; usesViewYear: boolean }> }).adapters['mei-hua-yi-shu'] = {
       calculateChart: adapterCalculateChart,
       usesViewYear: false,
@@ -553,9 +552,9 @@ describe('ChartsService', () => {
       })),
     };
     const quotasService = {
-      assertCanCreateChart: vi.fn(async () => undefined),
+      assertCanExecute: vi.fn(async () => undefined),
     };
-    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
     (service as unknown as { adapters: Record<string, { calculateChart: typeof adapterCalculateChart; usesViewYear: boolean }> }).adapters['liu-yao'] = {
       calculateChart: adapterCalculateChart,
       usesViewYear: false,
@@ -591,9 +590,9 @@ describe('ChartsService', () => {
       createChartSnapshot: vi.fn(),
     };
     const quotasService = {
-      assertCanCreateChart: vi.fn(async () => undefined),
+      assertCanExecute: vi.fn(async () => undefined),
     };
-    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
 
     await expect(
       service.createChart('22222222-2222-2222-8222-222222222222', '127.0.0.1', {
@@ -630,8 +629,8 @@ describe('ChartsService.computeHoroscope', () => {
     const persistenceGateway = {
       findChartSnapshotById: vi.fn(async () => buildChartRecord(snapshot)),
     };
-    const quotasService = { assertCanCreateChart: vi.fn(async () => undefined) };
-    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    const quotasService = { assertCanExecute: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
 
     const result = await service.computeHoroscope(
       HOROSCOPE_USER,
@@ -645,43 +644,43 @@ describe('ChartsService.computeHoroscope', () => {
     expect(result.asOf).toBe('2026-06-17');
     expect(result.frame.decadal.index).toBeGreaterThanOrEqual(0);
     expect(result.frame.yearly.index).toBeGreaterThanOrEqual(0);
-    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledTimes(1);
   });
 
   it('404 khi lá số không tồn tại / không sở hữu', async () => {
     const persistenceGateway = { findChartSnapshotById: vi.fn(async () => null) };
-    const quotasService = { assertCanCreateChart: vi.fn(async () => undefined) };
-    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    const quotasService = { assertCanExecute: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
 
     await expect(
       service.computeHoroscope(HOROSCOPE_USER, '127.0.0.1', HOROSCOPE_CHART, '2026-06-17', ['decadal']),
     ).rejects.toThrow(/Không tìm thấy lá số/);
     // Quota check chạy TRƯỚC khi query DB (defense-in-depth + phản hồi đồng nhất);
     // user hết hạn mức không kích hoạt được DB read.
-    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledTimes(1);
   });
 
   it('400 khi chart không phải zi-wei-dou-shu', async () => {
     const snapshot = buildSnapshot({ chartSystem: 'ba-zi' });
     const persistenceGateway = { findChartSnapshotById: vi.fn(async () => buildChartRecord(snapshot)) };
-    const quotasService = { assertCanCreateChart: vi.fn(async () => undefined) };
-    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    const quotasService = { assertCanExecute: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
 
     await expect(
       service.computeHoroscope(HOROSCOPE_USER, '127.0.0.1', HOROSCOPE_CHART, '2026-06-17', ['decadal']),
     ).rejects.toThrow(/chỉ áp dụng cho lá số Tử Vi/);
-    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledTimes(1);
   });
 
-  it('429 khi quota assertCanCreateChart vượt', async () => {
+  it('429 khi quota assertCanExecute vượt', async () => {
     const snapshot = buildSnapshot();
     const persistenceGateway = { findChartSnapshotById: vi.fn(async () => buildChartRecord(snapshot)) };
     const quotasService = {
-      assertCanCreateChart: vi.fn(async () => {
+      assertCanExecute: vi.fn(async () => {
         throw new Error('Đã vượt hạn mức lập lá số.');
       }),
     };
-    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
 
     await expect(
       service.computeHoroscope(HOROSCOPE_USER, '127.0.0.1', HOROSCOPE_CHART, '2026-06-17', ['decadal']),
@@ -725,12 +724,11 @@ describe('ChartsService — gate Mạnh Phái (US-017d)', () => {
       })),
       findChartSnapshotByDedupeKey: vi.fn(async () => null),
       createChartSnapshot: vi.fn(async () => buildChartRecord(snapshot)),
-      deductXU: vi.fn(async () => true),
     };
     const quotasService = {
-      assertCanCreateChart: vi.fn(quotaOverride ?? (async () => undefined)),
+      assertCanExecute: vi.fn(quotaOverride ?? (async () => undefined)),
     };
-    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
     (service as unknown as { adapters: Record<string, { calculateChart: typeof adapterCalculateChart; usesViewYear: boolean }> }).adapters.mangpai = {
       calculateChart: adapterCalculateChart,
       usesViewYear: false,
@@ -753,7 +751,7 @@ describe('ChartsService — gate Mạnh Phái (US-017d)', () => {
       () => expect.fail('phải ném FEATURE_DISABLED'),
       (error) => expectApiError(error, 403, 'FEATURE_DISABLED'),
     );
-    expect(quotasService.assertCanCreateChart).not.toHaveBeenCalled();
+    expect(quotasService.assertCanExecute).not.toHaveBeenCalled();
     expect(adapterCalculateChart).not.toHaveBeenCalled();
   });
 
@@ -801,10 +799,9 @@ describe('ChartsService — gate Mạnh Phái (US-017d)', () => {
       })),
       findChartSnapshotByDedupeKey: vi.fn(async () => null),
       createChartSnapshot: vi.fn(async () => buildChartRecord(snapshot)),
-      deductXU: vi.fn(async () => true),
     };
-    const quotasService = { assertCanCreateChart: vi.fn(async () => undefined) };
-    const service = new ChartsService(persistenceGateway as never, quotasService as never);
+    const quotasService = { assertCanExecute: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
     (service as unknown as { adapters: Record<string, { calculateChart: () => Promise<typeof snapshot>; usesViewYear: boolean }> }).adapters['zi-wei-dou-shu'] = {
       calculateChart: async () => snapshot,
       usesViewYear: true,
@@ -816,7 +813,7 @@ describe('ChartsService — gate Mạnh Phái (US-017d)', () => {
       makeActiveBirthProfile: true,
     });
     expect(result.snapshot.chartSystem).toBe('zi-wei-dou-shu');
-    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledTimes(1);
   });
 });
 

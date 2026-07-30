@@ -3,9 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthenticatedUser } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { apiEnv } from '../../../config/env';
-import type { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import type { ConversationProviderRouter } from '../../../providers/ai/conversation-provider-router';
 import type { QuotasService } from '../../quotas/quotas.service';
+import type { WalletEngineService } from '../../wallet/wallet-engine.service';
 import { ConversationsService } from './conversations.service';
 
 function expectApiError(error: unknown, status: HttpStatus, code: string): void {
@@ -23,8 +23,9 @@ describe('ConversationsService entitlement gate', () => {
   const originalConversationEnabled = apiEnv.AI_CONVERSATION_ENABLED;
   const originalFreeForAll = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
 
-  let persistenceGateway: Pick<SupabasePersistenceGateway, 'findConversationById' | 'findChartSnapshotById' | 'deductXU'>;
-  let quotasService: Pick<QuotasService, 'assertCanCreateConversationMessage'>;
+  let persistenceGateway: Pick<any, 'findConversationById' | 'findChartSnapshotById'>;
+  let walletEngine: Pick<WalletEngineService, 'deductXU'>;
+  let quotasService: Pick<QuotasService, 'assertCanExecute'>;
   let conversationRouter: Pick<ConversationProviderRouter, 'generate'>;
   let service: ConversationsService;
 
@@ -34,14 +35,17 @@ describe('ConversationsService entitlement gate', () => {
     persistenceGateway = {
       findConversationById: vi.fn().mockResolvedValue({ id: CONVERSATION_ID, chartSnapshotId: 'chart-1' }),
       findChartSnapshotById: vi.fn().mockResolvedValue({ snapshot: {} }),
-      deductXU: vi.fn().mockResolvedValue(true),
     };
-    quotasService = { assertCanCreateConversationMessage: vi.fn().mockResolvedValue(undefined) };
+    walletEngine = { deductXU: vi.fn().mockResolvedValue(true) };
+    quotasService = { assertCanExecute: vi.fn().mockResolvedValue(undefined) };
     conversationRouter = { generate: vi.fn() };
     service = new ConversationsService(
-      persistenceGateway as SupabasePersistenceGateway,
+      persistenceGateway as any,
+      persistenceGateway as any,
+      persistenceGateway as any,
       quotasService as QuotasService,
       conversationRouter as ConversationProviderRouter,
+      walletEngine as WalletEngineService,
     );
   });
 
@@ -53,7 +57,7 @@ describe('ConversationsService entitlement gate', () => {
 
   it('chặn PAYMENT_REQUIRED khi AI gate không free-for-all (trước quota + provider)', async () => {
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
-    persistenceGateway.deductXU = vi.fn().mockResolvedValue(false);
+    walletEngine.deductXU = vi.fn().mockResolvedValue(false);
     try {
       await service.appendMessageAndGenerate(emailUser, '127.0.0.1', CONVERSATION_ID, {
         content: 'Xin chào',
@@ -64,7 +68,7 @@ describe('ConversationsService entitlement gate', () => {
       expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'PAYMENT_REQUIRED');
     }
     // Gate must fire BEFORE quota consumption and provider work.
-    expect(quotasService.assertCanCreateConversationMessage).not.toHaveBeenCalled();
+    expect(quotasService.assertCanExecute).not.toHaveBeenCalled();
     expect(conversationRouter.generate).not.toHaveBeenCalled();
   });
 
@@ -76,7 +80,7 @@ describe('ConversationsService entitlement gate', () => {
       })
       .catch(() => undefined);
     // With the gate open, quota enforcement is reached (provider stubs are intentionally minimal).
-    expect(quotasService.assertCanCreateConversationMessage).toHaveBeenCalledTimes(1);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -84,12 +88,15 @@ describe('ConversationsService.listConversationsForChart', () => {
   const CHART_ID = '44444444-4444-4444-8444-944444444444';
 
   function buildService(
-    gateway: Pick<SupabasePersistenceGateway, 'findChartSnapshotById' | 'listConversationsForChart'>,
+    gateway: Pick<any, 'findChartSnapshotById' | 'listConversationsForChart'>,
   ): ConversationsService {
     return new ConversationsService(
-      gateway as SupabasePersistenceGateway,
+      gateway as any,
+      gateway as any,
+      gateway as any,
       {} as QuotasService,
       {} as ConversationProviderRouter,
+      {} as WalletEngineService,
     );
   }
 
@@ -203,9 +210,11 @@ describe('ConversationsService.appendMessageAndGenerateStream', () => {
       findChartSnapshotById: vi.fn().mockResolvedValue({ snapshot: SNAPSHOT }),
       listRecentConversationMessages: vi.fn().mockResolvedValue([]),
       createConversationMessage,
+    };
+    const walletEngine = {
       deductXU: vi.fn(async () => true),
     };
-    const quotasService = { assertCanCreateConversationMessage: vi.fn().mockResolvedValue(undefined) };
+    const quotasService = { assertCanExecute: vi.fn().mockResolvedValue(undefined) };
     const conversationRouter = {
       generate: vi.fn().mockResolvedValue({
         renderedMarkdown: 'non-stream full text',
@@ -214,11 +223,14 @@ describe('ConversationsService.appendMessageAndGenerateStream', () => {
       resolveStreamingProvider: vi.fn().mockReturnValue(streamProvider),
     };
     const service = new ConversationsService(
-      persistenceGateway as unknown as SupabasePersistenceGateway,
+      persistenceGateway as unknown as any,
+      persistenceGateway as unknown as any,
+      persistenceGateway as unknown as any,
       quotasService as unknown as QuotasService,
       conversationRouter as unknown as ConversationProviderRouter,
+      walletEngine as unknown as WalletEngineService,
     );
-    return { service, persistenceGateway, quotasService, conversationRouter, createConversationMessage };
+    return { service, persistenceGateway, quotasService, conversationRouter, createConversationMessage, walletEngine };
   }
 
   beforeEach(() => {
@@ -234,10 +246,10 @@ describe('ConversationsService.appendMessageAndGenerateStream', () => {
 
   it('blocks with PAYMENT_REQUIRED before quota / persist / streaming when the AI gate is closed', async () => {
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
-    const { service, quotasService, conversationRouter, createConversationMessage, persistenceGateway } = buildStreamingService({
+    const { service, quotasService, conversationRouter, createConversationMessage, walletEngine } = buildStreamingService({
       generateConversationStream: vi.fn(),
     });
-    persistenceGateway.deductXU = vi.fn(async () => false);
+    walletEngine.deductXU = vi.fn(async () => false);
 
     try {
       await service
@@ -250,7 +262,7 @@ describe('ConversationsService.appendMessageAndGenerateStream', () => {
     } catch (error) {
       expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'PAYMENT_REQUIRED');
     }
-    expect(quotasService.assertCanCreateConversationMessage).not.toHaveBeenCalled();
+    expect(quotasService.assertCanExecute).not.toHaveBeenCalled();
     expect(conversationRouter.resolveStreamingProvider).not.toHaveBeenCalled();
     expect(createConversationMessage).not.toHaveBeenCalled();
   });

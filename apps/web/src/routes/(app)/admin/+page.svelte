@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import { adminTopupXU, adminBanUser, adminUnbanUser } from '$lib/api-client';
+  import { adminTopupXU, adminBanUser, adminUnbanUser } from '$lib/api-client/admin';;
 
   let { data }: { data: PageData } = $props();
   let topupAmount = $state(50);

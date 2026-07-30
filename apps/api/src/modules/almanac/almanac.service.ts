@@ -12,7 +12,7 @@ import { apiEnv } from '../../config/env';
 import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
 import { QuotasService } from '../quotas/quotas.service';
-import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { WalletEngineService } from '../wallet/wallet-engine.service';
 import { AlmanacEngineError, generateAlmanacSelection, type AlmanacSelectionResult } from './almanac-engine';
 import { buildAlmanacSelectionPrompt } from './almanac-prompts';
 
@@ -23,7 +23,7 @@ export class AlmanacService {
   constructor(
     private readonly quotasService: QuotasService,
     private readonly providerRouter: ExplanationProviderRouter,
-    private readonly persistenceGateway: SupabasePersistenceGateway,
+    private readonly walletEngine: WalletEngineService,
   ) {}
 
   async select(
@@ -96,7 +96,7 @@ export class AlmanacService {
     }
 
     const cost = 3;
-    const success = await this.persistenceGateway.deductXU(userId, cost);
+    const success = await this.walletEngine.deductXU(userId, cost, 'ai_usage');
     if (!success) {
       throw new ApiErrorHttpException(
         HttpStatus.PAYMENT_REQUIRED,
@@ -108,7 +108,7 @@ export class AlmanacService {
 
   private async assertCanCreate(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateAlmanacSelection(userId, ipAddress, isAnonymous);
+      await this.quotasService.assertCanExecute('almanac-selection', userId, ipAddress, isAnonymous);
     } catch (error) {
       throwQuotaRateLimited(error, 'Đã vượt hạn mức chọn ngày Hoàng lịch.');
     }

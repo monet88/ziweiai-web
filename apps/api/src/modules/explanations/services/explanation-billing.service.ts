@@ -3,7 +3,7 @@ import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { throwQuotaRateLimited } from '../../quotas/quota-http';
 import { DailyQuotaExceededError } from '../../quotas/quota-errors';
 import { QuotasService } from '../../quotas/quotas.service';
-import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+import { WalletEngineService } from '../../wallet/wallet-engine.service';
 import type { CreateExplanationRequest } from '@ziweiai/contracts';
 import { apiEnv } from '../../../config/env';
 
@@ -11,7 +11,7 @@ import { apiEnv } from '../../../config/env';
 export class ExplanationBillingService {
   constructor(
     private readonly quotasService: QuotasService,
-    private readonly persistenceGateway: SupabasePersistenceGateway,
+    private readonly walletEngine: WalletEngineService,
   ) {}
 
   /**
@@ -22,7 +22,7 @@ export class ExplanationBillingService {
   async checkInitialQuota(userId: string, ipAddress: string, isAnonymous: boolean): Promise<{ requiresXu: boolean }> {
     let requiresXu = false;
     try {
-      await this.quotasService.assertCanCreateExplanation(userId, ipAddress, isAnonymous);
+      await this.quotasService.assertCanExecute('explanation', userId, ipAddress, isAnonymous);
     } catch (error) {
       if (error instanceof DailyQuotaExceededError && !isAnonymous) {
         requiresXu = true;
@@ -38,7 +38,7 @@ export class ExplanationBillingService {
     const needsXu = (isPremium || isOverDailyQuota) && !apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
 
     if (needsXu) {
-      const success = await this.persistenceGateway.deductXU(userId, 10);
+      const success = await this.walletEngine.deductXU(userId, 10, 'ai_usage');
       if (!success) {
         const message = isPremium 
           ? 'Tính năng luận giải chuyên sâu yêu cầu 10 XU. Vui lòng nạp thêm XU để sử dụng.'

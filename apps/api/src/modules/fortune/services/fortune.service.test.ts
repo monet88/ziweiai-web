@@ -17,7 +17,7 @@ function makeService(snapshot: any) {
   const persistence = {
     findChartSnapshotById: vi.fn().mockResolvedValue(snapshot ? { snapshot } : null),
   };
-  const quotas = { assertCanCreateChart: vi.fn().mockResolvedValue(undefined) };
+  const quotas = { assertCanExecute: vi.fn().mockResolvedValue(undefined) };
   const engine = { computeFrame: vi.fn().mockReturnValue(frame) };
   const service = new FortuneService(persistence as any, quotas as any, engine as any);
   return { service, persistence, quotas, engine };
@@ -52,9 +52,9 @@ describe('FortuneService.getDailyFortune', () => {
     ).rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
   });
 
-  it('429 khi vượt quota (assertCanCreateChart ném)', async () => {
+  it('429 khi vượt quota (assertCanExecute ném)', async () => {
     const { service, quotas } = makeService(ziweiSnapshot);
-    (quotas.assertCanCreateChart as any).mockRejectedValue(new Error('Daily chart quota exceeded.'));
+    (quotas.assertCanExecute as any).mockRejectedValue(new Error('Daily chart quota exceeded.'));
     await expect(
       service.getDailyFortune(user, '1.2.3.4', '11111111-1111-4111-8111-111111111111', '2026-06-17'),
     ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });

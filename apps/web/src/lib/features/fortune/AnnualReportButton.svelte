@@ -6,7 +6,8 @@
   import { createMutation } from '@tanstack/svelte-query';
   import type { AnnualReportResponse } from '@ziweiai/contracts';
   import type { AuthStore } from '$lib/auth/auth-store.svelte';
-  import { ApiError, createAnnualReport } from '$lib/api-client';
+  import { ApiError } from '$lib/api-client/core';
+import { createAnnualReport } from '$lib/api-client/charts';;
   import { PrimaryButton } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { currentYear } from './fortune-dates';

@@ -9,7 +9,7 @@
   import { createQuery } from '@tanstack/svelte-query';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { fetchHistory, DASHBOARD_HISTORY_LIMIT } from '$lib/api-client';
+  import { fetchHistory, DASHBOARD_HISTORY_LIMIT } from '$lib/api-client/history';;
   import { getAuthStore } from '$lib/auth/auth-context';
   import { NoticeBanner, EmptyStateCard, Spinner, PrimaryButton } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';

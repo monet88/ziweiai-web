@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Req, Res, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { ChartsRepository } from '../../database/repositories/charts.repository';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
@@ -48,7 +48,7 @@ async function getInterFonts(): Promise<ArrayBuffer[]> {
 
 @Controller()
 export class ShareController {
-  constructor(private readonly persistenceGateway: SupabasePersistenceGateway) {}
+  constructor(private readonly chartsRepository: ChartsRepository) {}
 
   /** Crawler + human share entry; must stay public (global SupabaseAuthGuard). */
   @Public()
@@ -66,7 +66,7 @@ export class ShareController {
     const targetUrl = appendReferralQuery(canonicalUrl, rawRef);
 
     if (isBot) {
-      const chart = await this.persistenceGateway.findPublicChartSnapshotById(id);
+      const chart = await this.chartsRepository.findPublicChartSnapshotById(id);
 
       // Missing chart: brand fallback (do not pretend default system is Tử Vi).
       // Valid chart: dynamic title/description + OG image.
@@ -131,7 +131,7 @@ ${ogImageTags}
     @Res() res: Response,
   ) {
     try {
-      const chart = await this.persistenceGateway.findPublicChartSnapshotById(id);
+      const chart = await this.chartsRepository.findPublicChartSnapshotById(id);
       if (!chart) {
         return res.status(HttpStatus.NOT_FOUND).send('Chart not found');
       }

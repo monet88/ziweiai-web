@@ -15,9 +15,11 @@
     TextInputField,
     NoticeBanner,
   } from '$lib/components/ui';
+  import { fade, slide } from 'svelte/transition';
   import { viCopy } from '$lib/i18n/vi';
   import type { DashboardModel } from './dashboard-model.svelte';
   import ChartSystemPicker from './ChartSystemPicker.svelte';
+  import BirthSkeleton from './BirthSkeleton.svelte';
 
   interface Props {
     model: DashboardModel;
@@ -63,96 +65,118 @@
 
   function handleSubmit(event: Event): void {
     event.preventDefault();
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate(50);
+      } catch (e) {
+        // Ignore fallback
+      }
+    }
     model.submit();
   }
 </script>
 
-<form class="form" onsubmit={handleSubmit}>
-  <ChartSystemPicker
-    value={model.draft.chartSystem}
-    disabled={model.isSubmitting}
-    onchange={(system) => model.setField('chartSystem', system)}
-  />
-
-  <div class="grid-3">
-    <SelectField
-      label={copy.day}
-      fieldId="birth-day"
-      value={model.draft.birthDay}
-      options={dayOptions}
-      placeholder={copy.dayPlaceholder}
-      onValueChange={(value) => model.setField('birthDay', value)}
-      errorText={errorFor('birthDay')}
+{#if model.isSubmitting}
+  <div class="skeleton-container" in:fade={{ duration: 300, delay: 200 }} out:fade={{ duration: 200 }}>
+    <BirthSkeleton />
+  </div>
+{:else}
+<form class="form" onsubmit={handleSubmit} in:fade={{ duration: 300, delay: 100 }} out:fade={{ duration: 200 }}>
+  <div class="form-section surface-glass p-4 rounded-xl">
+    <h3 class="section-title">Hệ thuật số</h3>
+    <ChartSystemPicker
+      value={model.draft.chartSystem}
       disabled={model.isSubmitting}
-    />
-    <SelectField
-      label={copy.month}
-      fieldId="birth-month"
-      value={model.draft.birthMonth}
-      options={monthOptions}
-      placeholder={copy.monthPlaceholder}
-      onValueChange={(value) => model.setField('birthMonth', value)}
-      errorText={errorFor('birthMonth')}
-      disabled={model.isSubmitting}
-    />
-    <SelectField
-      label={copy.year}
-      fieldId="birth-year"
-      value={model.draft.birthYear}
-      options={yearOptions}
-      placeholder={copy.yearPlaceholder}
-      onValueChange={(value) => model.setField('birthYear', value)}
-      errorText={errorFor('birthYear')}
-      disabled={model.isSubmitting}
+      onchange={(system) => model.setField('chartSystem', system)}
     />
   </div>
 
-  <p class="solar-hint">{copy.solarDateHint}</p>
-
-  <div class="flex-wrap-group">
-    <SelectField
-      label={copy.genderForChart}
-      fieldId="birth-gender"
-      value={model.draft.gender}
-      options={genderOptions}
-      disabled={model.isSubmitting}
-      onValueChange={(value) => model.setField('gender', value as 'male' | 'female' | 'unknown')}
-    />
-
-    <SelectField
-      label={copy.birthTimeCertainty}
-      fieldId="birth-time-certainty"
-      value={model.draft.isUnknownTime ? 'unknown' : 'known'}
-      options={timeOptions}
-      disabled={model.isSubmitting}
-      onValueChange={(value) => model.setField('isUnknownTime', value === 'unknown')}
-    />
-  </div>
-
-  {#if model.draft.isUnknownTime}
-    <NoticeBanner message={viCopy.warnings.unknownBirthTime} tone="warning" />
-  {:else}
-    <div class="grid-2">
-      <TextInputField
-        label={copy.hour}
-        fieldId="birth-hour"
-        type="number"
-        value={model.draft.hour}
-        onValueChange={(value) => model.setField('hour', value)}
-        errorText={errorFor('hour')}
+  <div class="form-section surface-glass p-4 rounded-xl">
+    <h3 class="section-title">Ngày tháng năm sinh</h3>
+    <div class="grid-3">
+      <SelectField
+        label={copy.day}
+        fieldId="birth-day"
+        value={model.draft.birthDay}
+        options={dayOptions}
+        placeholder={copy.dayPlaceholder}
+        onValueChange={(value) => model.setField('birthDay', value)}
+        errorText={errorFor('birthDay')}
         disabled={model.isSubmitting}
       />
-      <TextInputField
-        label={copy.minute}
-        fieldId="birth-minute"
-        type="number"
-        value={model.draft.minute}
-        onValueChange={(value) => model.setField('minute', value)}
-        errorText={errorFor('minute')}
+      <SelectField
+        label={copy.month}
+        fieldId="birth-month"
+        value={model.draft.birthMonth}
+        options={monthOptions}
+        placeholder={copy.monthPlaceholder}
+        onValueChange={(value) => model.setField('birthMonth', value)}
+        errorText={errorFor('birthMonth')}
+        disabled={model.isSubmitting}
+      />
+      <SelectField
+        label={copy.year}
+        fieldId="birth-year"
+        value={model.draft.birthYear}
+        options={yearOptions}
+        placeholder={copy.yearPlaceholder}
+        onValueChange={(value) => model.setField('birthYear', value)}
+        errorText={errorFor('birthYear')}
         disabled={model.isSubmitting}
       />
     </div>
-  {/if}
+    <p class="solar-hint">{copy.solarDateHint}</p>
+  </div>
+
+  <div class="form-section surface-glass p-4 rounded-xl">
+    <h3 class="section-title">Thông tin bổ sung</h3>
+    <div class="flex-wrap-group">
+      <SelectField
+        label={copy.genderForChart}
+        fieldId="birth-gender"
+        value={model.draft.gender}
+        options={genderOptions}
+        disabled={model.isSubmitting}
+        onValueChange={(value) => model.setField('gender', value as 'male' | 'female' | 'unknown')}
+      />
+
+      <SelectField
+        label={copy.birthTimeCertainty}
+        fieldId="birth-time-certainty"
+        value={model.draft.isUnknownTime ? 'unknown' : 'known'}
+        options={timeOptions}
+        disabled={model.isSubmitting}
+        onValueChange={(value) => model.setField('isUnknownTime', value === 'unknown')}
+      />
+    </div>
+
+    {#if model.draft.isUnknownTime}
+      <div class="mt-4" transition:slide={{ duration: 300 }}>
+        <NoticeBanner message={viCopy.warnings.unknownBirthTime} tone="warning" />
+      </div>
+    {:else}
+      <div class="grid-2 mt-4" transition:slide={{ duration: 300 }}>
+        <TextInputField
+          label={copy.hour}
+          fieldId="birth-hour"
+          type="number"
+          value={model.draft.hour}
+          onValueChange={(value) => model.setField('hour', value)}
+          errorText={errorFor('hour')}
+          disabled={model.isSubmitting}
+        />
+        <TextInputField
+          label={copy.minute}
+          fieldId="birth-minute"
+          type="number"
+          value={model.draft.minute}
+          onValueChange={(value) => model.setField('minute', value)}
+          errorText={errorFor('minute')}
+          disabled={model.isSubmitting}
+        />
+      </div>
+    {/if}
+  </div>
 
   {#if model.submitAttempted && !model.isValid}
     <NoticeBanner message={viCopy.dashboardValidation.formInvalid} tone="danger" />
@@ -162,18 +186,47 @@
     <NoticeBanner message={model.errorMessage} tone="danger" />
   {/if}
 
-  <PrimaryButton
-    label={copy.createChart}
-    type="submit"
-    loading={model.isSubmitting}
-  />
+  <div class="submit-wrapper mt-2">
+    <PrimaryButton
+      label={copy.createChart}
+      type="submit"
+      loading={model.isSubmitting}
+    />
+  </div>
 </form>
+{/if}
 
 <style>
+  .skeleton-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+  }
+
   .form {
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
+  }
+
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .section-title {
+    margin: 0;
+    font-size: var(--text-caption);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-accent-primary);
+  }
+  
+  :global([data-theme="dark"]) .section-title {
+    color: var(--color-accent-primary-pressed);
   }
 
   .grid-2,
@@ -192,7 +245,7 @@
 
   /* Chú thích dương lịch: gắn liền cụm ngày/tháng/năm (kéo sát lên trên), chữ phụ dịu. */
   .solar-hint {
-    margin: calc(var(--space-md) * -1 + var(--space-xs)) 0 0;
+    margin: var(--space-xs) 0 0;
     color: var(--color-text-muted);
     font-size: 13px;
     line-height: 1.4;
@@ -217,5 +270,13 @@
   :global(.flex-wrap-group > *) {
     flex: 1 1 calc(50% - var(--space-lg));
     min-width: 240px;
+  }
+  
+  .submit-wrapper {
+    position: sticky;
+    bottom: -16px; /* offset sheet padding */
+    padding-bottom: 16px;
+    background: linear-gradient(to top, var(--color-bg-surface) 50%, transparent);
+    z-index: 10;
   }
 </style>

@@ -13,7 +13,7 @@ const { gotoMock } = vi.hoisted(() => ({ gotoMock: vi.fn(() => Promise.resolve()
 
 vi.mock('$app/navigation', () => ({ goto: gotoMock }));
 
-import { ApiError } from '$lib/api-client';
+import { ApiError } from '$lib/api-client/core';;
 import { redirectOnExpiredSession } from './query-client';
 
 describe('redirectOnExpiredSession', () => {

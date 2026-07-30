@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
-import { adminListUsers } from '$lib/api-client';
+import { adminListUsers } from '$lib/api-client/admin';;
 
 import { supabase } from '$lib/supabase/supabase-client';
 

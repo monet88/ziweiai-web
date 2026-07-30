@@ -21,7 +21,8 @@ import {
   type PalaceScope,
 } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { ApiError, createExplanation } from '$lib/api-client';
+import { ApiError } from '$lib/api-client/core';
+import { createExplanation } from '$lib/api-client/conversations';;
 import { buildPalaceExplanationRequest, CHART_DETAIL_EXPLANATION_KIND } from '$lib/features/chart/chart-explanation-intent';
 import { buildHydrationResultByScope, OVERVIEW_SCOPE_KEY } from '$lib/features/explanation/explanation-sections';
 import { viCopy } from '$lib/i18n/vi';

@@ -1,16 +1,25 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentService } from './payment.service';
 import { WalletEngineService } from '../wallet/wallet-engine.service';
+import { SUPABASE_CLIENT } from '../../database/supabase-client';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 describe('PaymentService', () => {
   let service: PaymentService;
   let mockWalletEngine: any;
+  let mockSupabaseClient: any;
 
   beforeEach(async () => {
     mockWalletEngine = {
-      processSePayDeposit: vi.fn().mockResolvedValue(undefined),
-      processRevenueCatDeposit: vi.fn().mockResolvedValue(undefined),
+      addXU: vi.fn().mockResolvedValue(true),
+    };
+
+    mockSupabaseClient = {
+      from: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockReturnThis(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -20,6 +29,10 @@ describe('PaymentService', () => {
           provide: WalletEngineService,
           useValue: mockWalletEngine,
         },
+        {
+          provide: SUPABASE_CLIENT,
+          useValue: mockSupabaseClient,
+        },
       ],
     }).compile();
 
@@ -27,41 +40,95 @@ describe('PaymentService', () => {
   });
 
   describe('processTransaction (SePay)', () => {
-    it('should delegate processSePayDeposit to WalletEngineService', async () => {
+    it('should skip if content has no TVTT code', async () => {
       const payload = {
-        id: 2,
+        id: 100,
         gateway: 'MB',
-        transactionDate: '2023-10-10',
-        accountNumber: '123',
+        transactionDate: '2026-07-24',
+        accountNumber: '12345',
         code: null,
-        content: 'TVTT a1b2c3d4 nap XU',
+        content: 'Chuyen tien khong qua',
         transferType: 'in',
         transferAmount: 50000,
         accumulated: 100000,
-        referenceCode: 'ref2',
-        description: 'desc',
+        referenceCode: 'ref100',
+        description: 'test',
       };
 
-      await service.processTransaction(payload);
-      expect(mockWalletEngine.processSePayDeposit).toHaveBeenCalledWith(payload);
+      await service.processTransaction(payload as any);
+      expect(mockSupabaseClient.from).not.toHaveBeenCalled();
+    });
+
+    it('should process deposit, insert transaction, and credit XU', async () => {
+      // 1. Existing tx check -> null
+      mockSupabaseClient.single.mockResolvedValueOnce({ data: null, error: null });
+      // 2. User lookup -> found user list matching prefix '12345678'
+      mockSupabaseClient.from.mockImplementationOnce(() => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null, error: null }),
+          }),
+        }),
+      })).mockImplementationOnce(() => ({
+        select: async () => ({
+          data: [{ user_id: '12345678-abcd-1234-5678-123456789012' }],
+          error: null,
+        }),
+      }));
+      // 3. Insert transaction -> ok
+      mockSupabaseClient.insert.mockResolvedValueOnce({ error: null });
+
+      const payload = {
+        id: 101,
+        gateway: 'MB',
+        transactionDate: '2026-07-24',
+        accountNumber: '12345',
+        code: null,
+        content: 'TVTT 12345678 Nap 50k',
+        transferType: 'in',
+        transferAmount: 50000,
+        accumulated: 150000,
+        referenceCode: 'ref101',
+        description: 'test',
+      };
+
+      await service.processTransaction(payload as any);
+
+      expect(mockSupabaseClient.insert).toHaveBeenCalledWith({
+        owner_user_id: '12345678-abcd-1234-5678-123456789012',
+        amount_vnd: 50000,
+        xu_added: 50,
+        sepay_transaction_id: '101',
+      });
+      expect(mockWalletEngine.addXU).toHaveBeenCalledWith('12345678-abcd-1234-5678-123456789012', 50, 'topup');
     });
   });
 
   describe('processRevenueCatTransaction', () => {
-    it('should delegate processRevenueCatDeposit to WalletEngineService', async () => {
+    it('should add XU based on product mapping', async () => {
+      mockSupabaseClient.single.mockResolvedValueOnce({ data: null, error: null });
+      mockSupabaseClient.insert.mockResolvedValueOnce({ error: null });
+
       const payload = {
         event: {
           type: 'INITIAL_PURCHASE',
-          id: 'evt_123',
-          app_user_id: 'user123',
-          product_id: 'xu_100_tier1',
-          price: 100000,
+          id: 'evt_rc_1',
+          app_user_id: 'user_rc',
+          product_id: 'xu_500_tier2',
+          price: 500000,
         } as any,
         api_version: '1.0',
       };
 
-      await service.processRevenueCatTransaction(payload);
-      expect(mockWalletEngine.processRevenueCatDeposit).toHaveBeenCalledWith(payload);
+      await service.processRevenueCatTransaction(payload as any);
+
+      expect(mockSupabaseClient.insert).toHaveBeenCalledWith({
+        owner_user_id: 'user_rc',
+        amount_vnd: 500000,
+        xu_added: 500,
+        revenuecat_transaction_id: 'evt_rc_1',
+      });
+      expect(mockWalletEngine.addXU).toHaveBeenCalledWith('user_rc', 500, 'topup');
     });
   });
 });

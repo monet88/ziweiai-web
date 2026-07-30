@@ -11,7 +11,7 @@ import { apiEnv } from '../../config/env';
 import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
 import { QuotasService } from '../quotas/quotas.service';
-import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { WalletEngineService } from '../wallet/wallet-engine.service';
 import { drawStickDeterministic } from './stick-deck';
 import { buildStickReadingPrompt } from './stick-prompts';
 
@@ -22,7 +22,7 @@ export class DrawsSticksService {
   constructor(
     private readonly quotasService: QuotasService,
     private readonly providerRouter: ExplanationProviderRouter,
-    private readonly persistenceGateway: SupabasePersistenceGateway,
+    private readonly walletEngine: WalletEngineService,
   ) {}
 
   async drawStick(
@@ -79,7 +79,7 @@ export class DrawsSticksService {
     }
 
     const cost = 3;
-    const success = await this.persistenceGateway.deductXU(userId, cost);
+    const success = await this.walletEngine.deductXU(userId, cost, 'ai_usage');
     if (!success) {
       throw new ApiErrorHttpException(
         HttpStatus.PAYMENT_REQUIRED,
@@ -91,7 +91,7 @@ export class DrawsSticksService {
 
   private async assertCanCreate(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateStickDraw(userId, ipAddress, isAnonymous);
+      await this.quotasService.assertCanExecute('stick-draw', userId, ipAddress, isAnonymous);
     } catch (error) {
       throwQuotaRateLimited(error, 'Đã vượt hạn mức xin xăm.');
     }

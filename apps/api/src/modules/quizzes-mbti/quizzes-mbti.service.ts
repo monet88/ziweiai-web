@@ -2,7 +2,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { mbtiResultSchema, type AuthenticatedUser, type MbtiAnswer, type MbtiResult } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { throwQuotaRateLimited } from '../quotas/quota-http';
-import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { WalletEngineService } from '../wallet/wallet-engine.service';
 import { apiEnv } from '../../config/env';
 import { QuotasService } from '../quotas/quotas.service';
 import { scoreMbti } from './mbti-scoring';
@@ -13,7 +13,7 @@ export class QuizzesMbtiService {
 
   constructor(
     private readonly quotasService: QuotasService,
-    private readonly persistenceGateway: SupabasePersistenceGateway
+    private readonly walletEngine: WalletEngineService
   ) {}
 
   async submitQuiz(user: AuthenticatedUser, ipAddress: string, answers: readonly MbtiAnswer[]): Promise<MbtiResult> {
@@ -27,7 +27,7 @@ export class QuizzesMbtiService {
     }
 
     // GATE 3: Trừ XU cho tính năng premium (MBTI). Tốn 1 XU.
-    const success = await this.persistenceGateway.deductXU(user.userId, 1);
+    const success = await this.walletEngine.deductXU(user.userId, 1, 'ai_usage');
     if (!success) {
       throw new ApiErrorHttpException(
         HttpStatus.PAYMENT_REQUIRED,
@@ -49,7 +49,7 @@ export class QuizzesMbtiService {
   // /explanations, /draws/tarot; nếu không bọc, raw Error rơi xuống ApiErrorFilter → 500.
   private async assertCanCreateMbtiQuiz(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateMbtiQuiz(userId, ipAddress, isAnonymous);
+      await this.quotasService.assertCanExecute('mbti-quiz', userId, ipAddress, isAnonymous);
     } catch (error) {
       throwQuotaRateLimited(error, 'Đã vượt hạn mức làm trắc nghiệm MBTI.');
     }

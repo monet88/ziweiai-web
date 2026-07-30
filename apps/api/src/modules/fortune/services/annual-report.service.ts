@@ -10,7 +10,9 @@ import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { throwQuotaRateLimited } from '../../quotas/quota-http';
 import { assertAnnualReportEnabled } from '../../../common/entitlement/ai-entitlement.guard';
 import { apiEnv } from '../../../config/env';
-import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+import { AnnualReportsRepository } from '../../../database/repositories/annual-reports.repository';
+import { ChartsRepository } from '../../../database/repositories/charts.repository';
+import { WalletEngineService } from '../../wallet/wallet-engine.service';
 import { buildAnnualReportPrompt } from '../../../providers/ai/build-annual-report-prompt';
 import { ExplanationProviderRouter } from '../../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../../providers/ai/provider-errors';
@@ -29,17 +31,19 @@ export class AnnualReportService {
   private readonly logger = new Logger(AnnualReportService.name);
 
   constructor(
-    private readonly persistenceGateway: SupabasePersistenceGateway,
+    private readonly annualReportsRepository: AnnualReportsRepository,
+    private readonly chartsRepository: ChartsRepository,
     private readonly quotasService: QuotasService,
     private readonly providerRouter: ExplanationProviderRouter,
     private readonly engine: HoroscopeEngineAdapter,
+    private readonly walletEngine: WalletEngineService,
   ) {}
 
   async createAnnualReport(user: AuthenticatedUser, ipAddress: string, chartId: string, year: number): Promise<AnnualReportResponse> {
     const snapshot = await this.loadZiweiSnapshot(user, chartId);
 
     // CACHE-HIT BYPASS GATE (decision 0010): có row rồi thì trả lại, không re-gate, không gọi LLM.
-    const cached = await this.persistenceGateway.findAnnualReportByChartAndYear(user.userId, chartId, year);
+    const cached = await this.annualReportsRepository.findAnnualReportByChartAndYear(user.userId, chartId, year);
     if (cached) {
       this.logger.log(`[fortune.annual] outcome=cache-hit chartId=${chartId} year=${year} userId=${user.userId}`);
       const frame = this.engine.computeAnnualFrame(snapshot, year);
@@ -51,7 +55,7 @@ export class AnnualReportService {
 
     // GATE 3: Trừ XU cho tính năng premium (Báo cáo năm). Tốn 1 XU.
     if (!apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
-      const success = await this.persistenceGateway.deductXU(user.userId, 1);
+      const success = await this.walletEngine.deductXU(user.userId, 1, 'ai_usage');
       if (!success) {
         throw new ApiErrorHttpException(
           HttpStatus.PAYMENT_REQUIRED,
@@ -61,7 +65,7 @@ export class AnnualReportService {
       }
     }
     try {
-      await this.quotasService.assertCanCreateAnnualReport(user.userId, ipAddress, user.email === null);
+      await this.quotasService.assertCanExecute('annual-report', user.userId, ipAddress, user.email === null);
     } catch (error) {
       this.logger.warn(`[annual] quota exceeded userId=${user.userId}`);
       throwQuotaRateLimited(error, 'Đã vượt hạn mức báo cáo năm.');
@@ -94,7 +98,7 @@ export class AnnualReportService {
     // Race hai caller cùng (chart, year): createAnnualReport bắt unique-violation rồi đọc lại row
     // của caller thắng → trả Markdown đó (idempotent). Caller thua "phí" một lần gọi LLM nhưng không
     // ghi đè cache — chấp nhận được vì annual chỉ sinh 1 lần/lifetime mỗi (chart, year).
-    const row = await this.persistenceGateway.createAnnualReport({
+    const row = await this.annualReportsRepository.createAnnualReport({
       ownerUserId: user.userId,
       chartSnapshotId: chartId,
       year,
@@ -109,7 +113,7 @@ export class AnnualReportService {
   }
 
   private async loadZiweiSnapshot(user: AuthenticatedUser, chartId: string): Promise<ChartSnapshot> {
-    const chartRecord = await this.persistenceGateway.findChartSnapshotById(user.userId, chartId);
+    const chartRecord = await this.chartsRepository.findChartSnapshotById(user.userId, chartId);
     if (!chartRecord) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số đã lưu.');
     }

@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { HttpStatus } from '@nestjs/common';
 import type { CreateExplanationRequest } from '@ziweiai/contracts';
 import { ExplanationsService } from './explanations.service';
-import type { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+import type { WalletEngineService } from '../../wallet/wallet-engine.service';
 import type { QuotasService } from '../../quotas/quotas.service';
 import type { ExplanationProviderRouter } from '../../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError } from '../../../providers/ai/provider-errors';
@@ -73,7 +73,8 @@ describe('ExplanationsService (with palaceScope)', () => {
   let validatorService: ExplanationValidatorService;
   let billingService: ExplanationBillingService;
   let raceController: ExplanationRaceControllerService;
-  let persistence: Partial<SupabasePersistenceGateway>;
+  let persistence: Partial<any>;
+  let walletEngine: Pick<WalletEngineService, 'deductXU'>;
   let quotas: Partial<QuotasService>;
   let providerRouter: Partial<ExplanationProviderRouter>;
 
@@ -87,12 +88,12 @@ describe('ExplanationsService (with palaceScope)', () => {
       tryClaimExplanationRequest: vi.fn(),
       createExplanationResult: vi.fn(),
       createHistoryView: vi.fn(),
-      deductXU: vi.fn().mockResolvedValue(true),
     };
 
     quotas = {
-      assertCanCreateExplanation: vi.fn().mockResolvedValue(undefined),
+      assertCanExecute: vi.fn().mockResolvedValue(undefined),
     };
+    walletEngine = { deductXU: vi.fn().mockResolvedValue(true) };
 
     providerRouter = {
       resolveProviderName: vi.fn().mockReturnValue('deepseek'),
@@ -103,11 +104,14 @@ describe('ExplanationsService (with palaceScope)', () => {
     };
 
     validatorService = new ExplanationValidatorService();
-    billingService = new ExplanationBillingService(quotas as QuotasService, persistence as SupabasePersistenceGateway);
-    raceController = new ExplanationRaceControllerService(persistence as SupabasePersistenceGateway);
+    billingService = new ExplanationBillingService(quotas as QuotasService, walletEngine as WalletEngineService);
+    raceController = new ExplanationRaceControllerService(persistence as any);
 
     service = new ExplanationsService(
-      persistence as SupabasePersistenceGateway,
+      persistence as any,
+      persistence as any,
+      persistence as any,
+      persistence as any,
       providerRouter as ExplanationProviderRouter,
       validatorService,
       billingService,
@@ -656,7 +660,8 @@ describe('US-010 AI explanation gate', () => {
   let validatorService: ExplanationValidatorService;
   let billingService: ExplanationBillingService;
   let raceController: ExplanationRaceControllerService;
-  let persistence: Partial<SupabasePersistenceGateway>;
+  let persistence: Partial<any>;
+  let walletEngine: Pick<WalletEngineService, 'deductXU'>;
   let quotas: Partial<QuotasService>;
   let providerRouter: Partial<ExplanationProviderRouter>;
 
@@ -670,12 +675,12 @@ describe('US-010 AI explanation gate', () => {
       tryClaimExplanationRequest: vi.fn(),
       createExplanationResult: vi.fn(),
       createHistoryView: vi.fn(),
-      deductXU: vi.fn().mockResolvedValue(true),
     };
 
     quotas = {
-      assertCanCreateExplanation: vi.fn().mockResolvedValue(undefined),
+      assertCanExecute: vi.fn().mockResolvedValue(undefined),
     };
+    walletEngine = { deductXU: vi.fn().mockResolvedValue(true) };
 
     providerRouter = {
       resolveProviderName: vi.fn().mockReturnValue('deepseek'),
@@ -686,11 +691,14 @@ describe('US-010 AI explanation gate', () => {
     };
 
     validatorService = new ExplanationValidatorService();
-    billingService = new ExplanationBillingService(quotas as QuotasService, persistence as SupabasePersistenceGateway);
-    raceController = new ExplanationRaceControllerService(persistence as SupabasePersistenceGateway);
+    billingService = new ExplanationBillingService(quotas as QuotasService, walletEngine as WalletEngineService);
+    raceController = new ExplanationRaceControllerService(persistence as any);
 
     service = new ExplanationsService(
-      persistence as SupabasePersistenceGateway,
+      persistence as any,
+      persistence as any,
+      persistence as any,
+      persistence as any,
       providerRouter as ExplanationProviderRouter,
       validatorService,
       billingService,
@@ -765,7 +773,7 @@ describe('US-010 AI explanation gate', () => {
       const chartRecord = createChartRecord();
       (persistence.findChartSnapshotById as any).mockResolvedValue(chartRecord);
       (persistence.findExplanationRequestByIdempotencyKey as any).mockResolvedValue(null);
-      (persistence.deductXU as any).mockResolvedValue(false);
+      walletEngine.deductXU = vi.fn().mockResolvedValue(false);
       await expect(service.createExplanation(user, '127.0.0.1', input)).rejects.toMatchObject({
         status: HttpStatus.PAYMENT_REQUIRED,
       });

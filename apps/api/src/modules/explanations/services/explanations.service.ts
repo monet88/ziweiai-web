@@ -8,7 +8,10 @@ import {
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { buildExplanationRequestIdempotencyKey } from '../../../database/idempotency';
 import { buildFailedExplanationRetentionTimestamp, DEFAULT_PROMPT_STORAGE_MODE, PERSONALIZED_CACHE_SCOPE, shouldStorePrompt } from '../../../database/persistence-lifecycle';
-import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+import { ExplanationsRepository } from '../../../database/repositories/explanations.repository';
+import { ChartsRepository } from '../../../database/repositories/charts.repository';
+import { DivinationsRepository } from '../../../database/repositories/divinations.repository';
+import { HistoryRepository } from '../../../database/repositories/history.repository';
 import { ExplanationProviderRouter } from '../../../providers/ai/explanation-provider-router';
 import { resolveDivinationInquiry } from '../../../providers/ai/divination-inquiry';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../../providers/ai/provider-errors';
@@ -21,7 +24,10 @@ export class ExplanationsService {
   private readonly logger = new Logger(ExplanationsService.name);
 
   constructor(
-    private readonly persistenceGateway: SupabasePersistenceGateway,
+    private readonly explanationsRepository: ExplanationsRepository,
+    private readonly chartsRepository: ChartsRepository,
+    private readonly divinationsRepository: DivinationsRepository,
+    private readonly historyRepository: HistoryRepository,
     private readonly providerRouter: ExplanationProviderRouter,
     private readonly validatorService: ExplanationValidatorService,
     private readonly billingService: ExplanationBillingService,
@@ -32,7 +38,7 @@ export class ExplanationsService {
     const isAnonymous = user.email === null;
     const { requiresXu } = await this.billingService.checkInitialQuota(user.userId, ipAddress, isAnonymous);
 
-    const chartRecord = await this.persistenceGateway.findChartSnapshotById(user.userId, input.chartSnapshotId);
+    const chartRecord = await this.chartsRepository.findChartSnapshotById(user.userId, input.chartSnapshotId);
     this.validatorService.validateSnapshot(chartRecord, input);
 
     const providerName = this.providerRouter.resolveProviderName(input.providerPreference);
@@ -44,7 +50,7 @@ export class ExplanationsService {
       palaceScope: input.palaceScope ?? undefined,
     });
 
-    const existingRequest = await this.persistenceGateway.findExplanationRequestByIdempotencyKey(user.userId, idempotencyKey);
+    const existingRequest = await this.explanationsRepository.findExplanationRequestByIdempotencyKey(user.userId, idempotencyKey);
     let request;
 
     if (existingRequest) {
@@ -74,7 +80,7 @@ export class ExplanationsService {
     } else {
       await this.billingService.consumeXuIfNeeded(user.userId, input, requiresXu);
       const failureRetainsUntil = buildFailedExplanationRetentionTimestamp(new Date());
-      request = await this.persistenceGateway.createExplanationRequest({
+      request = await this.explanationsRepository.createExplanationRequest({
         ownerUserId: user.userId,
         chartSnapshotId: input.chartSnapshotId,
         idempotencyKey,
@@ -104,13 +110,13 @@ export class ExplanationsService {
 
     try {
       const divinationInquiry = await resolveDivinationInquiry(
-        this.persistenceGateway,
+        this.divinationsRepository,
         user.userId,
         input.chartSnapshotId,
         chartRecord!.snapshot.chartSystem,
       );
 
-      await this.persistenceGateway.updateExplanationRequest({
+      await this.explanationsRepository.updateExplanationRequest({
         ownerUserId: user.userId,
         requestId: request.id,
         requestState: 'running',
@@ -124,7 +130,7 @@ export class ExplanationsService {
         divinationInquiry,
       });
 
-      const result = await this.persistenceGateway.createExplanationResult({
+      const result = await this.explanationsRepository.createExplanationResult({
         ownerUserId: user.userId,
         explanationRequestId: request.id,
         chartSnapshotId: input.chartSnapshotId,
@@ -137,14 +143,14 @@ export class ExplanationsService {
         },
       });
 
-      const completedRequest = await this.persistenceGateway.updateExplanationRequest({
+      const completedRequest = await this.explanationsRepository.updateExplanationRequest({
         ownerUserId: user.userId,
         requestId: request.id,
         requestState: 'completed',
         failureRetainsUntil: null,
       });
 
-      await this.persistenceGateway.createHistoryView({
+      await this.historyRepository.createHistoryView({
         ownerUserId: user.userId,
         chartSnapshotId: input.chartSnapshotId,
         explanationResultId: result.id,
@@ -165,9 +171,9 @@ export class ExplanationsService {
         explanationContext,
       });
     } catch (error) {
-      const resultAfterError = await this.persistenceGateway.findExplanationResultByRequestId(user.userId, request.id);
+      const resultAfterError = await this.explanationsRepository.findExplanationResultByRequestId(user.userId, request.id);
       if (resultAfterError) {
-        const freshRequest = await this.persistenceGateway.findExplanationRequestByIdempotencyKey(user.userId, idempotencyKey);
+        const freshRequest = await this.explanationsRepository.findExplanationRequestByIdempotencyKey(user.userId, idempotencyKey);
         this.logger.log(`Đã phát hiện result từ concurrent winner sau lỗi, trả cached success cho idempotency (P2 race)`, {
           userId: user.userId,
           requestId: request.id,
@@ -180,7 +186,7 @@ export class ExplanationsService {
         });
       }
 
-      await this.persistenceGateway.updateExplanationRequest({
+      await this.explanationsRepository.updateExplanationRequest({
         ownerUserId: user.userId,
         requestId: request.id,
         requestState: 'failed',

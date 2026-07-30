@@ -26,12 +26,7 @@
   import { buildAspectLines, type AspectLine, type GridCell } from '$lib/features/chart/palace-board-geometry';
   import { buildPalaceFlowFlagsMap, type PalaceFlowView } from '$lib/features/chart/palace-flow-flags';
   import type { HoroscopeOverlay } from '$lib/features/chart/horoscope-overlay';
-  import {
-    fetchChartHoroscope,
-    DEFAULT_HOROSCOPE_SCOPES,
-    HOROSCOPE_QUERY_STALE_MS,
-    HOROSCOPE_QUERY_GC_MS,
-  } from '$lib/api-client';
+  import { fetchChartHoroscope, DEFAULT_HOROSCOPE_SCOPES, HOROSCOPE_QUERY_STALE_MS, HOROSCOPE_QUERY_GC_MS } from '$lib/api-client/charts';;
   import { getAuthStore } from '$lib/auth/auth-context';
   import PalaceCell from './PalaceCell.svelte';
 

@@ -1,9 +1,10 @@
 <script lang="ts">
   import { getAuthStore } from '$lib/auth/auth-context';
   import { AppScaffold, PrimaryButton } from '$lib/components/ui';
-  import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
+  import { getWalletStore } from '$lib/features/payment/wallet-context';
   import { browser } from '$app/environment';
   import { env } from '$env/dynamic/public';
+  import { authModalStore } from '$lib/stores/auth-modal.svelte';
   import { onMount } from 'svelte';
   import {
     Copy,
@@ -23,7 +24,7 @@
   } from 'lucide-svelte';
 
   const auth = getAuthStore();
-  const walletModel = createWalletModel(auth);
+  const walletModel = getWalletStore();
 
   const accountNo = env.PUBLIC_SEPAY_ACCOUNT || '0123456789';
   const bankName = env.PUBLIC_SEPAY_BANK || 'MBBank';
@@ -108,8 +109,6 @@
   }
 
   onMount(() => {
-    walletModel.subscribe();
-
     // Auto-polling every 5s while wallet page is active
     const interval = setInterval(() => {
       if (browser && auth.user && !auth.isAnonymous) {
@@ -118,7 +117,6 @@
     }, 5000);
 
     return () => {
-      walletModel.unsubscribe();
       clearInterval(interval);
     };
   });
@@ -348,7 +346,18 @@
               <span>Đang chờ chuyển khoản</span>
             </div>
           </div>
-          <p class="instruction">Quét mã QR bằng ứng dụng Ngân hàng (MBBank, Vietcombank, Momo, Techcombank...) để thanh toán tự động.</p>
+          
+          {#if auth.isAnonymous}
+            <div class="anon-block-box" style="padding: 24px; text-align: center;">
+              <Lock size={48} style="color: var(--color-text-muted); margin-bottom: 16px; opacity: 0.5;" />
+              <p style="margin-bottom: 16px; font-size: 14px; color: var(--color-text-secondary);">Bạn cần tạo tài khoản để nạp XU. Điều này giúp bảo vệ số dư của bạn an toàn, không bị mất khi đổi trình duyệt hoặc thiết bị.</p>
+              <PrimaryButton 
+                label="Đăng nhập / Đăng ký" 
+                onclick={() => authModalStore.open('Vui lòng đăng nhập hoặc tạo tài khoản để nạp XU an toàn.')} 
+              />
+            </div>
+          {:else}
+            <p class="instruction">Quét mã QR bằng ứng dụng Ngân hàng (MBBank, Vietcombank, Momo, Techcombank...) để thanh toán tự động.</p>
 
           {#if qrUrl}
             <div class="qr-frame">
@@ -449,6 +458,7 @@
             </PrimaryButton>
             <p class="refresh-hint">Ví sẽ tự động cập nhật ngay khi nhận được tín hiệu từ VietQR.</p>
           </div>
+          {/if}
         </div>
       </aside>
     </div>

@@ -10,7 +10,8 @@ import { QuotasService } from '../quotas/quotas.service';
 import { RateLimitWindowError } from '../quotas/quota-errors';
 import { buildVisionUserPrompt } from './vision-prompts';
 import { VisionStorageGateway } from './vision-storage.gateway';
-import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { VisionRepository } from '../../database/repositories/vision.repository';
+import { HistoryRepository } from '../../database/repositories/history.repository';
 
 export interface VisionAnalysisInput {
   kind: VisionKind;
@@ -45,7 +46,8 @@ export class VisionAnalysisService {
     private readonly quotasService: QuotasService,
     private readonly providerRouter: ExplanationProviderRouter,
     private readonly storageGateway: VisionStorageGateway,
-    private readonly persistence: SupabasePersistenceGateway,
+    private readonly visionRepository: VisionRepository,
+    private readonly historyRepository: HistoryRepository,
   ) {}
 
   async analyze(input: VisionAnalysisInput): Promise<VisionAnalysis> {
@@ -113,7 +115,7 @@ export class VisionAnalysisService {
 
     let visionResultId: string | null = null;
     try {
-      const visionResult = await this.persistence.createVisionResult({
+      const visionResult = await this.visionRepository.createVisionResult({
         ownerUserId: user.userId,
         kind,
         imagePath,
@@ -122,7 +124,7 @@ export class VisionAnalysisService {
         providerMetadata,
       });
       visionResultId = visionResult.id;
-      await this.persistence.createHistoryView({
+      await this.historyRepository.createHistoryView({
         ownerUserId: user.userId,
         chartSnapshotId: null,
         explanationResultId: null,
@@ -161,7 +163,7 @@ export class VisionAnalysisService {
     kind: VisionKind,
   ): Promise<void> {
     try {
-      await this.persistence.deleteVisionResult(ownerUserId, visionResultId);
+      await this.visionRepository.deleteVisionResult(ownerUserId, visionResultId);
     } catch (rollbackError) {
       this.logger.error(
         `[vision.${kind}] bù trừ xoá vision_results id=${visionResultId} thất bại (row mồ côi): ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`,
@@ -190,7 +192,7 @@ export class VisionAnalysisService {
   async deleteVisionResult(user: AuthenticatedUser, visionResultId: string): Promise<void> {
     assertEmailIdentityRequired(user);
 
-    const record = await this.persistence.findVisionResultById(user.userId, visionResultId);
+    const record = await this.visionRepository.findVisionResultById(user.userId, visionResultId);
     if (!record) {
       throw new ApiErrorHttpException(
         HttpStatus.NOT_FOUND,
@@ -200,7 +202,7 @@ export class VisionAnalysisService {
     }
 
     await this.storageGateway.deleteVisionImage(record.imagePath);
-    await this.persistence.deleteVisionResult(user.userId, visionResultId);
+    await this.visionRepository.deleteVisionResult(user.userId, visionResultId);
     this.logger.log(`[vision.${record.kind}] đã xoá vision result id=${visionResultId} (quyền được quên)`);
   }
 
@@ -219,7 +221,7 @@ export class VisionAnalysisService {
 
   private async assertVisionQuota(userId: string, ipAddress: string): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateVisionAnalysis(userId, ipAddress);
+      await this.quotasService.assertCanExecute('vision-analysis', userId, ipAddress);
     } catch (error) {
       // Phân biệt hai loại "quá nhiều request" để client không nhầm rate-limit tạm thời thành hết
       // hạn mức ngày (review PR #28/#31): dùng typed error (instanceof) thay vì so khớp chuỗi message

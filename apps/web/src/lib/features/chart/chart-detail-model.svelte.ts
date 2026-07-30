@@ -14,7 +14,7 @@
 import { createQuery } from '@tanstack/svelte-query';
 import type { ChartDetailResponse } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { fetchChartDetail } from '$lib/api-client';
+import { fetchChartDetail } from '$lib/api-client/charts';;
 import { viCopy } from '$lib/i18n/vi';
 import { buildPalaceViews, type PalaceView } from './palace-view-builder';
 

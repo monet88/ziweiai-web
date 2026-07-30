@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException, Inject } from '@nestjs/common';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../database/supabase-client';
-import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { ProfilesRepository } from '../../database/repositories/profiles.repository';
 import { sanitizeReferralCode } from '../share/append-referral-query';
 
 @Injectable()
@@ -10,7 +10,7 @@ export class RewardsService {
 
   constructor(
     @Inject(SUPABASE_CLIENT) private readonly client: SupabaseClient,
-    private readonly gateway: SupabasePersistenceGateway,
+    private readonly profilesRepository: ProfilesRepository,
   ) {}
 
   async dailyCheckin(userId: string, referralCode?: string) {
@@ -30,6 +30,6 @@ export class RewardsService {
   }
 
   async getReferralHistory(userId: string) {
-    return this.gateway.listReferralsByReferrerId(userId);
+    return this.profilesRepository.listReferralsByReferrerId(userId);
   }
 }

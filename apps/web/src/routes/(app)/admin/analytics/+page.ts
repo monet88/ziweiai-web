@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
-import { adminGetAnalytics } from '$lib/api-client';
-import { supabase } from '$lib/supabase/supabase-client';
+import { adminGetAnalytics } from '$lib/api-client/admin';;
+
 
 export const load: PageLoad = async ({ url, parent }) => {
   const { session } = await parent();

@@ -2,10 +2,12 @@ import { Module } from '@nestjs/common';
 import { AiProvidersModule } from '../../providers/ai/ai-providers.module';
 import { DatabaseModule } from '../../database/database.module';
 import { QuotasModule } from '../quotas/quotas.module';
+import { WalletModule } from '../wallet/wallet.module';
 import { VisionAnalysisService } from './vision-analysis.service';
 import { VisionStorageGateway } from './vision-storage.gateway';
 import { VisionController } from './vision.controller';
 import { VisionAnalysisController } from './vision-analysis.controller';
+import { VisionQuotaRule } from './vision-quota.rule';
 
 /**
  * US-017e/f: hạ tầng luận giải vision dùng chung cho Xem Tướng + Xem Tay.
@@ -18,9 +20,9 @@ import { VisionAnalysisController } from './vision-analysis.controller';
  * dùng chung này vì xoá theo vision result id là kind-agnostic (không thuộc face/palm riêng).
  */
 @Module({
-  imports: [QuotasModule, AiProvidersModule, DatabaseModule],
+  imports: [QuotasModule, AiProvidersModule, DatabaseModule, WalletModule],
   controllers: [VisionController, VisionAnalysisController],
-  providers: [VisionStorageGateway, VisionAnalysisService],
+  providers: [VisionStorageGateway, VisionAnalysisService, VisionQuotaRule],
   exports: [VisionAnalysisService, VisionStorageGateway],
 })
 export class VisionSharedModule {}

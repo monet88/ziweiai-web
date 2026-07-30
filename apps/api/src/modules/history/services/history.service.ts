@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { historyListResponseSchema } from '@ziweiai/contracts';
-import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+import { HistoryRepository } from '../../../database/repositories/history.repository';
+import { ChartsRepository } from '../../../database/repositories/charts.repository';
+import { ExplanationsRepository } from '../../../database/repositories/explanations.repository';
+import { DivinationsRepository } from '../../../database/repositories/divinations.repository';
+import { VisionRepository } from '../../../database/repositories/vision.repository';
 import { VisionStorageGateway } from '../../vision-shared/vision-storage.gateway';
 
 @Injectable()
@@ -8,12 +12,16 @@ export class HistoryService {
   private readonly logger = new Logger(HistoryService.name);
 
   constructor(
-    private readonly persistenceGateway: SupabasePersistenceGateway,
+    private readonly historyRepository: HistoryRepository,
+    private readonly chartsRepository: ChartsRepository,
+    private readonly explanationsRepository: ExplanationsRepository,
+    private readonly divinationsRepository: DivinationsRepository,
+    private readonly visionRepository: VisionRepository,
     private readonly visionStorageGateway: VisionStorageGateway,
   ) {}
 
   async listHistory(userId: string, limit: number) {
-    const views = await this.persistenceGateway.listHistoryViews(userId, limit);
+    const views = await this.historyRepository.listHistoryViews(userId, limit);
     const chartSnapshotIds = views.flatMap((view) => (view.chartSnapshotId ? [view.chartSnapshotId] : []));
     const directExplanationResultIds = views.flatMap((view) => (view.explanationResultId ? [view.explanationResultId] : []));
     // US-017 follow-up (decision 0023): Xem Tướng/Xem Tay views point at vision_result_id
@@ -27,11 +35,11 @@ export class HistoryService {
       divinationContextsByChartId,
       visionResultsById,
     ] = await Promise.all([
-      this.persistenceGateway.findChartSnapshotsByIds(userId, chartSnapshotIds),
-      this.persistenceGateway.findExplanationResultsByIds(userId, directExplanationResultIds),
-      this.persistenceGateway.findLatestExplanationResultsForCharts(userId, chartSnapshotIds),
-      this.persistenceGateway.findDivinationContextsByChartIds(userId, chartSnapshotIds),
-      this.persistenceGateway.findVisionResultsByIds(userId, visionResultIds),
+      this.chartsRepository.findChartSnapshotsByIds(userId, chartSnapshotIds),
+      this.explanationsRepository.findExplanationResultsByIds(userId, directExplanationResultIds),
+      this.explanationsRepository.findLatestExplanationResultsForCharts(userId, chartSnapshotIds),
+      this.divinationsRepository.findDivinationContextsByChartIds(userId, chartSnapshotIds),
+      this.visionRepository.findVisionResultsByIds(userId, visionResultIds),
     ]);
 
     // Sign image URLs once per distinct vision image path (a private bucket is not readable by

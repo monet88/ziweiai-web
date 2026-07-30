@@ -15,7 +15,7 @@
 import { QueryClient, QueryCache, MutationCache } from '@tanstack/svelte-query';
 import { goto } from '$app/navigation';
 import { base, resolve } from '$app/paths';
-import { ApiError } from '$lib/api-client';
+import { ApiError } from '$lib/api-client/core';;
 
 const SIGN_IN_PATH = '/sign-in';
 

@@ -15,7 +15,7 @@
 import type { ConversationMessageRecord, CreateConversationMessageRequest, QuickPromptKey } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
 import type { QueryClient } from '@tanstack/svelte-query';
-import { streamConversationMessage, createConversation } from '$lib/api-client';
+import { streamConversationMessage, createConversation } from '$lib/api-client/conversations';;
 import { QUICK_PROMPT_LABELS } from './quick-prompts';
 import { viCopy } from '$lib/i18n/vi';
 

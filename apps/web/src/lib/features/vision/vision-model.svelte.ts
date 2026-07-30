@@ -9,7 +9,8 @@
 import { createMutation } from '@tanstack/svelte-query';
 import type { VisionAnalysis, VisionKind } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { ApiError, createVisionAnalysis } from '$lib/api-client';
+import { ApiError } from '$lib/api-client/core';
+import { createVisionAnalysis } from '$lib/api-client/divinations';;
 import { viCopy } from '$lib/i18n/vi';
 
 const SUPPORTED_MIME_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);

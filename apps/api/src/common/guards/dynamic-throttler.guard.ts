@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { AdminRepository } from '../../database/repositories/admin.repository';
 
 @Injectable()
 export class DynamicThrottlerGuard extends ThrottlerGuard {
@@ -8,8 +8,8 @@ export class DynamicThrottlerGuard extends ThrottlerGuard {
   private lastCacheTime = 0;
   private readonly CACHE_TTL_MS = 60000; // Cache config for 60 seconds
 
-  @Inject(SupabasePersistenceGateway)
-  private readonly persistenceGateway!: SupabasePersistenceGateway;
+  @Inject(AdminRepository)
+  private readonly adminRepository!: AdminRepository;
 
   protected async getTracker(req: Record<string, any>): Promise<string> {
     return req.ips?.length ? req.ips[0] : req.ip; 
@@ -25,7 +25,7 @@ export class DynamicThrottlerGuard extends ThrottlerGuard {
     const now = Date.now();
     if (now - this.lastCacheTime > this.CACHE_TTL_MS) {
       try {
-        this.configCache = await this.persistenceGateway.getSystemConfigs();
+        this.configCache = await this.adminRepository.getSystemConfigs();
         this.lastCacheTime = now;
       } catch (e) {
         console.error('Failed to refresh throttler configs', e);

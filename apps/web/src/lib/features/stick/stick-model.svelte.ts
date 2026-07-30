@@ -8,7 +8,8 @@
 import { createMutation } from '@tanstack/svelte-query';
 import type { StickDraw } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { ApiError, drawStick } from '$lib/api-client';
+import { ApiError } from '$lib/api-client/core';
+import { drawStick } from '$lib/api-client/divinations';;
 import { viCopy } from '$lib/i18n/vi';
 
 export type StickCopy = { readonly [K in keyof typeof viCopy.stick]: string };

@@ -1,7 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { lenormandDrawSchema, type AuthenticatedUser } from '@ziweiai/contracts';
-import type { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import type { WalletEngineService } from '../wallet/wallet-engine.service';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
 import type { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
@@ -21,16 +21,16 @@ describe('DrawsLenormandService', () => {
   const originalEnabled = apiEnv.EXTENDED_SYSTEM_LENORMAND_ENABLED;
   const originalFreeForAll = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
   const user: AuthenticatedUser = { userId: '11111111-1111-1111-1111-111111111111', email: 'user@example.com' };
-  let quotasService: Pick<QuotasService, 'assertCanCreateLenormandDraw'>;
+  let quotasService: Pick<QuotasService, 'assertCanExecute'>;
   let providerRouter: Pick<ExplanationProviderRouter, 'generate'>;
-  let persistenceGateway: Pick<SupabasePersistenceGateway, 'deductXU'>;
+  let walletEngine: Pick<WalletEngineService, 'deductXU'>;
   let service: DrawsLenormandService;
 
   beforeEach(() => {
     apiEnv.EXTENDED_SYSTEM_LENORMAND_ENABLED = true;
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
-    persistenceGateway = { deductXU: vi.fn().mockResolvedValue(true) };
-    quotasService = { assertCanCreateLenormandDraw: vi.fn().mockResolvedValue(undefined) };
+    walletEngine = { deductXU: vi.fn().mockResolvedValue(true) };
+    quotasService = { assertCanExecute: vi.fn().mockResolvedValue(undefined) };
     providerRouter = {
       generate: vi.fn().mockResolvedValue({
         renderedMarkdown: 'Bài đọc Lenormand từ LLM.\n\n## Tóm lại\nGiữ chủ động.',
@@ -40,7 +40,7 @@ describe('DrawsLenormandService', () => {
     service = new DrawsLenormandService(
       quotasService as QuotasService,
       providerRouter as ExplanationProviderRouter,
-      persistenceGateway as SupabasePersistenceGateway
+      walletEngine as WalletEngineService
     );
   });
 
@@ -58,11 +58,11 @@ describe('DrawsLenormandService', () => {
     } catch (error) {
       expectApiError(error, HttpStatus.FORBIDDEN, 'FEATURE_DISABLED');
     }
-    expect(quotasService.assertCanCreateLenormandDraw).not.toHaveBeenCalled();
+    expect(quotasService.assertCanExecute).not.toHaveBeenCalled();
   });
 
   it('chặn INSUFFICIENT_FUNDS khi bật nhưng AI gate không free-for-all', async () => {
-    persistenceGateway.deductXU = vi.fn().mockResolvedValue(false);
+    walletEngine.deductXU = vi.fn().mockResolvedValue(false);
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
     try {
       await service.drawLenormand(user, '127.0.0.1', 'Tôi nên tập trung điều gì?', 'three', 'seed-1');
@@ -78,13 +78,13 @@ describe('DrawsLenormandService', () => {
     expect(result.cards).toHaveLength(3);
     expect(result.cards.map((c) => c.position)).toEqual([0, 1, 2]);
     expect(result.narrative).toContain('Bài đọc Lenormand từ LLM.');
-    expect(quotasService.assertCanCreateLenormandDraw).toHaveBeenCalledWith(user.userId, '127.0.0.1', false);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledWith('lenormand-draw', user.userId, '127.0.0.1', false);
   });
 
   it('dùng quota anon khi user không có email', async () => {
     const anon: AuthenticatedUser = { userId: '22222222-2222-2222-2222-222222222222', email: null };
     await service.drawLenormand(anon, '10.0.0.1', 'Một câu hỏi ngắn', 'three', 'seed-2');
-    expect(quotasService.assertCanCreateLenormandDraw).toHaveBeenCalledWith(anon.userId, '10.0.0.1', true);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledWith('lenormand-draw', anon.userId, '10.0.0.1', true);
   });
 
   it('bố cục nine trả 9 lá', async () => {
@@ -94,7 +94,7 @@ describe('DrawsLenormandService', () => {
   });
 
   it('map lỗi quota (raw Error) thành 429 RATE_LIMITED', async () => {
-    quotasService.assertCanCreateLenormandDraw = vi.fn().mockRejectedValue(new Error('Daily explanation quota exceeded.'));
+    quotasService.assertCanExecute = vi.fn().mockRejectedValue(new Error('Daily explanation quota exceeded.'));
     try {
       await service.drawLenormand(user, '127.0.0.1', 'Tôi nên tập trung điều gì?', 'three', 'seed-1');
       throw new Error('expected quota rejection to throw');

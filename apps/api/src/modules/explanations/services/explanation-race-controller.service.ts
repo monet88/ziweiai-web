@@ -2,7 +2,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { apiEnv } from '../../../config/env';
 import { buildFailedExplanationRetentionTimestamp } from '../../../database/persistence-lifecycle';
-import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+import { ExplanationsRepository } from '../../../database/repositories/explanations.repository';
 
 const EXPLANATION_INFLIGHT_WAIT_MS = apiEnv.AI_PROVIDER_TIMEOUT_MS + 2_000;
 const EXPLANATION_INFLIGHT_STALE_MS = apiEnv.AI_PROVIDER_TIMEOUT_MS * 2 + 5_000;
@@ -15,7 +15,7 @@ export type RaceResolutionResult =
 export class ExplanationRaceControllerService {
   private readonly logger = new Logger(ExplanationRaceControllerService.name);
 
-  constructor(private readonly persistenceGateway: SupabasePersistenceGateway) {}
+  constructor(private readonly explanationsRepository: ExplanationsRepository) {}
 
   /**
    * Resolves an existing explanation request by either returning a cached result,
@@ -27,7 +27,7 @@ export class ExplanationRaceControllerService {
     existingRequest: any,
     palaceScope: string | undefined,
   ): Promise<RaceResolutionResult> {
-    const existingResult = await this.persistenceGateway.findExplanationResultByRequestId(userId, existingRequest.id);
+    const existingResult = await this.explanationsRepository.findExplanationResultByRequestId(userId, existingRequest.id);
     if (existingResult) {
       this.logger.log(`Explanation cache hit`, {
         userId,
@@ -39,7 +39,7 @@ export class ExplanationRaceControllerService {
 
     if (existingRequest.requestState === 'failed') {
       const newFailureRetains = buildFailedExplanationRetentionTimestamp(new Date());
-      const claimed = await this.persistenceGateway.tryClaimExplanationRequest({
+      const claimed = await this.explanationsRepository.tryClaimExplanationRequest({
         ownerUserId: userId,
         requestId: existingRequest.id,
         expectedUpdatedAt: existingRequest.updatedAt,
@@ -54,7 +54,7 @@ export class ExplanationRaceControllerService {
         });
         const waitedResult = await this.waitForExplanationResult(userId, existingRequest.id);
         if (waitedResult) {
-          const freshRequest = await this.persistenceGateway.findExplanationRequestByIdempotencyKey(userId, idempotencyKey);
+          const freshRequest = await this.explanationsRepository.findExplanationRequestByIdempotencyKey(userId, idempotencyKey);
           return { isCompleted: true, request: freshRequest ?? existingRequest, result: waitedResult };
         }
         throw new ApiErrorHttpException(
@@ -67,7 +67,7 @@ export class ExplanationRaceControllerService {
     } 
     
     if (this.isExplanationRequestStale(existingRequest)) {
-      const claimed = await this.persistenceGateway.tryClaimExplanationRequest({
+      const claimed = await this.explanationsRepository.tryClaimExplanationRequest({
         ownerUserId: userId,
         requestId: existingRequest.id,
         expectedUpdatedAt: existingRequest.updatedAt,
@@ -81,7 +81,7 @@ export class ExplanationRaceControllerService {
         });
         const waitedResult = await this.waitForExplanationResult(userId, existingRequest.id);
         if (waitedResult) {
-          const freshRequest = await this.persistenceGateway.findExplanationRequestByIdempotencyKey(userId, idempotencyKey);
+          const freshRequest = await this.explanationsRepository.findExplanationRequestByIdempotencyKey(userId, idempotencyKey);
           return { isCompleted: true, request: freshRequest ?? existingRequest, result: waitedResult };
         }
         throw new ApiErrorHttpException(
@@ -106,7 +106,7 @@ export class ExplanationRaceControllerService {
     
     const waitedResult = await this.waitForExplanationResult(userId, existingRequest.id);
     if (waitedResult) {
-      const freshRequest = await this.persistenceGateway.findExplanationRequestByIdempotencyKey(userId, idempotencyKey);
+      const freshRequest = await this.explanationsRepository.findExplanationRequestByIdempotencyKey(userId, idempotencyKey);
       this.logger.log(`Đã thu được kết quả từ worker đang chạy qua chờ đợi`, {
         userId,
         requestId: existingRequest.id,
@@ -115,7 +115,7 @@ export class ExplanationRaceControllerService {
       return { isCompleted: true, request: freshRequest ?? existingRequest, result: waitedResult };
     }
 
-    const freshAfterWait = await this.persistenceGateway.findExplanationRequestByIdempotencyKey(userId, idempotencyKey);
+    const freshAfterWait = await this.explanationsRepository.findExplanationRequestByIdempotencyKey(userId, idempotencyKey);
     const referenceRequest = freshAfterWait ?? existingRequest;
     if (!this.isExplanationRequestStale(referenceRequest)) {
       this.logger.log(`Worker chính vẫn đang xử lý sau khi hết giờ chờ — trả PROVIDER_TIMEOUT thay vì sinh worker trùng`, {
@@ -130,7 +130,7 @@ export class ExplanationRaceControllerService {
       );
     }
 
-    const claimed = await this.persistenceGateway.tryClaimExplanationRequest({
+    const claimed = await this.explanationsRepository.tryClaimExplanationRequest({
       ownerUserId: userId,
       requestId: existingRequest.id,
       expectedUpdatedAt: referenceRequest.updatedAt,
@@ -143,9 +143,9 @@ export class ExplanationRaceControllerService {
         requestId: existingRequest.id,
         palaceScope: palaceScope ?? null,
       });
-      const reapResult = await this.persistenceGateway.findExplanationResultByRequestId(userId, existingRequest.id);
+      const reapResult = await this.explanationsRepository.findExplanationResultByRequestId(userId, existingRequest.id);
       if (reapResult) {
-        const freshRequest = await this.persistenceGateway.findExplanationRequestByIdempotencyKey(userId, idempotencyKey);
+        const freshRequest = await this.explanationsRepository.findExplanationRequestByIdempotencyKey(userId, idempotencyKey);
         return { isCompleted: true, request: freshRequest ?? existingRequest, result: reapResult };
       }
       throw new ApiErrorHttpException(
@@ -169,10 +169,10 @@ export class ExplanationRaceControllerService {
     requestId: string,
     maxWaitMs: number = EXPLANATION_INFLIGHT_WAIT_MS,
     pollIntervalMs: number = 250,
-  ): Promise<Awaited<ReturnType<SupabasePersistenceGateway['findExplanationResultByRequestId']>> | null> {
+  ): Promise<Awaited<ReturnType<ExplanationsRepository['findExplanationResultByRequestId']>> | null> {
     const start = Date.now();
     while (Date.now() - start < maxWaitMs) {
-      const res = await this.persistenceGateway.findExplanationResultByRequestId(ownerUserId, requestId);
+      const res = await this.explanationsRepository.findExplanationResultByRequestId(ownerUserId, requestId);
       if (res) {
         return res;
       }

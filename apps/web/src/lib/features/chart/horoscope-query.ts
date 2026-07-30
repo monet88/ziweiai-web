@@ -17,7 +17,7 @@
 import { createQuery } from '@tanstack/svelte-query';
 import type { HoroscopeResponse, HoroscopeScope } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { fetchChartHoroscope } from '$lib/api-client';
+import { fetchChartHoroscope } from '$lib/api-client/charts';;
 import { viCopy } from '$lib/i18n/vi';
 
 /** Dựng `asOf` ISO `YYYY-MM-DD` từ thành phần năm/tháng/ngày dương (local, KHÔNG toISOString). */

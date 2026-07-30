@@ -8,10 +8,11 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { fetchFeatures } from '$lib/api-client';
+  import { fetchFeatures } from '$lib/api-client/system';;
   import { PrimaryButton, ThemeToggle, ViOSLogo, MobileBottomNav } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { createDashboardModel } from '$lib/features/dashboard/dashboard-model.svelte';
+  import { sheetStore } from '$lib/stores/sheet.svelte';
   import BirthForm from '$lib/features/dashboard/BirthForm.svelte';
   import DashboardSidebar from '$lib/features/dashboard/DashboardSidebar.svelte';
   import ExtendedSystemNav from '$lib/features/dashboard/ExtendedSystemNav.svelte';
@@ -235,7 +236,12 @@
           <h2 id="create-chart-title">{viCopy.dashboard.createPanelTitle}</h2>
           <p>{viCopy.dashboard.createPanelDescription}</p>
         </div>
-        <BirthForm {model} />
+        <div style="display: flex; justify-content: center; padding: 2rem 0;">
+          <PrimaryButton
+            label={viCopy.dashboard.createChart}
+            onclick={() => sheetStore.open(BirthForm, { model }, viCopy.dashboard.createChart)}
+          />
+        </div>
       </section>
 
       <aside class="side-rail">

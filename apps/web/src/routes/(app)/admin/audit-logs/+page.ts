@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { adminGetAuditLogs } from '$lib/api-client';
+import { adminGetAuditLogs } from '$lib/api-client/admin';;
 import type { PageLoad } from './$types';
 import { supabase } from '$lib/supabase/supabase-client';
 

@@ -6,10 +6,13 @@
   // tự chọn card theo chartSystem của snapshot). Token đọc tươi trong queryFn (§3).
   import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
   import { SvelteSet } from 'svelte/reactivity';
+  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { deleteVisionResult, fetchHistory, HISTORY_SCREEN_LIMIT } from '$lib/api-client';
+  import { deleteVisionResult } from '$lib/api-client/divinations';
+import { fetchHistory, HISTORY_SCREEN_LIMIT } from '$lib/api-client/history';;
   import { getAuthStore } from '$lib/auth/auth-context';
+  import { getWalletStore } from '$lib/features/payment/wallet-context';
   import { NoticeBanner, EmptyStateCard, Spinner, PrimaryButton, ConfirmDialog } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { formatHistoryViewedAt } from '$lib/features/chart/chart-display';
@@ -21,6 +24,7 @@
   import type { DivinationPurposeKey } from '@ziweiai/contracts';
 
   const auth = getAuthStore();
+  const wallet = getWalletStore();
 
   // Nửa thời hạn signed URL ảnh vision (server ký 3600s). Dùng làm staleTime/gcTime để query
   // history tự refetch + ký URL mới trước khi link cũ hết hạn; biên an toàn cho lệch giờ/clock skew.
@@ -176,6 +180,20 @@
   }
 </script>
 
+{#if !auth.isAnonymous && !wallet.isLoading && !wallet.isError && wallet.balance !== null && wallet.balance < 15}
+  <div class="monetization-banner">
+    <NoticeBanner tone="warning">
+      <div class="banner-content">
+        <div class="banner-text">
+          <strong>Số dư XU sắp hết!</strong>
+          <span>Bạn chỉ còn {wallet.balance} XU. Nạp ngay để không bị gián đoạn trải nghiệm luận giải AI.</span>
+        </div>
+        <PrimaryButton label="Nạp XU" variant="primary" onclick={() => void goto(resolve('/wallet'))} />
+      </div>
+    </NoticeBanner>
+  </div>
+{/if}
+
 <section class="history-list" aria-label={viCopy.history.title}>
 {#if history.isPending}
   <div class="state">
@@ -293,6 +311,40 @@
 {/if}
 
 <style>
+  .monetization-banner {
+    margin-bottom: var(--space-xl);
+  }
+
+  .banner-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  .banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--color-text-primary);
+  }
+
+  .banner-text strong {
+    font-size: 15px;
+  }
+
+  .banner-text span {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+  }
+
+  @media (max-width: 640px) {
+    .banner-content {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
   .history-list {
     display: flex;
     flex-direction: column;

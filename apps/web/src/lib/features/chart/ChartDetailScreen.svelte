@@ -8,6 +8,7 @@
   import { getAuthStore } from '$lib/auth/auth-context';
   import { useQueryClient } from '@tanstack/svelte-query';
   import { AppScaffold, PrimaryButton, SummaryCard, NoticeBanner, FullScreenState, EmptyStateCard } from '$lib/components/ui';
+  import { authModalStore } from '$lib/stores/auth-modal.svelte';
   import { viCopy } from '$lib/i18n/vi';
   import { createChartDetailModel } from '$lib/features/chart/chart-detail-model.svelte';
   import { createExplanationModel } from '$lib/features/explanation/explanation-model.svelte';
@@ -145,6 +146,11 @@
   });
 
   async function handleShare() {
+    if (auth.isAnonymous) {
+      authModalStore.open('Vui lòng đăng ký tài khoản để có thể chia sẻ lá số của bạn.');
+      return;
+    }
+    
     let referralCode = wallet.referralCode;
     // Avoid race: wallet query may still be loading when user taps Chia Sẻ.
     if (!referralCode && auth.user?.id && !auth.isAnonymous) {

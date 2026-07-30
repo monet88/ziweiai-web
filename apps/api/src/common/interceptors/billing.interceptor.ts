@@ -11,14 +11,17 @@ import {
 } from '@nestjs/common';
 import { Observable, from, throwError } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { ProfilesRepository } from '../../database/repositories/profiles.repository';
+import { WalletEngineService } from '../../modules/wallet/wallet-engine.service';
 
 export function RequireXU(costOrFn: number | ((req: any) => number)): Type<NestInterceptor> {
   @Injectable()
   class MixinBillingInterceptor implements NestInterceptor {
     constructor(
-      @Inject(SupabasePersistenceGateway)
-      private readonly persistence: SupabasePersistenceGateway,
+      @Inject(ProfilesRepository)
+      private readonly profilesRepository: ProfilesRepository,
+      @Inject(WalletEngineService)
+      private readonly walletEngine: WalletEngineService,
     ) {}
 
     intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -40,7 +43,7 @@ export function RequireXU(costOrFn: number | ((req: any) => number)): Type<NestI
         return next.handle();
       }
 
-      return from(this.persistence.findProfileByUserId(user.sub)).pipe(
+      return from(this.profilesRepository.findProfileByUserId(user.sub)).pipe(
         switchMap((profile) => {
           if (!profile || profile.xuBalance < cost) {
             return throwError(
@@ -58,7 +61,7 @@ export function RequireXU(costOrFn: number | ((req: any) => number)): Type<NestI
           }
 
           // Deduct XU first to prevent double-spending in race conditions
-          return from(this.persistence.deductXU(user.sub, cost)).pipe(
+          return from(this.walletEngine.deductXU(user.sub, cost, 'ai_usage')).pipe(
             switchMap((success) => {
               if (!success) {
                 return throwError(

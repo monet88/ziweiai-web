@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
   import type { AdminUser } from '@ziweiai/contracts';
-  import { adminGetUsers } from '$lib/api-client';
+  import { adminGetUsers } from '$lib/api-client/admin';;
 
   let { data }: { data: PageData } = $props();
   const token = data.session?.token || '';

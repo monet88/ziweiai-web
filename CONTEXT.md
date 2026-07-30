@@ -2,6 +2,8 @@
 
 Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH để cung cấp ngữ cảnh (context) cho AI Agent trong các session làm việc, giúp AI nhận biết được trạng thái hiện tại của codebase.
 
+> **LƯU Ý BẢO MẬT QUAN TRỌNG:** Toàn bộ các biến môi trường (environment variables) dùng cho GitHub, Vercel, Supabase, AI Providers v.v... bắt buộc phải đặt tại `/Users/gray/Documents/bydone/tuvinew/ziweiai-web/.env.local`. File này tuyệt đối KHÔNG được push lên git để đảm bảo an toàn.
+
 ## 🚀 Các tính năng đã hoàn thiện (Cập nhật: 29/07/2026)
 
 1. **Luồng sản phẩm cốt lõi (Core Flow)**
@@ -32,5 +34,9 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 6. **SEO & Chia sẻ (Social Sharing)**
    - **Tạo OG Image động cho Link Giới thiệu (Referral SEO)**: Đã hoàn thiện tính năng tạo ảnh cover động hiển thị Mã Giới Thiệu cá nhân hóa khi người dùng chia sẻ lên Zalo/Facebook/Telegram, sử dụng `satori` và `resvg-js`.
 
+7. **Tối ưu tỷ lệ chuyển đổi (Monetization)**
+   - **Banner Cảnh báo Số dư Thấp**: Đã tích hợp `WalletModel` vào màn hình Lịch sử (Dashboard). Tự động hiển thị banner cảnh báo và điều hướng nạp XU khi số dư dưới 15 XU.
+   - **Báo Cáo Vận Hạn Năm**: Đã kiểm tra sẵn sàng phát hành công chúng (thông qua flag `AI_ANNUAL_REPORT_ENABLED`).
+
 ## ⏳ Các tính năng CHƯA LÀM (Pending Tasks)
-- **Mở Public Báo Cáo Vận Hạn Năm**: Hiện tại luồng Annual Report đã test thành công không còn lỗi 504, nhưng cần bật cờ Public để người dùng sử dụng rộng rãi.
+- Tiếp tục phát triển các tính năng chia sẻ, SEO mở rộng hoặc các công cụ phân tích khác (nếu cần).

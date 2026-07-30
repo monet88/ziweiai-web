@@ -12,7 +12,7 @@ import { apiEnv } from '../../config/env';
 import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
 import { QuotasService } from '../quotas/quotas.service';
-import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { WalletEngineService } from '../wallet/wallet-engine.service';
 import {
   drawLenormandDeterministic,
   getLenormandSpread,
@@ -29,7 +29,7 @@ export class DrawsLenormandService {
   constructor(
     private readonly quotasService: QuotasService,
     private readonly providerRouter: ExplanationProviderRouter,
-    private readonly persistenceGateway: SupabasePersistenceGateway,
+    private readonly walletEngine: WalletEngineService,
   ) {}
 
   async drawLenormand(
@@ -103,7 +103,7 @@ export class DrawsLenormandService {
     }
 
     const cost = 3;
-    const success = await this.persistenceGateway.deductXU(userId, cost);
+    const success = await this.walletEngine.deductXU(userId, cost, 'ai_usage');
     if (!success) {
       throw new ApiErrorHttpException(
         HttpStatus.PAYMENT_REQUIRED,
@@ -115,7 +115,7 @@ export class DrawsLenormandService {
 
   private async assertCanCreate(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateLenormandDraw(userId, ipAddress, isAnonymous);
+      await this.quotasService.assertCanExecute('lenormand-draw', userId, ipAddress, isAnonymous);
     } catch (error) {
       throwQuotaRateLimited(error, 'Đã vượt hạn mức rút Lenormand.');
     }

@@ -7,6 +7,8 @@
 import type { ZodType } from 'zod';
 import { env } from '$lib/env';
 import { paywallStore } from '$lib/stores/paywall.svelte';
+import { authModalStore } from '$lib/stores/auth-modal.svelte';
+import { supabase } from '$lib/supabase/supabase-client';
 
 export type ApiErrorKind =
   | 'unauthorized' // 401
@@ -16,7 +18,8 @@ export type ApiErrorKind =
   | 'server' // 500
   | 'network' // fetch thất bại
   | 'parse' // Zod parse fail
-  | 'payment-required'; // 402
+  | 'payment-required' // 402
+  | 'rate-limit'; // 429
 
 export class ApiError extends Error {
   readonly kind: ApiErrorKind;
@@ -42,6 +45,8 @@ function mapStatusToKind(status: number): ApiErrorKind {
       return 'payment-required';
     case 422:
       return 'validation';
+    case 429:
+      return 'rate-limit';
     default:
       return 'server';
   }
@@ -91,6 +96,11 @@ async function throwHttpError(response: Response): Promise<never> {
 
   if (kind === 'payment-required') {
     paywallStore.open(message);
+  } else if (kind === 'rate-limit') {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.is_anonymous) {
+      authModalStore.open('Bạn đã dùng hết số lượt trải nghiệm miễn phí hôm nay. Vui lòng đăng ký tài khoản để tiếp tục sử dụng tính năng này.');
+    }
   }
 
   throw new ApiError(kind, message, response.status);

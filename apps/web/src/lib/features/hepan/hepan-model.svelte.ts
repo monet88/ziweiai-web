@@ -8,7 +8,8 @@
 import { createMutation } from '@tanstack/svelte-query';
 import type { PairingRelationType, PairingSnapshot } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { ApiError, createPairing } from '$lib/api-client';
+import { ApiError } from '$lib/api-client/core';
+import { createPairing } from '$lib/api-client/divinations';;
 import {
   buildCreateChartRequest,
   createBirthFormDraft,

@@ -12,7 +12,7 @@ import { apiEnv } from '../../config/env';
 import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
 import { QuotasService } from '../quotas/quotas.service';
-import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { WalletEngineService } from '../wallet/wallet-engine.service';
 import { drawDeterministic, type TarotCardDraw } from './tarot-deck';
 import { buildTarotReadingPrompt, SPREAD_LABELS_VI } from './tarot-prompts';
 
@@ -23,7 +23,7 @@ export class DrawsTarotService {
   constructor(
     private readonly quotasService: QuotasService,
     private readonly providerRouter: ExplanationProviderRouter,
-    private readonly persistenceGateway: SupabasePersistenceGateway,
+    private readonly walletEngine: WalletEngineService,
   ) {}
 
   async drawTarot(
@@ -85,7 +85,7 @@ export class DrawsTarotService {
     }
 
     const cost = 3;
-    const success = await this.persistenceGateway.deductXU(userId, cost);
+    const success = await this.walletEngine.deductXU(userId, cost, 'ai_usage');
     if (!success) {
       throw new ApiErrorHttpException(
         HttpStatus.PAYMENT_REQUIRED,
@@ -99,7 +99,7 @@ export class DrawsTarotService {
   // /explanations; nếu không bọc, raw Error sẽ rơi xuống ApiErrorFilter và trả 500 INTERNAL_ERROR.
   private async assertCanCreateTarotDraw(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateTarotDraw(userId, ipAddress, isAnonymous);
+      await this.quotasService.assertCanExecute('tarot-draw', userId, ipAddress, isAnonymous);
     } catch (error) {
       throwQuotaRateLimited(error, 'Đã vượt hạn mức rút Tarot.');
     }

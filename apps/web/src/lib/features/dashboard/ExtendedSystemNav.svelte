@@ -6,7 +6,7 @@
   // danh sách EXTENDED_LINKS.
   import { createQuery } from '@tanstack/svelte-query';
   import { resolve } from '$app/paths';
-  import { fetchFeatures } from '$lib/api-client';
+  import { fetchFeatures } from '$lib/api-client/system';;
   import { viCopy } from '$lib/i18n/vi';
   import type { FeaturesResponse } from '@ziweiai/contracts';
 

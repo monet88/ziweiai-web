@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { GlobalPaywallModal } from '$lib/components/ui';
+  import { setWalletStore } from '$lib/features/payment/wallet-context';
+  import { GlobalPaywallModal, GlobalAuthModal, BottomNavigation, GlobalBottomSheet } from '$lib/components/ui';
   import type { Snippet } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -14,6 +15,14 @@
   let { children }: Props = $props();
 
   const auth = getAuthStore();
+  const wallet = setWalletStore(auth);
+
+  $effect(() => {
+    if (browser && !auth.isAnonymous) {
+      wallet.subscribe();
+      return () => wallet.unsubscribe();
+    }
+  });
 
   $effect(() => {
     if (browser) {
@@ -40,10 +49,16 @@
     <p>Đang chuẩn bị không gian tử vi của bạn…</p>
   </main>
 {:else}
-  {@render children()}
+  <div class="app-content-wrapper">
+    {@render children()}
+  </div>
+  <!-- Không gian cho bottom nav sẽ không che nội dung nhờ app-content-wrapper -->
+  <BottomNavigation />
 {/if}
 
 <GlobalPaywallModal />
+<GlobalAuthModal />
+<GlobalBottomSheet />
 
 <style>
   .state {
@@ -55,5 +70,11 @@
     background: var(--color-bg-primary);
     color: var(--color-text-muted);
     font-size: 15px;
+  }
+
+  .app-content-wrapper {
+    /* Tạo khoảng trống 64px ở đáy cho BottomNavigation */
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    min-height: 100vh;
   }
 </style>

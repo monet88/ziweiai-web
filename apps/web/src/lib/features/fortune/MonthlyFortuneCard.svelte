@@ -4,7 +4,7 @@
   import { createQuery } from '@tanstack/svelte-query';
   import type { MonthlyFortuneResponse } from '@ziweiai/contracts';
   import type { AuthStore } from '$lib/auth/auth-store.svelte';
-  import { fetchMonthlyFortune, MONTHLY_FORTUNE_QUERY_STALE_MS } from '$lib/api-client';
+  import { fetchMonthlyFortune, MONTHLY_FORTUNE_QUERY_STALE_MS } from '$lib/api-client/charts';;
   import { createCurrentDate } from './current-date.svelte';
   import { viCopy } from '$lib/i18n/vi';
 

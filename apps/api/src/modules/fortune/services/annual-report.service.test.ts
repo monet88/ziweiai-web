@@ -28,9 +28,9 @@ function makeService(snapshot: any = ziweiSnapshot) {
     findChartSnapshotById: vi.fn().mockResolvedValue(snapshot ? { snapshot } : null),
     findAnnualReportByChartAndYear: vi.fn().mockResolvedValue(null),
     createAnnualReport: vi.fn().mockResolvedValue({ markdown: '# Báo cáo năm 2026\n\nNăm này...' }),
-    deductXU: vi.fn().mockResolvedValue(true),
   };
-  const quotas = { assertCanCreateAnnualReport: vi.fn().mockResolvedValue(undefined) };
+  const walletEngine = { deductXU: vi.fn().mockResolvedValue(true) };
+  const quotas = { assertCanExecute: vi.fn().mockResolvedValue(undefined) };
   const providerRouter = {
     generate: vi.fn().mockResolvedValue({
       renderedMarkdown: '# Báo cáo năm 2026\n\nNăm này...',
@@ -38,8 +38,8 @@ function makeService(snapshot: any = ziweiSnapshot) {
     }),
   };
   const engine = { computeAnnualFrame: vi.fn().mockReturnValue(annualFrame) };
-  const service = new AnnualReportService(persistence as any, quotas as any, providerRouter as any, engine as any);
-  return { service, persistence, quotas, providerRouter, engine };
+  const service = new AnnualReportService(persistence as any, persistence as any, quotas as any, providerRouter as any, engine as any, walletEngine as any);
+  return { service, persistence, quotas, providerRouter, engine, walletEngine };
 }
 
 describe('AnnualReportService', () => {
@@ -79,8 +79,8 @@ describe('AnnualReportService', () => {
   it('cache-miss + AI_EXPLANATION_FREE_FOR_ALL=false → 402 (gate kép)', async () => {
     (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = false;
     (apiEnv as any).AI_ANNUAL_REPORT_ENABLED = true;
-    const { service, persistence } = makeService();
-    persistence.deductXU.mockResolvedValue(false);
+    const { service, walletEngine } = makeService();
+    walletEngine.deductXU.mockResolvedValue(false);
     await expect(service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026)).rejects.toMatchObject({
       status: HttpStatus.PAYMENT_REQUIRED,
     });
@@ -114,7 +114,7 @@ describe('AnnualReportService', () => {
     (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = true;
     (apiEnv as any).AI_ANNUAL_REPORT_ENABLED = true;
     const { service, quotas } = makeService();
-    (quotas.assertCanCreateAnnualReport as any).mockRejectedValue(new Error('Daily annual report quota exceeded.'));
+    (quotas.assertCanExecute as any).mockRejectedValue(new Error('Daily annual report quota exceeded.'));
     await expect(service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026)).rejects.toMatchObject({
       status: HttpStatus.TOO_MANY_REQUESTS,
     });

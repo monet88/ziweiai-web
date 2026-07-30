@@ -13,6 +13,9 @@ export { default as EmptyStateCard } from './EmptyStateCard.svelte';
 export { default as Spinner } from './Spinner.svelte';
 export { default as ConfirmDialog } from './ConfirmDialog.svelte';
 export { default as GlobalPaywallModal } from './GlobalPaywallModal.svelte';
+export { default as GlobalAuthModal } from './GlobalAuthModal.svelte';
 export { default as ThemeToggle } from './ThemeToggle.svelte';
 export { default as ViOSLogo } from './ViOSLogo.svelte';
-
+export { default as BottomNavigation } from './BottomNavigation.svelte';
+export { default as BottomSheet } from './BottomSheet.svelte';
+export { default as GlobalBottomSheet } from './GlobalBottomSheet.svelte';

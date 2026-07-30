@@ -1,7 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { stickDrawSchema, type AuthenticatedUser } from '@ziweiai/contracts';
-import type { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import type { WalletEngineService } from '../wallet/wallet-engine.service';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
 import type { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
@@ -22,17 +22,17 @@ describe('DrawsSticksService', () => {
   const originalStickEnabled = apiEnv.EXTENDED_SYSTEM_STICKS_ENABLED;
   const originalFreeForAll = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
   const user: AuthenticatedUser = { userId: '11111111-1111-1111-1111-111111111111', email: 'user@example.com' };
-  let quotasService: Pick<QuotasService, 'assertCanCreateStickDraw'>;
+  let quotasService: Pick<QuotasService, 'assertCanExecute'>;
   let providerRouter: Pick<ExplanationProviderRouter, 'generate'>;
-  let persistenceGateway: Pick<SupabasePersistenceGateway, 'deductXU'>;
+  let walletEngine: Pick<WalletEngineService, 'deductXU'>;
   let service: DrawsSticksService;
 
   beforeEach(() => {
     apiEnv.EXTENDED_SYSTEM_STICKS_ENABLED = true;
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
-    persistenceGateway = { deductXU: vi.fn().mockResolvedValue(true) };
+    walletEngine = { deductXU: vi.fn().mockResolvedValue(true) };
     quotasService = {
-      assertCanCreateStickDraw: vi.fn().mockResolvedValue(undefined),
+      assertCanExecute: vi.fn().mockResolvedValue(undefined),
     };
     providerRouter = {
       generate: vi.fn().mockResolvedValue({
@@ -43,7 +43,7 @@ describe('DrawsSticksService', () => {
     service = new DrawsSticksService(
       quotasService as QuotasService,
       providerRouter as ExplanationProviderRouter,
-      persistenceGateway as SupabasePersistenceGateway
+      walletEngine as WalletEngineService
     );
   });
 
@@ -63,11 +63,11 @@ describe('DrawsSticksService', () => {
       expectApiError(error, HttpStatus.FORBIDDEN, 'FEATURE_DISABLED');
     }
 
-    expect(quotasService.assertCanCreateStickDraw).not.toHaveBeenCalled();
+    expect(quotasService.assertCanExecute).not.toHaveBeenCalled();
   });
 
   it('chặn INSUFFICIENT_FUNDS khi đã bật nhưng AI gate không free-for-all', async () => {
-    persistenceGateway.deductXU = vi.fn().mockResolvedValue(false);
+    walletEngine.deductXU = vi.fn().mockResolvedValue(false);
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
 
     try {
@@ -84,7 +84,7 @@ describe('DrawsSticksService', () => {
     expect(stickDrawSchema.safeParse(result).success).toBe(true);
     expect(result.narrative).toContain('Luận giải xăm từ LLM.');
     expect(providerRouter.generate).toHaveBeenCalledTimes(1);
-    expect(quotasService.assertCanCreateStickDraw).toHaveBeenCalledWith(user.userId, '127.0.0.1', false);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledWith('stick-draw', user.userId, '127.0.0.1', false);
 
     const again = await service.drawStick(user, '127.0.0.1', 'Công việc sắp tới thế nào?', 'seed-1');
     expect(again.stick.id).toBe(result.stick.id);
@@ -95,7 +95,7 @@ describe('DrawsSticksService', () => {
 
     await service.drawStick(anonymousUser, '10.0.0.1', 'Một câu hỏi ngắn', 'seed-2');
 
-    expect(quotasService.assertCanCreateStickDraw).toHaveBeenCalledWith(anonymousUser.userId, '10.0.0.1', true);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledWith('stick-draw', anonymousUser.userId, '10.0.0.1', true);
   });
 
   it('coi email="" là anon → dùng quota anon', async () => {
@@ -103,11 +103,11 @@ describe('DrawsSticksService', () => {
 
     await service.drawStick(emptyEmailUser, '10.0.0.9', 'Một câu hỏi', 'seed-9');
 
-    expect(quotasService.assertCanCreateStickDraw).toHaveBeenCalledWith(emptyEmailUser.userId, '10.0.0.9', true);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledWith('stick-draw', emptyEmailUser.userId, '10.0.0.9', true);
   });
 
   it('map lỗi quota (raw Error) thành 429 RATE_LIMITED', async () => {
-    quotasService.assertCanCreateStickDraw = vi
+    quotasService.assertCanExecute = vi
       .fn()
       .mockRejectedValue(new Error('Daily explanation quota exceeded.'));
 

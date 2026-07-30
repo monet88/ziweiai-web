@@ -1,7 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
-import type { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
 import type { QuotasService } from '../../quotas/quotas.service';
 import { DailyQuotaExceededError } from '../../quotas/quota-errors';
 import { DivinationsService } from './divinations.service';
@@ -18,8 +17,8 @@ const USER_ID = '11111111-1111-4111-8111-111111111111';
 const SNAPSHOT_ID = '22222222-2222-4222-8222-222222222222';
 
 describe('DivinationsService', () => {
-  let persistenceGateway: Pick<SupabasePersistenceGateway, 'createChartSnapshot' | 'createDivinationContext'>;
-  let quotasService: Pick<QuotasService, 'assertCanCreateChart'>;
+  let persistenceGateway: Pick<any, 'createChartSnapshot' | 'createDivinationContext'>;
+  let quotasService: Pick<QuotasService, 'assertCanExecute'>;
   let service: DivinationsService;
 
   beforeEach(() => {
@@ -55,9 +54,10 @@ describe('DivinationsService', () => {
         }),
       ),
     };
-    quotasService = { assertCanCreateChart: vi.fn().mockResolvedValue(undefined) };
+    quotasService = { assertCanExecute: vi.fn().mockResolvedValue(undefined) };
     service = new DivinationsService(
-      persistenceGateway as SupabasePersistenceGateway,
+      persistenceGateway as any,
+      persistenceGateway as any,
       quotasService as QuotasService,
     );
   });
@@ -73,7 +73,7 @@ describe('DivinationsService', () => {
       purposeKey: 'career',
     });
 
-    expect(quotasService.assertCanCreateChart).toHaveBeenCalledTimes(1);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledTimes(1);
     expect(persistenceGateway.createChartSnapshot).toHaveBeenCalledTimes(1);
     const contextArg = (persistenceGateway.createDivinationContext as ReturnType<typeof vi.fn>).mock.calls[0][0];
     expect(contextArg.purposeKey).toBe('career');
@@ -110,9 +110,10 @@ describe('DivinationsService', () => {
   });
 
   it('maps typed quota errors to 429 RATE_LIMITED', async () => {
-    quotasService.assertCanCreateChart = vi.fn().mockRejectedValue(new DailyQuotaExceededError('Đã vượt hạn mức.'));
+    quotasService.assertCanExecute = vi.fn().mockRejectedValue(new DailyQuotaExceededError('Đã vượt hạn mức.'));
     service = new DivinationsService(
-      persistenceGateway as SupabasePersistenceGateway,
+      persistenceGateway as any,
+      persistenceGateway as any,
       quotasService as QuotasService,
     );
 
@@ -131,9 +132,10 @@ describe('DivinationsService', () => {
 
   it('propagates unexpected (non-quota) errors instead of masking them as 429', async () => {
     const dbError = new Error('connection reset while counting quota');
-    quotasService.assertCanCreateChart = vi.fn().mockRejectedValue(dbError);
+    quotasService.assertCanExecute = vi.fn().mockRejectedValue(dbError);
     service = new DivinationsService(
-      persistenceGateway as SupabasePersistenceGateway,
+      persistenceGateway as any,
+      persistenceGateway as any,
       quotasService as QuotasService,
     );
 

@@ -10,7 +10,8 @@
 import { createMutation } from '@tanstack/svelte-query';
 import type { TarotDraw, TarotSpread } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { ApiError, drawTarot } from '$lib/api-client';
+import { ApiError } from '$lib/api-client/core';
+import { drawTarot } from '$lib/api-client/divinations';;
 import { viCopy } from '$lib/i18n/vi';
 
 export type TarotCopy = { readonly [K in keyof typeof viCopy.tarot]: string };

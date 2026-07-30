@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { deleteAccount } from '$lib/api-client';
+  import { deleteAccount } from '$lib/api-client/users';;
   import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';

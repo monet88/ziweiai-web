@@ -151,3 +151,9 @@ logs/
 AGENTS.md.orig.bak
 .mcp.json
 galatuvi
+
+# Additional explicit ignores for service keys requested by user
+*service-key*.json
+*service_key*.json
+*service_key*.pem
+*service-key*.pem

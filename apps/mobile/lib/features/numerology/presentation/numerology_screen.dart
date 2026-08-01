@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import '../domain/numerology_calculator.dart';
-import '../domain/numerology_result.dart';
+
 import '../providers/numerology_provider.dart';
 import '../../../core/utils/monetization_guard.dart';
 
@@ -16,7 +15,7 @@ class NumerologyScreen extends ConsumerStatefulWidget {
 class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
   final _nameController = TextEditingController();
   DateTime? _selectedDate;
-  NumerologyResult? _calculatedResult;
+
 
   @override
   void dispose() {
@@ -33,12 +32,10 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
     }
     
     FocusScope.of(context).unfocus();
-    setState(() {
-      _calculatedResult = NumerologyCalculator.calculate(
-        _nameController.text.trim(),
-        _selectedDate!,
-      );
-    });
+    ref.read(numerologyProvider.notifier).calculate(
+      _nameController.text.trim(),
+      _selectedDate!,
+    );
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -65,20 +62,21 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        _calculatedResult = null; // reset result on change
+
         ref.read(numerologyProvider.notifier).reset();
       });
     }
   }
 
   void _getAIExplanation() {
-    if (_calculatedResult == null) return;
+    final state = ref.read(numerologyProvider);
+    if (state.calculatedResult == null) return;
     
     ref.read(numerologyProvider.notifier).getExplanation(
-      lifePath: _calculatedResult!.lifePath,
-      destiny: _calculatedResult!.destiny,
-      soulUrge: _calculatedResult!.soulUrge,
-      personality: _calculatedResult!.personality,
+      lifePath: state.calculatedResult!.lifePath,
+      destiny: state.calculatedResult!.destiny,
+      soulUrge: state.calculatedResult!.soulUrge,
+      personality: state.calculatedResult!.personality,
       fullName: _nameController.text.trim(),
     );
   }
@@ -88,8 +86,8 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
     final state = ref.watch(numerologyProvider);
 
     ref.listen(numerologyProvider, (previous, next) {
-      if (next.hasError) {
-        final error = next.error;
+      if (next.explanation.hasError) {
+        final error = next.explanation.error;
         if (error == null) return;
         
         final isHandled = MonetizationGuard.handlePaidActionError(
@@ -107,7 +105,8 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
       }
     });
 
-    final hasAIResult = state.hasValue && state.value != null;
+    final calculatedResult = state.calculatedResult;
+    final hasAIResult = state.explanation.hasValue && state.explanation.value != null;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -122,7 +121,6 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
               _nameController.clear();
               setState(() {
                 _selectedDate = null;
-                _calculatedResult = null;
               });
               ref.read(numerologyProvider.notifier).reset();
             },
@@ -144,7 +142,7 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (_calculatedResult == null) ...[
+                if (calculatedResult == null) ...[
                   const Text(
                     'Khám phá bản thân',
                     style: TextStyle(
@@ -228,22 +226,22 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildNumberCard('Đường Đời', _calculatedResult!.lifePath),
-                      _buildNumberCard('Sứ Mệnh', _calculatedResult!.destiny),
+                      _buildNumberCard('Đường Đời', calculatedResult.lifePath),
+                      _buildNumberCard('Sứ Mệnh', calculatedResult.destiny),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildNumberCard('Linh Hồn', _calculatedResult!.soulUrge),
-                      _buildNumberCard('Nhân Cách', _calculatedResult!.personality),
+                      _buildNumberCard('Linh Hồn', calculatedResult.soulUrge),
+                      _buildNumberCard('Nhân Cách', calculatedResult.personality),
                     ],
                   ),
                   const SizedBox(height: 40),
                   
                   if (!hasAIResult) ...[
-                    state.isLoading 
+                    state.explanation.isLoading 
                       ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)))
                       : ElevatedButton(
                           onPressed: _getAIExplanation,
@@ -281,7 +279,7 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
                           ),
                         ),
                   ] else ...[
-                    _buildResultNarrative(state.value!.narrative),
+                    _buildResultNarrative(state.explanation.value!.narrative),
                   ],
                 ],
               ],

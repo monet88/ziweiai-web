@@ -3,11 +3,41 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/models/numerology_models.dart';
 import '../data/repositories/numerology_repository.dart';
 import '../../wallet/providers/wallet_provider.dart';
+import '../domain/numerology_calculator.dart';
+import '../domain/numerology_result.dart';
 
-class NumerologyNotifier extends Notifier<AsyncValue<NumerologyExplanation?>> {
+class NumerologyState {
+  final NumerologyResult? calculatedResult;
+  final AsyncValue<NumerologyExplanation?> explanation;
+
+  const NumerologyState({
+    this.calculatedResult,
+    this.explanation = const AsyncValue.data(null),
+  });
+
+  NumerologyState copyWith({
+    NumerologyResult? calculatedResult,
+    AsyncValue<NumerologyExplanation?>? explanation,
+  }) {
+    return NumerologyState(
+      calculatedResult: calculatedResult ?? this.calculatedResult,
+      explanation: explanation ?? this.explanation,
+    );
+  }
+}
+
+class NumerologyNotifier extends Notifier<NumerologyState> {
   @override
-  AsyncValue<NumerologyExplanation?> build() {
-    return const AsyncValue.data(null);
+  NumerologyState build() {
+    return const NumerologyState();
+  }
+
+  void calculate(String fullName, DateTime dateOfBirth) {
+    final result = NumerologyCalculator.calculate(fullName, dateOfBirth);
+    state = NumerologyState(
+      calculatedResult: result,
+      explanation: const AsyncValue.data(null),
+    );
   }
 
   Future<void> getExplanation({
@@ -17,7 +47,7 @@ class NumerologyNotifier extends Notifier<AsyncValue<NumerologyExplanation?>> {
     required int personality,
     required String fullName,
   }) async {
-    state = const AsyncValue.loading();
+    state = state.copyWith(explanation: const AsyncValue.loading());
     try {
       final repository = ref.read(numerologyRepositoryProvider);
       final result = await repository.getExplanation(
@@ -31,10 +61,10 @@ class NumerologyNotifier extends Notifier<AsyncValue<NumerologyExplanation?>> {
       // Update wallet balance since 10 XU is deducted
       ref.invalidate(walletBalanceProvider);
       
-      state = AsyncValue.data(result);
+      state = state.copyWith(explanation: AsyncValue.data(result));
     } on DioException catch (e) {
       if (e.response?.statusCode == 402 || e.response?.statusCode == 403) {
-        state = AsyncValue.error(e, StackTrace.current);
+        state = state.copyWith(explanation: AsyncValue.error(e, StackTrace.current));
         return;
       }
       
@@ -45,17 +75,17 @@ class NumerologyNotifier extends Notifier<AsyncValue<NumerologyExplanation?>> {
           errorMessage = data['message'].toString();
         }
       }
-      state = AsyncValue.error(errorMessage, StackTrace.current);
+      state = state.copyWith(explanation: AsyncValue.error(errorMessage, StackTrace.current));
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      state = state.copyWith(explanation: AsyncValue.error(e, st));
     }
   }
 
   void reset() {
-    state = const AsyncValue.data(null);
+    state = const NumerologyState();
   }
 }
 
-final numerologyProvider = NotifierProvider<NumerologyNotifier, AsyncValue<NumerologyExplanation?>>(() {
+final numerologyProvider = NotifierProvider<NumerologyNotifier, NumerologyState>(() {
   return NumerologyNotifier();
 });

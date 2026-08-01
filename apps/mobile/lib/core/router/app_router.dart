@@ -7,6 +7,7 @@ import '../../features/wallet/presentation/wallet_screen.dart';
 import '../../features/vision/presentation/vision_input_screen.dart';
 import '../../features/vision/presentation/vision_result_screen.dart';
 import '../../features/vision/data/models/vision_kind.dart';
+import '../../features/tarot/presentation/tarot_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -34,6 +35,9 @@ final appRouter = GoRouter(
       path: '/vision/input',
       builder: (context, state) {
         final kind = state.extra as VisionKind;
+        if (kind == VisionKind.tarot) {
+          return const TarotScreen();
+        }
         return VisionInputScreen(kind: kind);
       },
     ),

@@ -1,0 +1,682 @@
+[
+  {
+    "id": "major_0",
+    "name_en": "The Fool",
+    "name_vi": "Kẻ Khờ",
+    "type": "major",
+    "upright_keywords": "khởi đầu mới, sự ngây thơ, tính tự phát, tự do, niềm tin",
+    "reversed_keywords": "sự liều lĩnh, thiếu cẩn trọng, rủi ro, bốc đồng"
+  },
+  {
+    "id": "major_1",
+    "name_en": "The Magician",
+    "name_vi": "Ảo Thuật Gia",
+    "type": "major",
+    "upright_keywords": "sự thể hiện, nguồn lực, sức mạnh, khả năng sáng tạo",
+    "reversed_keywords": "thao túng, kế hoạch kém, tài năng chưa được phát huy"
+  },
+  {
+    "id": "major_2",
+    "name_en": "The High Priestess",
+    "name_vi": "Nữ Tư Tế",
+    "type": "major",
+    "upright_keywords": "trực giác, sự thiêng liêng, vô thức, tiếng nói nội tâm",
+    "reversed_keywords": "bí mật bị giấu kín, mất kết nối nội tâm, sự kìm nén"
+  },
+  {
+    "id": "major_3",
+    "name_en": "The Empress",
+    "name_vi": "Hoàng Hậu",
+    "type": "major",
+    "upright_keywords": "sự sinh sôi, nữ tính, sắc đẹp, thiên nhiên, sự phong phú",
+    "reversed_keywords": "sự phụ thuộc, bóp nghẹt, thiếu thốn, trống rỗng"
+  },
+  {
+    "id": "major_4",
+    "name_en": "The Emperor",
+    "name_vi": "Hoàng Đế",
+    "type": "major",
+    "upright_keywords": "quyền lực, cấu trúc, kiểm soát, tính cha, nền tảng vững chắc",
+    "reversed_keywords": "sự độc đoán, cứng nhắc, thiếu kỷ luật, độc tài"
+  },
+  {
+    "id": "major_5",
+    "name_en": "The Hierophant",
+    "name_vi": "Giáo Hoàng",
+    "type": "major",
+    "upright_keywords": "tôn giáo, truyền thống, niềm tin tâm linh, sự phù hợp, trường học",
+    "reversed_keywords": "sự nổi loạn, phá vỡ nguyên tắc, hạn chế, suy nghĩ hạn hẹp"
+  },
+  {
+    "id": "major_6",
+    "name_en": "The Lovers",
+    "name_vi": "Tình Nhân",
+    "type": "major",
+    "upright_keywords": "tình yêu, sự hòa hợp, mối quan hệ, sự lựa chọn, đồng điệu",
+    "reversed_keywords": "mất cân bằng, sai lệch, lựa chọn sai lầm, rạn nứt"
+  },
+  {
+    "id": "major_7",
+    "name_en": "The Chariot",
+    "name_vi": "Cỗ Xe",
+    "type": "major",
+    "upright_keywords": "kiểm soát, ý chí, thành công, hành động, quyết tâm",
+    "reversed_keywords": "thiếu hướng đi, mất kiểm soát, sự chống đối, hung hăng"
+  },
+  {
+    "id": "major_8",
+    "name_en": "Strength",
+    "name_vi": "Sức Mạnh",
+    "type": "major",
+    "upright_keywords": "sức mạnh nội tâm, can đảm, sự kiên nhẫn, lòng trắc ẩn",
+    "reversed_keywords": "tự nghi ngờ, yếu đuối, bất an, thiếu tự tin"
+  },
+  {
+    "id": "major_9",
+    "name_en": "The Hermit",
+    "name_vi": "Ẩn Sĩ",
+    "type": "major",
+    "upright_keywords": "tìm kiếm linh hồn, xem xét nội tâm, ở một mình, dẫn đường nội tâm",
+    "reversed_keywords": "sự cô lập, cô đơn, rút lui khỏi xã hội, từ chối lời khuyên"
+  },
+  {
+    "id": "major_10",
+    "name_en": "Wheel of Fortune",
+    "name_vi": "Vòng Quay May Mắn",
+    "type": "major",
+    "upright_keywords": "may mắn, nghiệp báo, chu kỳ cuộc sống, định mệnh, bước ngoặt",
+    "reversed_keywords": "xui xẻo, sự kháng cự, phá vỡ chu kỳ, bế tắc"
+  },
+  {
+    "id": "major_11",
+    "name_en": "Justice",
+    "name_vi": "Công Lý",
+    "type": "major",
+    "upright_keywords": "công bằng, sự thật, luật pháp, nguyên nhân và kết quả",
+    "reversed_keywords": "bất công, dối trá, không chịu trách nhiệm, thiên vị"
+  },
+  {
+    "id": "major_12",
+    "name_en": "The Hanged Man",
+    "name_vi": "Người Treo Ngược",
+    "type": "major",
+    "upright_keywords": "sự hy sinh, buông bỏ, tạm dừng, thay đổi góc nhìn",
+    "reversed_keywords": "trì hoãn, sự phản kháng, hy sinh vô ích, bế tắc"
+  },
+  {
+    "id": "major_13",
+    "name_en": "Death",
+    "name_vi": "Cái Chết",
+    "type": "major",
+    "upright_keywords": "kết thúc, thay đổi, chuyển đổi, quá độ, dọn dẹp",
+    "reversed_keywords": "sự kháng cự thay đổi, sợ hãi, trì trệ, không thể buông bỏ"
+  },
+  {
+    "id": "major_14",
+    "name_en": "Temperance",
+    "name_vi": "Cân Bằng",
+    "type": "major",
+    "upright_keywords": "cân bằng, điều độ, kiên nhẫn, mục đích, hòa hợp",
+    "reversed_keywords": "mất cân bằng, dư thừa, thiếu tầm nhìn, vội vã"
+  },
+  {
+    "id": "major_15",
+    "name_en": "The Devil",
+    "name_vi": "Ác Quỷ",
+    "type": "major",
+    "upright_keywords": "sự trói buộc, nghiện ngập, tình dục, chủ nghĩa vật chất",
+    "reversed_keywords": "giải phóng, độc lập, vượt qua giới hạn, thức tỉnh"
+  },
+  {
+    "id": "major_16",
+    "name_en": "The Tower",
+    "name_vi": "Tòa Tháp",
+    "type": "major",
+    "upright_keywords": "thảm họa, sụp đổ, biến động đột ngột, thức tỉnh, sự thật",
+    "reversed_keywords": "tránh né thảm họa, sợ hãi sự thay đổi, ảo tưởng"
+  },
+  {
+    "id": "major_17",
+    "name_en": "The Star",
+    "name_vi": "Ngôi Sao",
+    "type": "major",
+    "upright_keywords": "hy vọng, niềm tin, mục đích, đổi mới, tâm linh",
+    "reversed_keywords": "thiếu niềm tin, tuyệt vọng, mất hy vọng, ngắt kết nối"
+  },
+  {
+    "id": "major_18",
+    "name_en": "The Moon",
+    "name_vi": "Mặt Trăng",
+    "type": "major",
+    "upright_keywords": "ảo ảnh, sợ hãi, lo lắng, tiềm thức, trực giác",
+    "reversed_keywords": "giải phóng sợ hãi, bí mật được hé lộ, bớt bối rối"
+  },
+  {
+    "id": "major_19",
+    "name_en": "The Sun",
+    "name_vi": "Mặt Trời",
+    "type": "major",
+    "upright_keywords": "tích cực, niềm vui, thành công, ấm áp, sức sống",
+    "reversed_keywords": "tiêu cực, buồn bã, thiếu nhiệt huyết, thành công bị trì hoãn"
+  },
+  {
+    "id": "major_20",
+    "name_en": "Judgement",
+    "name_vi": "Phán Xét",
+    "type": "major",
+    "upright_keywords": "sự phán xét, tái sinh, tiếng gọi nội tâm, tha thứ",
+    "reversed_keywords": "nghi ngờ bản thân, từ chối bài học, phớt lờ tiếng gọi"
+  },
+  {
+    "id": "major_21",
+    "name_en": "The World",
+    "name_vi": "Thế Giới",
+    "type": "major",
+    "upright_keywords": "hoàn thành, hội nhập, hoàn tất, du lịch, kết thúc chu kỳ",
+    "reversed_keywords": "chưa hoàn thành, thiếu kết thúc, trì hoãn, gánh nặng"
+  },
+  {
+    "id": "minor_wands_ace",
+    "name_en": "Ace of Wands",
+    "name_vi": "Ách Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "khởi đầu, tiềm năng, cơ hội, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của khởi đầu, tiềm năng, cơ hội, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_wands_two",
+    "name_en": "Two of Wands",
+    "name_vi": "Hai Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "cân bằng, quan hệ đối tác, quyết định, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của cân bằng, quan hệ đối tác, quyết định, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_wands_three",
+    "name_en": "Three of Wands",
+    "name_vi": "Ba Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "sự phát triển, làm việc nhóm, mở rộng, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của sự phát triển, làm việc nhóm, mở rộng, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_wands_four",
+    "name_en": "Four of Wands",
+    "name_vi": "Bốn Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "ổn định, nền tảng, sự nghỉ ngơi, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của ổn định, nền tảng, sự nghỉ ngơi, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_wands_five",
+    "name_en": "Five of Wands",
+    "name_vi": "Năm Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "xung đột, thay đổi, thử thách, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của xung đột, thay đổi, thử thách, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_wands_six",
+    "name_en": "Six of Wands",
+    "name_vi": "Sáu Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "sự hòa hợp, hợp tác, phục hồi, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của sự hòa hợp, hợp tác, phục hồi, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_wands_seven",
+    "name_en": "Seven of Wands",
+    "name_vi": "Bảy Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "đánh giá, sự kiên trì, lựa chọn, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của đánh giá, sự kiên trì, lựa chọn, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_wands_eight",
+    "name_en": "Eight of Wands",
+    "name_vi": "Tám Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "sự di chuyển, nỗ lực, thay đổi nhanh chóng, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của sự di chuyển, nỗ lực, thay đổi nhanh chóng, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_wands_nine",
+    "name_en": "Nine of Wands",
+    "name_vi": "Chín Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "hoàn thành, sự đầy đủ, tự lực, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của hoàn thành, sự đầy đủ, tự lực, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_wands_ten",
+    "name_en": "Ten of Wands",
+    "name_vi": "Mười Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "kết thúc, phần thưởng, sự trọn vẹn, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của kết thúc, phần thưởng, sự trọn vẹn, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_wands_page",
+    "name_en": "Page of Wands",
+    "name_vi": "Tiểu Đồng Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "thông điệp, tin tức, người học việc, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của thông điệp, tin tức, người học việc, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_wands_knight",
+    "name_en": "Knight of Wands",
+    "name_vi": "Hiệp Sĩ Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "hành động, phiêu lưu, sự di chuyển, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của hành động, phiêu lưu, sự di chuyển, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_wands_queen",
+    "name_en": "Queen of Wands",
+    "name_vi": "Nữ Hoàng Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "sự chăm sóc, thấu hiểu, trưởng thành, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của sự chăm sóc, thấu hiểu, trưởng thành, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_wands_king",
+    "name_en": "King of Wands",
+    "name_vi": "Vua Gậy",
+    "type": "minor",
+    "suit": "Wands",
+    "upright_keywords": "lãnh đạo, quyền lực, sự ổn định, hành động, đam mê, cảm hứng, năng lượng",
+    "reversed_keywords": "sự mất cân bằng của lãnh đạo, quyền lực, sự ổn định, rắc rối về hành động, đam mê, cảm hứng, năng lượng"
+  },
+  {
+    "id": "minor_cups_ace",
+    "name_en": "Ace of Cups",
+    "name_vi": "Ách Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "khởi đầu, tiềm năng, cơ hội, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của khởi đầu, tiềm năng, cơ hội, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_cups_two",
+    "name_en": "Two of Cups",
+    "name_vi": "Hai Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "cân bằng, quan hệ đối tác, quyết định, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của cân bằng, quan hệ đối tác, quyết định, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_cups_three",
+    "name_en": "Three of Cups",
+    "name_vi": "Ba Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "sự phát triển, làm việc nhóm, mở rộng, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của sự phát triển, làm việc nhóm, mở rộng, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_cups_four",
+    "name_en": "Four of Cups",
+    "name_vi": "Bốn Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "ổn định, nền tảng, sự nghỉ ngơi, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của ổn định, nền tảng, sự nghỉ ngơi, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_cups_five",
+    "name_en": "Five of Cups",
+    "name_vi": "Năm Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "xung đột, thay đổi, thử thách, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của xung đột, thay đổi, thử thách, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_cups_six",
+    "name_en": "Six of Cups",
+    "name_vi": "Sáu Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "sự hòa hợp, hợp tác, phục hồi, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của sự hòa hợp, hợp tác, phục hồi, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_cups_seven",
+    "name_en": "Seven of Cups",
+    "name_vi": "Bảy Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "đánh giá, sự kiên trì, lựa chọn, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của đánh giá, sự kiên trì, lựa chọn, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_cups_eight",
+    "name_en": "Eight of Cups",
+    "name_vi": "Tám Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "sự di chuyển, nỗ lực, thay đổi nhanh chóng, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của sự di chuyển, nỗ lực, thay đổi nhanh chóng, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_cups_nine",
+    "name_en": "Nine of Cups",
+    "name_vi": "Chín Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "hoàn thành, sự đầy đủ, tự lực, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của hoàn thành, sự đầy đủ, tự lực, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_cups_ten",
+    "name_en": "Ten of Cups",
+    "name_vi": "Mười Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "kết thúc, phần thưởng, sự trọn vẹn, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của kết thúc, phần thưởng, sự trọn vẹn, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_cups_page",
+    "name_en": "Page of Cups",
+    "name_vi": "Tiểu Đồng Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "thông điệp, tin tức, người học việc, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của thông điệp, tin tức, người học việc, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_cups_knight",
+    "name_en": "Knight of Cups",
+    "name_vi": "Hiệp Sĩ Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "hành động, phiêu lưu, sự di chuyển, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của hành động, phiêu lưu, sự di chuyển, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_cups_queen",
+    "name_en": "Queen of Cups",
+    "name_vi": "Nữ Hoàng Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "sự chăm sóc, thấu hiểu, trưởng thành, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của sự chăm sóc, thấu hiểu, trưởng thành, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_cups_king",
+    "name_en": "King of Cups",
+    "name_vi": "Vua Cốc",
+    "type": "minor",
+    "suit": "Cups",
+    "upright_keywords": "lãnh đạo, quyền lực, sự ổn định, cảm xúc, tình yêu, trực giác, mối quan hệ",
+    "reversed_keywords": "sự mất cân bằng của lãnh đạo, quyền lực, sự ổn định, rắc rối về cảm xúc, tình yêu, trực giác, mối quan hệ"
+  },
+  {
+    "id": "minor_swords_ace",
+    "name_en": "Ace of Swords",
+    "name_vi": "Ách Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "khởi đầu, tiềm năng, cơ hội, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của khởi đầu, tiềm năng, cơ hội, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_swords_two",
+    "name_en": "Two of Swords",
+    "name_vi": "Hai Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "cân bằng, quan hệ đối tác, quyết định, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của cân bằng, quan hệ đối tác, quyết định, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_swords_three",
+    "name_en": "Three of Swords",
+    "name_vi": "Ba Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "sự phát triển, làm việc nhóm, mở rộng, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của sự phát triển, làm việc nhóm, mở rộng, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_swords_four",
+    "name_en": "Four of Swords",
+    "name_vi": "Bốn Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "ổn định, nền tảng, sự nghỉ ngơi, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của ổn định, nền tảng, sự nghỉ ngơi, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_swords_five",
+    "name_en": "Five of Swords",
+    "name_vi": "Năm Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "xung đột, thay đổi, thử thách, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của xung đột, thay đổi, thử thách, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_swords_six",
+    "name_en": "Six of Swords",
+    "name_vi": "Sáu Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "sự hòa hợp, hợp tác, phục hồi, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của sự hòa hợp, hợp tác, phục hồi, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_swords_seven",
+    "name_en": "Seven of Swords",
+    "name_vi": "Bảy Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "đánh giá, sự kiên trì, lựa chọn, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của đánh giá, sự kiên trì, lựa chọn, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_swords_eight",
+    "name_en": "Eight of Swords",
+    "name_vi": "Tám Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "sự di chuyển, nỗ lực, thay đổi nhanh chóng, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của sự di chuyển, nỗ lực, thay đổi nhanh chóng, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_swords_nine",
+    "name_en": "Nine of Swords",
+    "name_vi": "Chín Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "hoàn thành, sự đầy đủ, tự lực, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của hoàn thành, sự đầy đủ, tự lực, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_swords_ten",
+    "name_en": "Ten of Swords",
+    "name_vi": "Mười Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "kết thúc, phần thưởng, sự trọn vẹn, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của kết thúc, phần thưởng, sự trọn vẹn, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_swords_page",
+    "name_en": "Page of Swords",
+    "name_vi": "Tiểu Đồng Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "thông điệp, tin tức, người học việc, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của thông điệp, tin tức, người học việc, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_swords_knight",
+    "name_en": "Knight of Swords",
+    "name_vi": "Hiệp Sĩ Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "hành động, phiêu lưu, sự di chuyển, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của hành động, phiêu lưu, sự di chuyển, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_swords_queen",
+    "name_en": "Queen of Swords",
+    "name_vi": "Nữ Hoàng Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "sự chăm sóc, thấu hiểu, trưởng thành, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của sự chăm sóc, thấu hiểu, trưởng thành, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_swords_king",
+    "name_en": "King of Swords",
+    "name_vi": "Vua Kiếm",
+    "type": "minor",
+    "suit": "Swords",
+    "upright_keywords": "lãnh đạo, quyền lực, sự ổn định, suy nghĩ, giao tiếp, xung đột, sự thật",
+    "reversed_keywords": "sự mất cân bằng của lãnh đạo, quyền lực, sự ổn định, rắc rối về suy nghĩ, giao tiếp, xung đột, sự thật"
+  },
+  {
+    "id": "minor_pentacles_ace",
+    "name_en": "Ace of Pentacles",
+    "name_vi": "Ách Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "khởi đầu, tiềm năng, cơ hội, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của khởi đầu, tiềm năng, cơ hội, rắc rối về vật chất, công việc, tài chính, thực tế"
+  },
+  {
+    "id": "minor_pentacles_two",
+    "name_en": "Two of Pentacles",
+    "name_vi": "Hai Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "cân bằng, quan hệ đối tác, quyết định, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của cân bằng, quan hệ đối tác, quyết định, rắc rối về vật chất, công việc, tài chính, thực tế"
+  },
+  {
+    "id": "minor_pentacles_three",
+    "name_en": "Three of Pentacles",
+    "name_vi": "Ba Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "sự phát triển, làm việc nhóm, mở rộng, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của sự phát triển, làm việc nhóm, mở rộng, rắc rối về vật chất, công việc, tài chính, thực tế"
+  },
+  {
+    "id": "minor_pentacles_four",
+    "name_en": "Four of Pentacles",
+    "name_vi": "Bốn Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "ổn định, nền tảng, sự nghỉ ngơi, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của ổn định, nền tảng, sự nghỉ ngơi, rắc rối về vật chất, công việc, tài chính, thực tế"
+  },
+  {
+    "id": "minor_pentacles_five",
+    "name_en": "Five of Pentacles",
+    "name_vi": "Năm Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "xung đột, thay đổi, thử thách, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của xung đột, thay đổi, thử thách, rắc rối về vật chất, công việc, tài chính, thực tế"
+  },
+  {
+    "id": "minor_pentacles_six",
+    "name_en": "Six of Pentacles",
+    "name_vi": "Sáu Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "sự hòa hợp, hợp tác, phục hồi, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của sự hòa hợp, hợp tác, phục hồi, rắc rối về vật chất, công việc, tài chính, thực tế"
+  },
+  {
+    "id": "minor_pentacles_seven",
+    "name_en": "Seven of Pentacles",
+    "name_vi": "Bảy Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "đánh giá, sự kiên trì, lựa chọn, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của đánh giá, sự kiên trì, lựa chọn, rắc rối về vật chất, công việc, tài chính, thực tế"
+  },
+  {
+    "id": "minor_pentacles_eight",
+    "name_en": "Eight of Pentacles",
+    "name_vi": "Tám Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "sự di chuyển, nỗ lực, thay đổi nhanh chóng, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của sự di chuyển, nỗ lực, thay đổi nhanh chóng, rắc rối về vật chất, công việc, tài chính, thực tế"
+  },
+  {
+    "id": "minor_pentacles_nine",
+    "name_en": "Nine of Pentacles",
+    "name_vi": "Chín Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "hoàn thành, sự đầy đủ, tự lực, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của hoàn thành, sự đầy đủ, tự lực, rắc rối về vật chất, công việc, tài chính, thực tế"
+  },
+  {
+    "id": "minor_pentacles_ten",
+    "name_en": "Ten of Pentacles",
+    "name_vi": "Mười Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "kết thúc, phần thưởng, sự trọn vẹn, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của kết thúc, phần thưởng, sự trọn vẹn, rắc rối về vật chất, công việc, tài chính, thực tế"
+  },
+  {
+    "id": "minor_pentacles_page",
+    "name_en": "Page of Pentacles",
+    "name_vi": "Tiểu Đồng Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "thông điệp, tin tức, người học việc, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của thông điệp, tin tức, người học việc, rắc rối về vật chất, công việc, tài chính, thực tế"
+  },
+  {
+    "id": "minor_pentacles_knight",
+    "name_en": "Knight of Pentacles",
+    "name_vi": "Hiệp Sĩ Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "hành động, phiêu lưu, sự di chuyển, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của hành động, phiêu lưu, sự di chuyển, rắc rối về vật chất, công việc, tài chính, thực tế"
+  },
+  {
+    "id": "minor_pentacles_queen",
+    "name_en": "Queen of Pentacles",
+    "name_vi": "Nữ Hoàng Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "sự chăm sóc, thấu hiểu, trưởng thành, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của sự chăm sóc, thấu hiểu, trưởng thành, rắc rối về vật chất, công việc, tài chính, thực tế"
+  },
+  {
+    "id": "minor_pentacles_king",
+    "name_en": "King of Pentacles",
+    "name_vi": "Vua Tiền",
+    "type": "minor",
+    "suit": "Pentacles",
+    "upright_keywords": "lãnh đạo, quyền lực, sự ổn định, vật chất, công việc, tài chính, thực tế",
+    "reversed_keywords": "sự mất cân bằng của lãnh đạo, quyền lực, sự ổn định, rắc rối về vật chất, công việc, tài chính, thực tế"
+  }
+]

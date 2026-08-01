@@ -84,7 +84,7 @@ export class DrawsTarotService {
       );
     }
 
-    const cost = 3;
+    const cost = 2;
     const success = await this.walletEngine.deductXU(userId, cost, 'ai_usage');
     if (!success) {
       throw new ApiErrorHttpException(

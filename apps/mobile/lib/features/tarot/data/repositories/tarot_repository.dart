@@ -14,13 +14,17 @@ class TarotRepository {
     required String spread,
     String? seed,
   }) async {
+    final requestData = <String, dynamic>{
+      'question': question,
+      'spread': spread,
+    };
+    if (seed != null) {
+      requestData['seed'] = seed;
+    }
+
     final response = await _apiClient.dio.post(
       '/draws/tarot',
-      data: {
-        'question': question,
-        'spread': spread,
-        if (seed != null) 'seed': seed,
-      },
+      data: requestData,
     );
 
     if (response.statusCode == 200) {

@@ -1,9 +1,10 @@
+import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../providers/tarot_provider.dart';
-
+import '../../../core/presentation/widgets/premium_paywall_sheet.dart';
 
 class TarotScreen extends ConsumerStatefulWidget {
   const TarotScreen({super.key});
@@ -12,9 +13,29 @@ class TarotScreen extends ConsumerStatefulWidget {
   ConsumerState<TarotScreen> createState() => _TarotScreenState();
 }
 
-class _TarotScreenState extends ConsumerState<TarotScreen> {
+class _TarotScreenState extends ConsumerState<TarotScreen> with SingleTickerProviderStateMixin {
   final _questionController = TextEditingController();
-  bool _cardFlipped = false;
+  late AnimationController _flipController;
+  late Animation<double> _flipAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _flipController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _flipAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _flipController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _questionController.dispose();
+    _flipController.dispose();
+    super.dispose();
+  }
 
   void _drawCard() {
     if (_questionController.text.trim().isEmpty) {
@@ -24,9 +45,7 @@ class _TarotScreenState extends ConsumerState<TarotScreen> {
       return;
     }
     
-    // Hide keyboard
     FocusScope.of(context).unfocus();
-    
     ref.read(tarotProvider.notifier).drawCard(_questionController.text);
   }
 
@@ -38,17 +57,13 @@ class _TarotScreenState extends ConsumerState<TarotScreen> {
       if (next.hasError) {
         final error = next.error;
         if (error is DioException && (error.response?.statusCode == 402 || error.response?.statusCode == 403)) {
-          showDialog(
+          showModalBottomSheet(
             context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Hết XU'),
-              content: const Text('Tính năng Đọc Tarot yêu cầu 2 XU. Vui lòng nạp thêm XU để tiếp tục.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Đóng'),
-                ),
-              ],
+            backgroundColor: Colors.transparent,
+            isScrollControlled: true,
+            builder: (context) => const PremiumPaywallSheet(
+              cost: 2,
+              featureName: 'Đọc Bài Tarot',
             ),
           );
         } else {
@@ -58,28 +73,27 @@ class _TarotScreenState extends ConsumerState<TarotScreen> {
         }
       }
       
-      if (next.hasValue && next.value != null) {
-        setState(() {
-          _cardFlipped = true;
-        });
+      if (next.hasValue && next.value != null && !next.isLoading) {
+        _flipController.forward();
       } else if (next.isLoading) {
-        setState(() {
-          _cardFlipped = false; // Reset flip state when loading starts
-        });
+        _flipController.reverse();
       }
     });
 
+    final hasResult = state.hasValue && state.value != null;
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Đọc bài Tarot'),
+        title: const Text('Đọc bài Tarot', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
               _questionController.clear();
-              setState(() {
-                _cardFlipped = false;
-              });
+              _flipController.reverse();
               ref.read(tarotProvider.notifier).reset();
             },
           ),
@@ -88,108 +102,249 @@ class _TarotScreenState extends ConsumerState<TarotScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0F172A), Color(0xFF1E1B4B)],
           ),
         ),
         child: SafeArea(
-          child: state.hasValue && state.value != null && _cardFlipped
-              ? _buildResult(state.value!)
-              : _buildInputForm(state.isLoading),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 400),
+                  child: hasResult
+                      ? const SizedBox.shrink()
+                      : Column(
+                          children: [
+                            const Text(
+                              'Nhập câu hỏi của bạn',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 1.2,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Tập trung vào vấn đề bạn đang băn khoăn và đặt câu hỏi rõ ràng để vũ trụ hồi đáp.',
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 16),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 24),
+                            TextField(
+                              controller: _questionController,
+                              maxLines: 2,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                hintText: 'Chuyện tình cảm của tôi tháng này?',
+                                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                                filled: true,
+                                fillColor: Colors.white.withValues(alpha: 0.05),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  borderSide: const BorderSide(color: Colors.white24, width: 1),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  borderSide: const BorderSide(color: Colors.white10, width: 1),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  borderSide: const BorderSide(color: Color(0xFFFFD700), width: 1),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+                const SizedBox(height: 40),
+                
+                // 3D Flipping Card
+                GestureDetector(
+                  onTap: (!hasResult && !state.isLoading) ? _drawCard : null,
+                  child: Center(
+                    child: AnimatedBuilder(
+                      animation: _flipAnimation,
+                      builder: (context, child) {
+                        final value = _flipAnimation.value;
+                        final isBackFlipping = value < 0.5;
+                        final rotationY = value * pi;
+                        
+                        return Transform(
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.001)
+                            ..rotateY(rotationY),
+                          alignment: Alignment.center,
+                          child: isBackFlipping
+                              ? _buildCardBack(state.isLoading)
+                              : Transform(
+                                  transform: Matrix4.identity()..rotateY(pi),
+                                  alignment: Alignment.center,
+                                  child: _buildCardFront(state.value),
+                                ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 40),
+                
+                // Result Narrative
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 600),
+                  child: hasResult
+                      ? _buildResultNarrative(state.value!.narrative)
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildInputForm(bool isLoading) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'Nhập câu hỏi của bạn',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
+  Widget _buildCardBack(bool isLoading) {
+    return Container(
+      width: 220,
+      height: 340,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.8), width: 2),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1E3A8A), Color(0xFF4C1D95)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withValues(alpha: 0.2),
+            blurRadius: 30,
+            spreadRadius: 2,
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Tập trung vào vấn đề bạn đang băn khoăn (Tình cảm, Công việc, Tài chính...) và đặt câu hỏi rõ ràng.',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          TextField(
-            controller: _questionController,
-            maxLines: 3,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'Ví dụ: Chuyện tình cảm của tôi trong tháng này sẽ ra sao?',
-              hintStyle: const TextStyle(color: Colors.white38),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.1),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 48),
-          
-          // Card back simulation
-          GestureDetector(
-            onTap: isLoading ? null : _drawCard,
-            child: Container(
-              height: 300,
-              margin: const EdgeInsets.symmetric(horizontal: 48),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFFFD700), width: 2),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF2C3E50), Color(0xFF3498DB)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFFD700).withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    spreadRadius: 2,
+        ],
+      ),
+      child: Center(
+        child: isLoading
+            ? const CircularProgressIndicator(color: Color(0xFFFFD700))
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.auto_awesome, color: Color(0xFFFFD700), size: 56),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Chạm để\nRút Bài',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFFFFD700),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black45,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Tốn 2 XU',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
-              child: Center(
-                child: isLoading
-                    ? const CircularProgressIndicator(color: Color(0xFFFFD700))
-                    : const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.auto_awesome, color: Color(0xFFFFD700), size: 48),
-                          SizedBox(height: 16),
-                          Text(
-                            'Chạm để Rút Bài',
-                            style: TextStyle(
-                              color: Color(0xFFFFD700),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            '(Tốn 2 XU)',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
+      ),
+    );
+  }
+
+  Widget _buildCardFront(dynamic result) {
+    if (result == null) return const SizedBox.shrink();
+    final card = result.cards.first;
+    
+    return Container(
+      width: 220,
+      height: 340,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFFFD700), width: 2),
+        color: const Color(0xFFF8F9FA),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withValues(alpha: 0.4),
+            blurRadius: 40,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Decorative border pattern
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5), width: 1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
+            ),
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    card.name,
+                    style: const TextStyle(
+                      color: Color(0xFF1F2937),
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                if (card.reversed) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Ngược (Reversed)',
+                      style: TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 32),
+                Icon(
+                  card.reversed ? Icons.wb_twilight : Icons.wb_sunny,
+                  color: const Color(0xFFD4AF37),
+                  size: 64,
+                ),
+              ],
             ),
           ),
         ],
@@ -197,101 +352,56 @@ class _TarotScreenState extends ConsumerState<TarotScreen> {
     );
   }
 
-  Widget _buildResult(dynamic result) {
-    // result is TarotDraw
-    final card = result.cards.first;
-    
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Simulated flipped card
-          Container(
-            height: 300,
-            margin: const EdgeInsets.symmetric(horizontal: 48),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFFFD700), width: 2),
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFFD700).withValues(alpha: 0.5),
-                  blurRadius: 30,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  card.name,
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                if (card.reversed) ...[
-                  const SizedBox(height: 8),
-                  const Text(
-                    '(Ngược - Reversed)',
-                    style: TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                const Icon(
-                  Icons.auto_awesome,
-                  color: Color(0xFFFFD700),
-                  size: 64,
-                ),
-              ],
-            ),
+  Widget _buildResultNarrative(String narrative) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-          const SizedBox(height: 32),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white24),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.menu_book, color: Color(0xFFFFD700)),
-                    SizedBox(width: 8),
-                    Text(
-                      'Thông Điệp Từ Tarot',
-                      style: TextStyle(
-                        color: Color(0xFFFFD700),
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 16),
-                MarkdownBody(
-                  data: result.narrative,
-                  styleSheet: MarkdownStyleSheet(
-                    p: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
-                    h1: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                    h2: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                    h3: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                    listBullet: const TextStyle(color: Colors.white),
-                    strong: const TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
-                  ),
+                child: const Icon(Icons.auto_awesome, color: Color(0xFFFFD700), size: 24),
+              ),
+              const SizedBox(width: 16),
+              const Text(
+                'Lời Giải Mã',
+                style: TextStyle(
+                  color: Color(0xFFFFD700),
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
                 ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          MarkdownBody(
+            data: narrative,
+            styleSheet: MarkdownStyleSheet(
+              p: const TextStyle(color: Colors.white, fontSize: 17, height: 1.6, letterSpacing: 0.3),
+              h1: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+              h2: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              h3: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              listBullet: const TextStyle(color: Color(0xFFFFD700)),
+              strong: const TextStyle(color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
             ),
           ),
         ],

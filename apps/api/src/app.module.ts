@@ -11,6 +11,7 @@ import { ConversationsModule } from './modules/conversations/conversations.modul
 import { DivinationsModule } from './modules/divinations/divinations.module';
 import { ExplanationsModule } from './modules/explanations/explanations.module';
 import { DrawsTarotModule } from './modules/draws-tarot/draws-tarot.module';
+import { NumerologyModule } from './modules/numerology/numerology.module';
 import { DrawsLenormandModule } from './modules/draws-lenormand/draws-lenormand.module';
 import { DreamsModule } from './modules/dreams/dreams.module';
 import { DrawsSticksModule } from './modules/draws-sticks/draws-sticks.module';
@@ -35,7 +36,7 @@ import { WalletModule } from './modules/wallet/wallet.module';
       limit: 10,
     }]),
     DatabaseModule,
-    WalletModule, AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsTarotModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule, ShareModule, AdminModule, RewardsModule
+    WalletModule, AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsTarotModule, NumerologyModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule, ShareModule, AdminModule, RewardsModule
   ],
   providers: [
     {

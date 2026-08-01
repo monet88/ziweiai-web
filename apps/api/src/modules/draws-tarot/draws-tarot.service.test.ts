@@ -8,6 +8,7 @@ import type { ExplanationProviderRouter } from '../../providers/ai/explanation-p
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
 import type { QuotasService } from '../quotas/quotas.service';
 import { DrawsTarotService } from './draws-tarot.service';
+import { AiFeatureExecutionOrchestrator } from '../../providers/ai/ai-feature-execution.orchestrator';
 
 function expectApiError(error: unknown, status: HttpStatus, code: string): void {
   expect(error).toBeInstanceOf(ApiErrorHttpException);
@@ -40,10 +41,17 @@ describe('DrawsTarotService', () => {
         providerMetadata: { provider: 'mock' },
       }),
     };
-    service = new DrawsTarotService(
+    const orchestrator = new AiFeatureExecutionOrchestrator(
       quotasService as QuotasService,
       providerRouter as ExplanationProviderRouter,
       walletEngine as WalletEngineService
+    );
+    const tarotGroundingAdapter = {
+      getGroundingContext: vi.fn().mockResolvedValue('Grounding context for Celtic Cross'), // mock resolve for tests
+    };
+    service = new DrawsTarotService(
+      orchestrator,
+      tarotGroundingAdapter as any
     );
   });
 

@@ -206,6 +206,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.calculate),
+                    label: const Text('Thần Số Học'),
+                    onPressed: () => context.push('/numerology'),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

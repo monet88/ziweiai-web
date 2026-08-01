@@ -8,6 +8,7 @@ import '../../features/vision/presentation/vision_input_screen.dart';
 import '../../features/vision/presentation/vision_result_screen.dart';
 import '../../features/vision/data/models/vision_kind.dart';
 import '../../features/tarot/presentation/tarot_screen.dart';
+import '../../features/numerology/presentation/numerology_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -47,6 +48,10 @@ final appRouter = GoRouter(
         final result = state.extra as Map<String, dynamic>;
         return VisionResultScreen(result: result);
       },
+    ),
+    GoRoute(
+      path: '/numerology',
+      builder: (context, state) => const NumerologyScreen(),
     ),
   ],
 );

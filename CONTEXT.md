@@ -4,7 +4,7 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 
 > **LƯU Ý BẢO MẬT QUAN TRỌNG:** Toàn bộ các biến môi trường (environment variables) dùng cho GitHub, Vercel, Supabase, AI Providers v.v... bắt buộc phải đặt tại `/Users/gray/Documents/bydone/tuvinew/ziweiai-web/.env.local`. File này tuyệt đối KHÔNG được push lên git để đảm bảo an toàn.
 
-## 🚀 Các tính năng đã hoàn thiện (Cập nhật: 29/07/2026)
+## 🚀 Các tính năng đã hoàn thiện (Cập nhật: 01/08/2026)
 
 1. **Luồng sản phẩm cốt lõi (Core Flow)**
    - Khởi tạo lá số Tử Vi, gieo quẻ.
@@ -39,13 +39,27 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
    - **Banner Cảnh báo Số dư Thấp**: Đã tích hợp `WalletModel` vào màn hình Lịch sử (Dashboard). Tự động hiển thị banner cảnh báo và điều hướng nạp XU khi số dư dưới 15 XU.
    - **Báo Cáo Vận Hạn Năm**: Đã kiểm tra sẵn sàng phát hành công chúng (thông qua flag `AI_ANNUAL_REPORT_ENABLED`).
 
-4. **Tính năng Đọc bài Tarot (1-Card Draw)**
+8. **Tính năng Đọc bài Tarot (1-Card Draw)**
    - **Phạm vi (Scope):** Trải 1 lá bài (V1) trên ứng dụng Mobile.
    - **Thu phí (Monetization):** Trừ 2 XU/lần rút (tích hợp chặt chẽ với Wallet History và hệ thống báo lỗi 402/403).
    - **Prompt Engineering:** Sử dụng dữ liệu mỏ neo (Grounding) với bộ từ khóa tĩnh cho 78 lá bài để ổn định chất lượng phản hồi từ Gemini LLM.
 
+9. **Tính năng Thần Số Học (Numerology)**
+   - **Phạm vi:** Tính toán 4 chỉ số cốt lõi (Đường đời, Sứ mệnh, Linh hồn, Nhân cách) theo Pythagoras.
+   - **Client-side:** Tính toán offline và hiển thị lưới kết quả trên Mobile app. Tích hợp trực tiếp vào màn hình HomeScreen.
+   - **Thu phí & AI (Monetization & API):** Endpoint `/numerology/explain` trừ 10 XU, gọi AI provider trả về luồng luận giải chuyên sâu bằng Tiếng Việt. Đã tích hợp MonetizationGuard trên Flutter.
+
+10. **Tái Cấu Trúc Kiến Trúc (Architecture Refactoring)**
+    - Đã rút trích thành công `AiFeatureExecutionOrchestrator` (Deepen the AI Feature Execution Seam).
+    - Gom toàn bộ logic kiểm tra Quota, trừ XU (Wallet) và xử lý lỗi Fallback từ AI vào một nơi duy nhất.
+    - Đã decoupling hoàn toàn `DrawsTarotService` và `NumerologyService` khỏi hạ tầng Payment/Quota.
+
 ## ⏳ Đang triển khai (In Progress)
-- Hiện tại nhánh `feat/tarot-reading` đã hoàn thành, chuẩn bị merge hoặc chuyển qua tính năng mới.
+- Hiện chưa có tính năng lớn nào đang triển khai.
 
 ## ⏳ Các tính năng CHƯA LÀM (Pending Tasks)
 - Tiếp tục phát triển các tính năng chia sẻ, SEO mở rộng hoặc các công cụ phân tích khác (nếu cần).
+- Cập nhật phiên bản Thần Số Học và Tarot cho ứng dụng Web (SvelteKit).
+
+## 🛡️ Quy Tắc Phát Triển Mới (Development Rules)
+- Mọi tính năng lớn mới (hoặc tái cấu trúc cốt lõi) bắt buộc phải rẽ nhánh (new branch) và tạo Pull Request (PR) để dễ dàng theo dõi, đề phòng rủi ro và dễ dàng backup/restore/rollback. Các lỗi nhỏ hoặc docs update có thể làm trực tiếp nếu không rủi ro.

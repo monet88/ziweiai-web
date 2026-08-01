@@ -6,9 +6,11 @@ import { WalletModule } from '../wallet/wallet.module';
 import { DrawsTarotController } from './draws-tarot.controller';
 import { DrawsTarotService } from './draws-tarot.service';
 
+import { TarotGroundingAdapter } from './adapters/tarot-grounding.adapter';
+
 @Module({
   imports: [DatabaseModule, QuotasModule, WalletModule, AiProvidersModule],
   controllers: [DrawsTarotController],
-  providers: [DrawsTarotService],
+  providers: [DrawsTarotService, TarotGroundingAdapter],
 })
 export class DrawsTarotModule {}

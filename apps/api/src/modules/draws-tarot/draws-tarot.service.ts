@@ -16,6 +16,8 @@ import { WalletEngineService } from '../wallet/wallet-engine.service';
 import { drawDeterministic, type TarotCardDraw } from './tarot-deck';
 import { buildTarotReadingPrompt, SPREAD_LABELS_VI } from './tarot-prompts';
 
+import { TarotGroundingAdapter } from './adapters/tarot-grounding.adapter';
+
 @Injectable()
 export class DrawsTarotService {
   private readonly logger = new Logger(DrawsTarotService.name);
@@ -24,6 +26,7 @@ export class DrawsTarotService {
     private readonly quotasService: QuotasService,
     private readonly providerRouter: ExplanationProviderRouter,
     private readonly walletEngine: WalletEngineService,
+    private readonly tarotGroundingAdapter: TarotGroundingAdapter,
   ) {}
 
   async drawTarot(
@@ -115,9 +118,15 @@ export class DrawsTarotService {
     spread: TarotSpread,
   ): Promise<string> {
     try {
+      const promptOverride = await this.tarotGroundingAdapter.getGroundingContext({
+        question,
+        spread,
+        cards,
+      });
+
       const providerResult = await this.providerRouter.generate('auto', {
         explanationKind: 'tarot-reading',
-        promptOverride: buildTarotReadingPrompt(question, spread, cards),
+        promptOverride,
       });
       // Chốt sớm payload provider: nếu null/thiếu renderedMarkdown hợp lệ → ném
       // ProviderUnavailableError để rơi về template tiếng Việt, tránh trả narrative

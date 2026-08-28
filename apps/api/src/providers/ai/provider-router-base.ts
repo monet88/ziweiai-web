@@ -1,7 +1,8 @@
 import { type ProviderPreference } from '@ziweiai/contracts';
 import { apiEnv } from '../../config/env';
+import { reportOpsAlert } from '../../observability/ops-alert';
 import type { AiExplanationProvider } from './ai-explanation-provider';
-import { ProviderUnavailableError } from './provider-errors';
+import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
 
 // CJK guard (nội dung không hợp lệ) KHÔNG được failover: nếu một provider đã trả chữ Hán thì
 // thử provider kế cũng dễ tốn quota kép cho cùng lỗi. Rethrow ngay (fix suggestion review PR #5).
@@ -57,7 +58,8 @@ export abstract class ProviderRouterBase<P extends AiExplanationProvider> {
   protected async runFailoverChain<R>(providers: P[], call: (provider: P) => Promise<R>): Promise<R> {
     let lastError: Error | null = null;
 
-    for (const provider of providers) {
+    for (let i = 0; i < providers.length; i += 1) {
+      const provider = providers[i];
       if (!provider.isAvailable()) {
         continue;
       }
@@ -68,6 +70,31 @@ export abstract class ProviderRouterBase<P extends AiExplanationProvider> {
         lastError = error instanceof Error ? error : new Error('Provider call failed.');
         if (error instanceof ProviderUnavailableError && CJK_GUARD_PATTERN.test(error.message)) {
           throw error;
+        }
+
+        // Kiểm tra xem có provider dự phòng kế tiếp trong chain không
+        const nextProvider = providers.slice(i + 1).find((p) => p.isAvailable());
+        if (nextProvider) {
+          const errMsg = error instanceof Error ? error.message : String(error);
+          const is429 = /429|quota|rate limit|resource has been exhausted|resource_exhausted/i.test(errMsg);
+          const isTimeout =
+            error instanceof ProviderTimeoutError ||
+            /timeout|timed out|abort/i.test(errMsg) ||
+            (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError'));
+
+          void reportOpsAlert({
+            level: 'warning',
+            code: 'AI_FALLBACK_ALERT',
+            message: `AI Provider [${provider.providerName}] gặp sự cố (${is429 ? '429/Quota' : isTimeout ? 'Timeout' : 'Lỗi'}), tự động fallback sang [${nextProvider.providerName}].`,
+            status: is429 ? 429 : isTimeout ? 504 : 502,
+            tags: {
+              from_provider: provider.providerName,
+              to_provider: nextProvider.providerName,
+              error_type: is429 ? 'RATE_LIMIT_429' : isTimeout ? 'TIMEOUT' : 'UNAVAILABLE',
+              reason: errMsg.slice(0, 150),
+            },
+            cause: error,
+          });
         }
       }
     }

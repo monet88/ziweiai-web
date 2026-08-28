@@ -109,6 +109,7 @@
   }
 
   onMount(() => {
+    walletModel.subscribe();
     // Auto-polling every 5s while wallet page is active
     const interval = setInterval(() => {
       if (browser && auth.user && !auth.isAnonymous) {
@@ -117,6 +118,7 @@
     }, 5000);
 
     return () => {
+      walletModel.unsubscribe();
       clearInterval(interval);
     };
   });

@@ -2,12 +2,13 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import type { PageData } from './$types';
+  import { BarChart3, Users, Coins, TrendingDown, TrendingUp, Sparkles, Filter, X, Calendar } from 'lucide-svelte';
 
-  export let data: PageData;
-  $: analytics = data.analytics;
+  let { data }: { data: PageData } = $props();
+  let analytics = $derived(data.analytics);
 
-  let startDate = $page.url.searchParams.get('startDate') || '';
-  let endDate = $page.url.searchParams.get('endDate') || '';
+  let startDate = $state($page.url.searchParams.get('startDate') || '');
+  let endDate = $state($page.url.searchParams.get('endDate') || '');
 
   function applyFilters() {
     const url = new URL($page.url);
@@ -31,187 +32,199 @@
 </script>
 
 <svelte:head>
-  <title>Thống kê - Admin Tử Vi Toàn Tập</title>
+  <title>Thống kê AI & Số Dư XU - Admin ViOS</title>
 </svelte:head>
 
+<div class="analytics-page">
+  <!-- Filter Toolbar -->
+  <div class="filter-glass-bar">
+    <div class="filter-inputs">
+      <div class="filter-group">
+        <label for="startDate" class="filter-label">
+          <Calendar size={13} />
+          <span>Từ ngày:</span>
+        </label>
+        <input type="date" id="startDate" class="filter-input" bind:value={startDate} />
+      </div>
 
+      <div class="filter-group">
+        <label for="endDate" class="filter-label">
+          <Calendar size={13} />
+          <span>Đến ngày:</span>
+        </label>
+        <input type="date" id="endDate" class="filter-input" bind:value={endDate} />
+      </div>
+    </div>
 
-<div class="filter-bar">
-  <div class="filter-group">
-    <label for="startDate" class="filter-label">Từ ngày:</label>
-    <input type="date" id="startDate" class="filter-input" bind:value={startDate} />
+    <div class="filter-actions">
+      <button class="btn btn-filter" onclick={applyFilters}>
+        <Filter size={14} />
+        <span>Lọc Báo Cáo</span>
+      </button>
+      {#if startDate || endDate}
+        <button class="btn btn-clear-filter" onclick={clearFilters}>
+          <X size={14} />
+          <span>Xóa Lọc</span>
+        </button>
+      {/if}
+    </div>
   </div>
 
-  <div class="filter-group">
-    <label for="endDate" class="filter-label">Đến ngày:</label>
-    <input type="date" id="endDate" class="filter-input" bind:value={endDate} />
-  </div>
+  {#if !analytics}
+    <div class="alert-error">
+      <strong>Lỗi tải dữ liệu:</strong> Không thể lấy dữ liệu thống kê từ máy chủ.
+    </div>
+  {:else}
+    <!-- Top 3 Key KPI Cards -->
+    <div class="stats-grid">
+      <div class="stat-hud-card">
+        <div class="stat-top">
+          <span class="stat-label">Tổng Người Dùng</span>
+          <div class="stat-icon icon-blue">
+            <Users size={18} />
+          </div>
+        </div>
+        <div class="stat-value">{analytics.total_users.toLocaleString('vi-VN')}</div>
+        <div class="stat-sub">Thành viên hệ thống ViOS</div>
+      </div>
 
-  <div class="filter-actions">
-    <button class="btn btn-primary" onclick={applyFilters}>Lọc</button>
-    <button class="btn btn-outline" onclick={clearFilters}>Xoá</button>
-  </div>
+      <div class="stat-hud-card">
+        <div class="stat-top">
+          <span class="stat-label">XU Nạp (Trong Kỳ)</span>
+          <div class="stat-icon icon-gold">
+            <TrendingUp size={18} />
+          </div>
+        </div>
+        <div class="stat-value text-gold">+{analytics.total_xu_topup.toLocaleString('vi-VN')} XU</div>
+        <div class="stat-sub">Dòng tiền nạp qua SePay / IAP</div>
+      </div>
+
+      <div class="stat-hud-card">
+        <div class="stat-top">
+          <span class="stat-label">XU Tiêu Thụ (Trong Kỳ)</span>
+          <div class="stat-icon icon-purple">
+            <TrendingDown size={18} />
+          </div>
+        </div>
+        <div class="stat-value text-purple">-{analytics.total_xu_consumed.toLocaleString('vi-VN')} XU</div>
+        <div class="stat-sub">Sử dụng cho tính năng AI luận giải</div>
+      </div>
+    </div>
+
+    <!-- Feature Usage Distribution -->
+    {#if analytics.feature_usage && analytics.feature_usage.length > 0}
+      <div class="section-container">
+        <div class="section-header">
+          <Sparkles size={18} class="section-icon text-gold" />
+          <h2 class="section-title">Tiêu Thụ XU Theo Tính Năng AI</h2>
+        </div>
+        <div class="feature-usage-grid">
+          {#each analytics.feature_usage as feature (feature.feature)}
+            <div class="feature-card">
+              <div class="feature-name">
+                {#if feature.feature === 'ai_usage'}
+                  Giải mã AI Tử Vi
+                {:else if feature.feature === 'vision_tarot'}
+                  Tarot AI Trải Bài
+                {:else if feature.feature === 'vision_face'}
+                  Xem Tướng Mặt AI
+                {:else if feature.feature === 'vision_palm'}
+                  Xem Chỉ Tay AI
+                {:else if feature.feature === 'numerology_ai'}
+                  Thần Số Học AI
+                {:else}
+                  {feature.feature}
+                {/if}
+              </div>
+              <div class="feature-value">
+                <Coins size={14} class="text-gold" />
+                <span>{feature.consumed.toLocaleString('vi-VN')} XU</span>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+
+    <!-- 30-Day Daily Trends Table -->
+    <div class="section-container">
+      <div class="section-header">
+        <BarChart3 size={18} class="section-icon text-purple" />
+        <h2 class="section-title">Biến Động Dòng Tiền & Người Dùng (30 Ngày)</h2>
+      </div>
+
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ngày</th>
+              <th class="align-right">Đăng Ký Mới</th>
+              <th class="align-right">XU Nạp</th>
+              <th class="align-right">XU Tiêu Thụ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each analytics.daily_stats as stat (stat.date)}
+              <tr class="data-row">
+                <td class="primary-cell">
+                  <span class="date-tag">{stat.date}</span>
+                </td>
+                <td class="align-right secondary-cell">
+                  <span class="num-badge">+{stat.new_users}</span>
+                </td>
+                <td class="align-right text-success">
+                  <strong>+{(stat.xu_topup ?? 0).toLocaleString('vi-VN')}</strong>
+                </td>
+                <td class="align-right text-warning">
+                  <strong>-{(stat.xu_consumed ?? 0).toLocaleString('vi-VN')}</strong>
+                </td>
+              </tr>
+            {/each}
+            {#if analytics.daily_stats.length === 0}
+              <tr>
+                <td colspan="4" class="empty-cell">Không có dữ liệu trong khoảng thời gian đã chọn.</td>
+              </tr>
+            {/if}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {/if}
 </div>
 
-{#if !analytics}
-  <div class="alert alert-danger">
-    <div class="alert-content">
-      <h3 class="alert-title">Lỗi tải dữ liệu</h3>
-      <p class="alert-desc">Không thể lấy dữ liệu thống kê từ máy chủ.</p>
-    </div>
-  </div>
-{:else}
-  <div class="stats-grid">
-    <!-- Total Users -->
-    <div class="stat-card">
-      <dt class="stat-label">Tổng người dùng</dt>
-      <dd class="stat-value text-primary">{analytics.total_users}</dd>
-    </div>
-
-    <!-- Total XU Topup -->
-    <div class="stat-card">
-      <dt class="stat-label">XU nạp (trong kỳ)</dt>
-      <dd class="stat-value text-success">{analytics.total_xu_topup}</dd>
-    </div>
-
-    <!-- Total XU Consumed -->
-    <div class="stat-card">
-      <dt class="stat-label">XU tiêu (trong kỳ)</dt>
-      <dd class="stat-value text-warning">{analytics.total_xu_consumed}</dd>
-    </div>
-  </div>
-
-  {#if analytics.feature_usage && analytics.feature_usage.length > 0}
-  <div class="table-section">
-    <h2 class="section-title">Tiêu thụ XU theo tính năng</h2>
-    <div class="feature-usage-grid">
-      {#each analytics.feature_usage as feature (feature.feature)}
-        <div class="feature-card">
-          <div class="feature-name">
-            {#if feature.feature === 'ai_usage'}
-              Giải mã AI (Tử Vi)
-            {:else if feature.feature === 'vision_tarot'}
-              Tarot AI
-            {:else if feature.feature === 'vision_face'}
-              Xem Tướng Mặt AI
-            {:else if feature.feature === 'vision_palm'}
-              Chỉ Tay AI
-            {:else}
-              {feature.feature}
-            {/if}
-          </div>
-          <div class="feature-value">{feature.consumed} XU</div>
-        </div>
-      {/each}
-    </div>
-  </div>
-  {/if}
-
-  <div class="table-section">
-    <h2 class="section-title">Biến động 30 ngày gần nhất</h2>
-    <div class="data-table-container">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Ngày</th>
-            <th class="align-right">Đăng ký mới</th>
-            <th class="align-right">XU Nạp</th>
-            <th class="align-right">XU Tiêu Thụ</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each analytics.daily_stats as stat (stat.date)}
-            <tr>
-              <td class="primary-cell">{stat.date}</td>
-              <td class="align-right secondary-cell">{stat.new_users}</td>
-              <td class="align-right text-success font-medium">+{stat.xu_topup}</td>
-              <td class="align-right text-warning font-medium">-{stat.xu_consumed}</td>
-            </tr>
-          {/each}
-          {#if analytics.daily_stats.length === 0}
-            <tr>
-              <td colspan="4" class="empty-cell">Không có dữ liệu trong 30 ngày qua.</td>
-            </tr>
-          {/if}
-        </tbody>
-      </table>
-    </div>
-  </div>
-{/if}
-
 <style>
-  .alert {
-    background: #fde8e8;
-    border-radius: var(--radius-md);
-    padding: var(--space-md);
-    margin-top: var(--space-lg);
-    display: flex;
-  }
-
-  .alert-danger {
-    color: var(--color-accent-danger);
-  }
-
-  .alert-title {
-    font-size: var(--text-body-sm);
-    font-weight: 600;
-    margin: 0;
-  }
-
-  .alert-desc {
-    margin: var(--space-xs) 0 0 0;
-    font-size: var(--text-body-sm);
-    color: #9a3a3a;
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--space-md);
-    margin-bottom: var(--space-xl);
-  }
-
-  .feature-usage-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: var(--space-sm);
-  }
-
-  .feature-card {
-    background: var(--color-bg-surface);
-    border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-md);
-    padding: var(--space-md);
+  .analytics-page {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: var(--space-xl);
+  }
+
+  /* Filter Toolbar */
+  .filter-glass-bar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--overlay-border);
+    border-radius: var(--radius-lg);
     box-shadow: var(--shadow-card);
   }
 
-  .feature-name {
-    font-size: var(--text-body-sm);
-    color: var(--color-text-secondary);
-    margin-bottom: var(--space-xs);
-    text-align: center;
+  @media (min-width: 768px) {
+    .filter-glass-bar {
+      flex-direction: row;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
   }
 
-  .feature-value {
-    font-size: var(--text-heading-3);
-    font-weight: 700;
-    color: var(--color-text-primary);
-  }
-
-  .filter-bar {
+  .filter-inputs {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-md);
-    margin-bottom: var(--space-lg);
-    background: var(--color-bg-surface);
-    padding: var(--space-md);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border-hairline);
-    box-shadow: var(--shadow-card);
-    align-items: flex-end;
   }
 
   .filter-group {
@@ -221,167 +234,304 @@
   }
 
   .filter-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: var(--text-caption);
-    font-weight: 500;
+    font-weight: 600;
     color: var(--color-text-secondary);
   }
 
   .filter-input {
-    padding: var(--space-sm) var(--space-md);
-    border: 1px solid var(--color-border-strong);
+    padding: 8px 12px;
     border-radius: var(--radius-md);
-    font-size: var(--text-body-sm);
-    font-family: inherit;
-    background: var(--color-bg-surface);
+    background: var(--color-bg-primary);
+    border: 1px solid var(--overlay-border-strong);
     color: var(--color-text-primary);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .filter-input:focus {
+    border-color: var(--color-accent-primary);
   }
 
   .filter-actions {
     display: flex;
-    gap: var(--space-sm);
+    gap: var(--space-xs);
   }
 
   .btn {
-    padding: var(--space-sm) var(--space-md);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
     border-radius: var(--radius-md);
-    font-size: var(--text-body-sm);
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
-    font-family: inherit;
-    border: 1px solid transparent;
+    border: none;
+    transition: all 0.2s ease;
   }
 
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .btn-primary {
+  .btn-filter {
     background: var(--color-accent-primary);
     color: var(--color-text-on-primary);
   }
 
-  .btn-outline {
+  .btn-filter:hover {
+    background: var(--color-accent-primary-pressed);
+    transform: translateY(-1px);
+  }
+
+  .btn-clear-filter {
     background: transparent;
-    border-color: var(--color-border-strong);
+    border: 1px solid var(--overlay-border-strong);
+    color: var(--color-text-secondary);
+  }
+
+  .btn-clear-filter:hover {
+    background: var(--overlay-ink-wash);
     color: var(--color-text-primary);
+  }
+
+  /* Stat HUD Cards */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: var(--space-md);
   }
 
   @media (min-width: 640px) {
     .stats-grid {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 
-  .stat-card {
-    background: var(--color-bg-surface);
+  .stat-hud-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-lg);
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px) saturate(170%);
+    -webkit-backdrop-filter: blur(18px) saturate(170%);
+    border: 1px solid var(--overlay-border);
     border-radius: var(--radius-lg);
-    padding: var(--space-xl) var(--space-lg);
-    box-shadow: var(--shadow-card);
-    border: 1px solid var(--color-border-hairline);
-    overflow: hidden;
+    box-shadow: var(--shadow-card), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .stat-hud-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--overlay-border-strong);
+  }
+
+  .stat-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .stat-label {
-    font-size: var(--text-caption);
-    font-weight: 500;
-    color: var(--color-text-secondary);
+    font-size: var(--text-eyebrow);
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: var(--tracking-eyebrow);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: var(--color-text-muted);
+  }
+
+  .stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+  }
+
+  .icon-blue {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+  }
+
+  .icon-gold {
+    background: rgba(212, 175, 55, 0.15);
+    color: #d4af37;
+  }
+
+  .icon-purple {
+    background: rgba(192, 132, 252, 0.15);
+    color: #c084fc;
   }
 
   .stat-value {
-    margin-top: var(--space-xs);
-    font-size: var(--text-display);
-    font-family: var(--font-serif);
-    font-weight: 600;
-    line-height: 1;
-    letter-spacing: -0.02em;
+    font-family: var(--font-sans);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--color-text-primary);
+    line-height: 1.1;
   }
 
-  .text-primary { color: var(--color-text-primary); }
-  .text-success { color: var(--color-accent-green); }
-  .text-warning { color: var(--color-accent-sienna); }
-  .font-medium { font-weight: 500; }
+  .text-gold {
+    color: #d4af37;
+  }
 
-  .table-section {
-    margin-top: var(--space-xxl);
+  .text-purple {
+    color: #c084fc;
+  }
+
+  .text-success {
+    color: #10b981;
+  }
+
+  .text-warning {
+    color: #f59e0b;
+  }
+
+  .stat-sub {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
+  /* Section Containers */
+  .section-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
   }
 
   .section-title {
     font-family: var(--font-serif);
     font-size: var(--text-h3);
     color: var(--color-text-primary);
-    margin-bottom: var(--space-md);
+    margin: 0;
+    font-weight: 700;
   }
 
-  /* Table Styles */
+  /* Feature Usage Grid */
+  .feature-usage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-md);
+  }
+
+  .feature-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--glass-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--overlay-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.15s ease;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--overlay-border-strong);
+  }
+
+  .feature-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+
+  .feature-value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--color-text-primary);
+  }
+
+  /* Table */
   .data-table-container {
     width: 100%;
     overflow-x: auto;
-    background: var(--color-bg-surface);
-    border: 1px solid var(--color-border-hairline);
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px) saturate(170%);
+    -webkit-backdrop-filter: blur(18px) saturate(170%);
+    border: 1px solid var(--overlay-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-card);
   }
 
   .data-table {
     width: 100%;
-    min-width: 600px;
+    min-width: 640px;
     border-collapse: collapse;
     text-align: left;
   }
 
   .data-table th,
   .data-table td {
-    padding: var(--space-md) var(--space-lg);
-    border-bottom: 1px solid var(--color-border-hairline);
+    padding: 12px var(--space-lg);
+    border-bottom: 1px solid var(--overlay-border);
   }
 
   .data-table thead th {
-    background: var(--color-bg-elevated);
-    font-size: var(--text-caption);
-    font-weight: 600;
+    background: var(--overlay-ink-wash);
+    font-size: var(--text-eyebrow);
+    font-weight: 700;
     color: var(--color-text-secondary);
     text-transform: uppercase;
     letter-spacing: var(--tracking-eyebrow);
-    border-bottom: 2px solid var(--color-border-strong);
-  }
-
-  .data-table tbody tr {
-    transition: background-color var(--duration-fast);
-  }
-
-  .data-table tbody tr:hover {
-    background-color: var(--overlay-ink-wash);
-  }
-
-  .data-table tbody tr:last-child td {
-    border-bottom: none;
-  }
-
-  .primary-cell {
-    font-weight: 500;
-    color: var(--color-text-primary);
-    font-size: var(--text-body);
-  }
-
-  .secondary-cell {
-    color: var(--color-text-muted);
-    font-size: var(--text-body-sm);
   }
 
   .align-right {
     text-align: right;
   }
 
+  .data-row:hover {
+    background-color: var(--overlay-ink-wash);
+  }
+
+  .data-row:last-child td {
+    border-bottom: none;
+  }
+
+  .date-tag {
+    font-family: monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .num-badge {
+    background: var(--overlay-ink-wash);
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+
   .empty-cell {
     text-align: center;
-    padding: var(--space-xxl) !important;
+    padding: 32px !important;
     color: var(--color-text-muted);
-    font-size: var(--text-body);
+    font-size: 14px;
+  }
+
+  .alert-error {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    font-size: 14px;
   }
 </style>

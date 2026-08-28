@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import * as opsAlert from '../../observability/ops-alert';
 import { ExplanationProviderRouter } from './explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
 
@@ -216,5 +217,39 @@ describe('ExplanationProviderRouter', () => {
 
     expect((gemini as { generateExplanation: ReturnType<typeof vi.fn> }).generateExplanation).toHaveBeenCalledTimes(1);
     expect((openAiCompat as { generateExplanation: ReturnType<typeof vi.fn> }).generateExplanation).not.toHaveBeenCalled();
+  });
+
+  it('emits AI_FALLBACK_ALERT ops alert when Gemini fails with 429/timeout and falls back to openai-compat', async () => {
+    opsAlert.resetOpsAlertThrottleForTests();
+    const reportOpsAlertSpy = vi.spyOn(opsAlert, 'reportOpsAlert').mockResolvedValue(undefined);
+    const gemini = mockProvider({
+      name: 'gemini',
+      rejectWith: new ProviderUnavailableError('Gemini 429: Resource has been exhausted (rate limit)'),
+    });
+    const openAiCompat = mockProvider({ name: 'openai-compat', text: 'openai fallback narrative' });
+    const router = new ExplanationProviderRouter(
+      mockProvider({ name: 'deepseek', text: 'deepseek fallback' }),
+      openAiCompat,
+      gemini,
+    );
+
+    const result = await router.generate('auto', {
+      explanationKind: 'overview',
+      promptOverride: 'luận giải',
+    });
+
+    expect(result.renderedMarkdown).toBe('openai fallback narrative');
+    expect(reportOpsAlertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'warning',
+        code: 'AI_FALLBACK_ALERT',
+        status: 429,
+        tags: expect.objectContaining({
+          from_provider: 'gemini',
+          to_provider: 'openai-compat',
+          error_type: 'RATE_LIMIT_429',
+        }),
+      }),
+    );
   });
 });

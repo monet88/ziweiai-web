@@ -10,7 +10,7 @@ import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
 import { AiFeatureExecutionOrchestrator } from '../../providers/ai/ai-feature-execution.orchestrator';
 import { drawDeterministic, type TarotCardDraw } from './tarot-deck';
-import { buildTarotReadingPrompt, SPREAD_LABELS_VI } from './tarot-prompts';
+import { SPREAD_LABELS_VI } from './tarot-prompts';
 
 import { TarotGroundingAdapter } from './adapters/tarot-grounding.adapter';
 

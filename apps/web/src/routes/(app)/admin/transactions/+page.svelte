@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { AppScaffold, PrimaryButton, NoticeBanner } from '$lib/components/ui';
+  import { NoticeBanner } from '$lib/components/ui';
   import { toast } from '$lib/stores/toast';
+  import { ArrowLeftRight, RefreshCw, Search, CheckCircle2, AlertTriangle, Coins, ShieldCheck, UserCheck, X, Link } from 'lucide-svelte';
 
   interface Transaction {
     id: string;
@@ -17,10 +18,26 @@
   let transactions = $state<Transaction[]>([]);
   let isLoading = $state(true);
   let errorMessage = $state<string | null>(null);
+  let searchQuery = $state('');
 
   let targetTxId = $state<string | null>(null);
   let targetUserIdInput = $state('');
   let isReconciling = $state(false);
+
+  let filteredTransactions = $derived(
+    transactions.filter((tx) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      const idMatch = tx.id.toLowerCase().includes(q);
+      const sepayMatch = tx.sepay_transaction_id ? tx.sepay_transaction_id.toLowerCase().includes(q) : false;
+      const userMatch = tx.owner_user_id ? tx.owner_user_id.toLowerCase().includes(q) : false;
+      return idMatch || sepayMatch || userMatch;
+    })
+  );
+
+  let totalVnd = $derived(transactions.reduce((sum, tx) => sum + (tx.amount_vnd || 0), 0));
+  let totalXuAdded = $derived(transactions.reduce((sum, tx) => sum + (tx.xu_added || 0), 0));
+  let unmatchedCount = $derived(transactions.filter((tx) => !tx.owner_user_id).length);
 
   async function loadTransactions() {
     isLoading = true;
@@ -84,253 +101,729 @@
 </script>
 
 <svelte:head>
-  <title>Admin - Tra Cứu Giao Dịch | Tử Vi Toàn Tập</title>
+  <title>Admin - Tra Cứu Giao Dịch SePay | ViOS</title>
 </svelte:head>
 
-<AppScaffold
-  title="Tra Cứu & Gán Giao Dịch SePay"
-  subtitle="Quản lý các giao dịch nạp tiền, hỗ trợ gán XU thủ công khi user gõ sai cú pháp chuyển khoản"
-  tone="mystical"
->
-  <div class="admin-page">
-    <div class="actions-bar">
-      <PrimaryButton label="Tải lại danh sách" onclick={loadTransactions} disabled={isLoading} />
+<div class="transactions-page">
+  <!-- Highlights Stat Grid -->
+  <div class="tx-stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon-wrap icon-gold">
+        <Coins size={20} />
+      </div>
+      <div class="stat-info">
+        <span class="stat-title">Doanh Thu SePay</span>
+        <strong class="stat-num">{totalVnd.toLocaleString('vi-VN')} đ</strong>
+      </div>
     </div>
 
-    {#if errorMessage}
-      <NoticeBanner tone="danger" message={errorMessage} />
-    {/if}
-
-    {#if isLoading}
-      <p class="loading">Đang tải danh sách giao dịch...</p>
-    {:else if transactions.length === 0}
-      <p class="empty">Chưa có giao dịch nào.</p>
-    {:else}
-      <div class="table-wrapper surface-glass">
-        <table class="tx-table">
-          <thead>
-            <tr>
-              <th>ID Giao Dịch</th>
-              <th>Mã SePay</th>
-              <th>Số tiền (VNĐ)</th>
-              <th>XU Quy Đổi</th>
-              <th>User ID</th>
-              <th>Ngày Tạo</th>
-              <th>Hành Động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each transactions as tx (tx.id)}
-              <tr class:unmatched={!tx.owner_user_id}>
-                <td class="code">{tx.id.slice(0, 8)}...</td>
-                <td>{tx.sepay_transaction_id ?? '-'}</td>
-                <td>{tx.amount_vnd?.toLocaleString('vi-VN')} đ</td>
-                <td class="xu">+{tx.xu_added} XU</td>
-                <td>
-                  {#if tx.owner_user_id}
-                    <span class="user-id">{tx.owner_user_id.slice(0, 8)}...</span>
-                  {:else}
-                    <span class="badge-unmatched">Chưa Gán</span>
-                  {/if}
-                </td>
-                <td>{new Date(tx.created_at).toLocaleString('vi-VN')}</td>
-                <td>
-                  <button
-                    class="btn-reconcile"
-                    onclick={() => {
-                      targetTxId = tx.id;
-                      targetUserIdInput = tx.owner_user_id ?? '';
-                    }}
-                  >
-                    Gán User
-                  </button>
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
+    <div class="stat-card">
+      <div class="stat-icon-wrap icon-purple">
+        <ArrowLeftRight size={20} />
       </div>
-    {/if}
-
-    {#if targetTxId}
-      <div
-        class="modal-overlay"
-        role="presentation"
-        onclick={() => (targetTxId = null)}
-        onkeydown={(e) => {
-          if (e.key === 'Escape') targetTxId = null;
-        }}
-      >
-        <div
-          class="modal-card surface-glass"
-          role="dialog"
-          aria-modal="true"
-          tabindex="-1"
-          onclick={(e) => e.stopPropagation()}
-          onkeydown={(e) => e.stopPropagation()}
-        >
-          <h3>Gán XU Thủ Công Cho Giao Dịch</h3>
-          <p class="tx-ref">Mã giao dịch: <code>{targetTxId}</code></p>
-
-          <div class="form-group">
-            <label for="target-user-input">User ID Nhận XU:</label>
-            <input
-              id="target-user-input"
-              type="text"
-              bind:value={targetUserIdInput}
-              placeholder="Nhập UUID của user (vd: f4dcbc9c-a391-4fad-8408-e4ab7dadefe3)"
-            />
-          </div>
-
-          <div class="modal-actions">
-            <PrimaryButton label="Hủy" variant="surface" onclick={() => (targetTxId = null)} />
-            <PrimaryButton label="Cộng XU Ngay" loading={isReconciling} onclick={handleReconcile} />
-          </div>
-        </div>
+      <div class="stat-info">
+        <span class="stat-title">Tổng XU Đã Nạp</span>
+        <strong class="stat-num">+{totalXuAdded.toLocaleString('vi-VN')} XU</strong>
       </div>
-    {/if}
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrap {unmatchedCount > 0 ? 'icon-amber' : 'icon-emerald'}">
+        {#if unmatchedCount > 0}
+          <AlertTriangle size={20} />
+        {:else}
+          <CheckCircle2 size={20} />
+        {/if}
+      </div>
+      <div class="stat-info">
+        <span class="stat-title">Chờ Gán Thủ Công</span>
+        <strong class="stat-num">{unmatchedCount} GD</strong>
+      </div>
+    </div>
   </div>
-</AppScaffold>
+
+  <!-- Search & Action Toolbar -->
+  <div class="tx-toolbar">
+    <div class="search-box">
+      <Search size={16} class="search-icon" />
+      <input
+        type="text"
+        placeholder="Tìm theo mã giao dịch, SePay ID hoặc User ID..."
+        bind:value={searchQuery}
+        class="search-input"
+      />
+      {#if searchQuery}
+        <button type="button" class="btn-clear" onclick={() => (searchQuery = '')}>
+          <X size={14} />
+        </button>
+      {/if}
+    </div>
+
+    <button class="btn btn-reload" onclick={loadTransactions} disabled={isLoading}>
+      <RefreshCw size={15} class={isLoading ? 'spinning' : ''} />
+      <span>Làm mới dữ liệu</span>
+    </button>
+  </div>
+
+  {#if errorMessage}
+    <NoticeBanner tone="danger" message={errorMessage} />
+  {/if}
+
+  <!-- Data Table -->
+  <div class="data-table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID Giao Dịch</th>
+          <th>Mã SePay</th>
+          <th>Số Tiền (VNĐ)</th>
+          <th>XU Quy Đổi</th>
+          <th>Tài Khoản Nhận</th>
+          <th>Thời Gian Tạo</th>
+          <th class="actions-header">Hành Động</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#if isLoading}
+          <tr>
+            <td colspan="7" class="empty-row">
+              <RefreshCw size={20} class="spinning" style="margin: 0 auto 8px;" />
+              Đang tải danh sách giao dịch SePay...
+            </td>
+          </tr>
+        {:else if filteredTransactions.length === 0}
+          <tr>
+            <td colspan="7" class="empty-row">
+              Không tìm thấy giao dịch nào.
+            </td>
+          </tr>
+        {:else}
+          {#each filteredTransactions as tx (tx.id)}
+            <tr class="tx-row" class:unmatched-row={!tx.owner_user_id}>
+              <td class="primary-cell">
+                <code class="tx-code">{tx.id.slice(0, 8)}…</code>
+              </td>
+              <td class="secondary-cell">
+                <span class="sepay-id">{tx.sepay_transaction_id ?? '-'}</span>
+              </td>
+              <td class="amount-cell">
+                <strong>{tx.amount_vnd?.toLocaleString('vi-VN')} đ</strong>
+              </td>
+              <td class="highlight-cell">
+                <span class="xu-pill">
+                  <Coins size={13} />
+                  +{tx.xu_added} XU
+                </span>
+              </td>
+              <td class="user-cell">
+                {#if tx.owner_user_id}
+                  <span class="user-pill" title={tx.owner_user_id}>
+                    <UserCheck size={13} />
+                    {tx.owner_user_id.slice(0, 10)}…
+                  </span>
+                {:else}
+                  <span class="badge badge-unmatched">
+                    <AlertTriangle size={11} /> Chưa Gán
+                  </span>
+                {/if}
+              </td>
+              <td class="date-cell">
+                {new Date(tx.created_at).toLocaleString('vi-VN')}
+              </td>
+              <td class="actions-cell">
+                <button
+                  class="btn btn-action-reconcile"
+                  onclick={() => {
+                    targetTxId = tx.id;
+                    targetUserIdInput = tx.owner_user_id ?? '';
+                  }}
+                >
+                  <Link size={13} /> Gán User
+                </button>
+              </td>
+            </tr>
+          {/each}
+        {/if}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Reconcile with Frosted Glass -->
+{#if targetTxId}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="modal-backdrop" onclick={() => (targetTxId = null)}></div>
+  <div class="modal-wrapper">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="icon-modal">
+            <Link size={18} />
+          </div>
+          <h3 class="modal-title">Gán XU Thủ Công</h3>
+        </div>
+        <button type="button" class="btn-modal-close" onclick={() => (targetTxId = null)}>
+          <X size={16} />
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-subtitle">
+          Khắc phục khi người dùng chuyển khoản nhưng gõ sai cú pháp:
+        </p>
+        <p class="tx-ref">Mã giao dịch: <code>{targetTxId}</code></p>
+
+        <label for="target-user-input" class="form-label">User ID (UUID) nhận XU</label>
+        <input
+          id="target-user-input"
+          type="text"
+          bind:value={targetUserIdInput}
+          placeholder="Ví dụ: f4dcbc9c-a391-4fad-8408-e4ab7dadefe3"
+          class="form-input"
+        />
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick={() => (targetTxId = null)}>Hủy</button>
+        <button class="btn btn-solid-gold" onclick={handleReconcile} disabled={isReconciling}>
+          <ShieldCheck size={15} />
+          {isReconciling ? 'Đang gán...' : 'Cộng XU Ngay'}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
-  .admin-page {
+  .transactions-page {
     display: flex;
     flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  /* Stats Grid */
+  .tx-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
     gap: var(--space-md);
   }
 
-  .actions-bar {
+  @media (min-width: 640px) {
+    .tx-stats-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .stat-card {
     display: flex;
-    justify-content: flex-end;
-  }
-
-  .loading,
-  .empty {
-    color: var(--color-text-muted);
-    font-size: 14px;
-    padding: var(--space-md) 0;
-  }
-
-  .table-wrapper {
-    overflow-x: auto;
-    border-radius: var(--radius-xl);
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--overlay-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.2s ease, border-color 0.2s ease;
   }
 
-  .tx-table {
+  .stat-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--overlay-border-strong);
+  }
+
+  .stat-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+  }
+
+  .icon-gold {
+    background: rgba(212, 175, 55, 0.15);
+    color: #d4af37;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+  }
+
+  .icon-purple {
+    background: rgba(192, 132, 252, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(192, 132, 252, 0.3);
+  }
+
+  .icon-emerald {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .icon-amber {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  .stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-title {
+    font-size: var(--text-eyebrow);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    color: var(--color-text-muted);
+  }
+
+  .stat-num {
+    font-family: var(--font-sans);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--color-text-primary);
+  }
+
+  /* Toolbar */
+  .tx-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    justify-content: space-between;
+  }
+
+  @media (min-width: 768px) {
+    .tx-toolbar {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  .search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
     width: 100%;
+    max-width: 420px;
+  }
+
+  :global(.search-icon) {
+    position: absolute;
+    left: 12px;
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 8px 34px 8px 36px;
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--overlay-border);
+    color: var(--color-text-primary);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .search-input:focus {
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  }
+
+  .btn-clear {
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: padding;
+  }
+
+  .btn-reload {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+    border: 1px solid var(--overlay-border);
+    color: var(--color-text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-reload:hover:not(:disabled) {
+    background: var(--overlay-ink-wash);
+    border-color: var(--overlay-border-strong);
+  }
+
+  :global(.spinning) {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Table */
+  .data-table-container {
+    width: 100%;
+    overflow-x: auto;
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px) saturate(170%);
+    -webkit-backdrop-filter: blur(18px) saturate(170%);
+    border: 1px solid var(--overlay-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+  }
+
+  .data-table {
+    width: 100%;
+    min-width: 860px;
     border-collapse: collapse;
-    font-size: 14px;
     text-align: left;
   }
 
-  .tx-table th,
-  .tx-table td {
-    padding: 12px 16px;
+  .data-table th,
+  .data-table td {
+    padding: 14px var(--space-lg);
     border-bottom: 1px solid var(--overlay-border);
   }
 
-  .tx-table th {
+  .data-table thead th {
+    background: var(--overlay-ink-wash);
+    font-size: var(--text-eyebrow);
+    font-weight: 700;
     color: var(--color-text-secondary);
-    font-weight: 600;
-    background: rgba(255, 255, 255, 0.03);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
   }
 
-  .unmatched {
-    background: rgba(245, 158, 11, 0.05);
+  .tx-row {
+    transition: background-color var(--duration-fast) ease;
   }
 
-  .code {
+  .tx-row:hover {
+    background-color: var(--overlay-ink-wash);
+  }
+
+  .unmatched-row {
+    background-color: rgba(245, 158, 11, 0.04);
+  }
+
+  .tx-row:last-child td {
+    border-bottom: none;
+  }
+
+  .tx-code {
     font-family: monospace;
     font-size: 12px;
+    background: var(--overlay-ink-wash);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--color-text-primary);
   }
 
-  .xu {
-    color: var(--color-gold-400, #f59e0b);
-    font-weight: 600;
+  .sepay-id {
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+
+  .amount-cell {
+    font-size: 14px;
+    color: var(--color-text-primary);
+  }
+
+  .xu-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    background: rgba(212, 175, 55, 0.12);
+    color: #d4af37;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .user-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    background: var(--overlay-ink-wash);
+    border: 1px solid var(--overlay-border);
+    font-size: 12px;
+    font-family: monospace;
+    color: var(--color-text-secondary);
   }
 
   .badge-unmatched {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     padding: 2px 8px;
-    border-radius: 6px;
-    background: rgba(239, 68, 68, 0.2);
-    color: #fca5a5;
-    font-size: 12px;
+    border-radius: var(--radius-pill);
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
   }
 
-  .btn-reconcile {
-    background: var(--color-bg-surface);
-    border: 1px solid var(--overlay-border);
-    color: var(--color-text-primary);
-    padding: 4px 10px;
-    border-radius: 6px;
+  .date-cell {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  .actions-header {
+    text-align: right;
+  }
+
+  .actions-cell {
+    text-align: right;
+  }
+
+  .btn-action-reconcile {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: var(--radius-sm);
+    background: rgba(212, 175, 55, 0.12);
+    color: #d4af37;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
-    font-size: 12px;
+    transition: all 0.15s ease;
   }
 
-  .btn-reconcile:hover {
-    border-color: var(--color-gold-400, #f59e0b);
+  .btn-action-reconcile:hover {
+    background: rgba(212, 175, 55, 0.25);
+    transform: translateY(-1px);
   }
 
-  .modal-overlay {
+  .empty-row {
+    text-align: center;
+    padding: 36px !important;
+    color: var(--color-text-muted);
+    font-size: 14px;
+  }
+
+  /* Modal */
+  .modal-backdrop {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 90;
+    animation: fadeIn var(--duration-fast);
+  }
+
+  .modal-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    padding: var(--space-lg);
+    pointer-events: none;
   }
 
-  .modal-card {
+  .modal-dialog {
+    background: var(--color-bg-surface);
+    border: 1px solid var(--overlay-border-strong);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
     width: 100%;
     max-width: 480px;
-    padding: var(--space-xl);
-    border-radius: var(--radius-xl);
-    border: 1px solid var(--overlay-border);
-    background: var(--color-bg-surface);
+    pointer-events: auto;
+    animation: slideUp var(--duration-fast);
+    overflow: hidden;
   }
 
-  .modal-card h3 {
-    margin-top: 0;
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-lg) var(--space-lg) var(--space-md);
+    border-bottom: 1px solid var(--overlay-border);
+  }
+
+  .modal-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .icon-modal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: rgba(212, 175, 55, 0.15);
+    color: #d4af37;
+  }
+
+  .modal-title {
+    font-family: var(--font-serif);
+    font-size: var(--text-title);
+    color: var(--color-text-primary);
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .btn-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+  }
+
+  .btn-modal-close:hover {
+    background: var(--overlay-ink-wash);
     color: var(--color-text-primary);
   }
 
-  .tx-ref {
+  .modal-body {
+    padding: var(--space-md) var(--space-lg) var(--space-lg);
+  }
+
+  .modal-subtitle {
+    margin: 0 0 var(--space-xs);
     font-size: 13px;
-    color: var(--color-text-muted);
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
-    margin: var(--space-md) 0;
-  }
-
-  .form-group label {
-    font-size: 14px;
     color: var(--color-text-secondary);
   }
 
-  .form-group input {
-    padding: 10px 14px;
-    border-radius: 8px;
-    border: 1px solid var(--overlay-border);
-    background: rgba(0, 0, 0, 0.3);
-    color: #ffffff;
-    font-size: 14px;
+  .tx-ref {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-md);
   }
 
-  .modal-actions {
+  .tx-ref code {
+    background: var(--overlay-ink-wash);
+    color: var(--color-accent-primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+  }
+
+  .form-label {
+    display: block;
+    font-size: var(--text-caption);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-xs);
+  }
+
+  .form-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 14px;
+    border: 1px solid var(--overlay-border-strong);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    color: var(--color-text-primary);
+    background: var(--color-bg-primary);
+    outline: none;
+    transition: border-color var(--duration-fast);
+  }
+
+  .form-input:focus {
+    border-color: #d4af37;
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  }
+
+  .modal-footer {
+    padding: var(--space-md) var(--space-lg);
+    background: var(--overlay-ink-wash);
     display: flex;
     justify-content: flex-end;
     gap: var(--space-sm);
-    margin-top: var(--space-lg);
+    border-top: 1px solid var(--overlay-border);
+  }
+
+  .btn-solid-gold {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #fce99f 0%, #d4af37 100%);
+    color: #0f0c1b;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  .btn-solid-gold:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(212, 175, 55, 0.35);
+  }
+
+  .btn-solid-gold:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--overlay-border-strong);
+    color: var(--color-text-secondary);
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-outline:hover {
+    background: var(--overlay-ink-wash);
+    color: var(--color-text-primary);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(16px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
 </style>
+

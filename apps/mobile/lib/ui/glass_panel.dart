@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:ziweiai_mobile/core/theme/app_theme.dart';
 
@@ -20,35 +18,20 @@ class GlassPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: borderRadius,
-            color: AppTheme.glassFill,
-            border: Border.all(color: AppTheme.glassBorder, width: 1),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: 0.12),
-                Colors.white.withValues(alpha: 0.04),
-                AppTheme.mysticalGold.withValues(alpha: 0.08),
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.28),
-                blurRadius: 28,
-                offset: const Offset(0, 14),
-              ),
-            ],
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        color: AppTheme.mysticalElevated,
+        border: Border.all(color: AppTheme.glassBorder, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          child: Padding(padding: padding, child: child),
-        ),
+        ],
       ),
+      child: Padding(padding: padding, child: child),
     );
   }
 }

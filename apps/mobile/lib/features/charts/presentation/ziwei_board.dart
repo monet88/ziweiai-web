@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/models/chart_snapshot.dart';
+import '../../../../core/theme/app_theme.dart';
 import 'package:screenshot/screenshot.dart';
 
 class ZiweiBoard extends StatelessWidget {
@@ -41,11 +42,11 @@ class ZiweiBoard extends StatelessWidget {
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final borderColor = isDark ? Colors.white24 : Colors.black12;
-    final boardBg = isDark ? const Color(0xFF1A1724) : theme.colorScheme.surface;
-    final centerBg = isDark ? const Color(0xFF221F2E) : Colors.white;
+    final borderColor = isDark ? AppTheme.glassBorder : Colors.black12;
+    final boardBg = isDark ? AppTheme.glassFill : theme.colorScheme.surface;
+    final centerBg = isDark ? AppTheme.mysticalElevated : Colors.white;
     final bodyTint = isDark
-        ? const Color(0xFFD4AF37).withValues(alpha: 0.12)
+        ? AppTheme.mysticalGold.withValues(alpha: 0.12)
         : Colors.yellow.withValues(alpha: 0.1);
     final palaceNameColor = isDark ? const Color(0xFFE8B4B4) : Colors.red;
     final textColor = theme.colorScheme.onSurface;

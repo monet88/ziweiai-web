@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 import '../providers/numerology_provider.dart';
-import '../../../core/utils/monetization_guard.dart';
 
 class NumerologyScreen extends ConsumerStatefulWidget {
   const NumerologyScreen({super.key});
@@ -88,16 +87,7 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
     ref.listen(numerologyProvider, (previous, next) {
       if (next.explanation.hasError) {
         final error = next.explanation.error;
-        if (error == null) return;
-        
-        final isHandled = MonetizationGuard.handlePaidActionError(
-          context,
-          error,
-          cost: 10,
-          featureName: 'Luận giải Thần Số Học',
-        );
-        
-        if (!isHandled) {
+        if (error != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(error.toString())),
           );

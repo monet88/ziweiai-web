@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../providers/tarot_provider.dart';
-import '../../../core/utils/monetization_guard.dart';
 
 class TarotScreen extends ConsumerStatefulWidget {
   const TarotScreen({super.key});
@@ -55,16 +54,7 @@ class _TarotScreenState extends ConsumerState<TarotScreen> with SingleTickerProv
     ref.listen(tarotProvider, (previous, next) {
       if (next.hasError) {
         final error = next.error;
-        if (error == null) return;
-        
-        final isHandled = MonetizationGuard.handlePaidActionError(
-          context,
-          error,
-          cost: 2,
-          featureName: 'Đọc Bài Tarot',
-        );
-        
-        if (!isHandled) {
+        if (error != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(error.toString())),
           );

@@ -1,6 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
-
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../providers/wallet_provider.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../ui/animated_background.dart';
+import '../../../ui/premium_button.dart';
 
 class WalletScreen extends ConsumerStatefulWidget {
   const WalletScreen({super.key});
@@ -132,14 +133,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
         ),
         actions: [
           Center(
-            child: ElevatedButton(
+            child: PremiumButton(
+              label: 'Đóng',
+              isPrimary: true,
               onPressed: () => context.pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2A0845),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Đóng'),
             ),
           )
         ],
@@ -152,19 +149,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Gradient (Space theme)
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0F0C29), // Very dark blue/purple
-                  Color(0xFF302B63),
-                  Color(0xFF24243E),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
+          // Background Gradient (Space theme) -> AnimatedBackground
+          const Positioned.fill(
+            child: AnimatedBackground(child: SizedBox.shrink()),
           ),
           
           // Custom Header
@@ -182,10 +169,20 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                         icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
                         onPressed: () => context.pop(),
                       ),
-                      TextButton.icon(
-                        onPressed: _handleRestorePurchases,
-                        icon: const Icon(Icons.restore, color: Colors.white70),
-                        label: const Text('Khôi phục', style: TextStyle(color: Colors.white70)),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.history, color: Colors.white70),
+                            onPressed: () => context.push('/wallet/history'),
+                            tooltip: 'Lịch sử giao dịch',
+                          ),
+                          TextButton.icon(
+                            onPressed: _handleRestorePurchases,
+                            icon: const Icon(Icons.restore, color: Colors.white70),
+                            label: const Text('Khôi phục', style: TextStyle(color: Colors.white70)),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -262,19 +259,16 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                   flex: 7,
                   child: ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            width: 1.5,
-                          ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.mysticalElevated,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                        border: Border.all(
+                          color: AppTheme.glassBorder,
+                          width: 1,
                         ),
-                        child: _buildPackagesList(),
                       ),
+                      child: _buildPackagesList(),
                     ),
                   ),
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../charts/data/models/birth_input.dart';
 import '../../charts/data/models/create_chart_request.dart';
@@ -9,6 +10,12 @@ import '../../charts/presentation/charts_provider.dart';
 import '../../auth/presentation/auth_provider.dart';
 import '../../auth/data/repositories/auth_repository.dart';
 import '../../vision/data/models/vision_kind.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../ui/animated_background.dart';
+import '../../../ui/glass_panel.dart';
+import '../../../ui/premium_text_field.dart';
+import '../../../ui/premium_dropdown.dart';
+import '../../../ui/premium_button.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -79,7 +86,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           }
         } else if (next.hasError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi: ${next.error}')),
+            SnackBar(
+              content: Text('Lỗi: ${next.error}'),
+              backgroundColor: Colors.redAccent,
+            ),
           );
         }
       },
@@ -89,31 +99,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final user = authState.value;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Tử Vi Toàn Tập'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           if (user != null) ...[
             IconButton(
-              icon: const Icon(Icons.account_balance_wallet, color: Colors.orange),
+              icon: const Icon(Icons.account_balance_wallet, color: AppTheme.mysticalGold),
               onPressed: () {
                 context.push('/wallet');
               },
             ),
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Text(user.email ?? 'User', style: const TextStyle(fontSize: 12)),
-              ),
-            ),
             IconButton(
-              icon: const Icon(Icons.logout),
+              icon: const Icon(Icons.logout, color: AppTheme.mysticalTextSecondary),
               onPressed: () {
                 ref.read(authRepositoryProvider).signOut();
               },
             ),
           ] else ...[
             IconButton(
-              icon: const Icon(Icons.person),
+              icon: const Icon(Icons.person, color: AppTheme.mysticalTextSecondary),
               onPressed: () {
                 context.push('/auth');
               },
@@ -121,114 +128,215 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text('Nhập thông tin sinh', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(child: TextField(controller: _dayController, decoration: const InputDecoration(labelText: 'Ngày'))),
-                const SizedBox(width: 8),
-                Expanded(child: TextField(controller: _monthController, decoration: const InputDecoration(labelText: 'Tháng'))),
-                const SizedBox(width: 8),
-                Expanded(child: TextField(controller: _yearController, decoration: const InputDecoration(labelText: 'Năm'))),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(controller: _hourController, decoration: const InputDecoration(labelText: 'Giờ (0-23)')),
-            const SizedBox(height: 16),
-            DropdownButton<String>(
-              value: _gender,
-              isExpanded: true,
-              items: const [
-                DropdownMenuItem(value: 'male', child: Text('Nam')),
-                DropdownMenuItem(value: 'female', child: Text('Nữ')),
-              ],
-              onChanged: (value) => setState(() => _gender = value!),
-            ),
-            const SizedBox(height: 16),
-            DropdownButton<String>(
-              value: _calendar,
-              isExpanded: true,
-              items: const [
-                DropdownMenuItem(value: 'gregorian', child: Text('Dương Lịch')),
-                DropdownMenuItem(value: 'lunar', child: Text('Âm Lịch')),
-              ],
-              onChanged: (value) => setState(() => _calendar = value!),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: chartState.isLoading ? null : _submit,
-              child: chartState.isLoading 
-                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)) 
-                : const Text('Lập lá số Tử Vi'),
-            ),
-            const SizedBox(height: 48),
-            const Divider(),
-            const SizedBox(height: 16),
-            const Text('Bộ công cụ mở rộng (Web)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.auto_awesome),
-                    label: const Text('Đọc bài Tarot'),
-                    onPressed: () => context.push('/vision/input', extra: VisionKind.tarot),
-                  ),
+      body: AnimatedBackground(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16.0, 100.0, 16.0, 32.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Welcome Text
+              const Text(
+                'Huyền học phương Đông',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.mysticalGold,
+                  letterSpacing: 1.2,
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.face),
-                    label: const Text('Xem Tướng Mặt'),
-                    onPressed: () => context.push('/vision/input', extra: VisionKind.face),
-                  ),
+                textAlign: TextAlign.center,
+              ).animate().fade(duration: 600.ms).slideY(begin: -0.2, end: 0),
+              
+              const SizedBox(height: 8),
+              const Text(
+                'Lập Lá Số & Luận Giải',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.mysticalText,
+                  letterSpacing: -0.5,
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.pan_tool),
-                    label: const Text('Xem Chỉ Tay'),
-                    onPressed: () => context.push('/vision/input', extra: VisionKind.palm),
-                  ),
+                textAlign: TextAlign.center,
+              ).animate().fade(duration: 600.ms, delay: 200.ms).slideY(begin: -0.2, end: 0),
+              
+              const SizedBox(height: 32),
+              
+              // Input Form in Glass Panel
+              GlassPanel(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'THÔNG TIN LẬP LÁ SỐ',
+                      style: TextStyle(
+                        color: AppTheme.mysticalGold,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: PremiumTextField(
+                            controller: _dayController,
+                            labelText: 'Ngày',
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: PremiumTextField(
+                            controller: _monthController,
+                            labelText: 'Tháng',
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: PremiumTextField(
+                            controller: _yearController,
+                            labelText: 'Năm',
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: PremiumTextField(
+                            controller: _hourController,
+                            labelText: 'Giờ (0-23)',
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: PremiumDropdown<String>(
+                            value: _gender,
+                            labelText: 'Giới tính',
+                            items: const [
+                              DropdownMenuItem(value: 'male', child: Text('Nam')),
+                              DropdownMenuItem(value: 'female', child: Text('Nữ')),
+                            ],
+                            onChanged: (value) => setState(() => _gender = value!),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    PremiumDropdown<String>(
+                      value: _calendar,
+                      labelText: 'Lịch',
+                      items: const [
+                        DropdownMenuItem(value: 'gregorian', child: Text('Dương Lịch')),
+                        DropdownMenuItem(value: 'lunar', child: Text('Âm Lịch')),
+                      ],
+                      onChanged: (value) => setState(() => _calendar = value!),
+                    ),
+                    const SizedBox(height: 24),
+                    PremiumButton(
+                      label: 'LẬP LÁ SỐ TỬ VI',
+                      isLoading: chartState.isLoading,
+                      onPressed: _submit,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.calculate),
-                    label: const Text('Thần Số Học'),
-                    onPressed: () => context.push('/numerology'),
-                  ),
+              ).animate().fade(duration: 800.ms, delay: 400.ms).scaleXY(begin: 0.95, end: 1.0),
+
+              const SizedBox(height: 48),
+              
+              // Extra Tools
+              const Text(
+                'CÔNG CỤ HỖ TRỢ KHÁC',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.mysticalTextSecondary,
+                  letterSpacing: 1.0,
                 ),
-              ],
-            ),
-          ],
+                textAlign: TextAlign.center,
+              ).animate().fade(duration: 600.ms, delay: 600.ms),
+              const SizedBox(height: 16),
+              
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.5,
+                children: _buildExtraTools(context).animate(interval: 50.ms, delay: 800.ms)
+                    .fade(duration: 400.ms)
+                    .slideY(begin: 0.2, end: 0),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Future<void> _launchWeb(String path) async {
-  //   // Should inject environment config, but using hardcoded for simplicity in this fallback.
-  //   final uri = Uri.parse('https://tuvitoantap.vercel.app$path');
-  //   if (await canLaunchUrl(uri)) {
-  //     await launchUrl(uri, mode: LaunchMode.externalApplication);
-  //   }
-  // }
+  List<Widget> _buildExtraTools(BuildContext context) {
+    Widget buildGridItem({required String label, required IconData icon, required VoidCallback onTap}) {
+      return Material(
+        color: AppTheme.mysticalElevated,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: AppTheme.mysticalGold, size: 32),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppTheme.mysticalText,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return [
+      buildGridItem(
+        label: 'Đọc Tarot',
+        icon: Icons.auto_awesome,
+        onTap: () => context.push('/vision/input', extra: VisionKind.tarot),
+      ),
+      buildGridItem(
+        label: 'Xem Chỉ Tay',
+        icon: Icons.pan_tool,
+        onTap: () => context.push('/vision/input', extra: VisionKind.palm),
+      ),
+      buildGridItem(
+        label: 'Xem Tướng Mặt',
+        icon: Icons.face,
+        onTap: () => context.push('/vision/input', extra: VisionKind.face),
+      ),
+      buildGridItem(
+        label: 'Thần Số Học',
+        icon: Icons.calculate,
+        onTap: () => context.push('/numerology'),
+      ),
+      buildGridItem(
+        label: 'Kinh Dịch',
+        icon: Icons.monetization_on,
+        onTap: () => context.push('/iching'),
+      ),
+    ];
+  }
 }

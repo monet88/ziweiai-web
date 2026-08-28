@@ -8,6 +8,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'core/services/push_notification_service.dart';
+import 'core/presentation/widgets/global_paywall_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,11 +69,13 @@ class ZiweiAiApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return MaterialApp.router(
-      title: 'Tử Vi Toàn Tập',
-      theme: AppTheme.paperCalm,
-      routerConfig: appRouter,
-      debugShowCheckedModeBanner: false,
+    return GlobalPaywallWrapper(
+      child: MaterialApp.router(
+        title: 'Tử Vi Toàn Tập',
+        theme: AppTheme.mystical,
+        routerConfig: appRouter,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }

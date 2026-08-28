@@ -8,6 +8,6 @@ class Env {
   static String get supabaseUrl => dotenv.env['SUPABASE_URL'] ?? '';
   static String get supabaseAnonKey => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
   static String get apiUrl => dotenv.env['API_URL'] ?? '';
-  static String get revenuecatApiKeyAppStore => dotenv.env['REVENUECAT_API_KEY_APP_STORE'] ?? '';
-  static String get revenuecatApiKeyPlayStore => dotenv.env['REVENUECAT_API_KEY_PLAY_STORE'] ?? '';
+  static String get revenuecatApiKeyAppStore => dotenv.env['REVENUECAT_API_KEY_APP_STORE'] ?? dotenv.env['REVENUECAT_APPLE_KEY'] ?? '';
+  static String get revenuecatApiKeyPlayStore => dotenv.env['REVENUECAT_API_KEY_PLAY_STORE'] ?? dotenv.env['REVENUECAT_GOOGLE_KEY'] ?? '';
 }

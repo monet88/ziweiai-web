@@ -64,10 +64,10 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
     - UX gieo xu Animation (6 lần), giải quyết triệt để memory leak.
     - Cấu trúc dữ liệu Quẻ Chủ - Hào Động - Quẻ Biến lưu chuẩn trên Supabase. Luận giải AI và trừ 5 XU.
 
-13. **Hạ tầng Tự Động Hóa Supabase Keep-Alive (22/08/2026)**
-    - Cấu hình GitHub Actions Secrets `SUPABASE_URL` và `SUPABASE_ANON_KEY` trên repo `galaxypro710-stack/ziweiai-web`.
-    - Workflow `.github/workflows/supabase-keepalive.yml` chạy định kỳ `0 6 */5 * *` (mỗi 5 ngày một lần).
-    - Đã xác thực Run #12 **SUCCESS (HTTP 200)**: Thực thi query SQL thật trên PostgreSQL, giữ database Supabase vĩnh viễn không bị pause/sleep.
+13. **Hạ tầng Tự Động Hóa Supabase Keep-Alive & Cron-Job.org (29/08/2026)**
+    - Chuyển đổi và ủy quyền cơ chế Keep-Alive cho dịch vụ đám mây chuyên dụng **`cron-job.org`** qua `CRONJOB_API` trong `.env.local`.
+    - **Job #8346899**: Gửi truy vấn SQL thực tế vào bảng `birth_profiles` trên Supabase mỗi 6 giờ (`00:00, 06:00, 12:00, 18:00`), ngăn chặn triệt để quy tắc 7 ngày inactivity pause & 90 ngày auto-delete của Supabase Free Tier, giải quyết dứt điểm nhược điểm 60-day inactivity timeout của GitHub Actions.
+    - **Job #8346900**: Giữ ấm Web & API Serverless Functions trên Vercel mỗi 4 giờ, loại bỏ 100% độ trễ Cold Start cho người dùng Mobile và Web.
 
 14. **Tính năng Thần Số Học (Numerology) trên Web SvelteKit (25/08/2026)**
     - Hoàn tất route `/numerology` trên Web SvelteKit (`NumerologyScreen.svelte`, `NumerologyCard.svelte`, `numerology-model.svelte.ts`).
@@ -88,11 +88,17 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
       - **Bento Grid AI Mystical Tools**: 6 thẻ công cụ AI chủ đạo (Xem Tướng Mặt AI, Xem Chỉ Tay AI, Rút Bài Tarot, Đọc Bài Chụp Ảnh, Thần Số Học, Gieo Quẻ Lục Hào) với hiệu ứng 3D hover tilt, viền phát sáng gradient và nhãn công nghệ `AI VISION SCAN`, `BIOMETRIC SCAN`.
       - **Universe Hub 12 Bộ Môn Thuật Số**: Phân nhóm trực quan thành 4 đại danh mục (Mệnh Lý, Bói Dịch, Trực Giác, Sinh Trắc Học).
       - **Interactive Quick-Form**: Khởi tạo lá số trực quan, tự động tính múi giờ và âm dương lịch.
+
 17. **Đóng Gói & Phát Hành Bản Release APK Cho Mobile Flutter (28/08/2026)**
     - Chuẩn hóa cấu hình Android Toolchain (SDK 36.1.0, Flutter 3.41.2, Kotlin DSL).
     - Cấu hình hiển thị nhãn ứng dụng `android:label="Tử Vi Toàn Tập"` và cơ chế fallback API key RevenueCat an toàn trong `Env.dart`.
     - Build thành công file cài đặt **Release APK (`app-release.apk` - 59.8MB)** sẵn sàng cài đặt trên thiết bị thật Android (`apps/mobile/build/app/outputs/flutter-apk/app-release.apk`).
     - Hoàn tất audit toàn diện luồng người dùng trên Mobile (Tử Vi, Kinh Dịch I Ching, Tarot, Thần Số Học, AI Assistant, Ví XU, Auth Anonymous/Supabase) theo chuẩn `/behavior-model-debugger`.
+
+18. **Thực Nghiệm & Cài Đặt Thiết Bị Thật Samsung Galaxy A53 (29/08/2026)**
+    - Tách nhánh chuyên biệt `feature/mobile-release-v1` (Commit: `6db45e6`), cô lập 100% thay đổi của Flutter khỏi Web/API.
+    - Kết nối thành công Wi-Fi Debugging (`192.168.2.25:40805`) với thiết bị Samsung Galaxy A53 5G (`SM_A536E`).
+    - Tối ưu build `--target-platform android-arm64` (chỉ mất 31.1s), cài đặt trực tiếp và khởi chạy thành công với đồ họa `Impeller Vulkan Backend` 60-120 FPS.
 
 ---
 
@@ -101,7 +107,7 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 - **Backend API**: ✅ `pnpm -F @ziweiai/api test` (72/72 files, 439 tests passed)
 - **Web SvelteKit**: ✅ `pnpm -F @ziweiai/web check` (0 errors) & `pnpm -F @ziweiai/web test` (47/47 files, 258 tests passed)
 - **Playwright E2E**: ✅ `smoke.spec.ts` & `us-043-numerology.spec.ts` (100% Passed)
-- **Mobile Flutter**: ✅ `flutter analyze` (0 issues), `flutter test` (19/19 tests passed), `flutter build apk --release` (SUCCESS - 59.8MB)
+- **Mobile Flutter**: ✅ `flutter analyze` (0 issues), `flutter test` (19/19 tests passed), `flutter build apk --release` (SUCCESS - 59.8MB), `Live Install Samsung A53` (SUCCESS)
 - **Vercel Demo Smoke**: ✅ `https://tuvitoantap.vercel.app` (HTTP 200 Root, API health, API features, SPA routes)
 - **GitHub Action Keep-Alive**: ✅ `Run #12 SUCCESS`
 

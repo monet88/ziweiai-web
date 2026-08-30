@@ -76,4 +76,14 @@ class ApiClient {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> claimAdReward() async {
+    try {
+      final response = await _dio.post('/rewards/ad-reward');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
+

@@ -68,7 +68,7 @@ class NumerologyNotifier extends Notifier<NumerologyState> {
         return;
       }
       
-      String errorMessage = 'Có lỗi xảy ra. Vui lòng thử lại sau.';
+      String errorMessage = 'Có lỗi kết nối. Vui lòng thử lại sau.';
       if (e.response?.data != null && e.response?.data is Map) {
         final data = e.response!.data as Map;
         if (data['message'] != null) {
@@ -77,7 +77,7 @@ class NumerologyNotifier extends Notifier<NumerologyState> {
       }
       state = state.copyWith(explanation: AsyncValue.error(errorMessage, StackTrace.current));
     } catch (e, st) {
-      state = state.copyWith(explanation: AsyncValue.error(e, st));
+      state = state.copyWith(explanation: AsyncValue.error('Có lỗi xảy ra: $e', st));
     }
   }
 

@@ -8,8 +8,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/iching_provider.dart';
 import '../data/models/iching_models.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../../ui/animated_background.dart';
 import '../../../../ui/glass_panel.dart';
+
+
 
 class IChingScreen extends ConsumerStatefulWidget {
   const IChingScreen({super.key});
@@ -44,10 +47,7 @@ class _IChingScreenState extends ConsumerState<IChingScreen> with SingleTickerPr
 
   void _tossCoins() async {
     if (_questionController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập câu hỏi để gieo quẻ.')),
-      );
-      return;
+      _questionController.text = 'Công việc / kinh doanh tháng này có thuận lợi không?';
     }
 
     if (_castArray.length >= 6 || _isTossing) return;
@@ -193,14 +193,25 @@ class _IChingScreenState extends ConsumerState<IChingScreen> with SingleTickerPr
           ),
         ),
       ),
+      bottomNavigationBar: const VoiceAudioPlayerBar(),
     );
   }
 
+
+
   Widget _buildInputSection() {
+    final quickQuestions = [
+      '💼 Công việc / kinh doanh tháng này có thuận lợi không?',
+      '❤️ Chuyện tình duyên / gia đạo sắp tới ra sao?',
+      '💰 Tài lộc & đầu tư có cơ hội khởi sắc không?',
+      '🌱 Sức khỏe & bình an của bản thân và gia đình?',
+    ];
+
     return GlassPanel(
       padding: const EdgeInsets.all(20),
       borderGradient: CelestialGradients.goldBorder,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             'Thiết Lập Câu Hỏi',
@@ -214,7 +225,7 @@ class _IChingScreenState extends ConsumerState<IChingScreen> with SingleTickerPr
           ),
           const SizedBox(height: 10),
           const Text(
-            'Thành tâm đặt câu hỏi, sau đó gieo 3 đồng xu cổ 6 lần để tạo lập Quẻ Kinh Dịch.',
+            'Thành tâm đặt câu hỏi hoặc chọn câu hỏi mẫu bên dưới, sau đó gieo 3 đồng xu cổ 6 lần để tạo lập Quẻ.',
             style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 14, height: 1.4),
             textAlign: TextAlign.center,
           ),
@@ -224,7 +235,7 @@ class _IChingScreenState extends ConsumerState<IChingScreen> with SingleTickerPr
             maxLines: 2,
             style: const TextStyle(color: AppTheme.mysticalText),
             decoration: InputDecoration(
-              hintText: 'Công việc / kinh doanh tháng này có thuận lợi không?',
+              hintText: 'Nhập câu hỏi bạn đang băn khoăn...',
               hintStyle: const TextStyle(color: Colors.white30),
               filled: true,
               fillColor: AppTheme.cosmosElevated.withValues(alpha: 0.6),
@@ -241,6 +252,31 @@ class _IChingScreenState extends ConsumerState<IChingScreen> with SingleTickerPr
                 borderSide: const BorderSide(color: AppTheme.goldBright, width: 1.5),
               ),
             ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: quickQuestions.map((q) {
+              return ActionChip(
+                backgroundColor: AppTheme.cosmosElevated.withValues(alpha: 0.7),
+                side: BorderSide(color: AppTheme.mysticalGold.withValues(alpha: 0.35)),
+                label: Text(
+                  q,
+                  style: const TextStyle(
+                    color: AppTheme.goldBright,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  setState(() {
+                    _questionController.text = q.substring(q.indexOf(' ') + 1);
+                  });
+                },
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -501,14 +537,20 @@ class _IChingScreenState extends ConsumerState<IChingScreen> with SingleTickerPr
                 child: const Icon(Icons.menu_book, color: Color(0xFF141026), size: 22),
               ),
               const SizedBox(width: 14),
-              Text(
-                'Lời Bàn Quẻ Kinh Dịch',
-                style: GoogleFonts.cinzel(
-                  color: AppTheme.goldBright,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
+              Expanded(
+                child: Text(
+                  'Lời Bàn Quẻ Kinh Dịch',
+                  style: GoogleFonts.cinzel(
+                    color: AppTheme.goldBright,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
                 ),
+              ),
+              VoicePlayIconButton(
+                text: narrative,
+                title: 'Lời Bàn Quẻ Kinh Dịch',
               ),
             ],
           ),
@@ -528,4 +570,5 @@ class _IChingScreenState extends ConsumerState<IChingScreen> with SingleTickerPr
       ),
     );
   }
+
 }

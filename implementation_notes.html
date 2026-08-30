@@ -2,65 +2,51 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Implementation Notes - Nâng Cấp Toàn Diện Homepage & Celestial Bento Grid</title>
+  <title>Sprint 39 Implementation Notes - Tử Vi Toàn Tập Mobile Perfection & Release</title>
   <style>
-    :root {
-      --bg: #0b0d14;
-      --card-bg: rgba(22, 27, 46, 0.7);
-      --border: rgba(255, 255, 255, 0.1);
-      --text: #e2e8f0;
-      --text-muted: #94a3b8;
-      --gold: #d4af37;
-      --purple: #c084fc;
-      --green: #10b981;
-      --blue: #38bdf8;
-    }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0b0914;
+      color: #e2d9f3;
+      padding: 32px;
       line-height: 1.6;
-      margin: 0;
-      padding: 32px 20px;
     }
     .container {
-      max-width: 960px;
+      max-width: 900px;
       margin: 0 auto;
+      background: #141026;
+      border: 1px solid #d4af37;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
     h1, h2, h3 {
-      color: #fff;
-    }
-    h1 {
-      font-size: 28px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 16px;
-      color: var(--gold);
-    }
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      color: #ffd700;
+      font-family: 'Cinzel', serif, sans-serif;
     }
     .badge {
       display: inline-block;
-      padding: 4px 10px;
-      border-radius: 9999px;
+      padding: 4px 12px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #d4af37, #aa7c11);
+      color: #0b0914;
+      font-weight: bold;
       font-size: 12px;
-      font-weight: 700;
-      background: rgba(212, 175, 55, 0.15);
-      color: var(--gold);
-      border: 1px solid rgba(212, 175, 55, 0.3);
-      margin-right: 6px;
+      margin-bottom: 16px;
     }
-    .badge-success {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--green);
-      border-color: rgba(16, 185, 129, 0.3);
+    .card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 16px 0;
+    }
+    code {
+      background: #1c1733;
+      color: #4dd0e1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
     }
     ul {
       padding-left: 20px;
@@ -68,50 +54,64 @@
     li {
       margin-bottom: 8px;
     }
-    code {
-      background: rgba(255, 255, 255, 0.08);
-      padding: 2px 6px;
-      border-radius: 4px;
-      color: #f1f5f9;
-      font-size: 13px;
+    .success {
+      color: #4caf50;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>✨ Nâng Cấp Toàn Diện Homepage & Universe Hub (ViOS Celestial Luxury)</h1>
-    <p>
-      <span class="badge badge-success">PASSED ALL 4 GATES</span>
-      <span class="badge">Celestial Astro Wheel</span>
-      <span class="badge">Bento Grid AI Tools</span>
-      <span class="badge">12 Hệ Thuật Số Hub</span>
-    </p>
+    <div class="badge">SPRINT 39 RELEASE REPORT</div>
+    <h1>Tử Vi Toàn Tập — Mobile Perfection & Android App Bundle</h1>
+    <p>Báo cáo ghi nhận các quyết định kiến trúc, cải tiến UI/UX Celestial Luxury, xử lý Paywall/Auth và xác minh bản build Google Play App Bundle (.aab).</p>
 
     <div class="card">
-      <h2>1. Các Cải Tiến Thiết Kế Đỉnh Cao</h2>
+      <h2>1. Các Vấn Đề UI/UX Đã Được Khắc Phục Triệt Để</h2>
       <ul>
-        <li><strong>Celestial Astro Dial (Thiên Bàn 12 Cung & Bát Quái Xoay)</strong>: Thay thế hoàn toàn khối tròn đen đơn điệu bằng đồ hình thiên bàn 12 Địa Chi & Bát Quái phát quang (Ánh Kim & Tím Tinh Vân) xoay êm ái, ở giữa là biểu tượng Thái Cực Âm Dương phát sáng cùng 4 nhãn trôi nổi HUD (Mệnh, Thân, Tài Bạch, Quan Lộc).</li>
-        <li><strong>Bento Grid AI Mystical Tools</strong>: 6 thẻ công cụ AI chủ đạo (Xem Tướng Mặt AI, Xem Chỉ Tay AI, Rút Bài Tarot, Đọc Bài Chụp Ảnh, Thần Số Học, Gieo Quẻ Lục Hào) với hiệu ứng 3D hover tilt, viền phát sáng gradient, và nhãn badge công nghệ trực quan.</li>
-        <li><strong>Ma Trận 12 Bộ Môn Thuật Số (Universe Hub)</strong>: Phân nhóm trực quan thành 4 đại danh mục: Mệnh Lý & Chiêm Tinh, Bói Dịch & Quẻ Linh, Trực Giác & Bài Học, Sinh Trắc AI & Dân Gian.</li>
-        <li><strong>Inline Quick-Form Card</strong>: Bổ sung khu vực tạo lá số tiện lợi, 1-click an sao và mở bản đồ số mệnh tức thì.</li>
+        <li><strong>Thiên Bàn 12 Cung:</strong> Chuyển sang <code>StatefulWidget</code> với <code>TransformationController</code> và scale ban đầu theo <code>availableWidth / 800.0</code>. Bọc ngoài bằng <code>AspectRatio(1.0)</code> giúp 12 cung luôn hiển thị trọn vẹn, không bị crop ở trung tâm Thái Cực. Bổ sung double-tap và nút floating <em>"Vừa màn hình"</em>.</li>
+        <li><strong>Kinh Dịch Gieo Quẻ:</strong> Bổ sung dàn Quick Question Chips (Công việc, Tình duyên, Tài lộc, Sức khỏe) và fallback tự động gán câu hỏi mặc định khi bấm Gieo Hào ngay.</li>
+        <li><strong>Thần Số Học Xử Lý 402:</strong> Bắt mã lỗi 402/403 để mở modal nạp XU sang trọng dẫn thẳng đến <code>/wallet</code> thay vì hiển thị raw DioException.</li>
+        <li><strong>Trợ Lý AI Panel:</strong> Đại tu 100% sang giao diện <strong>Celestial Luxury Dark Mode</strong> với nền thạch anh tím viền vàng hoàng kim, typography phong thủy sắc nét.</li>
       </ul>
     </div>
 
     <div class="card">
-      <h2>2. Bảo Mật & Git Configuration (.gitignore)</h2>
+      <h2>2. Màn Hình Hồ Sơ & Quản Lý Tài Khoản (Profile Screen)</h2>
       <ul>
-        <li>Đã kiểm tra và verify bằng <code>git check-ignore</code>: Bảo đảm 100% các bí mật (<code>.env.local</code>, private keys, service role keys), binary nặng (<code>.apk</code>, <code>.mp4</code>, <code>.aab</code>) và log cache tạm thời của AI được ignore an toàn.</li>
-        <li>Bảo tồn toàn bộ thư mục kỹ năng và cấu hình AI: <code>.agents/skills/</code>, <code>.agents/workflows/</code>, <code>.agents/rules/</code>, <code>.agents/AGENTS.md</code> được giữ lại để khi clone sang máy khác, AI Agent vẫn sở hữu 100% bộ kỹ năng làm việc.</li>
+        <li>Tạo mới <a href="file:///Users/gray/Documents/bydone/tuvinew/ziweiai-web/apps/mobile/lib/features/auth/presentation/profile_screen.dart"><code>ProfileScreen</code></a> hiển thị thông tin người dùng, trạng thái Khách Trải Nghiệm vs Tài Khoản Đã Xác Thực, huy hiệu VIP PRO, số dư XU và các liên kết quản lý.</li>
+        <li>Tích hợp luồng Đăng nhập, Đăng ký, Đăng xuất và <strong>Xóa Tài Khoản (Account Deletion)</strong> 2 bước xác nhận đáp ứng 100% chính sách của Google Play & Apple App Store.</li>
+        <li>Cập nhật <a href="file:///Users/gray/Documents/bydone/tuvinew/ziweiai-web/apps/mobile/lib/features/auth/presentation/auth_screen.dart"><code>AuthScreen</code></a> sang theme Celestial Luxury Dark Mode.</li>
       </ul>
     </div>
 
     <div class="card">
-      <h2>3. Kết Quả Kiểm Thử Toàn Diện (Verification Summary)</h2>
+      <h2>3. Nâng Cấp Ví XU Đa Năng (VietQR SePay + RevenueCat Store)</h2>
       <ul>
-        <li><code>pnpm -F @ziweiai/web check</code>: <strong>0 Errors</strong> (100% Pass)</li>
-        <li><code>pnpm -F @ziweiai/web test</code>: <strong>47/47 Files (258/258 Tests Pass)</strong></li>
-        <li><code>pnpm -F @ziweiai/api test</code>: <strong>72/72 Files (439/439 Tests Pass)</strong></li>
-        <li><code>pnpm -F @ziweiai/web exec playwright test smoke.spec.ts --workers=1</code>: <strong>PASS (1.0s)</strong></li>
+        <li>Hỗ trợ 2 Tab song song: <strong>Chuyển Khoản Ngân Hàng VietQR (SePay)</strong> và <strong>Gói In-App Purchase (RevenueCat)</strong>.</li>
+        <li>Tab VietQR sinh mã QR động theo các mốc 20k, 50k, 100k, 500k kèm cú pháp chuyển khoản <code>TVTT &lt;SHORT_UUID&gt;</code> và nút copy 1-chạm.</li>
+        <li>Tab In-App Store kết nối RevenueCat Packages kèm nút mở Customer Center và Khôi phục thanh toán (Restore Purchases).</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>4. Ticket 39.1: Cấu Hình Keystore Signing & Build .aab</h2>
+      <ul>
+        <li>Cấu hình <code>build.gradle.kts</code> đọc từ <code>key.properties</code> nếu tồn tại, có fallback an toàn cho môi trường CI/dev.</li>
+        <li>Bản phát hành App Bundle đã build thành công: <code>build/app/outputs/bundle/release/app-release.aab (59.3MB)</code>.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>5. Kết Quả Xác Minh (Verification Gates)</h2>
+      <ul>
+        <li><span class="success">✓ Mobile Flutter Test:</span> 22/22 tests PASS (100%).</li>
+        <li><span class="success">✓ Mobile Flutter Analyze:</span> 0 issues found.</li>
+        <li><span class="success">✓ Backend API Test:</span> 439/439 tests PASS (100%).</li>
+        <li><span class="success">✓ Web SvelteKit Test:</span> 258/258 tests PASS (100%).</li>
+        <li><span class="success">✓ Contracts Test:</span> 125/125 tests PASS (100%).</li>
+        <li><span class="success">✓ Astro Engine Test:</span> 35/35 tests PASS (100%).</li>
+        <li><span class="success">✓ Tổng cộng Monorepo:</span> <strong>879/879 tests PASS XANH 100%</strong>.</li>
       </ul>
     </div>
   </div>

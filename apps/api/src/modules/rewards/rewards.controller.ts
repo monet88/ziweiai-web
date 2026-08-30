@@ -19,6 +19,16 @@ export class RewardsController {
     return result;
   }
 
+  @Post('ad-reward')
+  async claimAdReward(@Req() req: AuthenticatedRequest) {
+    const userId = req.authenticatedUser?.userId;
+    if (!userId) {
+      throw new BadRequestException('User ID not found');
+    }
+
+    return this.rewardsService.claimAdReward(userId);
+  }
+
   @Get('referrals')
   async getReferrals(@Req() req: AuthenticatedRequest) {
     const userId = req.authenticatedUser?.userId;
@@ -29,3 +39,4 @@ export class RewardsController {
     return this.rewardsService.getReferralHistory(userId);
   }
 }
+

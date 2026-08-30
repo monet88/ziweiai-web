@@ -7,8 +7,10 @@ import 'package:ziweiai_mobile/features/charts/data/repositories/charts_reposito
 import 'package:ziweiai_mobile/features/charts/data/models/create_chart_request.dart';
 import 'package:ziweiai_mobile/features/auth/data/repositories/auth_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ziweiai_mobile/features/wallet/providers/wallet_provider.dart';
 
 class MockAuthRepository implements AuthRepository {
+
   @override
   User? get currentUser => null;
 
@@ -74,21 +76,59 @@ class MockChartsRepository implements ChartsRepository {
   Future<Map<String, dynamic>> getChartDetail(String chartSnapshotId) async {
     return {};
   }
+
+  @override
+  Future<Map<String, dynamic>> createAnnualReport(String chartSnapshotId, int year) async {
+    return {
+      'chartId': chartSnapshotId,
+      'year': year,
+      'frame': {
+        'yearly': {
+          'index': 0,
+          'heavenlyStemKey': 'stem.jia',
+          'earthlyBranchKey': 'branch.zi',
+          'palaceNameKeys': ['palace.ming'],
+          'mutagenStarKeys': [],
+        },
+        'monthly': List.generate(12, (i) => {
+          'index': i,
+          'heavenlyStemKey': 'stem.jia',
+          'earthlyBranchKey': 'branch.zi',
+          'palaceNameKeys': ['palace.ming'],
+          'mutagenStarKeys': [],
+        }),
+      },
+      'markdown': '# Báo cáo vận hạn năm',
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> getDailyFortune(String chartSnapshotId, String asOf) async {
+    return {};
+  }
+
+  @override
+  Future<Map<String, dynamic>> getMonthlyFortune(String chartSnapshotId, String asOf) async {
+    return {};
+  }
 }
 
 void main() {
+
   testWidgets('Full flow: Home -> Submit -> Board', (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           chartsRepositoryProvider.overrideWithValue(MockChartsRepository()),
           authRepositoryProvider.overrideWithValue(MockAuthRepository()),
+          walletBalanceProvider.overrideWith((ref) => Future.value(100)),
         ],
         child: MaterialApp.router(
           routerConfig: appRouter,
         ),
       ),
     );
+
 
     // Initial state: home screen
     expect(find.text('THÔNG TIN LẬP LÁ SỐ'), findsOneWidget);

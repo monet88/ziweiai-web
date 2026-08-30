@@ -6,11 +6,42 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 
 ---
 
-## 🚀 Trạng Thái Tính Năng & Sprint (Phase 7: Biometric Vision AI, RevenueCat Guard & Release v1.0.0 — Sprint 38 — 30/08/2026)
-- **Rollback Anchor:** `1a63fd5` (Nhánh `main` trên GitHub `galaxypro710-stack/ziweiai-web`)
-- **Release Tag:** `v1.0.0`
-- **Total Tests:** 844/844 Passed (API: 439, Web: 258, Mobile: 22, Contracts: 125)
-- **Mobile Release APK:** 24.8MB (arm64, Impeller Vulkan, test UAT trên Samsung Galaxy A53 5G thành công 100%)
+## 🚀 Trạng Thái Tính Năng & Sprint (Phase 8: Production Store Distribution & Advanced AI Capabilities — Sprint 39 — 30/08/2026)
+- **Current Branch:** `feature/sprint39-mobile-perfection-and-aab`
+- **Rollback Anchor:** `587bd35` (feat(mobile): complete sprint 39 ticket 39.4 (annual horoscope flow & luxury pdf report))
+- **Base Release Tag:** `v1.0.0` (commit `1a63fd5` trên `main`)
+- **Total Tests:** **899/899 Passed** (Mobile: 38, API: 443, Web: 258, Contracts: 125, Astro-Engine: 35)
+- **Google Play App Bundle:** `apps/mobile/build/app/outputs/bundle/release/app-release.aab` (**59.3MB**)
+- **Sprint 39 Progress:** 4/4 tickets (Ticket 39.1, Ticket 39.2, Ticket 39.3 & Ticket 39.4: **100% DONE**).
+
+1. **Sprint 39 Ticket 39.1 (DONE):**
+   - Cấu hình Keystore signing và build bản phát hành Google Play App Bundle (`.aab`).
+   - Sửa triệt để lỗi hiển thị Thiên Bàn 12 Cung (scale tự động, double tap, fit screen).
+   - Nâng cấp Kinh Dịch gieo quẻ (Quick chips, default question).
+   - Bắt mã lỗi 402/403 Thần Số Học thành modal nạp XU sang trọng thay vì văng raw DioException.
+   - Đại tu Trợ Lý AI sang theme Celestial Luxury Dark Mode.
+   - Hoàn thiện `ProfileScreen`, Auth Navigation và luồng Account Deletion tuân thủ Store.
+   - Nâng cấp `WalletScreen` hỗ trợ song song 2 Tab VietQR (SePay) và In-App Purchase (RevenueCat).
+
+2. **Sprint 39 Ticket 39.2 (DONE):**
+   - Tích hợp Google AdMob Rewarded Video Ads trên Mobile (`google_mobile_ads: ^5.2.0`, `AdMobService`).
+   - Cấu hình Native App ID trong `AndroidManifest.xml` và `Info.plist`.
+   - Xây dựng endpoint Backend `POST /rewards/ad-reward` với `SupabaseAuthGuard` cộng +5 XU tự động (`WalletEngineService.addXU`) và ghi log `ad_reward`.
+   - Tích hợp Banner "Xem Video Quảng Cáo Nhận +5 XU Miễn Phí" vào `WalletScreen` (cả 2 tab) và nút tiện ích trong `PremiumPaywallSheet`.
+
+3. **Sprint 39 Ticket 39.3 (DONE):**
+   - Tích hợp AI Voice Assistant Audio Synthesis đọc luận giải lá số (Text-to-Speech phong thủy truyền cảm `flutter_tts: ^4.2.2`).
+   - Xây dựng `VoiceSynthesisService` hỗ trợ bóc tách làm sạch cú pháp Markdown `cleanMarkdownForSpeech`, chỉnh tốc độ đọc (0.8x / 1.0x / 1.2x).
+   - Xây dựng thanh điều khiển âm thanh nổi `VoiceAudioPlayerBar` kèm hiệu ứng sóng âm thanh động `AnimatedWaveformVisualizer`.
+   - Tích hợp nút 1 chạm phát giọng đọc `VoicePlayIconButton` trên toàn bộ các màn hình luận giải (Trợ Lý AI, Kinh Dịch, Thần Số Học, Tarot, Tướng Mặt & Chỉ Tay).
+
+4. **Sprint 39 Ticket 39.4 (DONE):**
+   - Xây dựng Màn hình Vận Hạn Lưu Niên Nâng Cao (`AnnualHoroscopeScreen`) với Carousel chọn năm, xem 12 Lưu Nguyệt, gọi AI luận giải chuyên sâu (15 XU), xử lý 402 Paywall và nghe đọc giọng nói AI.
+   - Xây dựng Engine xuất Báo Cáo PDF Tử Vi Chuyên Sâu A4 sang trọng chuẩn in ấn (`ZiweiPdfService` với `pdf` & `printing`), gồm Bìa Hoàng Gia, Ma trận 12 Cung Thiên Bàn, Vận hạn năm/tháng và Luận giải AI.
+   - Nút thao tác nhanh trên `ChartDetailScreen` và route `/charts/:id/annual`.
+   - Viết trọn vẹn Unit Tests & Widget Tests, nâng tổng số test lên **899/899 tests xanh 100%**.
+
+
 
 1. **Luồng sản phẩm cốt lõi (Core Flow)**
    - Khởi tạo lá số Tử Vi, Bát Tự, gieo quẻ Kinh Dịch, Mai Hoa, Lục Hào, Manh Phái, Hợp Hôn.

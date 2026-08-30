@@ -8,6 +8,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'core/services/push_notification_service.dart';
 import 'core/presentation/widgets/global_paywall_wrapper.dart';
 
@@ -17,6 +18,13 @@ void main() async {
   // Initialize Environment variables
   await Env.init();
 
+  // Initialize Google AdMob
+  try {
+    await MobileAds.instance.initialize();
+  } catch (e) {
+    debugPrint('Google AdMob initialization failed: $e');
+  }
+
   // Initialize Firebase & Push Notifications
   try {
     await Firebase.initializeApp();
@@ -25,6 +33,7 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
   }
+
 
   // Initialize Supabase
   await Supabase.initialize(
@@ -95,12 +104,13 @@ class ZiweiAiApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return GlobalPaywallWrapper(
-      child: MaterialApp.router(
-        title: 'Tử Vi Toàn Tập',
-        theme: AppTheme.mystical,
-        routerConfig: appRouter,
-        debugShowCheckedModeBanner: false,
+    return MaterialApp.router(
+      title: 'Tử Vi Toàn Tập',
+      theme: AppTheme.mystical,
+      routerConfig: appRouter,
+      debugShowCheckedModeBanner: false,
+      builder: (context, child) => GlobalPaywallWrapper(
+        child: child ?? const SizedBox.shrink(),
       ),
     );
   }

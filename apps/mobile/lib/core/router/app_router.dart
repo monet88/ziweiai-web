@@ -2,7 +2,9 @@ import 'package:go_router/go_router.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/charts/presentation/chart_detail_screen.dart';
 import '../../features/charts/data/models/chart_snapshot.dart';
+import '../../features/charts/presentation/annual_horoscope_screen.dart';
 import '../../features/auth/presentation/auth_screen.dart';
+import '../../features/auth/presentation/profile_screen.dart';
 import '../../features/wallet/presentation/wallet_screen.dart';
 import '../../features/vision/presentation/vision_input_screen.dart';
 import '../../features/vision/presentation/vision_result_screen.dart';
@@ -27,8 +29,19 @@ final appRouter = GoRouter(
       },
     ),
     GoRoute(
+      path: '/charts/:id/annual',
+      builder: (context, state) {
+        final chartData = state.extra as ChartDetailResponse;
+        return AnnualHoroscopeScreen(chartData: chartData);
+      },
+    ),
+    GoRoute(
       path: '/auth',
       builder: (context, state) => const AuthScreen(),
+    ),
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) => const ProfileScreen(),
     ),
     GoRoute(
       path: '/wallet',

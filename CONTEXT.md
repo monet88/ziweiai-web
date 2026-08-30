@@ -99,6 +99,10 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
     - Tách nhánh chuyên biệt `feature/mobile-release-v1` (Commit: `6db45e6`), cô lập 100% thay đổi của Flutter khỏi Web/API.
     - Kết nối thành công Wi-Fi Debugging (`192.168.2.25:40805`) với thiết bị Samsung Galaxy A53 5G (`SM_A536E`).
     - Tối ưu build `--target-platform android-arm64` (chỉ mất 31.1s), cài đặt trực tiếp và khởi chạy thành công với đồ họa `Impeller Vulkan Backend` 60-120 FPS.
+    - Mở thành công **Pull Request #2** (`feature/mobile-release-v1` ➜ `main`) trên GitHub.
+
+19. **Kế Hoạch Nâng Cấp Giao Diện Mobile "Celestial Luxury" (Sprint 37 - Phase 6)**
+    - Chuẩn bị bước vào Sprint 37 để đại tu giao diện Mobile Flutter từ đơn giản lên đẳng cấp **Celestial Luxury Glassmorphism** (Bento Grid 12 bộ môn, viền vàng phát quang, hiệu ứng Haptic Feedback cảm ứng rung tinh tế, Floating Pill NavBar).
 
 ---
 
@@ -109,12 +113,11 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 - **Playwright E2E**: ✅ `smoke.spec.ts` & `us-043-numerology.spec.ts` (100% Passed)
 - **Mobile Flutter**: ✅ `flutter analyze` (0 issues), `flutter test` (19/19 tests passed), `flutter build apk --release` (SUCCESS - 59.8MB), `Live Install Samsung A53` (SUCCESS)
 - **Vercel Demo Smoke**: ✅ `https://tuvitoantap.vercel.app` (HTTP 200 Root, API health, API features, SPA routes)
-- **GitHub Action Keep-Alive**: ✅ `Run #12 SUCCESS`
+- **Cron-Job.org Keep-Alive**: ✅ `Job #8346899 & #8346900 ACTIVE 24/7`
 
 ---
 
 ## ⚓ Rollback Anchor & Backup
-- **Base Commit Hash**: `713530f`
 - **Safe Rollback Point**: `git reset --hard 713530f` (Chỉ dùng sau khi đã xác nhận và lưu backup stash)
 
 ---

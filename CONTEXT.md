@@ -104,12 +104,12 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 19. **Kế Hoạch Nâng Cấp Giao Diện Mobile "Celestial Luxury" (Sprint 37 - Phase 6)**
     - Chuẩn bị bước vào Sprint 37 để đại tu giao diện Mobile Flutter từ đơn giản lên đẳng cấp **Celestial Luxury Glassmorphism** (Bento Grid 12 bộ môn, viền vàng phát quang, hiệu ứng Haptic Feedback cảm ứng rung tinh tế, Floating Pill NavBar).
 
-20. **Hoàn Thành Ticket 1 - Sprint 37: Design System & Bento Grid HomeScreen (30/08/2026)**
-    - Nâng cấp `AppTheme` với bảng màu **Deep Cosmos** (`#08060F` ➜ `#120E24`), hệ dải màu **Imperial Gold** & **Nebula Glow**, typography hoàng gia (`GoogleFonts.cinzel` & `PlayfairDisplay`).
-    - Nâng cấp `GlassPanel 2.0` (BackdropFilter blur, viền gradient hoàng gia phát quang, quầng sáng aura và rung cảm ứng Haptic Feedback).
-    - Nâng cấp `AnimatedBackground` tích hợp canvas hạt sao lấp lánh `_StarfieldPainter` và 3 quầng sáng tinh vân tối ưu GPU 60-120 FPS.
-    - Xây dựng component mới `FloatingPillNavBar` (thanh điều hướng đáy lơ lửng bọc kính mờ viền vàng).
-    - Tái thiết kế toàn diện `HomeScreen` thành **Bento Grid Thuật Số AI** (Hero Tử Vi AI Quick-Form + Bento Grid 6 công cụ Tarot, Kinh Dịch, Thần Số Học, Tướng Mặt AI, Chỉ Tay AI, Ví XU).
+20. **Hoàn Thành Toàn Diện Sprint 37: Mobile UI/UX Overhaul & Celestial Luxury Revamp (30/08/2026)**
+    - **Ticket 1 (Design System & Bento Grid Home)**: Nâng cấp `AppTheme` với bảng màu **Deep Cosmos**, hệ dải màu **Imperial Gold** & **Nebula Glow**, `GlassPanel 2.0` (viền vàng phát quang, haptic feedback), `AnimatedBackground` (tinh vân & hạt sao vũ trụ 60-120 FPS), `FloatingPillNavBar` (thanh điều hướng đáy lơ lửng), `HomeScreen` Bento Grid 6 thẻ công cụ thuật số AI.
+    - **Ticket 2 (Tử Vi Thiên Bàn & Chart Detail)**: `ZiweiBoard` 12 cung viền vàng phát quang, phân cấp màu sao chính/phụ tinh, tâm Thái Cực Âm Dương hào quang vàng/tím, haptic tap từng cung vị; `ChartDetailScreen` bọc kính mờ đa tầng và nút FAB hỏi đáp AI Imperial Gold.
+    - **Ticket 3 (Kinh Dịch 3D & Tarot 3D)**: `IChingScreen` đĩa gieo quẻ 3D viền vàng, mô phỏng lắc đồng xu Âm Dương vật lý, rung haptic xúc giác đa tầng, hiển thị Quẻ Chủ/Biến viền vàng; `TarotScreen` mặt lưng bài mạ vàng tinh vân, hiệu ứng lật bài 3D mượt mà và lời giải mã huyền học.
+    - **Ticket 4 (Thần Số Học & Ví XU Revamp)**: `NumerologyScreen` bọc `GlassPanel 2.0`, 4 thẻ chỉ số cốt lõi mạ vàng phát sáng; `WalletScreen` bảng nạp XU hoàng gia, pill số dư vàng rực và nút nạp XU phát quang.
+    - **Ticket 5 (Release APK Verification)**: Build thành công gói tối ưu Release APK `--target-platform android-arm64` (chỉ **22.6MB**, giảm 62% dung lượng từ bản 59.8MB universal).
     - Hoàn tất 100% Verification Gates: `flutter analyze` (0 issues), `flutter test` (19/19 tests passed), `contracts` (125 tests passed), `web` (258 tests passed), `api` (439 tests passed).
 
 ---
@@ -119,20 +119,20 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 - **Backend API**: ✅ `pnpm -F @ziweiai/api test` (72/72 files, 439 tests passed)
 - **Web SvelteKit**: ✅ `pnpm -F @ziweiai/web check` (0 errors) & `pnpm -F @ziweiai/web test` (47/47 files, 258 tests passed)
 - **Playwright E2E**: ✅ `smoke.spec.ts` & `us-043-numerology.spec.ts` (100% Passed)
-- **Mobile Flutter**: ✅ `flutter analyze` (0 issues), `flutter test` (19/19 tests passed), `flutter build apk --release` (SUCCESS - 59.8MB), `Live Install Samsung A53` (SUCCESS)
+- **Mobile Flutter**: ✅ `flutter analyze` (0 issues), `flutter test` (19/19 tests passed), `flutter build apk --release --target-platform android-arm64` (SUCCESS - 22.6MB)
 - **Vercel Demo Smoke**: ✅ `https://tuvitoantap.vercel.app` (HTTP 200 Root, API health, API features, SPA routes)
 - **Cron-Job.org Keep-Alive**: ✅ `Job #8346899 & #8346900 ACTIVE 24/7`
 
 ---
 
 ## ⚓ Rollback Anchor & Backup
-- **Safe Rollback Point**: `git reset --hard 713530f` (Chỉ dùng sau khi đã xác nhận và lưu backup stash)
+- **Safe Rollback Point**: `git reset --hard 3ad0f2c` (Chỉ dùng sau khi đã xác nhận và lưu backup stash)
 
 ---
 
 ## ⏳ Các Hạng Mục Tiếp Theo (Next Steps)
-- Kiểm thử cài đặt APK trên thiết bị thật Android.
-- Khảo sát mở rộng thêm các kênh phân phối / App Store khi có yêu cầu.
+- Merge Pull Request #2 vào nhánh `main` khi Đại Ka duyệt.
+- Mở rộng thêm các màn hình sinh trắc học AI (Tướng Mặt AI, Chỉ Tay AI) trên Mobile nếu có yêu cầu.
 
 ---
 

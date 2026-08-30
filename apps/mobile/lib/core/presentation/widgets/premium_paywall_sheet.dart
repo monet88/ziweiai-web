@@ -1,8 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../features/wallet/providers/wallet_provider.dart';
+import '../../../features/subscription/providers/subscription_provider.dart';
+import '../../theme/app_theme.dart';
+import '../../../ui/glass_panel.dart';
 
 class PremiumPaywallSheet extends ConsumerWidget {
   final int cost;
@@ -17,126 +22,200 @@ class PremiumPaywallSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final balanceAsync = ref.watch(walletBalanceProvider);
+    final isPro = ref.watch(isProUserProvider);
 
     return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF16213E).withValues(alpha: 0.8),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          color: AppTheme.cosmosDark.withValues(alpha: 0.92),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           border: Border(
             top: BorderSide(
-              color: const Color(0xFFFFD700).withValues(alpha: 0.3),
-              width: 1,
+              color: AppTheme.goldBright.withValues(alpha: 0.6),
+              width: 1.5,
             ),
           ),
+          boxShadow: CelestialShadows.goldGlow,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 48,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 24),
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(2),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppTheme.goldBright.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const Icon(
-              Icons.diamond_outlined,
-              color: Color(0xFFFFD700),
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Tính năng Premium',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: CelestialGradients.imperialGold,
+                  boxShadow: CelestialShadows.goldGlow,
+                ),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  color: Color(0xFF141026),
+                  size: 36,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Để sử dụng $featureName, bạn cần thanh toán phí là $cost XU.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.white70,
-                height: 1.5,
+              const SizedBox(height: 16),
+              Text(
+                'MỞ KHÓA THUẬT SỐ CAO CẤP',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cinzel(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.goldBright,
+                  letterSpacing: 1.2,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white10),
+              const SizedBox(height: 12),
+              Text(
+                'Để thực hiện luận giải $featureName, bạn có thể thanh toán phí $cost XU hoặc nâng cấp gói VIP Pro để mở khóa toàn bộ tính năng.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.mysticalTextSecondary,
+                  height: 1.5,
+                ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Số dư hiện tại:',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+              const SizedBox(height: 20),
+              
+              // Balance box
+              GlassPanel(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                borderGradient: CelestialGradients.goldBorder,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Số dư XU hiện tại:',
+                      style: TextStyle(color: AppTheme.mysticalText, fontSize: 14),
+                    ),
+                    balanceAsync.when(
+                      data: (balance) => Row(
+                        children: [
+                          Text(
+                            '$balance',
+                            style: GoogleFonts.cinzel(
+                              color: AppTheme.goldBright,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'XU',
+                            style: TextStyle(
+                              color: AppTheme.goldBright,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                      loading: () => const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppTheme.goldBright,
+                        ),
+                      ),
+                      error: (e, st) => const Text('Lỗi', style: TextStyle(color: Colors.redAccent)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Primary VIP Action
+              if (!isPro) ...[
+                Container(
+                  width: double.infinity,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: CelestialGradients.imperialGold,
+                    boxShadow: CelestialShadows.goldGlow,
                   ),
-                  balanceAsync.when(
-                    data: (balance) => Text(
-                      '$balance XU',
-                      style: const TextStyle(
-                        color: Color(0xFFFFD700),
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      HapticFeedback.mediumImpact();
+                      Navigator.of(context).pop();
+                      await ref.read(subscriptionProvider.notifier).presentPaywall();
+                    },
+                    icon: const Icon(Icons.workspace_premium, color: Color(0xFF141026)),
+                    label: Text(
+                      'NÂNG CẤP VIP PRO',
+                      style: GoogleFonts.cinzel(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF141026),
+                        letterSpacing: 1.0,
                       ),
                     ),
-                    loading: () => const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFFD700)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: const Color(0xFF141026),
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
-                    error: (e, st) => const Text('Lỗi', style: TextStyle(color: Colors.red)),
                   ),
-                ],
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Secondary: Nạp XU
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).pop();
+                    context.push('/wallet');
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.goldBright,
+                    side: const BorderSide(color: AppTheme.mysticalGold, width: 1.2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    'NẠP XU VÀO VÍ',
+                    style: GoogleFonts.cinzel(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
+              const SizedBox(height: 10),
+              TextButton(
                 onPressed: () {
+                  HapticFeedback.lightImpact();
                   Navigator.of(context).pop();
-                  context.push('/wallet');
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFD700),
-                  foregroundColor: const Color(0xFF16213E),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
                 child: const Text(
-                  'Nạp Thêm XU',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  'Để sau',
+                  style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 14),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                'Để sau',
-                style: TextStyle(color: Colors.white54, fontSize: 16),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
@@ -32,29 +33,54 @@ void main() async {
   );
 
   // Initialize RevenueCat
-  await Purchases.setLogLevel(LogLevel.debug);
-  
-  PurchasesConfiguration? configuration;
+  String? targetKey;
   if (Platform.isAndroid && Env.revenuecatApiKeyPlayStore.isNotEmpty) {
-    configuration = PurchasesConfiguration(Env.revenuecatApiKeyPlayStore);
+    targetKey = Env.revenuecatApiKeyPlayStore;
   } else if (Platform.isIOS && Env.revenuecatApiKeyAppStore.isNotEmpty) {
-    configuration = PurchasesConfiguration(Env.revenuecatApiKeyAppStore);
+    targetKey = Env.revenuecatApiKeyAppStore;
   }
 
-  if (configuration != null) {
-    await Purchases.configure(configuration);
-  }
+  // RevenueCat native SDK enforces that test_ keys cannot be used in release builds.
+  // In release builds, only configure if a real production key (e.g. goog_ / appl_) is provided.
+  final isTestKey = targetKey != null && targetKey.startsWith('test_');
+  final shouldConfigureRevenueCat =
+      targetKey != null && targetKey.isNotEmpty && (!kReleaseMode || !isTestKey);
 
-  // Sync Supabase Auth state with RevenueCat only if configured
-  if (configuration != null) {
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      final session = data.session;
-      if (session != null) {
-        Purchases.logIn(session.user.id);
-      } else {
-        Purchases.logOut();
+  if (shouldConfigureRevenueCat) {
+    try {
+      await Purchases.setLogLevel(kReleaseMode ? LogLevel.info : LogLevel.debug);
+      final configuration = PurchasesConfiguration(targetKey);
+      await Purchases.configure(configuration);
+
+      // Sync Supabase Auth state with RevenueCat
+      final currentSession = Supabase.instance.client.auth.currentSession;
+      if (currentSession != null) {
+        try {
+          await Purchases.logIn(currentSession.user.id);
+        } catch (e) {
+          debugPrint('RevenueCat logIn error on startup: $e');
+        }
       }
-    });
+
+      Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+        final session = data.session;
+        try {
+          if (session != null) {
+            await Purchases.logIn(session.user.id);
+          } else {
+            await Purchases.logOut();
+          }
+        } catch (e) {
+          debugPrint('RevenueCat auth sync error: $e');
+        }
+      });
+    } catch (e) {
+      debugPrint('RevenueCat configuration error: $e');
+    }
+  } else {
+    debugPrint(
+      '[RevenueCat] Skipping Purchases.configure in release mode because test key ($targetKey) is used.',
+    );
   }
 
   runApp(

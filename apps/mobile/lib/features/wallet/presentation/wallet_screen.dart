@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../providers/wallet_provider.dart';
+import '../../subscription/providers/subscription_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../ui/animated_background.dart';
 import '../../../ui/glass_panel.dart';
@@ -375,23 +376,123 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
       );
     }
 
+    final isPro = ref.watch(isProUserProvider);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // VIP Pro Banner
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: CelestialGradients.imperialGold,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: CelestialShadows.goldGlow,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.workspace_premium, color: Color(0xFF141026), size: 28),
+                        const SizedBox(width: 8),
+                        Text(
+                          'TỬ VI TOÀN TẬP PRO',
+                          style: GoogleFonts.cinzel(
+                            color: const Color(0xFF141026),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isPro ? const Color(0xFF141026) : Colors.black.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        isPro ? 'ĐANG KÍCH HOẠT' : 'VIP PRO',
+                        style: TextStyle(
+                          color: isPro ? AppTheme.goldBright : const Color(0xFF141026),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Mở khóa toàn bộ thuật số (Tướng Mặt, Chỉ Tay, Bát Tự, Tử Vi, Tarot 3D, Kinh Dịch) không giới hạn.',
+                  style: TextStyle(
+                    color: Color(0xFF141026),
+                    fontSize: 13,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          HapticFeedback.mediumImpact();
+                          await ref.read(subscriptionProvider.notifier).presentPaywall();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF141026),
+                          foregroundColor: AppTheme.goldBright,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          isPro ? 'Xem Gói Đang Dùng' : 'Mở Khóa VIP PRO',
+                          style: GoogleFonts.cinzel(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: () async {
+                        HapticFeedback.lightImpact();
+                        await ref.read(subscriptionProvider.notifier).presentCustomerCenter();
+                      },
+                      icon: const Icon(Icons.settings_outlined, color: Color(0xFF141026)),
+                      tooltip: 'Customer Center (Quản lý)',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+
           Center(
             child: Text(
-              'CHỌN GÓI NẠP HOÀNG GIA',
+              'HOẶC CHỌN GÓI NẠP XU HOÀNG GIA',
               style: GoogleFonts.cinzel(
                 color: AppTheme.goldBright,
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.5,
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           ..._offerings!.current!.availablePackages.map((package) {
             int xuDisplay = 0;
             if (package.storeProduct.identifier.contains('100')) {

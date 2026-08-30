@@ -112,6 +112,12 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
     - **Ticket 5 (Release APK Verification)**: Build thành công gói tối ưu Release APK `--target-platform android-arm64` (chỉ **22.6MB**, giảm 62% dung lượng từ bản 59.8MB universal).
     - Hoàn tất 100% Verification Gates: `flutter analyze` (0 issues), `flutter test` (19/19 tests passed), `contracts` (125 tests passed), `web` (258 tests passed), `api` (439 tests passed).
 
+21. **Hoàn Thành Toàn Diện Sprint 38: Biometric Vision AI & RevenueCat In-App Subscriptions (30/08/2026)**
+    - **Ticket 1 (Xem Tướng Mặt AI - Face Vision Scan)**: Tích hợp endpoint `/api/vision/face-reading` trên Mobile. Giao diện Augmented HUD Scanner: Vùng quét Tam Đình (Thượng/Trung/Hạ Đình) & Ngũ Nhạc, tia laser vàng quét động (`AnimationController`), hiển thị kết quả thẻ bài hoàng kim Celestial Luxury với định dạng Markdown và chia sẻ nhanh qua hệ thống.
+    - **Ticket 2 (Xem Chỉ Tay AI - Palmistry Vision Scan)**: Tích hợp endpoint `/api/vision/palm-reading` trên Mobile. Augmented HUD Scanner chuyên biệt: Đường Sinh Đạo, Trí Đạo, Tâm Đạo phát sáng vàng kim và phân tích tướng tay vận mệnh theo thuật số Á Đông.
+    - **Ticket 3 (RevenueCat Live Configuration & Subscriptions)**: Tích hợp `purchases_flutter` & `purchases_ui_flutter`. Cấu hình API key `test_QfXsSSzoZikwOkSepsWCLSUiUSF`, entitlement `tử_vi_toàn_tập_pro` (`tu_vi_toan_tap_pro`, `pro`) với 3 gói dịch vụ: Trọn Đời (`lifetime`), Năm (`yearly`), Tháng (`monthly`). Đồng bộ Supabase Auth an toàn với RevenueCat. Tích hợp Native Paywall Sheet và Customer Center trực tiếp trên `WalletScreen` và `HomeScreen`.
+    - **Verification & Store Prep**: Hoàn tất 100% Verification Gates: `flutter analyze` (0 issues), `flutter test` (22/22 tests passed), `contracts` (125 tests passed), `web` (258 tests passed), `api` (439 tests passed). Release APK built thành công (**24.8MB**), stream install và khởi chạy mượt mà trên Samsung Galaxy A53 5G (`192.168.2.25:40805`).
+
 ---
 
 ## 📊 Trạng Thái Kiểm Thử (Verification Gates)
@@ -119,7 +125,8 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 - **Backend API**: ✅ `pnpm -F @ziweiai/api test` (72/72 files, 439 tests passed)
 - **Web SvelteKit**: ✅ `pnpm -F @ziweiai/web check` (0 errors) & `pnpm -F @ziweiai/web test` (47/47 files, 258 tests passed)
 - **Playwright E2E**: ✅ `smoke.spec.ts` & `us-043-numerology.spec.ts` (100% Passed)
-- **Mobile Flutter**: ✅ `flutter analyze` (0 issues), `flutter test` (19/19 tests passed), `flutter build apk --release --target-platform android-arm64` (SUCCESS - 22.6MB)
+- **Mobile Flutter**: ✅ `flutter analyze` (0 issues), `flutter test` (22/22 tests passed), `flutter build apk --release --target-platform android-arm64` (SUCCESS - 24.8MB)
+- **Samsung Galaxy A53 5G Test**: ✅ Cài đặt & khởi chạy thành công qua ADB Wi-Fi Debugging (`192.168.2.25:40805`)
 - **Vercel Demo Smoke**: ✅ `https://tuvitoantap.vercel.app` (HTTP 200 Root, API health, API features, SPA routes)
 - **Cron-Job.org Keep-Alive**: ✅ `Job #8346899 & #8346900 ACTIVE 24/7`
 
@@ -132,7 +139,8 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 
 ## ⏳ Các Hạng Mục Tiếp Theo (Next Steps)
 - Merge Pull Request #2 vào nhánh `main` khi Đại Ka duyệt.
-- Mở rộng thêm các màn hình sinh trắc học AI (Tướng Mặt AI, Chỉ Tay AI) trên Mobile nếu có yêu cầu.
+- Gắn Release Tag `v1.0.0` trên GitHub.
+- Đóng gói Android App Bundle (.aab) và iOS IPA chuẩn bị nộp Store.
 
 ---
 
@@ -140,4 +148,5 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 - Mọi tính năng lớn mới bắt buộc phải rẽ nhánh (new branch) và tạo PR theo `/vibe-engineering-workflow` và `/vibe-git-manager`.
 - File `.env.local` là nguồn sự thật cho toàn bộ API key/Token, tuyệt đối KHÔNG commit vào Git.
 - Cập nhật lại file `CONTEXT.md` sau mỗi session hoặc khi hoàn thành mốc tính năng quan trọng.
+
 

@@ -13,6 +13,7 @@ import '../../auth/presentation/auth_provider.dart';
 import '../../auth/data/repositories/auth_repository.dart';
 import '../../vision/data/models/vision_kind.dart';
 import '../../wallet/providers/wallet_provider.dart';
+import '../../subscription/providers/subscription_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../ui/animated_background.dart';
 import '../../../ui/glass_panel.dart';
@@ -118,6 +119,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       },
     );
 
+    final isPro = ref.watch(isProUserProvider);
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       extendBody: true,
@@ -154,6 +157,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
         actions: [
+          // VIP Pro Pill
+          if (isPro)
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                ref.read(subscriptionProvider.notifier).presentCustomerCenter();
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: CelestialGradients.imperialGold,
+                  boxShadow: CelestialShadows.goldGlow,
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.workspace_premium, size: 13, color: Color(0xFF141026)),
+                    SizedBox(width: 3),
+                    Text(
+                      'VIP PRO',
+                      style: TextStyle(
+                        color: Color(0xFF141026),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 10,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
           // Wallet Balance Pill
           GestureDetector(
             onTap: () {

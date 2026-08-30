@@ -41,12 +41,20 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/vision/input',
       builder: (context, state) {
-        final kind = state.extra as VisionKind;
+        final kind = state.extra as VisionKind? ?? VisionKind.face;
         if (kind == VisionKind.tarot) {
           return const TarotScreen();
         }
         return VisionInputScreen(kind: kind);
       },
+    ),
+    GoRoute(
+      path: '/vision/face',
+      builder: (context, state) => const VisionInputScreen(kind: VisionKind.face),
+    ),
+    GoRoute(
+      path: '/vision/palm',
+      builder: (context, state) => const VisionInputScreen(kind: VisionKind.palm),
     ),
     GoRoute(
       path: '/vision/result',

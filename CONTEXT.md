@@ -7,12 +7,12 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 ---
 
 ## 🚀 Trạng Thái Tính Năng & Sprint (Phase 8: Production Store Distribution & Advanced AI Capabilities — Sprint 39 — 30/08/2026)
-- **Current Branch:** `feature/sprint39-mobile-perfection-and-aab`
-- **Rollback Anchor:** `587bd35` (feat(mobile): complete sprint 39 ticket 39.4 (annual horoscope flow & luxury pdf report))
+- **Current Branch:** `main` (Merged from `feature/sprint39-mobile-perfection-and-aab`)
+- **Release Tag:** `v1.1.0` (Sprint 39 Production Store Distribution & Advanced AI Capabilities)
 - **Base Release Tag:** `v1.0.0` (commit `1a63fd5` trên `main`)
 - **Total Tests:** **899/899 Passed** (Mobile: 38, API: 443, Web: 258, Contracts: 125, Astro-Engine: 35)
 - **Google Play App Bundle:** `apps/mobile/build/app/outputs/bundle/release/app-release.aab` (**59.3MB**)
-- **Sprint 39 Progress:** 4/4 tickets (Ticket 39.1, Ticket 39.2, Ticket 39.3 & Ticket 39.4: **100% DONE**).
+- **Sprint 39 Progress:** 4/4 tickets (Ticket 39.1, Ticket 39.2, Ticket 39.3 & Ticket 39.4: **100% DONE & MERGED**).
 
 1. **Sprint 39 Ticket 39.1 (DONE):**
    - Cấu hình Keystore signing và build bản phát hành Google Play App Bundle (`.aab`).

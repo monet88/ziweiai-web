@@ -8,11 +8,11 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 
 ## 🚀 Trạng Thái Tính Năng & Sprint (Phase 8: Production Store Distribution & Advanced AI Capabilities — Sprint 39 — 30/08/2026)
 - **Current Branch:** `feature/sprint39-mobile-perfection-and-aab`
-- **Rollback Anchor:** `857ea8a` (feat(mobile): complete sprint 39 ticket 39.1, luxury UI overhaul, profile screen, vietqr & aab release)
+- **Rollback Anchor:** `79cb2c8` (feat(mobile): complete sprint 39 ticket 39.2 (admob) and ticket 39.3 (voice synthesis))
 - **Base Release Tag:** `v1.0.0` (commit `1a63fd5` trên `main`)
-- **Total Tests:** **890/890 Passed** (Mobile: 29, API: 443, Web: 258, Contracts: 125, Astro-Engine: 35)
+- **Total Tests:** **899/899 Passed** (Mobile: 38, API: 443, Web: 258, Contracts: 125, Astro-Engine: 35)
 - **Google Play App Bundle:** `apps/mobile/build/app/outputs/bundle/release/app-release.aab` (**59.3MB**)
-- **Sprint 39 Progress:** 3/4 tickets (Ticket 39.1, Ticket 39.2 & Ticket 39.3: 100% DONE).
+- **Sprint 39 Progress:** 4/4 tickets (Ticket 39.1, Ticket 39.2, Ticket 39.3 & Ticket 39.4: **100% DONE**).
 
 1. **Sprint 39 Ticket 39.1 (DONE):**
    - Cấu hình Keystore signing và build bản phát hành Google Play App Bundle (`.aab`).
@@ -35,8 +35,11 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
    - Xây dựng thanh điều khiển âm thanh nổi `VoiceAudioPlayerBar` kèm hiệu ứng sóng âm thanh động `AnimatedWaveformVisualizer`.
    - Tích hợp nút 1 chạm phát giọng đọc `VoicePlayIconButton` trên toàn bộ các màn hình luận giải (Trợ Lý AI, Kinh Dịch, Thần Số Học, Tarot, Tướng Mặt & Chỉ Tay).
 
-4. **Sprint 39 Ticket 39.4 (NEXT UP):**
-   - Màn hình Vận Hạn Lưu Niên Nâng Cao (Annual Horoscope Flow) & Báo Cáo PDF Tử Vi Chuyên Sâu.
+4. **Sprint 39 Ticket 39.4 (DONE):**
+   - Xây dựng Màn hình Vận Hạn Lưu Niên Nâng Cao (`AnnualHoroscopeScreen`) với Carousel chọn năm, xem 12 Lưu Nguyệt, gọi AI luận giải chuyên sâu (15 XU), xử lý 402 Paywall và nghe đọc giọng nói AI.
+   - Xây dựng Engine xuất Báo Cáo PDF Tử Vi Chuyên Sâu A4 sang trọng chuẩn in ấn (`ZiweiPdfService` với `pdf` & `printing`), gồm Bìa Hoàng Gia, Ma trận 12 Cung Thiên Bàn, Vận hạn năm/tháng và Luận giải AI.
+   - Nút thao tác nhanh trên `ChartDetailScreen` và route `/charts/:id/annual`.
+   - Viết trọn vẹn Unit Tests & Widget Tests, nâng tổng số test lên **899/899 tests xanh 100%**.
 
 
 

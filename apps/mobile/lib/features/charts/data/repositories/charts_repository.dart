@@ -25,6 +25,42 @@ class ChartsRepository {
       rethrow;
     }
   }
+
+  Future<Map<String, dynamic>> createAnnualReport(String chartSnapshotId, int year) async {
+    try {
+      final response = await _dio.post(
+        '/charts/$chartSnapshotId/annual-report',
+        queryParameters: {'year': year},
+      );
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getDailyFortune(String chartSnapshotId, String asOf) async {
+    try {
+      final response = await _dio.get(
+        '/charts/$chartSnapshotId/daily',
+        queryParameters: {'asOf': asOf},
+      );
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getMonthlyFortune(String chartSnapshotId, String asOf) async {
+    try {
+      final response = await _dio.get(
+        '/charts/$chartSnapshotId/monthly',
+        queryParameters: {'asOf': asOf},
+      );
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 final chartsRepositoryProvider = Provider<ChartsRepository>((ref) {

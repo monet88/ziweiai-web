@@ -76,6 +76,41 @@ class MockChartsRepository implements ChartsRepository {
   Future<Map<String, dynamic>> getChartDetail(String chartSnapshotId) async {
     return {};
   }
+
+  @override
+  Future<Map<String, dynamic>> createAnnualReport(String chartSnapshotId, int year) async {
+    return {
+      'chartId': chartSnapshotId,
+      'year': year,
+      'frame': {
+        'yearly': {
+          'index': 0,
+          'heavenlyStemKey': 'stem.jia',
+          'earthlyBranchKey': 'branch.zi',
+          'palaceNameKeys': ['palace.ming'],
+          'mutagenStarKeys': [],
+        },
+        'monthly': List.generate(12, (i) => {
+          'index': i,
+          'heavenlyStemKey': 'stem.jia',
+          'earthlyBranchKey': 'branch.zi',
+          'palaceNameKeys': ['palace.ming'],
+          'mutagenStarKeys': [],
+        }),
+      },
+      'markdown': '# Báo cáo vận hạn năm',
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> getDailyFortune(String chartSnapshotId, String asOf) async {
+    return {};
+  }
+
+  @override
+  Future<Map<String, dynamic>> getMonthlyFortune(String chartSnapshotId, String asOf) async {
+    return {};
+  }
 }
 
 void main() {

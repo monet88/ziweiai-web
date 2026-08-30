@@ -5,11 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
+import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:ziweiai_mobile/ui/premium_button.dart';
 import 'package:ziweiai_mobile/core/theme/app_theme.dart';
 import 'package:ziweiai_mobile/features/assistant/presentation/assistant_panel.dart';
 import 'package:ziweiai_mobile/features/charts/data/models/chart_snapshot.dart';
 import 'package:ziweiai_mobile/features/charts/presentation/ziwei_board.dart';
+import 'package:ziweiai_mobile/features/charts/services/ziwei_pdf_service.dart';
 import 'package:ziweiai_mobile/ui/animated_background.dart';
 import 'package:ziweiai_mobile/ui/glass_panel.dart';
 
@@ -77,6 +80,29 @@ class _ChartDetailScreenState extends State<ChartDetailScreen>
     }
   }
 
+  Future<void> _exportPdf() async {
+    HapticFeedback.mediumImpact();
+    try {
+      final pdfBytes = await ZiweiPdfService.generateZiweiReportPdf(
+        snapshot: widget.chartData.chartRecord.snapshot,
+        systemKey: widget.chartData.chartRecord.chartSystem,
+      );
+      if (mounted) {
+        await ZiweiPdfService.shareOrPrintPdf(
+          context,
+          pdfBytes: pdfBytes,
+          filename: 'Laso_TuVi_${widget.chartData.chartRecord.id}.pdf',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi xuất PDF: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
@@ -94,6 +120,11 @@ class _ChartDetailScreenState extends State<ChartDetailScreen>
             ),
           ),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              onPressed: _exportPdf,
+              tooltip: 'Xuất Báo Cáo PDF',
+            ),
             IconButton(
               icon: const Icon(Icons.share_outlined),
               onPressed: () => _shareChart(context),
@@ -164,12 +195,12 @@ class _ChartDetailScreenState extends State<ChartDetailScreen>
         ),
         const SizedBox(height: 20),
         GlassPanel(
-          borderGradient: CelestialGradients.starlightBorder,
+          borderGradient: CelestialGradients.goldBorder,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Thao tác & Trợ Giúp',
+                'Vận Hạn & Tính Năng Chuyên Sâu',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontSize: 17,
                       color: AppTheme.goldBright,
@@ -183,13 +214,35 @@ class _ChartDetailScreenState extends State<ChartDetailScreen>
                   fontSize: 14,
                 ),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Chạm hoặc vuốt để phóng to thu nhỏ Thiên Bàn. Nhấn biểu tượng góc phải để xuất ảnh lá số.',
-                style: TextStyle(
-                  color: AppTheme.mysticalTextSecondary,
-                  fontSize: 13,
-                  height: 1.4,
+              const SizedBox(height: 14),
+              PremiumButton(
+                label: 'Xem Vận Hạn Lưu Niên',
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  context.push(
+                    '/charts/${widget.chartData.chartRecord.id}/annual',
+                    extra: widget.chartData,
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.goldBright,
+                    side: const BorderSide(color: AppTheme.glassBorderGold, width: 0.8),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                  label: const Text(
+                    'Xuất Bản PDF Lá Số (A4)',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  onPressed: _exportPdf,
                 ),
               ),
             ],

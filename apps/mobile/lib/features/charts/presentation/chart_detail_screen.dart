@@ -1,8 +1,8 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
@@ -10,6 +10,7 @@ import 'package:ziweiai_mobile/core/theme/app_theme.dart';
 import 'package:ziweiai_mobile/features/assistant/presentation/assistant_panel.dart';
 import 'package:ziweiai_mobile/features/charts/data/models/chart_snapshot.dart';
 import 'package:ziweiai_mobile/features/charts/presentation/ziwei_board.dart';
+import 'package:ziweiai_mobile/ui/animated_background.dart';
 import 'package:ziweiai_mobile/ui/glass_panel.dart';
 
 class ChartDetailScreen extends StatefulWidget {
@@ -100,29 +101,36 @@ class _ChartDetailScreenState extends State<ChartDetailScreen>
             ),
           ],
         ),
-        body: Stack(
-          children: [
-            // Mystical ambient background (gold + violet glows)
-            const Positioned.fill(child: _MysticalBackdrop()),
-            SafeArea(
-              child: reduceMotion
-                  ? _buildContent()
-                  : FadeTransition(
-                      opacity: _fade,
-                      child: SlideTransition(
-                        position: _slide,
-                        child: _buildContent(),
-                      ),
+        body: AnimatedBackground(
+          child: SafeArea(
+            child: reduceMotion
+                ? _buildContent()
+                : FadeTransition(
+                    opacity: _fade,
+                    child: SlideTransition(
+                      position: _slide,
+                      child: _buildContent(),
                     ),
-            ),
-          ],
+                  ),
+          ),
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            showAssistantPanel(context, widget.chartData.chartRecord.id);
-          },
-          icon: const Icon(Icons.chat_bubble_outline),
-          label: const Text('Hỏi AI'),
+        floatingActionButton: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            gradient: CelestialGradients.imperialGold,
+            boxShadow: CelestialShadows.goldGlow,
+          ),
+          child: FloatingActionButton.extended(
+            backgroundColor: Colors.transparent,
+            foregroundColor: const Color(0xFF141026),
+            elevation: 0,
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              showAssistantPanel(context, widget.chartData.chartRecord.id);
+            },
+            icon: const Icon(Icons.chat_bubble_outline, size: 20),
+            label: const Text('Hỏi AI', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+          ),
         ),
       ),
     );
@@ -142,6 +150,7 @@ class _ChartDetailScreenState extends State<ChartDetailScreen>
         GlassPanel(
           padding: const EdgeInsets.all(12),
           borderRadius: BorderRadius.circular(20),
+          borderGradient: CelestialGradients.goldBorder,
           child: SizedBox(
             height: 420,
             child: ClipRRect(
@@ -155,18 +164,20 @@ class _ChartDetailScreenState extends State<ChartDetailScreen>
         ),
         const SizedBox(height: 20),
         GlassPanel(
+          borderGradient: CelestialGradients.starlightBorder,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Thao tác',
+                'Thao tác & Trợ Giúp',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontSize: 17,
+                      color: AppTheme.goldBright,
                     ),
               ),
               const SizedBox(height: 10),
               Text(
-                'Hệ: $systemKey',
+                'Hệ thuật số: $systemKey',
                 style: const TextStyle(
                   color: AppTheme.mysticalTextSecondary,
                   fontSize: 14,
@@ -174,7 +185,7 @@ class _ChartDetailScreenState extends State<ChartDetailScreen>
               ),
               const SizedBox(height: 6),
               const Text(
-                'Vuốt để phóng to bàn. Dùng nút chia sẻ để xuất ảnh.',
+                'Chạm hoặc vuốt để phóng to thu nhỏ Thiên Bàn. Nhấn biểu tượng góc phải để xuất ảnh lá số.',
                 style: TextStyle(
                   color: AppTheme.mysticalTextSecondary,
                   fontSize: 13,
@@ -185,40 +196,6 @@ class _ChartDetailScreenState extends State<ChartDetailScreen>
           ),
         ),
       ],
-    );
-  }
-}
-
-class _MysticalBackdrop extends StatelessWidget {
-  const _MysticalBackdrop();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: RadialGradient(
-          center: const Alignment(-0.7, -0.9),
-          radius: 1.1,
-          colors: [
-            AppTheme.mysticalGold.withValues(alpha: 0.18),
-            AppTheme.mysticalBg,
-          ],
-          stops: const [0, 0.65],
-        ),
-      ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: const Alignment(0.9, -0.6),
-            radius: 0.95,
-            colors: [
-              const Color(0xFF7860DC).withValues(alpha: 0.16),
-              Colors.transparent,
-            ],
-          ),
-        ),
-        child: const ColoredBox(color: Color(0x6609080F)),
-      ),
     );
   }
 }

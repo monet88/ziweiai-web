@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:screenshot/screenshot.dart';
+
 import '../data/models/chart_snapshot.dart';
 import '../../../../core/theme/app_theme.dart';
-import 'package:screenshot/screenshot.dart';
 
 class ZiweiBoard extends StatelessWidget {
   final ChartSnapshot snapshot;
@@ -39,134 +42,267 @@ class ZiweiBoard extends StatelessWidget {
     }
 
     final palaces = snapshot.palaces ?? [];
-
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final borderColor = isDark ? AppTheme.glassBorder : Colors.black12;
-    final boardBg = isDark ? AppTheme.glassFill : theme.colorScheme.surface;
-    final centerBg = isDark ? AppTheme.mysticalElevated : Colors.white;
-    final bodyTint = isDark
-        ? AppTheme.mysticalGold.withValues(alpha: 0.12)
-        : Colors.yellow.withValues(alpha: 0.1);
-    final palaceNameColor = isDark ? const Color(0xFFE8B4B4) : Colors.red;
-    final textColor = theme.colorScheme.onSurface;
+
+    final borderColor = isDark ? AppTheme.glassBorderGold : const Color(0x33D4AF37);
+    final boardBg = isDark ? AppTheme.cosmosDark : const Color(0xFF141026);
+    final centerBg = isDark ? AppTheme.cosmosSurface : const Color(0xFF1C1733);
 
     return InteractiveViewer(
       constrained: false,
       boundaryMargin: const EdgeInsets.all(32),
       minScale: 0.2,
-      maxScale: 2.0,
+      maxScale: 2.5,
       child: Screenshot(
         controller: screenshotController ?? ScreenshotController(),
         child: Container(
           width: boardSize,
           height: boardSize,
           decoration: BoxDecoration(
-            border: Border.all(color: borderColor),
+            border: Border.all(color: AppTheme.mysticalGold.withValues(alpha: 0.4), width: 1.5),
             color: boardBg,
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.nebulaPurple.withValues(alpha: 0.25),
+                blurRadius: 30,
+                spreadRadius: 2,
+              ),
+            ],
           ),
           child: Stack(
-          children: [
-            // Center info area
-            Positioned(
-              left: cellSize,
-              top: cellSize,
-              width: cellSize * 2,
-              height: cellSize * 2,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: borderColor),
-                  color: centerBg,
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        snapshot.summary?['name']?.toString() ?? 'Tử Vi Toàn Tập',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Năm sinh: ${snapshot.birth?['solarYear'] ?? ''}',
-                        style: TextStyle(fontSize: 16, color: textColor),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // 12 Palaces
-            for (final palace in palaces)
+            children: [
+              // Center info area (Thái Cực & Thiên Bàn)
               Positioned(
-                left: getCellOffset(palace.index).dx,
-                top: getCellOffset(palace.index).dy,
-                width: cellSize,
-                height: cellSize,
+                left: cellSize,
+                top: cellSize,
+                width: cellSize * 2,
+                height: cellSize * 2,
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: borderColor),
-                    color: palace.isBodyPalace ? bodyTint : Colors.transparent,
+                    border: Border.all(color: borderColor, width: 1.2),
+                    color: centerBg,
+                    gradient: RadialGradient(
+                      center: Alignment.center,
+                      radius: 0.85,
+                      colors: [
+                        AppTheme.cosmosElevated,
+                        AppTheme.cosmosSurface,
+                        AppTheme.cosmosDeep,
+                      ],
+                    ),
                   ),
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Palace name (e.g. Mệnh, Quan Lộc)
-                      Center(
-                        child: Text(
-                          palace.displayName ?? palace.nameKey,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: palaceNameColor,
+                  padding: const EdgeInsets.all(20),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Yin-Yang & Compass Icon
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: CelestialGradients.imperialGold,
+                            boxShadow: CelestialShadows.goldGlow,
+                          ),
+                          child: const Icon(
+                            Icons.brightness_medium,
+                            size: 32,
+                            color: Color(0xFF141026),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      // Major stars
-                      ...palace.majorStars.map((s) => Text(
-                        s.displayName ?? s.nameKey,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: textColor,
+                        const SizedBox(height: 14),
+                        Text(
+                          snapshot.summary?['name']?.toString() ?? 'Tử Vi Toàn Tập',
+                          style: GoogleFonts.cinzel(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.goldBright,
+                            letterSpacing: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                      )),
-                      const Spacer(),
-                      // Heavenly stem & Earthly branch
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              '${palace.ages.isNotEmpty ? palace.ages.first : ''}',
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: textColor),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: AppTheme.cosmosDark.withValues(alpha: 0.6),
+                            border: Border.all(
+                              color: AppTheme.mysticalGold.withValues(alpha: 0.3),
+                              width: 1,
                             ),
                           ),
-                          Flexible(
-                            child: Text(
-                              '${palace.heavenlyStemKey.split('.').last} ${palace.earthlyBranchKey.split('.').last}',
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: textColor),
+                          child: Text(
+                            'Năm sinh: ${snapshot.birth?['solarYear'] ?? ''}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.mysticalTextSecondary,
                             ),
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-          ],
+
+              // 12 Palaces
+              for (final palace in palaces)
+                Positioned(
+                  left: getCellOffset(palace.index).dx,
+                  top: getCellOffset(palace.index).dy,
+                  width: cellSize,
+                  height: cellSize,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                      },
+                      splashColor: AppTheme.mysticalGold.withValues(alpha: 0.15),
+                      highlightColor: AppTheme.mysticalGold.withValues(alpha: 0.08),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: borderColor, width: 0.8),
+                          gradient: palace.isBodyPalace || palace.isOriginalPalace
+                              ? LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    AppTheme.mysticalGold.withValues(alpha: 0.18),
+                                    AppTheme.nebulaPurple.withValues(alpha: 0.12),
+                                    AppTheme.cosmosSurface.withValues(alpha: 0.8),
+                                  ],
+                                )
+                              : LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    AppTheme.cosmosSurface.withValues(alpha: 0.9),
+                                    AppTheme.cosmosDeep.withValues(alpha: 0.95),
+                                  ],
+                                ),
+                        ),
+                        padding: const EdgeInsets.all(10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Palace name badge (e.g. MỆNH, QUAN LỘC)
+                            Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  gradient: palace.isBodyPalace || palace.isOriginalPalace
+                                      ? CelestialGradients.imperialGold
+                                      : null,
+                                  color: palace.isBodyPalace || palace.isOriginalPalace
+                                      ? null
+                                      : AppTheme.cosmosElevated,
+                                  border: Border.all(
+                                    color: palace.isBodyPalace || palace.isOriginalPalace
+                                        ? Colors.transparent
+                                        : AppTheme.mysticalGold.withValues(alpha: 0.3),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  palace.displayName ?? palace.nameKey,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13,
+                                    color: palace.isBodyPalace || palace.isOriginalPalace
+                                        ? const Color(0xFF141026)
+                                        : AppTheme.goldBright,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Major stars (Chính tinh)
+                            ...palace.majorStars.map((s) => Padding(
+                              padding: const EdgeInsets.only(bottom: 2.0),
+                              child: Text(
+                                s.displayName ?? s.nameKey,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13,
+                                  color: Color(0xFFFF6B6B),
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            )),
+
+                            // Minor stars (Phụ tinh)
+                            ...palace.minorStars.take(3).map((s) => Padding(
+                              padding: const EdgeInsets.only(bottom: 1.0),
+                              child: Text(
+                                s.displayName ?? s.nameKey,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                  color: Color(0xFF4DD0E1),
+                                ),
+                              ),
+                            )),
+
+                            const Spacer(),
+
+                            // Footer: Đại hạn & Can Chi
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(4),
+                                      color: AppTheme.cosmosDark.withValues(alpha: 0.5),
+                                    ),
+                                    child: Text(
+                                      '${palace.ages.isNotEmpty ? palace.ages.first : ''}',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: AppTheme.mysticalTextSecondary,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Flexible(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(4),
+                                      color: AppTheme.mysticalGold.withValues(alpha: 0.12),
+                                    ),
+                                    child: Text(
+                                      '${palace.heavenlyStemKey.split('.').last} ${palace.earthlyBranchKey.split('.').last}',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: AppTheme.goldBright,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

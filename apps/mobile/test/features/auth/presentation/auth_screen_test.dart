@@ -1,35 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ziweiai_mobile/features/auth/presentation/auth_screen.dart';
 import 'package:ziweiai_mobile/features/auth/data/repositories/auth_repository.dart';
+import 'package:ziweiai_mobile/features/auth/presentation/auth_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MockAuthRepository implements AuthRepository {
   @override
-  Stream<AuthState> get authStateChanges => const Stream.empty();
-
-  @override
   User? get currentUser => null;
 
   @override
-  Future<AuthResponse> signInWithEmail(String email, String password) async {
-    return AuthResponse(
-      session: null,
-      user: User(id: '123', appMetadata: {}, userMetadata: {}, aud: 'authenticated', createdAt: ''),
-    );
-  }
-
-  @override
-  Future<AuthResponse> signUpWithEmail(String email, String password) async {
-    return AuthResponse(
-      session: null,
-      user: User(id: '123', appMetadata: {}, userMetadata: {}, aud: 'authenticated', createdAt: ''),
-    );
-  }
+  Stream<AuthState> get authStateChanges => const Stream.empty();
 
   @override
   Future<AuthResponse> signInAnonymously() async {
+    return AuthResponse(
+      session: null,
+      user: User(id: '123', appMetadata: {}, userMetadata: {}, aud: 'authenticated', createdAt: ''),
+    );
+  }
+
+  @override
+  Future<AuthResponse> signInWithEmail(String email, String password) async {
     return AuthResponse(
       session: null,
       user: User(id: '456', appMetadata: {}, userMetadata: {}, aud: 'authenticated', createdAt: ''),
@@ -37,12 +29,15 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> signOut() async {}
+  Future<AuthResponse> signUpWithEmail(String email, String password) async {
+    return AuthResponse(
+      session: null,
+      user: User(id: '456', appMetadata: {}, userMetadata: {}, aud: 'authenticated', createdAt: ''),
+    );
+  }
 
   @override
-  Future<bool> signInWithGoogle() async {
-    return true;
-  }
+  Future<bool> signInWithGoogle() async => true;
 
   @override
   Future<AuthResponse> signInWithApple() async {
@@ -51,6 +46,9 @@ class MockAuthRepository implements AuthRepository {
       user: User(id: '789', appMetadata: {}, userMetadata: {}, aud: 'authenticated', createdAt: ''),
     );
   }
+
+  @override
+  Future<void> signOut() async {}
 }
 
 void main() {
@@ -67,14 +65,14 @@ void main() {
     );
 
     // Initial render
-    expect(find.text('Đăng nhập để lưu lá số và xem luận giải AI'), findsOneWidget);
-    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Đăng nhập để bảo lưu lá số & nhận ưu đãi XU'), findsOneWidget);
+    expect(find.text('Email đăng nhập'), findsOneWidget);
     expect(find.text('Mật khẩu'), findsOneWidget);
-    expect(find.text('Đăng nhập với Email'), findsOneWidget);
-    expect(find.text('Đăng ký tài khoản mới'), findsOneWidget);
+    expect(find.text('ĐĂNG NHẬP'), findsOneWidget);
+    expect(find.text('Chưa có tài khoản? Đăng ký mới'), findsOneWidget);
 
     // Tap submit without data
-    await tester.tap(find.text('Đăng nhập với Email'));
+    await tester.tap(find.text('ĐĂNG NHẬP'));
     await tester.pump();
 
     // Check validation messages
@@ -86,13 +84,11 @@ void main() {
     await tester.enterText(find.byType(TextFormField).last, 'password123');
     await tester.pump();
 
-    // Tap submit again (the validation errors should disappear, and it will close the screen)
-    await tester.tap(find.text('Đăng nhập với Email'));
-    await tester.pumpAndSettle(); // Need to pump and settle to allow context.pop() or UI updates to settle
+    // Tap submit again
+    await tester.tap(find.text('ĐĂNG NHẬP'));
+    await tester.pump(const Duration(milliseconds: 300));
 
-    // If context.pop happens, the screen might be unmounted, or the widget might disappear.
-    // In our test, there's no router so context.pop might throw a black screen, but it's enough to verify errors are gone.
-    // However, if context.pop happens, the whole form is gone, so finding text "Vui lòng nhập email" will naturally be nothing.
+    // Validation errors should disappear
     expect(find.text('Vui lòng nhập email'), findsNothing);
   });
 }

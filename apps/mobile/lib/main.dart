@@ -95,12 +95,13 @@ class ZiweiAiApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return GlobalPaywallWrapper(
-      child: MaterialApp.router(
-        title: 'Tử Vi Toàn Tập',
-        theme: AppTheme.mystical,
-        routerConfig: appRouter,
-        debugShowCheckedModeBanner: false,
+    return MaterialApp.router(
+      title: 'Tử Vi Toàn Tập',
+      theme: AppTheme.mystical,
+      routerConfig: appRouter,
+      debugShowCheckedModeBanner: false,
+      builder: (context, child) => GlobalPaywallWrapper(
+        child: child ?? const SizedBox.shrink(),
       ),
     );
   }

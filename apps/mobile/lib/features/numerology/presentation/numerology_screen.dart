@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/numerology_provider.dart';
@@ -24,6 +25,86 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  void _showInsufficientCoinsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.cosmosSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppTheme.goldBright, width: 1.5),
+        ),
+        title: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: CelestialGradients.imperialGold,
+                boxShadow: CelestialShadows.goldGlow,
+              ),
+              child: const Icon(Icons.monetization_on, color: Color(0xFF141026), size: 36),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Cần Thêm XU',
+              style: GoogleFonts.cinzel(
+                color: AppTheme.goldBright,
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Bạn cần 10 XU để thực hiện Luận Giải Chuyên Sâu AI Thần Số Học.\nSố dư hiện tại không đủ. Bạn có muốn nạp thêm XU ngay không?',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.mysticalTextSecondary,
+                    side: BorderSide(color: AppTheme.mysticalGold.withValues(alpha: 0.3)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Để sau'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: CelestialGradients.imperialGold,
+                    boxShadow: CelestialShadows.goldGlow,
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      context.push('/wallet');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: const Color(0xFF141026),
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Nạp XU Ngay', style: TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   void _calculate() {
@@ -94,9 +175,17 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
       if (next.explanation.hasError) {
         final error = next.explanation.error;
         if (error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error.toString())),
-          );
+          if (error.toString().contains('INSUFFICIENT_FUNDS') || error.toString().contains('402')) {
+            _showInsufficientCoinsDialog();
+          } else {
+            String msg = 'Có lỗi kết nối. Vui lòng thử lại sau.';
+            if (error is String) {
+              msg = error;
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(msg)),
+            );
+          }
         }
       }
     });

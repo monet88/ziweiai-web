@@ -6,12 +6,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../providers/wallet_provider.dart';
 import '../../subscription/providers/subscription_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../ui/animated_background.dart';
 import '../../../ui/glass_panel.dart';
+
+class WalletPackageItem {
+  final int xu;
+  final int price;
+  final String label;
+  final String? badge;
+  final String desc;
+
+  const WalletPackageItem({
+    required this.xu,
+    required this.price,
+    required this.label,
+    this.badge,
+    required this.desc,
+  });
+}
 
 class WalletScreen extends ConsumerStatefulWidget {
   const WalletScreen({super.key});
@@ -20,22 +37,61 @@ class WalletScreen extends ConsumerStatefulWidget {
   ConsumerState<WalletScreen> createState() => _WalletScreenState();
 }
 
-class _WalletScreenState extends ConsumerState<WalletScreen> {
+class _WalletScreenState extends ConsumerState<WalletScreen>
+    with SingleTickerProviderStateMixin {
   Offerings? _offerings;
-  bool _isLoading = true;
+  bool _isLoadingOfferings = true;
   bool _isPurchasing = false;
   late ConfettiController _confettiController;
+  late TabController _tabController;
+
+  static const List<WalletPackageItem> _vietQrPackages = [
+    WalletPackageItem(
+      xu: 20,
+      price: 20000,
+      label: 'Gói Cơ Bản',
+      desc: '4 lượt luận giải AI hoặc gieo quẻ',
+    ),
+    WalletPackageItem(
+      xu: 50,
+      price: 50000,
+      label: 'Gói Phổ Biến',
+      badge: 'BÁN CHẠY',
+      desc: '10 lượt luận giải chuyên sâu',
+    ),
+    WalletPackageItem(
+      xu: 120,
+      price: 100000,
+      label: 'Gói Nâng Cao',
+      badge: '+20% XU',
+      desc: 'Tặng thêm 20 XU thưởng',
+    ),
+    WalletPackageItem(
+      xu: 600,
+      price: 500000,
+      label: 'Gói VIP Thưởng Lớn',
+      badge: '+20% XU',
+      desc: 'Tặng thêm 100 XU thưởng',
+    ),
+  ];
+
+  late WalletPackageItem _selectedVietQrPackage;
+  static const String _bankAccountNo = '0123456789';
+  static const String _bankName = 'MBBank';
 
   @override
   void initState() {
     super.initState();
-    _fetchOfferings();
+    _selectedVietQrPackage = _vietQrPackages[1]; // default 50 XU
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+    _tabController = TabController(length: 2, vsync: this);
+    _fetchOfferings();
   }
 
   @override
   void dispose() {
     _confettiController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -45,13 +101,13 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
       if (mounted) {
         setState(() {
           _offerings = offerings;
-          _isLoading = false;
+          _isLoadingOfferings = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _isLoadingOfferings = false;
         });
       }
     }
@@ -60,9 +116,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
   Future<void> _handleRestorePurchases() async {
     if (_isPurchasing) return;
     HapticFeedback.mediumImpact();
-    setState(() {
-      _isPurchasing = true;
-    });
+    setState(() => _isPurchasing = true);
 
     try {
       await Purchases.restorePurchases();
@@ -80,9 +134,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isPurchasing = false;
-        });
+        setState(() => _isPurchasing = false);
       }
     }
   }
@@ -90,9 +142,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
   Future<void> _handlePurchase(Package package) async {
     if (_isPurchasing) return;
     HapticFeedback.mediumImpact();
-    setState(() {
-      _isPurchasing = true;
-    });
+    setState(() => _isPurchasing = true);
 
     try {
       await Purchases.purchase(PurchaseParams.package(package));
@@ -113,11 +163,21 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isPurchasing = false;
-        });
+        setState(() => _isPurchasing = false);
       }
     }
+  }
+
+  void _copyToClipboard(String text, String label) {
+    Clipboard.setData(ClipboardData(text: text));
+    HapticFeedback.lightImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Đã sao chép $label: $text'),
+        backgroundColor: AppTheme.cosmosElevated,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   void _showSuccessDialog() {
@@ -197,125 +257,145 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final balanceAsync = ref.watch(walletBalanceProvider);
+    final user = Supabase.instance.client.auth.currentUser;
+    final shortUuid = user != null ? user.id.substring(0, 8).toUpperCase() : 'GUEST';
+    final transferContent = 'TVTT $shortUuid';
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          // Background Gradient (Space theme) -> AnimatedBackground
           const Positioned.fill(
             child: AnimatedBackground(child: SizedBox.shrink()),
           ),
-          
-          // Custom Header
           SafeArea(
-            bottom: false,
             child: Column(
               children: [
-                // AppBar actions
+                // Top Header Bar
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.goldBright),
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          context.pop();
-                        },
+                        onPressed: () => context.pop(),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.history, color: AppTheme.mysticalGold),
-                            onPressed: () {
-                              HapticFeedback.lightImpact();
-                              context.push('/wallet/history');
-                            },
-                            tooltip: 'Lịch sử giao dịch',
-                          ),
-                          TextButton.icon(
-                            onPressed: _handleRestorePurchases,
-                            icon: const Icon(Icons.restore, color: AppTheme.mysticalTextSecondary, size: 18),
-                            label: const Text('Khôi phục', style: TextStyle(color: AppTheme.mysticalTextSecondary)),
-                          ),
-                        ],
+                      Text(
+                        'VÍ THUẬT SỐ XU',
+                        style: GoogleFonts.cinzel(
+                          color: AppTheme.goldBright,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.history_edu, color: AppTheme.mysticalGold),
+                        onPressed: () => context.push('/wallet/history'),
+                        tooltip: 'Lịch sử giao dịch',
                       ),
                     ],
                   ),
                 ),
-                
-                // Balance Display
-                Expanded(
-                  flex: 3,
+
+                // Balance Display Hero
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12.0),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'SỐ DƯ XU CỦA BẠN',
+                        'SỐ DƯ HIỆN TẠI',
                         style: GoogleFonts.cinzel(
                           color: AppTheme.mysticalTextSecondary,
-                          fontSize: 13,
+                          fontSize: 12,
                           letterSpacing: 2.0,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Consumer(
-                        builder: (context, ref, child) {
-                          final balanceAsyncValue = ref.watch(walletBalanceProvider);
-                          
-                          return balanceAsyncValue.when(
-                            data: (balance) => Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '$balance',
-                                  style: GoogleFonts.cinzel(
-                                    color: AppTheme.goldBright,
-                                    fontSize: 64,
-                                    fontWeight: FontWeight.w900,
-                                    height: 1.0,
-                                    shadows: CelestialShadows.goldGlow,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 8.0),
-                                  child: Text(
-                                    'XU',
-                                    style: GoogleFonts.cinzel(
-                                      color: AppTheme.goldBright,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                      const SizedBox(height: 6),
+                      balanceAsync.when(
+                        data: (balance) => Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '$balance',
+                              style: GoogleFonts.cinzel(
+                                color: AppTheme.goldBright,
+                                fontSize: 48,
+                                fontWeight: FontWeight.w900,
+                                height: 1.0,
+                                shadows: CelestialShadows.goldGlow,
+                              ),
                             ),
-                            loading: () => const CircularProgressIndicator(color: AppTheme.goldBright),
-                            error: (err, stack) => const Text(
-                              'Lỗi tải số dư',
-                              style: TextStyle(color: Colors.redAccent, fontSize: 16),
+                            const SizedBox(width: 8),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 6.0),
+                              child: Text(
+                                'XU',
+                                style: GoogleFonts.cinzel(
+                                  color: AppTheme.goldBright,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
                             ),
-                          );
-                        },
+                          ],
+                        ),
+                        loading: () => const SizedBox(
+                          height: 36,
+                          width: 36,
+                          child: CircularProgressIndicator(color: AppTheme.goldBright, strokeWidth: 2),
+                        ),
+                        error: (error, stack) => const Text('0 XU', style: TextStyle(color: AppTheme.goldBright, fontSize: 32)),
                       ),
                     ],
                   ),
                 ),
-                
-                // Glassmorphism Bottom Sheet
-                Expanded(
-                  flex: 7,
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                    child: GlassPanel(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                      borderGradient: CelestialGradients.goldBorder,
-                      child: _buildPackagesList(),
+
+                // Tabs
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cosmosElevated.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.mysticalGold.withValues(alpha: 0.3), width: 1),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicator: BoxDecoration(
+                      gradient: CelestialGradients.imperialGold,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: CelestialShadows.goldGlow,
                     ),
+                    labelColor: const Color(0xFF141026),
+                    unselectedLabelColor: AppTheme.mysticalTextSecondary,
+                    labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                    tabs: const [
+                      Tab(
+                        icon: Icon(Icons.qr_code_2, size: 18),
+                        text: 'Chuyển Khoản VietQR',
+                      ),
+                      Tab(
+                        icon: Icon(Icons.shopping_bag_outlined, size: 18),
+                        text: 'In-App Store / VIP',
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Tab Views
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildVietQrTab(transferContent),
+                      _buildInAppStoreTab(),
+                    ],
                   ),
                 ),
               ],
@@ -325,22 +405,22 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
           // Purchasing Overlay
           if (_isPurchasing)
             Container(
-              color: Colors.black.withValues(alpha: 0.6),
+              color: Colors.black.withValues(alpha: 0.7),
               child: const Center(
                 child: CircularProgressIndicator(color: AppTheme.goldBright),
               ),
             ),
-            
-          // Confetti Overlay
+
+          // Confetti
           Align(
             alignment: Alignment.topCenter,
             child: ConfettiWidget(
               confettiController: _confettiController,
-              blastDirection: pi / 2, // fall downwards
-              maxBlastForce: 5, 
-              minBlastForce: 2, 
+              blastDirection: pi / 2,
+              maxBlastForce: 5,
+              minBlastForce: 2,
               emissionFrequency: 0.05,
-              numberOfParticles: 50, 
+              numberOfParticles: 50,
               gravity: 0.2,
               colors: const [
                 AppTheme.goldBright,
@@ -348,7 +428,6 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                 Color(0xFFFFDF00),
                 Colors.white,
               ],
-              createParticlePath: drawCoin,
             ),
           ),
         ],
@@ -356,30 +435,264 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     );
   }
 
-  Path drawCoin(Size size) {
-    final path = Path();
-    path.addOval(Rect.fromCircle(center: Offset.zero, radius: 10));
-    return path;
+  Widget _buildVietQrTab(String transferContent) {
+    final qrUrl =
+        'https://qr.sepay.vn/img?acc=$_bankAccountNo&bank=$_bankName&amount=${_selectedVietQrPackage.price}&des=$transferContent';
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Select Package Chips
+          Text(
+            '1. CHỌN GÓI NẠP XU',
+            style: GoogleFonts.cinzel(
+              color: AppTheme.goldBright,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _vietQrPackages.map((pkg) {
+              final isSelected = pkg == _selectedVietQrPackage;
+              return GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => _selectedVietQrPackage = pkg);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: isSelected ? CelestialGradients.imperialGold : null,
+                    color: isSelected ? null : AppTheme.cosmosSurface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isSelected ? Colors.transparent : AppTheme.mysticalGold.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                    boxShadow: isSelected ? CelestialShadows.goldGlow : null,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '+${pkg.xu} XU',
+                            style: TextStyle(
+                              color: isSelected ? const Color(0xFF141026) : AppTheme.goldBright,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                            ),
+                          ),
+                          if (pkg.badge != null) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: isSelected ? const Color(0xFF141026) : AppTheme.goldBright,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                pkg.badge!,
+                                style: TextStyle(
+                                  color: isSelected ? AppTheme.goldBright : const Color(0xFF141026),
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${pkg.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ',
+                        style: TextStyle(
+                          color: isSelected ? const Color(0xFF141026).withValues(alpha: 0.8) : AppTheme.mysticalTextSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 20),
+
+          // QR Code Card
+          GlassPanel(
+            padding: const EdgeInsets.all(18),
+            borderGradient: CelestialGradients.goldBorder,
+            child: Column(
+              children: [
+                Text(
+                  '2. QUÉT MÃ VIETQR HOẶC CHUYỂN KHOẢN',
+                  style: GoogleFonts.cinzel(
+                    color: AppTheme.goldBright,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 14),
+
+                // QR Image
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      qrUrl,
+                      width: 180,
+                      height: 180,
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return const SizedBox(
+                          width: 180,
+                          height: 180,
+                          child: Center(
+                            child: CircularProgressIndicator(color: AppTheme.goldBright),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 180,
+                          height: 180,
+                          color: Colors.grey.shade200,
+                          child: const Center(
+                            child: Text(
+                              'Không thể tải QR\nVui lòng chuyển khoản theo thông tin bên dưới',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.black54, fontSize: 11),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                // Transfer Details with 1-Tap Copy
+                _buildCopyRow('Ngân hàng', _bankName, _bankName),
+                const Divider(color: Colors.white10, height: 16),
+                _buildCopyRow('Số tài khoản', _bankAccountNo, 'Số tài khoản'),
+                const Divider(color: Colors.white10, height: 16),
+                _buildCopyRow(
+                  'Số tiền',
+                  '${_selectedVietQrPackage.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ',
+                  'Số tiền',
+                  copyValue: _selectedVietQrPackage.price.toString(),
+                ),
+                const Divider(color: Colors.white10, height: 16),
+                _buildCopyRow('Nội dung CK', transferContent, 'Nội dung chuyển khoản', isHighlighted: true),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Auto-credit note
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.cosmosElevated.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppTheme.mysticalGold.withValues(alpha: 0.25)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.bolt, color: AppTheme.goldBright, size: 22),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Hệ thống SePay tự động quét giao dịch và cộng XU ngay lập tức sau 30-60 giây.',
+                    style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 12, height: 1.3),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildPackagesList() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.goldBright));
-    }
-    
-    if (_offerings == null || _offerings!.current == null || _offerings!.current!.availablePackages.isEmpty) {
-      return const Center(
-        child: Text(
-          'Hiện tại chưa có gói XU nào khả dụng.',
-          style: TextStyle(color: AppTheme.mysticalTextSecondary),
+  Widget _buildCopyRow(String label, String value, String copyLabel, {String? copyValue, bool isHighlighted = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 13),
         ),
-      );
-    }
+        Row(
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                color: isHighlighted ? AppTheme.goldBright : AppTheme.mysticalText,
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => _copyToClipboard(copyValue ?? value, copyLabel),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.cosmosElevated,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.mysticalGold.withValues(alpha: 0.4), width: 0.8),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.copy, size: 12, color: AppTheme.goldBright),
+                    SizedBox(width: 4),
+                    Text('Copy', style: TextStyle(color: AppTheme.goldBright, fontSize: 11, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
+  Widget _buildInAppStoreTab() {
     final isPro = ref.watch(isProUserProvider);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -419,7 +732,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        isPro ? 'ĐANG KÍCH HOẠT' : 'VIP PRO',
+                        isPro ? 'ĐANG DÙNG' : 'VIP PRO',
                         style: TextStyle(
                           color: isPro ? AppTheme.goldBright : const Color(0xFF141026),
                           fontSize: 11,
@@ -431,7 +744,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  'Mở khóa toàn bộ thuật số (Tướng Mặt, Chỉ Tay, Bát Tự, Tử Vi, Tarot 3D, Kinh Dịch) không giới hạn.',
+                  'Mở khóa toàn bộ thuật số (Tướng Mặt, Chỉ Tay, Bát Tự, Tử Vi, Tarot 3D, Kinh Dịch) không giới hạn lượt xem.',
                   style: TextStyle(
                     color: Color(0xFF141026),
                     fontSize: 13,
@@ -451,17 +764,12 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF141026),
                           foregroundColor: AppTheme.goldBright,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           elevation: 0,
                         ),
                         child: Text(
                           isPro ? 'Xem Gói Đang Dùng' : 'Mở Khóa VIP PRO',
-                          style: GoogleFonts.cinzel(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: GoogleFonts.cinzel(fontSize: 13, fontWeight: FontWeight.w800),
                         ),
                       ),
                     ),
@@ -479,78 +787,97 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 28),
 
-          Center(
-            child: Text(
-              'HOẶC CHỌN GÓI NẠP XU HOÀNG GIA',
-              style: GoogleFonts.cinzel(
-                color: AppTheme.goldBright,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.5,
+          const SizedBox(height: 24),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'GÓI IN-APP PURCHASE STORE',
+                style: GoogleFonts.cinzel(
+                  color: AppTheme.goldBright,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
               ),
-            ),
+              TextButton.icon(
+                onPressed: _handleRestorePurchases,
+                icon: const Icon(Icons.restore, color: AppTheme.mysticalTextSecondary, size: 16),
+                label: const Text('Khôi phục', style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 12)),
+              ),
+            ],
           ),
-          const SizedBox(height: 18),
-          ..._offerings!.current!.availablePackages.map((package) {
-            int xuDisplay = 0;
-            if (package.storeProduct.identifier.contains('100')) {
-              xuDisplay = 100;
-            } else if (package.storeProduct.identifier.contains('500')) {
-              xuDisplay = 500;
-            } else if (package.storeProduct.identifier.contains('2000')) {
-              xuDisplay = 2000;
-            } else {
-              // fallback extraction
-              final match = RegExp(r'\d+').firstMatch(package.storeProduct.identifier);
-              if (match != null) {
-                xuDisplay = int.parse(match.group(0)!);
-              }
-            }
 
-            final isPopular = package.storeProduct.identifier.contains('popular');
+          const SizedBox(height: 10),
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: _buildPremiumCard(
-                package: package,
-                xu: xuDisplay,
-                isPopular: isPopular,
+          if (_isLoadingOfferings)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: CircularProgressIndicator(color: AppTheme.goldBright),
               ),
-            );
-          }),
+            )
+          else if (_offerings == null ||
+              _offerings!.current == null ||
+              _offerings!.current!.availablePackages.isEmpty)
+            GlassPanel(
+              padding: const EdgeInsets.all(20),
+              borderGradient: CelestialGradients.starlightBorder,
+              child: const Column(
+                children: [
+                  Icon(Icons.storefront_outlined, color: AppTheme.mysticalGold, size: 36),
+                  SizedBox(height: 10),
+                  Text(
+                    'Gói In-App Store đang được cập nhật trên Google Play / App Store.\nBạn có thể nạp ngay qua tab VietQR Chuyển Khoản Ngân Hàng.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 13, height: 1.4),
+                  ),
+                ],
+              ),
+            )
+          else
+            ..._offerings!.current!.availablePackages.map((package) {
+              int xuDisplay = 0;
+              final id = package.storeProduct.identifier.toLowerCase();
+              if (id.contains('100')) {
+                xuDisplay = 100;
+              } else if (id.contains('500')) {
+                xuDisplay = 500;
+              } else if (id.contains('2000')) {
+                xuDisplay = 2000;
+              } else {
+                final match = RegExp(r'\d+').firstMatch(id);
+                if (match != null) xuDisplay = int.parse(match.group(0)!);
+              }
+
+              final isPopular = id.contains('popular') || id.contains('500');
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 14.0),
+                child: _buildStorePackageCard(package, xuDisplay, isPopular),
+              );
+            }),
         ],
       ),
     );
   }
 
-  Widget _buildPremiumCard({
-    required Package package,
-    required int xu,
-    required bool isPopular,
-  }) {
+  Widget _buildStorePackageCard(Package package, int xu, bool isPopular) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        boxShadow: isPopular ? CelestialShadows.goldGlow : [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          )
-        ],
+        boxShadow: isPopular ? CelestialShadows.goldGlow : null,
       ),
       child: Material(
-        color: isPopular ? AppTheme.cosmosElevated : AppTheme.cosmosSurface.withValues(alpha: 0.8),
+        color: isPopular ? AppTheme.cosmosElevated : AppTheme.cosmosSurface,
         borderRadius: BorderRadius.circular(20),
-        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => _handlePurchase(package),
-          splashColor: AppTheme.mysticalGold.withValues(alpha: 0.3),
-          highlightColor: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(20),
           child: Container(
-            padding: const EdgeInsets.all(18.0),
+            padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
               border: Border.all(
                 color: isPopular ? AppTheme.goldBright : AppTheme.mysticalGold.withValues(alpha: 0.25),
@@ -560,97 +887,57 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
             ),
             child: Row(
               children: [
-                // Coin Icon
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     gradient: isPopular ? CelestialGradients.imperialGold : null,
                     color: isPopular ? null : AppTheme.cosmosDark,
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppTheme.goldBright,
-                      width: 1.5,
-                    ),
-                    boxShadow: isPopular ? CelestialShadows.goldGlow : null,
+                    border: Border.all(color: AppTheme.goldBright, width: 1.2),
                   ),
                   child: Center(
                     child: Icon(
                       Icons.stars,
                       color: isPopular ? const Color(0xFF141026) : AppTheme.goldBright,
-                      size: 28,
+                      size: 24,
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
-                
-                // Package Info
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              package.storeProduct.title.split('(').first.trim(),
-                              style: const TextStyle(
-                                color: AppTheme.mysticalText,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 17,
-                              ),
-                            ),
-                          ),
-                          if (isPopular)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                gradient: CelestialGradients.imperialGold,
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: CelestialShadows.goldGlow,
-                              ),
-                              child: const Text(
-                                'PHỔ BIẾN NHẤT',
-                                style: TextStyle(
-                                  color: Color(0xFF141026),
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                        ],
+                      Text(
+                        package.storeProduct.title.split('(').first.trim(),
+                        style: const TextStyle(
+                          color: AppTheme.mysticalText,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         xu > 0 ? 'Nhận ngay +$xu XU' : 'Gói nạp XU',
-                        style: const TextStyle(
-                          color: AppTheme.mysticalTextSecondary,
-                          fontSize: 13,
-                        ),
+                        style: const TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 12),
                       ),
                     ],
                   ),
                 ),
-                
-                // Price
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     gradient: isPopular ? CelestialGradients.imperialGold : null,
                     color: isPopular ? null : AppTheme.cosmosElevated,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isPopular ? Colors.transparent : AppTheme.mysticalGold.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     package.storeProduct.priceString,
                     style: TextStyle(
                       color: isPopular ? const Color(0xFF141026) : AppTheme.goldBright,
                       fontWeight: FontWeight.w800,
-                      fontSize: 15,
+                      fontSize: 14,
                     ),
                   ),
                 ),

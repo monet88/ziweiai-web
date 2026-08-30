@@ -148,11 +148,11 @@ class _ChartDetailScreenState extends State<ChartDetailScreen>
         ),
         const SizedBox(height: 12),
         GlassPanel(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           borderRadius: BorderRadius.circular(20),
           borderGradient: CelestialGradients.goldBorder,
-          child: SizedBox(
-            height: 420,
+          child: AspectRatio(
+            aspectRatio: 1.0,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: ZiweiBoard(

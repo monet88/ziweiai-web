@@ -252,25 +252,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
 
-          // Auth / Profile Button
-          if (user != null)
-            IconButton(
-              tooltip: 'Đăng xuất',
-              icon: const Icon(Icons.logout, color: AppTheme.mysticalTextSecondary, size: 20),
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                ref.read(authRepositoryProvider).signOut();
-              },
-            )
-          else
-            IconButton(
-              tooltip: 'Đăng nhập',
-              icon: const Icon(Icons.person_outline, color: AppTheme.goldBright, size: 22),
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                context.push('/auth');
-              },
+          // Profile Button
+          IconButton(
+            tooltip: 'Hồ sơ cá nhân',
+            icon: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: user != null && !user.isAnonymous
+                      ? AppTheme.goldBright
+                      : AppTheme.mysticalGold.withValues(alpha: 0.5),
+                  width: 1.2,
+                ),
+              ),
+              child: Icon(
+                user != null && !user.isAnonymous
+                    ? Icons.person
+                    : Icons.person_outline,
+                color: user != null && !user.isAnonymous
+                    ? AppTheme.goldBright
+                    : AppTheme.mysticalTextSecondary,
+                size: 18,
+              ),
             ),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              context.push('/profile');
+            },
+          ),
           const SizedBox(width: 4),
         ],
       ),

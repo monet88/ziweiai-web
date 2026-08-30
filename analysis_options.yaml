@@ -1,0 +1,10 @@
+# Root analysis options to guide IDE analyzer to apps/mobile
+include: apps/mobile/analysis_options.yaml
+
+analyzer:
+  exclude:
+    - "apps/web/**"
+    - "apps/api/**"
+    - "packages/**"
+    - "dist/**"
+    - "build/**"

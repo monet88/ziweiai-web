@@ -6,11 +6,25 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 
 ---
 
-## 🚀 Trạng Thái Tính Năng & Sprint (Phase 7: Biometric Vision AI, RevenueCat Guard & Release v1.0.0 — Sprint 38 — 30/08/2026)
-- **Rollback Anchor:** `1a63fd5` (Nhánh `main` trên GitHub `galaxypro710-stack/ziweiai-web`)
-- **Release Tag:** `v1.0.0`
-- **Total Tests:** 844/844 Passed (API: 439, Web: 258, Mobile: 22, Contracts: 125)
-- **Mobile Release APK:** 24.8MB (arm64, Impeller Vulkan, test UAT trên Samsung Galaxy A53 5G thành công 100%)
+## 🚀 Trạng Thái Tính Năng & Sprint (Phase 8: Production Store Distribution & Advanced AI Capabilities — Sprint 39 — 30/08/2026)
+- **Current Branch:** `feature/sprint39-mobile-perfection-and-aab`
+- **Rollback Anchor:** `857ea8a` (feat(mobile): complete sprint 39 ticket 39.1, luxury UI overhaul, profile screen, vietqr & aab release)
+- **Base Release Tag:** `v1.0.0` (commit `1a63fd5` trên `main`)
+- **Total Tests:** **879/879 Passed** (Mobile: 22, API: 439, Web: 258, Contracts: 125, Astro-Engine: 35)
+- **Google Play App Bundle:** `apps/mobile/build/app/outputs/bundle/release/app-release.aab` (**59.3MB**)
+- **Sprint 39 Progress:** 1/4 tickets (Ticket 39.1: 100% DONE + Toàn diện Mobile UI/UX Perfection).
+
+1. **Sprint 39 Ticket 39.1 (DONE):**
+   - Cấu hình Keystore signing và build bản phát hành Google Play App Bundle (`.aab`).
+   - Sửa triệt để lỗi hiển thị Thiên Bàn 12 Cung (scale tự động, double tap, fit screen).
+   - Nâng cấp Kinh Dịch gieo quẻ (Quick chips, default question).
+   - Bắt mã lỗi 402/403 Thần Số Học thành modal nạp XU sang trọng thay vì văng raw DioException.
+   - Đại tu Trợ Lý AI sang theme Celestial Luxury Dark Mode.
+   - Hoàn thiện `ProfileScreen`, Auth Navigation và luồng Account Deletion tuân thủ Store.
+   - Nâng cấp `WalletScreen` hỗ trợ song song 2 Tab VietQR (SePay) và In-App Purchase (RevenueCat).
+
+2. **Sprint 39 Ticket 39.2 (NEXT UP):**
+   - Tích hợp Google AdMob Rewarded Video Ads trên Mobile nhận XU miễn phí kết nối Backend API.
 
 1. **Luồng sản phẩm cốt lõi (Core Flow)**
    - Khởi tạo lá số Tử Vi, Bát Tự, gieo quẻ Kinh Dịch, Mai Hoa, Lục Hào, Manh Phái, Hợp Hôn.

@@ -3,10 +3,13 @@ import { RewardsController } from './rewards.controller';
 import { RewardsService } from './rewards.service';
 import { DatabaseModule } from '../../database/database.module';
 import { AuthModule } from '../auth/auth.module';
+import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
-  imports: [DatabaseModule, AuthModule],
+  imports: [DatabaseModule, AuthModule, WalletModule],
   controllers: [RewardsController],
   providers: [RewardsService],
+  exports: [RewardsService],
 })
 export class RewardsModule {}
+

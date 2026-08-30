@@ -8,8 +8,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/iching_provider.dart';
 import '../data/models/iching_models.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../../ui/animated_background.dart';
 import '../../../../ui/glass_panel.dart';
+
+
 
 class IChingScreen extends ConsumerStatefulWidget {
   const IChingScreen({super.key});
@@ -190,8 +193,11 @@ class _IChingScreenState extends ConsumerState<IChingScreen> with SingleTickerPr
           ),
         ),
       ),
+      bottomNavigationBar: const VoiceAudioPlayerBar(),
     );
   }
+
+
 
   Widget _buildInputSection() {
     final quickQuestions = [
@@ -531,14 +537,20 @@ class _IChingScreenState extends ConsumerState<IChingScreen> with SingleTickerPr
                 child: const Icon(Icons.menu_book, color: Color(0xFF141026), size: 22),
               ),
               const SizedBox(width: 14),
-              Text(
-                'Lời Bàn Quẻ Kinh Dịch',
-                style: GoogleFonts.cinzel(
-                  color: AppTheme.goldBright,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
+              Expanded(
+                child: Text(
+                  'Lời Bàn Quẻ Kinh Dịch',
+                  style: GoogleFonts.cinzel(
+                    color: AppTheme.goldBright,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
                 ),
+              ),
+              VoicePlayIconButton(
+                text: narrative,
+                title: 'Lời Bàn Quẻ Kinh Dịch',
               ),
             ],
           ),
@@ -558,4 +570,5 @@ class _IChingScreenState extends ConsumerState<IChingScreen> with SingleTickerPr
       ),
     );
   }
+
 }

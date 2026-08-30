@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:ziweiai_mobile/core/theme/app_theme.dart';
 import 'package:ziweiai_mobile/features/assistant/presentation/assistant_provider.dart';
+import 'package:ziweiai_mobile/core/presentation/widgets/voice_audio_player_bar.dart';
+
 
 class AssistantPanel extends ConsumerStatefulWidget {
   final String chartSnapshotId;
@@ -289,6 +291,16 @@ class _AssistantPanelState extends ConsumerState<AssistantPanel> {
                                   ),
                                 ),
                               ],
+                              if (!isUser && !msg.isStreaming && msg.content.trim().isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: VoicePlayIconButton(
+                                    text: msg.content,
+                                    title: 'Trợ Lý Tử Vi AI',
+                                  ),
+                                ),
+                              ],
                               if (msg.isStreaming) ...[
                                 const SizedBox(height: 8),
                                 Row(
@@ -322,8 +334,12 @@ class _AssistantPanelState extends ConsumerState<AssistantPanel> {
                   ),
           ),
 
+          // Voice Audio Player Bar
+          const VoiceAudioPlayerBar(),
+
           // Quick prompt chips
           if (state.messages.isEmpty)
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Wrap(

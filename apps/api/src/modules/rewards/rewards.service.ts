@@ -2,6 +2,7 @@ import { Injectable, Logger, BadRequestException, Inject } from '@nestjs/common'
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../database/supabase-client';
 import { ProfilesRepository } from '../../database/repositories/profiles.repository';
+import { WalletEngineService } from '../wallet/wallet-engine.service';
 import { sanitizeReferralCode } from '../share/append-referral-query';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class RewardsService {
   constructor(
     @Inject(SUPABASE_CLIENT) private readonly client: SupabaseClient,
     private readonly profilesRepository: ProfilesRepository,
+    private readonly walletEngineService: WalletEngineService,
   ) {}
 
   async dailyCheckin(userId: string, referralCode?: string) {
@@ -29,7 +31,23 @@ export class RewardsService {
     return { success: added > 0, xu_added: added };
   }
 
+  async claimAdReward(userId: string, rewardAmount = 5) {
+    const success = await this.walletEngineService.addXU(userId, rewardAmount, 'ad_reward');
+    if (!success) {
+      this.logger.error(`Failed to credit ad reward for user ${userId}`);
+      throw new BadRequestException('Failed to process ad reward');
+    }
+
+    const newBalance = await this.walletEngineService.getBalance(userId);
+    return {
+      success: true,
+      xu_added: rewardAmount,
+      new_balance: newBalance,
+    };
+  }
+
   async getReferralHistory(userId: string) {
     return this.profilesRepository.listReferralsByReferrerId(userId);
   }
 }
+

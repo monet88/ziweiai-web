@@ -5,8 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../ui/animated_background.dart';
 import '../../../ui/glass_panel.dart';
+
+
 
 class VisionResultScreen extends StatelessWidget {
   final Map<String, dynamic> result;
@@ -163,59 +166,90 @@ class VisionResultScreen extends StatelessWidget {
                         GlassPanel(
                           padding: const EdgeInsets.all(20.0),
                           borderGradient: CelestialGradients.goldBorder,
-                          child: MarkdownBody(
-                            data: narrative,
-                            selectable: true,
-                            styleSheet: MarkdownStyleSheet(
-                              p: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                height: 1.65,
-                                letterSpacing: 0.2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.auto_awesome, color: AppTheme.goldBright, size: 18),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'CHI TIẾT LUẬN GIẢI',
+                                        style: GoogleFonts.cinzel(
+                                          color: AppTheme.goldBright,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 1.0,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  VoicePlayIconButton(
+                                    text: narrative,
+                                    title: title,
+                                  ),
+                                ],
                               ),
-                              h1: GoogleFonts.cinzel(
-                                color: AppTheme.goldBright,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                height: 1.5,
-                              ),
-                              h2: GoogleFonts.cinzel(
-                                color: AppTheme.goldBright,
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                                height: 1.5,
-                              ),
-                              h3: GoogleFonts.cinzel(
-                                color: AppTheme.goldBright,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                height: 1.4,
-                              ),
-                              strong: const TextStyle(
-                                color: AppTheme.goldBright,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              listBullet: const TextStyle(
-                                color: AppTheme.goldBright,
-                                fontSize: 15,
-                              ),
-                              blockquote: const TextStyle(
-                                color: AppTheme.mysticalTextSecondary,
-                                fontStyle: FontStyle.italic,
-                              ),
-                              blockquoteDecoration: BoxDecoration(
-                                color: Colors.black26,
-                                border: const Border(
-                                  left: BorderSide(
+                              const SizedBox(height: 16),
+                              MarkdownBody(
+                                data: narrative,
+                                selectable: true,
+                                styleSheet: MarkdownStyleSheet(
+                                  p: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    height: 1.65,
+                                    letterSpacing: 0.2,
+                                  ),
+                                  h1: GoogleFonts.cinzel(
                                     color: AppTheme.goldBright,
-                                    width: 3,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1.5,
+                                  ),
+                                  h2: GoogleFonts.cinzel(
+                                    color: AppTheme.goldBright,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1.5,
+                                  ),
+                                  h3: GoogleFonts.cinzel(
+                                    color: AppTheme.goldBright,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.4,
+                                  ),
+                                  strong: const TextStyle(
+                                    color: AppTheme.goldBright,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  listBullet: const TextStyle(
+                                    color: AppTheme.goldBright,
+                                    fontSize: 15,
+                                  ),
+                                  blockquote: const TextStyle(
+                                    color: AppTheme.mysticalTextSecondary,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                  blockquoteDecoration: BoxDecoration(
+                                    color: Colors.black26,
+                                    border: const Border(
+                                      left: BorderSide(
+                                        color: AppTheme.goldBright,
+                                        width: 3,
+                                      ),
+                                    ),
+                                    borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
-                                borderRadius: BorderRadius.circular(4),
                               ),
-                            ),
+                            ],
                           ),
                         ),
+
 
                         const SizedBox(height: 28),
 
@@ -293,6 +327,8 @@ class VisionResultScreen extends StatelessWidget {
           ),
         ],
       ),
+      bottomNavigationBar: const VoiceAudioPlayerBar(),
     );
   }
 }
+

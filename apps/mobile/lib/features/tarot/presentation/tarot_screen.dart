@@ -7,8 +7,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/tarot_provider.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../../ui/animated_background.dart';
 import '../../../../ui/glass_panel.dart';
+
+
 
 class TarotScreen extends ConsumerStatefulWidget {
   const TarotScreen({super.key});
@@ -209,8 +212,11 @@ class _TarotScreenState extends ConsumerState<TarotScreen> with SingleTickerProv
           ),
         ),
       ),
+      bottomNavigationBar: const VoiceAudioPlayerBar(),
     );
   }
+
+
 
   Widget _buildCardBack(bool isLoading) {
     return Container(
@@ -427,14 +433,20 @@ class _TarotScreenState extends ConsumerState<TarotScreen> with SingleTickerProv
                 child: const Icon(Icons.auto_awesome, color: Color(0xFF141026), size: 22),
               ),
               const SizedBox(width: 14),
-              Text(
-                'Lời Giải Mã Tarot AI',
-                style: GoogleFonts.cinzel(
-                  color: AppTheme.goldBright,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
+              Expanded(
+                child: Text(
+                  'Lời Giải Mã Tarot AI',
+                  style: GoogleFonts.cinzel(
+                    color: AppTheme.goldBright,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
                 ),
+              ),
+              VoicePlayIconButton(
+                text: narrative,
+                title: 'Giải Mã Tarot AI',
               ),
             ],
           ),
@@ -454,4 +466,5 @@ class _TarotScreenState extends ConsumerState<TarotScreen> with SingleTickerProv
       ),
     );
   }
+
 }

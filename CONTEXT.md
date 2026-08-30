@@ -10,9 +10,9 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 - **Current Branch:** `feature/sprint39-mobile-perfection-and-aab`
 - **Rollback Anchor:** `857ea8a` (feat(mobile): complete sprint 39 ticket 39.1, luxury UI overhaul, profile screen, vietqr & aab release)
 - **Base Release Tag:** `v1.0.0` (commit `1a63fd5` trên `main`)
-- **Total Tests:** **879/879 Passed** (Mobile: 22, API: 439, Web: 258, Contracts: 125, Astro-Engine: 35)
+- **Total Tests:** **890/890 Passed** (Mobile: 29, API: 443, Web: 258, Contracts: 125, Astro-Engine: 35)
 - **Google Play App Bundle:** `apps/mobile/build/app/outputs/bundle/release/app-release.aab` (**59.3MB**)
-- **Sprint 39 Progress:** 1/4 tickets (Ticket 39.1: 100% DONE + Toàn diện Mobile UI/UX Perfection).
+- **Sprint 39 Progress:** 3/4 tickets (Ticket 39.1, Ticket 39.2 & Ticket 39.3: 100% DONE).
 
 1. **Sprint 39 Ticket 39.1 (DONE):**
    - Cấu hình Keystore signing và build bản phát hành Google Play App Bundle (`.aab`).
@@ -23,8 +23,22 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
    - Hoàn thiện `ProfileScreen`, Auth Navigation và luồng Account Deletion tuân thủ Store.
    - Nâng cấp `WalletScreen` hỗ trợ song song 2 Tab VietQR (SePay) và In-App Purchase (RevenueCat).
 
-2. **Sprint 39 Ticket 39.2 (NEXT UP):**
-   - Tích hợp Google AdMob Rewarded Video Ads trên Mobile nhận XU miễn phí kết nối Backend API.
+2. **Sprint 39 Ticket 39.2 (DONE):**
+   - Tích hợp Google AdMob Rewarded Video Ads trên Mobile (`google_mobile_ads: ^5.2.0`, `AdMobService`).
+   - Cấu hình Native App ID trong `AndroidManifest.xml` và `Info.plist`.
+   - Xây dựng endpoint Backend `POST /rewards/ad-reward` với `SupabaseAuthGuard` cộng +5 XU tự động (`WalletEngineService.addXU`) và ghi log `ad_reward`.
+   - Tích hợp Banner "Xem Video Quảng Cáo Nhận +5 XU Miễn Phí" vào `WalletScreen` (cả 2 tab) và nút tiện ích trong `PremiumPaywallSheet`.
+
+3. **Sprint 39 Ticket 39.3 (DONE):**
+   - Tích hợp AI Voice Assistant Audio Synthesis đọc luận giải lá số (Text-to-Speech phong thủy truyền cảm `flutter_tts: ^4.2.2`).
+   - Xây dựng `VoiceSynthesisService` hỗ trợ bóc tách làm sạch cú pháp Markdown `cleanMarkdownForSpeech`, chỉnh tốc độ đọc (0.8x / 1.0x / 1.2x).
+   - Xây dựng thanh điều khiển âm thanh nổi `VoiceAudioPlayerBar` kèm hiệu ứng sóng âm thanh động `AnimatedWaveformVisualizer`.
+   - Tích hợp nút 1 chạm phát giọng đọc `VoicePlayIconButton` trên toàn bộ các màn hình luận giải (Trợ Lý AI, Kinh Dịch, Thần Số Học, Tarot, Tướng Mặt & Chỉ Tay).
+
+4. **Sprint 39 Ticket 39.4 (NEXT UP):**
+   - Màn hình Vận Hạn Lưu Niên Nâng Cao (Annual Horoscope Flow) & Báo Cáo PDF Tử Vi Chuyên Sâu.
+
+
 
 1. **Luồng sản phẩm cốt lõi (Core Flow)**
    - Khởi tạo lá số Tử Vi, Bát Tự, gieo quẻ Kinh Dịch, Mai Hoa, Lục Hào, Manh Phái, Hợp Hôn.

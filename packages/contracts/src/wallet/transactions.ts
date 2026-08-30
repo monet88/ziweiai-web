@@ -22,3 +22,12 @@ export const transactionListResponseSchema = z.object({
 });
 
 export type TransactionListResponse = z.infer<typeof transactionListResponseSchema>;
+
+export const adRewardResponseSchema = z.object({
+  success: z.boolean(),
+  xu_added: z.number(),
+  new_balance: z.number(),
+});
+
+export type AdRewardResponse = z.infer<typeof adRewardResponseSchema>;
+

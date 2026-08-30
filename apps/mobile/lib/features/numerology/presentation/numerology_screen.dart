@@ -7,8 +7,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/numerology_provider.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../../ui/animated_background.dart';
 import '../../../../ui/glass_panel.dart';
+
+
 
 class NumerologyScreen extends ConsumerStatefulWidget {
   const NumerologyScreen({super.key});
@@ -409,8 +412,11 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
           ),
         ),
       ),
+      bottomNavigationBar: const VoiceAudioPlayerBar(),
     );
   }
+
+
 
   Widget _buildNumberCard(String title, int number, IconData icon) {
     return GlassPanel(
@@ -467,14 +473,20 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
                 child: const Icon(Icons.auto_awesome, color: Color(0xFF141026), size: 22),
               ),
               const SizedBox(width: 14),
-              Text(
-                'Chiêm Nghiệm Thần Số Học AI',
-                style: GoogleFonts.cinzel(
-                  color: AppTheme.goldBright,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.0,
+              Expanded(
+                child: Text(
+                  'Chiêm Nghiệm Thần Số Học AI',
+                  style: GoogleFonts.cinzel(
+                    color: AppTheme.goldBright,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                  ),
                 ),
+              ),
+              VoicePlayIconButton(
+                text: narrative,
+                title: 'Thần Số Học AI',
               ),
             ],
           ),
@@ -494,6 +506,7 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
       ),
     );
   }
+
 
   InputDecoration _inputDecoration(String hint, IconData icon) {
     return InputDecoration(

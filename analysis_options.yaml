@@ -1,6 +1,4 @@
-# Root analysis options to guide IDE analyzer to apps/mobile
-include: apps/mobile/analysis_options.yaml
-
+# Root analysis options for Monorepo
 analyzer:
   exclude:
     - "apps/web/**"
@@ -8,3 +6,4 @@ analyzer:
     - "packages/**"
     - "dist/**"
     - "build/**"
+    - "scratch/**"

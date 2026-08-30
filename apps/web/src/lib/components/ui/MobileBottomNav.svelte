@@ -2,7 +2,7 @@
   import { resolve } from '$app/paths';
   import { page } from '$app/stores';
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { Home, Clock, WalletCards, Settings } from 'lucide-svelte';
+  import { Home, Clock, WalletCards, Settings, LogIn } from 'lucide-svelte';
   import WalletIndicator from '$lib/features/payment/WalletIndicator.svelte';
 
   const auth = getAuthStore();
@@ -12,37 +12,45 @@
 
 <div class="bottom-nav-mobile">
   <a href={resolve('/')} class="nav-item {currentPath === resolve('/') ? 'active' : ''}">
-    <Home size={22} />
+    <div class="icon-wrap {currentPath === resolve('/') ? 'active-pill' : ''}">
+      <Home size={20} />
+    </div>
     <span>Trang chủ</span>
   </a>
   
   {#if isMember}
     <a href={resolve('/history')} class="nav-item {currentPath.startsWith(resolve('/history')) ? 'active' : ''}">
-      <Clock size={22} />
+      <div class="icon-wrap {currentPath.startsWith(resolve('/history')) ? 'active-pill' : ''}">
+        <Clock size={20} />
+      </div>
       <span>Lịch sử</span>
     </a>
   {/if}
 
   <a href={resolve('/wallet')} class="nav-item {currentPath.startsWith(resolve('/wallet')) ? 'active' : ''}">
-    <div class="relative">
-      <WalletCards size={22} />
+    <div class="icon-wrap {currentPath.startsWith(resolve('/wallet')) ? 'active-pill' : ''} relative">
+      <WalletCards size={20} />
       {#if isMember}
-        <div class="absolute -top-1 -right-1">
+        <div class="wallet-badge">
           <WalletIndicator />
         </div>
       {/if}
     </div>
-    <span>Ví XU</span>
+    <span>Ví & Điểm danh</span>
   </a>
   
   {#if isMember}
     <a href={resolve('/settings')} class="nav-item {currentPath.startsWith(resolve('/settings')) ? 'active' : ''}">
-      <Settings size={22} />
+      <div class="icon-wrap {currentPath.startsWith(resolve('/settings')) ? 'active-pill' : ''}">
+        <Settings size={20} />
+      </div>
       <span>Cài đặt</span>
     </a>
   {:else}
     <a href={resolve('/sign-in')} class="nav-item {currentPath.startsWith(resolve('/sign-in')) ? 'active' : ''}">
-      <Settings size={22} />
+      <div class="icon-wrap {currentPath.startsWith(resolve('/sign-in')) ? 'active-pill' : ''}">
+        <LogIn size={20} />
+      </div>
       <span>Đăng nhập</span>
     </a>
   {/if}
@@ -55,27 +63,47 @@
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid var(--overlay-hairline);
-    padding: calc(var(--space-sm) + 2px) var(--space-md) calc(env(safe-area-inset-bottom, 16px) + var(--space-xs));
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid var(--overlay-border);
+    padding: 6px var(--space-md) calc(env(safe-area-inset-bottom, 12px) + 4px);
     z-index: 50;
-  }
-
-  :global([data-theme="dark"]) .bottom-nav-mobile {
-    background: rgba(15, 17, 23, 0.85);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
   }
 
   .nav-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    color: var(--color-text-secondary);
+    gap: 3px;
+    color: var(--color-text-muted);
     text-decoration: none;
     flex: 1;
+    min-height: 44px;
+    justify-content: center;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 3px 14px;
+    border-radius: var(--radius-pill);
+    transition: all 0.2s ease;
+  }
+
+  .icon-wrap.active-pill {
+    background: var(--overlay-ink-wash);
+    color: var(--color-accent-primary);
+  }
+
+  :global([data-theme="dark"]) .icon-wrap.active-pill {
+    background: rgba(212, 175, 55, 0.15);
+    color: #d4af37;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
   }
 
   .nav-item span {
@@ -87,16 +115,25 @@
     color: var(--color-accent-primary);
   }
 
-  .nav-item.active :global(svg) {
-    stroke-width: 2.5px;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  :global([data-theme="dark"]) .nav-item.active {
+    color: #d4af37;
+  }
+
+  .relative {
+    position: relative;
+  }
+
+  .wallet-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
   }
 
   @media (max-width: 768px) {
     .bottom-nav-mobile {
       display: flex;
       justify-content: space-around;
-      align-items: flex-end;
+      align-items: center;
     }
   }
 </style>

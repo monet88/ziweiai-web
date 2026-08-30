@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import { adminTopupXU, adminBanUser, adminUnbanUser } from '$lib/api-client/admin';;
+  import { adminTopupXU, adminBanUser, adminUnbanUser } from '$lib/api-client/admin';
+  import { Coins, UserCheck, ShieldAlert, Sparkles, PlusCircle, MinusCircle, X, Search, CheckCircle2 } from 'lucide-svelte';
 
   let { data }: { data: PageData } = $props();
   let topupAmount = $state(50);
@@ -8,11 +9,24 @@
   let isLoading = $state(false);
   let showModal = $state(false);
   let filterType = $state<'all' | 'registered'>('all');
+  let searchQuery = $state('');
 
   let filteredUsers = $derived(
-    filterType === 'registered'
-      ? data.users.filter((u: any) => Boolean(u.email && u.email.trim()))
-      : data.users
+    data.users
+      .filter((u: any) => {
+        if (filterType === 'registered') {
+          return Boolean(u.email && u.email.trim());
+        }
+        return true;
+      })
+      .filter((u: any) => {
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        const emailMatch = u.email ? u.email.toLowerCase().includes(q) : false;
+        const idMatch = u.user_id ? u.user_id.toLowerCase().includes(q) : false;
+        const nameMatch = u.full_name ? u.full_name.toLowerCase().includes(q) : false;
+        return emailMatch || idMatch || nameMatch;
+      })
   );
 
   function openTopupModal(userId: string) {
@@ -32,11 +46,10 @@
     try {
       const res = await adminTopupXU(data.session.token, selectedUserId, topupAmount);
       if (res.success) {
-        // Update user data locally
         const user = data.users.find((u: any) => u.user_id === selectedUserId);
         if (user) {
           user.xu_balance = (user.xu_balance || 0) + topupAmount;
-          data.users = [...data.users]; // trigger reactivity
+          data.users = [...data.users];
         }
         closeTopupModal();
       }
@@ -96,83 +109,159 @@
 </script>
 
 <svelte:head>
-  <title>Admin Dashboard - Tử Vi Toàn Tập</title>
+  <title>Admin Dashboard - ViOS Control Center</title>
 </svelte:head>
 
-<div class="admin-user-toolbar">
-  <div class="filter-tabs">
-    <button
-      type="button"
-      class="tab-btn"
-      class:active={filterType === 'all'}
-      onclick={() => (filterType = 'all')}
-    >
-      Tất cả người dùng ({data.users.length})
-    </button>
-    <button
-      type="button"
-      class="tab-btn"
-      class:active={filterType === 'registered'}
-      onclick={() => (filterType = 'registered')}
-    >
-      Có Email ({data.users.filter((u: any) => u.email).length})
-    </button>
+<div class="admin-overview">
+  <!-- Stats Highlights -->
+  <div class="overview-stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon-wrap icon-gold">
+        <Coins size={20} />
+      </div>
+      <div class="stat-info">
+        <span class="stat-title">Tổng Người Dùng</span>
+        <strong class="stat-num">{data.users.length}</strong>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrap icon-purple">
+        <UserCheck size={20} />
+      </div>
+      <div class="stat-info">
+        <span class="stat-title">Đã Đăng Ký Email</span>
+        <strong class="stat-num">{data.users.filter((u: any) => Boolean(u.email)).length}</strong>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrap icon-emerald">
+        <Sparkles size={20} />
+      </div>
+      <div class="stat-info">
+        <span class="stat-title">Thành Viên VIP / Premium</span>
+        <strong class="stat-num">{data.users.filter((u: any) => Boolean(u.is_premium)).length}</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Search Toolbar -->
+  <div class="admin-user-toolbar">
+    <div class="filter-tabs">
+      <button
+        type="button"
+        class="tab-btn"
+        class:active={filterType === 'all'}
+        onclick={() => (filterType = 'all')}
+      >
+        Tất cả ({data.users.length})
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        class:active={filterType === 'registered'}
+        onclick={() => (filterType = 'registered')}
+      >
+        Có Email ({data.users.filter((u: any) => Boolean(u.email)).length})
+      </button>
+    </div>
+
+    <div class="search-box">
+      <Search size={16} class="search-icon" />
+      <input
+        type="text"
+        placeholder="Tìm theo email, tên hoặc User ID..."
+        bind:value={searchQuery}
+        class="search-input"
+      />
+      {#if searchQuery}
+        <button type="button" class="btn-clear" onclick={() => (searchQuery = '')}>
+          <X size={14} />
+        </button>
+      {/if}
+    </div>
+  </div>
+
+  <!-- Data Table with Mystical Glass styling -->
+  <div class="data-table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Tên / Trạng thái</th>
+          <th>Email / Định Danh</th>
+          <th>Số Dư XU</th>
+          <th>Hạng Hội Viên</th>
+          <th class="actions-header">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#if filteredUsers.length === 0}
+          <tr>
+            <td colspan="5" class="empty-row">
+              Không tìm thấy người dùng nào phù hợp với bộ lọc.
+            </td>
+          </tr>
+        {:else}
+          {#each filteredUsers as user (user.user_id)}
+            <tr class="user-row">
+              <td class="primary-cell">
+                {#if user.full_name}
+                  <span class="user-name">{user.full_name}</span>
+                {:else}
+                  <span class="badge badge-anon" title="Tài khoản tự động tạo cho khách vãng lai">Vãng lai</span>
+                {/if}
+                {#if user.is_banned}
+                  <span class="badge badge-danger">
+                    <ShieldAlert size={10} /> Banned
+                  </span>
+                {/if}
+              </td>
+              <td class="secondary-cell">
+                {#if user.email}
+                  <span class="email-text">{user.email}</span>
+                {:else}
+                  <span class="anon-text">{user.user_id ? `${user.user_id.slice(0, 16)}…` : 'Chưa liên kết'}</span>
+                {/if}
+              </td>
+              <td class="highlight-cell">
+                <span class="xu-pill">
+                  <Coins size={13} />
+                  {user.xu_balance || 0} XU
+                </span>
+              </td>
+              <td class="secondary-cell">
+                {#if user.is_premium}
+                  <span class="badge badge-vip">
+                    <CheckCircle2 size={10} /> Premium
+                  </span>
+                {:else}
+                  <span class="badge badge-standard">Standard</span>
+                {/if}
+              </td>
+              <td class="actions-cell">
+                <button class="btn btn-action-xu" onclick={() => openTopupModal(user.user_id)}>
+                  <PlusCircle size={14} /> XU +/-
+                </button>
+                {#if user.is_banned}
+                  <button class="btn btn-action-unban" onclick={() => handleBan(user.user_id, false)} disabled={isBanning}>
+                    Mở khoá
+                  </button>
+                {:else}
+                  <button class="btn btn-action-ban" onclick={() => handleBan(user.user_id, true)} disabled={isBanning}>
+                    Khoá
+                  </button>
+                {/if}
+              </td>
+            </tr>
+          {/each}
+        {/if}
+      </tbody>
+    </table>
   </div>
 </div>
 
-<div class="data-table-container">
-  <table class="data-table">
-    <thead>
-      <tr>
-        <th>Tên / ID</th>
-        <th>Email</th>
-        <th>XU Balance</th>
-        <th>Premium</th>
-        <th class="actions-header">Nạp XU</th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each filteredUsers as user (user.user_id)}
-        <tr>
-          <td class="primary-cell">
-            {#if user.full_name}
-              <span class="user-name">{user.full_name}</span>
-            {:else}
-              <span class="badge badge-anon" title="Tài khoản tự động tạo cho khách vãng lai">Vãng lai (Anon)</span>
-            {/if}
-            {#if user.is_banned}
-              <span class="badge badge-danger">Banned</span>
-            {/if}
-          </td>
-          <td class="secondary-cell">
-            {#if user.email}
-              {user.email}
-            {:else}
-              <span class="anon-text">Chưa liên kết email</span>
-            {/if}
-          </td>
-          <td class="highlight-cell">{user.xu_balance || 0}</td>
-          <td class="secondary-cell">{user.is_premium ? 'Có' : 'Không'}</td>
-          <td class="actions-cell">
-            <button class="btn btn-text btn-primary" onclick={() => openTopupModal(user.user_id)}>
-              XU +/-
-            </button>
-            {#if user.is_banned}
-              <button class="btn btn-text btn-success" onclick={() => handleBan(user.user_id, false)} disabled={isBanning}>
-                Mở khoá
-              </button>
-            {:else}
-              <button class="btn btn-text btn-danger" onclick={() => handleBan(user.user_id, true)} disabled={isBanning}>
-                Khoá
-              </button>
-            {/if}
-          </td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
-</div>
-
+<!-- Modal Topup / Deduct XU with Frosted Glass -->
 {#if showModal}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -180,34 +269,240 @@
   <div class="modal-wrapper">
     <div class="modal-dialog">
       <div class="modal-header">
-        <h3 class="modal-title">Thay đổi XU tài khoản</h3>
+        <div class="modal-title-wrap">
+          <div class="icon-modal">
+            <Coins size={18} />
+          </div>
+          <h3 class="modal-title">Cộng / Trừ XU Trực Tiếp</h3>
+        </div>
+        <button type="button" class="btn-modal-close" onclick={closeTopupModal}>
+          <X size={16} />
+        </button>
       </div>
+
       <div class="modal-body">
-        <label for="amount" class="form-label">Số lượng XU</label>
-        <input
-          type="number"
-          name="amount"
-          id="amount"
-          min="1"
-          bind:value={topupAmount}
-          class="form-input"
-        />
+        <p class="modal-subtitle">
+          Điều chỉnh số dư XU cho User ID: <code>{selectedUserId}</code>
+        </p>
+        <label for="amount" class="form-label">Số lượng XU điều chỉnh</label>
+        <div class="input-xu-wrapper">
+          <Coins size={16} class="input-icon" />
+          <input
+            type="number"
+            name="amount"
+            id="amount"
+            min="1"
+            bind:value={topupAmount}
+            class="form-input"
+          />
+        </div>
+        <div class="quick-amounts">
+          <button type="button" class="btn-quick" onclick={() => (topupAmount = 20)}>+20 XU</button>
+          <button type="button" class="btn-quick" onclick={() => (topupAmount = 50)}>+50 XU</button>
+          <button type="button" class="btn-quick" onclick={() => (topupAmount = 100)}>+100 XU</button>
+          <button type="button" class="btn-quick" onclick={() => (topupAmount = 500)}>+500 XU</button>
+        </div>
       </div>
+
       <div class="modal-footer">
-        <button class="btn btn-solid" onclick={handleTopup} disabled={isLoading}>Nạp XU</button>
-        <button class="btn btn-solid btn-danger-solid" onclick={handleDeduct} disabled={isLoading}>Trừ XU</button>
         <button class="btn btn-outline" onclick={closeTopupModal}>Hủy</button>
+        <button class="btn btn-danger-solid" onclick={handleDeduct} disabled={isLoading}>
+          <MinusCircle size={15} /> Trừ {topupAmount} XU
+        </button>
+        <button class="btn btn-solid-gold" onclick={handleTopup} disabled={isLoading}>
+          <PlusCircle size={15} /> Cộng {topupAmount} XU
+        </button>
       </div>
     </div>
   </div>
 {/if}
 
 <style>
+  .admin-overview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  /* Overview Stats Highlights */
+  .overview-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: var(--space-md);
+  }
+
+  @media (min-width: 640px) {
+    .overview-stats-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .stat-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--overlay-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--overlay-border-strong);
+  }
+
+  .stat-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+  }
+
+  .icon-gold {
+    background: rgba(212, 175, 55, 0.15);
+    color: #d4af37;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+  }
+
+  .icon-purple {
+    background: rgba(192, 132, 252, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(192, 132, 252, 0.3);
+  }
+
+  .icon-emerald {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-title {
+    font-size: var(--text-eyebrow);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    color: var(--color-text-muted);
+  }
+
+  .stat-num {
+    font-family: var(--font-sans);
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--color-text-primary);
+  }
+
+  /* Toolbar */
+  .admin-user-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    justify-content: space-between;
+  }
+
+  @media (min-width: 768px) {
+    .admin-user-toolbar {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  .filter-tabs {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--overlay-border);
+  }
+
+  .tab-btn {
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .tab-btn.active {
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 380px;
+  }
+
+  :global(.search-icon) {
+    position: absolute;
+    left: 12px;
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 8px 34px 8px 36px;
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--overlay-border);
+    color: var(--color-text-primary);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .search-input:focus {
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  }
+
+  .btn-clear {
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+  }
+
+  /* Data Table */
   .data-table-container {
     width: 100%;
     overflow-x: auto;
-    background: var(--color-bg-surface);
-    border: 1px solid var(--color-border-hairline);
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px) saturate(170%);
+    -webkit-backdrop-filter: blur(18px) saturate(170%);
+    border: 1px solid var(--overlay-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-card);
   }
@@ -221,34 +516,33 @@
 
   .data-table th,
   .data-table td {
-    padding: var(--space-md) var(--space-lg);
-    border-bottom: 1px solid var(--color-border-hairline);
+    padding: 14px var(--space-lg);
+    border-bottom: 1px solid var(--overlay-border);
   }
 
   .data-table thead th {
-    background: var(--color-bg-elevated);
-    font-size: var(--text-caption);
-    font-weight: 600;
+    background: var(--overlay-ink-wash);
+    font-size: var(--text-eyebrow);
+    font-weight: 700;
     color: var(--color-text-secondary);
     text-transform: uppercase;
     letter-spacing: var(--tracking-eyebrow);
-    border-bottom: 2px solid var(--color-border-strong);
   }
 
-  .data-table tbody tr {
-    transition: background-color var(--duration-fast);
+  .user-row {
+    transition: background-color var(--duration-fast) ease;
   }
 
-  .data-table tbody tr:hover {
+  .user-row:hover {
     background-color: var(--overlay-ink-wash);
   }
 
-  .data-table tbody tr:last-child td {
+  .user-row:last-child td {
     border-bottom: none;
   }
 
   .primary-cell {
-    font-weight: 500;
+    font-weight: 600;
     color: var(--color-text-primary);
     display: flex;
     align-items: center;
@@ -256,18 +550,41 @@
   }
 
   .user-name {
-    font-size: var(--text-body);
+    font-size: 14px;
   }
 
   .secondary-cell {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+  }
+
+  .email-text {
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+
+  .anon-text {
+    font-family: monospace;
+    font-size: 12px;
     color: var(--color-text-muted);
-    font-size: var(--text-body-sm);
   }
 
   .highlight-cell {
     font-weight: 700;
-    color: var(--color-accent-sienna);
-    font-size: var(--text-body);
+    font-size: 14px;
+  }
+
+  .xu-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    background: rgba(212, 175, 55, 0.12);
+    color: #d4af37;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    font-size: 13px;
+    font-weight: 700;
   }
 
   .actions-header {
@@ -278,20 +595,67 @@
     text-align: right;
     display: flex;
     justify-content: flex-end;
-    gap: var(--space-sm);
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
+  .empty-row {
+    text-align: center;
+    padding: 36px !important;
+    color: var(--color-text-muted);
+    font-size: 14px;
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .badge-anon {
+    background: var(--overlay-ink-wash);
+    color: var(--color-text-muted);
+    border: 1px solid var(--overlay-border);
+  }
+
+  .badge-danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .badge-vip {
+    background: rgba(192, 132, 252, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(192, 132, 252, 0.3);
+  }
+
+  .badge-standard {
+    background: var(--overlay-ink-wash);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--overlay-border);
   }
 
   /* Buttons */
   .btn {
     font-family: inherit;
-    font-size: var(--text-body-sm);
-    font-weight: 500;
-    padding: var(--space-xs) var(--space-md);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: all var(--duration-fast);
+    transition: all var(--duration-fast) ease;
     border: none;
-    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .btn:disabled {
@@ -299,109 +663,35 @@
     cursor: not-allowed;
   }
 
-  .btn-text {
-    padding: var(--space-xs) var(--space-xs);
+  .btn-action-xu {
+    background: rgba(212, 175, 55, 0.12);
+    color: #d4af37;
+    border: 1px solid rgba(212, 175, 55, 0.25);
   }
 
-  .btn-text:hover {
-    background: var(--overlay-ink-wash);
+  .btn-action-xu:hover {
+    background: rgba(212, 175, 55, 0.25);
+    transform: translateY(-1px);
   }
 
-  .btn-primary {
-    color: var(--color-accent-primary);
-  }
-
-  .btn-success {
-    color: var(--color-accent-green);
-  }
-
-  .btn-danger {
-    color: var(--color-accent-danger);
-  }
-
-  .btn-solid {
-    background: var(--color-accent-primary);
-    color: var(--color-text-on-primary);
-  }
-
-  .btn-solid:hover:not(:disabled) {
-    background: var(--color-accent-primary-pressed);
-  }
-
-  .btn-danger-solid {
-    background: var(--color-accent-danger);
-    color: white;
-  }
-
-  .btn-outline {
+  .btn-action-ban {
     background: transparent;
-    border: 1px solid var(--color-border-strong);
-    color: var(--color-text-primary);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
   }
 
-  .btn-outline:hover {
-    background: var(--overlay-ink-wash);
+  .btn-action-ban:hover {
+    background: rgba(239, 68, 68, 0.15);
   }
 
-  /* Toolbar & Filter Tabs */
-  .admin-user-toolbar {
-    margin-bottom: var(--space-md);
-  }
-
-  .filter-tabs {
-    display: inline-flex;
-    gap: 4px;
-    padding: 4px;
-    background: var(--color-bg-elevated);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-border-hairline);
-  }
-
-  .tab-btn {
-    padding: 6px 14px;
-    border-radius: var(--radius-sm);
-    border: none;
+  .btn-action-unban {
     background: transparent;
-    color: var(--color-text-secondary);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
   }
 
-  .tab-btn.active {
-    background: var(--color-bg-surface);
-    color: var(--color-text-primary);
-    font-weight: 600;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  /* Badge */
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 8px;
-    border-radius: var(--radius-pill);
-    font-size: var(--text-eyebrow);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-eyebrow);
-  }
-
-  .badge-anon {
-    background: var(--color-bg-elevated);
-    color: var(--color-text-muted);
-    border: 1px solid var(--color-border-hairline);
-  }
-
-  .anon-text {
-    font-style: italic;
-    opacity: 0.6;
-  }
-
-  .badge-danger {
-    background: #fde8e8;
-    color: var(--color-accent-danger);
+  .btn-action-unban:hover {
+    background: rgba(16, 185, 129, 0.15);
   }
 
   /* Modal */
@@ -411,9 +701,10 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: var(--overlay-border-strong);
-    backdrop-filter: blur(4px);
-    z-index: 40;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 90;
     animation: fadeIn var(--duration-fast);
   }
 
@@ -423,18 +714,19 @@
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 50;
+    z-index: 100;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-xl);
+    padding: var(--space-lg);
     pointer-events: none;
   }
 
   .modal-dialog {
     background: var(--color-bg-surface);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
+    border: 1px solid var(--overlay-border-strong);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
     width: 100%;
     max-width: 480px;
     pointer-events: auto;
@@ -443,53 +735,172 @@
   }
 
   .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: var(--space-lg) var(--space-lg) var(--space-md);
+    border-bottom: 1px solid var(--overlay-border);
+  }
+
+  .modal-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .icon-modal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: rgba(212, 175, 55, 0.15);
+    color: #d4af37;
   }
 
   .modal-title {
     font-family: var(--font-serif);
-    font-size: var(--text-h3);
+    font-size: var(--text-title);
     color: var(--color-text-primary);
     margin: 0;
+    font-weight: 700;
+  }
+
+  .btn-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+  }
+
+  .btn-modal-close:hover {
+    background: var(--overlay-ink-wash);
+    color: var(--color-text-primary);
   }
 
   .modal-body {
-    padding: 0 var(--space-lg) var(--space-xl);
+    padding: var(--space-md) var(--space-lg) var(--space-lg);
+  }
+
+  .modal-subtitle {
+    margin: 0 0 var(--space-md);
+    font-size: 13px;
+    color: var(--color-text-muted);
+  }
+
+  .modal-subtitle code {
+    color: var(--color-accent-primary);
+    background: var(--overlay-ink-wash);
+    padding: 2px 6px;
+    border-radius: 4px;
   }
 
   .form-label {
     display: block;
     font-size: var(--text-caption);
-    font-weight: 500;
+    font-weight: 600;
     color: var(--color-text-secondary);
     margin-bottom: var(--space-xs);
   }
 
+  .input-xu-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--space-md);
+  }
+
+  :global(.input-icon) {
+    position: absolute;
+    left: 12px;
+    color: #d4af37;
+  }
+
   .form-input {
     width: 100%;
-    box-sizing: border-box;
-    padding: var(--space-sm) var(--space-md);
-    border: 1px solid var(--color-border-strong);
+    padding: 10px 14px 10px 38px;
+    border: 1px solid var(--overlay-border-strong);
     border-radius: var(--radius-md);
-    font-size: var(--text-body);
-    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 700;
     color: var(--color-text-primary);
-    background: var(--color-bg-surface);
+    background: var(--color-bg-primary);
+    outline: none;
     transition: border-color var(--duration-fast);
   }
 
   .form-input:focus {
-    outline: none;
-    border-color: var(--color-accent-primary);
+    border-color: #d4af37;
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  }
+
+  .quick-amounts {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-quick {
+    flex: 1;
+    padding: 6px;
+    background: var(--overlay-ink-wash);
+    border: 1px solid var(--overlay-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-quick:hover {
+    background: rgba(212, 175, 55, 0.15);
+    color: #d4af37;
+    border-color: rgba(212, 175, 55, 0.3);
   }
 
   .modal-footer {
     padding: var(--space-md) var(--space-lg);
-    background: var(--color-bg-elevated);
+    background: var(--overlay-ink-wash);
     display: flex;
     justify-content: flex-end;
     gap: var(--space-sm);
-    border-top: 1px solid var(--color-border-hairline);
+    border-top: 1px solid var(--overlay-border);
+  }
+
+  .btn-solid-gold {
+    background: linear-gradient(135deg, #fce99f 0%, #d4af37 100%);
+    color: #0f0c1b;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+  }
+
+  .btn-solid-gold:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(212, 175, 55, 0.35);
+  }
+
+  .btn-danger-solid {
+    background: #ef4444;
+    color: white;
+  }
+
+  .btn-danger-solid:hover:not(:disabled) {
+    background: #dc2626;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--overlay-border-strong);
+    color: var(--color-text-secondary);
+  }
+
+  .btn-outline:hover {
+    background: var(--overlay-ink-wash);
+    color: var(--color-text-primary);
   }
 
   @keyframes fadeIn {
@@ -498,7 +909,8 @@
   }
 
   @keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0; }
+    from { transform: translateY(16px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
 </style>
+

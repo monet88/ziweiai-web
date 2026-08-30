@@ -68,7 +68,7 @@
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       try {
         navigator.vibrate(50);
-      } catch (e) {
+      } catch {
         // Ignore fallback
       }
     }

@@ -24,6 +24,9 @@ import {
   type StickDraw,
   type AlmanacSelection,
   type AlmanacTopic,
+  numerologyExplainResponseSchema,
+  type NumerologyExplainRequest,
+  type NumerologyExplainResponse,
 } from '@ziweiai/contracts';
 import { fetchJson, fetchMultipart, fetchNoContent } from './fetch-json';
 
@@ -140,3 +143,15 @@ export function selectAlmanac(
     },
   });
 }
+
+export function explainNumerology(
+  token: string,
+  params: NumerologyExplainRequest,
+): Promise<NumerologyExplainResponse> {
+  return fetchJson('/numerology/explain', numerologyExplainResponseSchema, {
+    method: 'POST',
+    token,
+    body: params,
+  });
+}
+

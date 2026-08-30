@@ -81,5 +81,26 @@ export class WalletEngineService {
     return data === true;
   }
 
+
+  /**
+   * Get user's transaction history
+   */
+  async getUserTransactions(userId: string) {
+    const { data, error, count } = await this.client
+      .from('transactions')
+      .select('*', { count: 'exact' })
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      this.logger.error(`Failed to fetch transactions for user ${userId}`, error);
+      throw new Error(`Could not fetch transactions for user ${userId}`);
+    }
+
+    return {
+      data: data || [],
+      total: count || 0,
+    };
+  }
 }
 

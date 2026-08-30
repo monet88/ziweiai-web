@@ -155,6 +155,9 @@ export const apiEnvSchema = z.object({
     (val) => (val === '' || val === undefined || val === null ? undefined : val),
     z.url().optional(),
   ),
+  // Telegram Alert configuration for operational monitoring
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_CHAT_ID: z.string().optional(),
   ADMIN_EMAILS: z.string().default(''),
   npm_package_version: z.string().min(1).optional(),
 });

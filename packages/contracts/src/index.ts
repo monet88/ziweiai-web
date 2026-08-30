@@ -14,6 +14,8 @@ export * from './chart/dream-interpretation';
 export * from './chart/stick-draw';
 export * from './chart/almanac-selection';
 export * from './chart/vision-analysis';
+export * from './chart/iching-draw';
+export * from './chart/numerology';
 export {
   meihuaTrigramKeys,
   meihuaElementKeys,
@@ -53,3 +55,4 @@ export * from './admin/reconcile';
 export * from './admin/admin-user';
 export * from './admin/admin-analytics';
 export * from './admin/admin-api';
+export * from './wallet/transactions';

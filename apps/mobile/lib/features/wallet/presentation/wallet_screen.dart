@@ -1,13 +1,17 @@
 import 'dart:math';
-import 'dart:ui';
-
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../providers/wallet_provider.dart';
+import '../../subscription/providers/subscription_provider.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../ui/animated_background.dart';
+import '../../../ui/glass_panel.dart';
 
 class WalletScreen extends ConsumerStatefulWidget {
   const WalletScreen({super.key});
@@ -55,6 +59,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
 
   Future<void> _handleRestorePurchases() async {
     if (_isPurchasing) return;
+    HapticFeedback.mediumImpact();
     setState(() {
       _isPurchasing = true;
     });
@@ -84,6 +89,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
 
   Future<void> _handlePurchase(Package package) async {
     if (_isPurchasing) return;
+    HapticFeedback.mediumImpact();
     setState(() {
       _isPurchasing = true;
     });
@@ -118,28 +124,70 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Column(
+        backgroundColor: AppTheme.cosmosSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppTheme.goldBright, width: 1.5),
+        ),
+        title: Column(
           children: [
-            Icon(Icons.stars, color: Colors.amber, size: 48),
-            SizedBox(height: 16),
-            Text('Thanh toán thành công!', textAlign: TextAlign.center),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: CelestialGradients.imperialGold,
+                boxShadow: CelestialShadows.goldGlow,
+              ),
+              child: const Icon(Icons.stars, color: Color(0xFF141026), size: 40),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nạp XU Thành Công!',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.cinzel(
+                color: AppTheme.goldBright,
+                fontWeight: FontWeight.w800,
+                fontSize: 20,
+              ),
+            ),
           ],
         ),
         content: const Text(
-          'Số XU của bạn đã được cộng vào tài khoản.\nCảm ơn bạn đã đồng hành cùng Tử Vi Toàn Tập!',
+          'Số XU của bạn đã được cộng ngay vào tài khoản.\nCảm ơn bạn đã đồng hành cùng Tử Vi Toàn Tập!',
           textAlign: TextAlign.center,
+          style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 14, height: 1.5),
         ),
         actions: [
           Center(
-            child: ElevatedButton(
-              onPressed: () => context.pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2A0845),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: CelestialGradients.imperialGold,
+                boxShadow: CelestialShadows.goldGlow,
               ),
-              child: const Text('Đóng'),
+              child: ElevatedButton(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  context.pop();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: const Color(0xFF141026),
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Text(
+                  'ĐÓNG',
+                  style: GoogleFonts.cinzel(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
             ),
           )
         ],
@@ -152,19 +200,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Gradient (Space theme)
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0F0C29), // Very dark blue/purple
-                  Color(0xFF302B63),
-                  Color(0xFF24243E),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
+          // Background Gradient (Space theme) -> AnimatedBackground
+          const Positioned.fill(
+            child: AnimatedBackground(child: SizedBox.shrink()),
           ),
           
           // Custom Header
@@ -179,13 +217,29 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-                        onPressed: () => context.pop(),
+                        icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.goldBright),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          context.pop();
+                        },
                       ),
-                      TextButton.icon(
-                        onPressed: _handleRestorePurchases,
-                        icon: const Icon(Icons.restore, color: Colors.white70),
-                        label: const Text('Khôi phục', style: TextStyle(color: Colors.white70)),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.history, color: AppTheme.mysticalGold),
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              context.push('/wallet/history');
+                            },
+                            tooltip: 'Lịch sử giao dịch',
+                          ),
+                          TextButton.icon(
+                            onPressed: _handleRestorePurchases,
+                            icon: const Icon(Icons.restore, color: AppTheme.mysticalTextSecondary, size: 18),
+                            label: const Text('Khôi phục', style: TextStyle(color: AppTheme.mysticalTextSecondary)),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -197,16 +251,16 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        'TÀI KHOẢN CỦA BẠN',
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 14,
+                      Text(
+                        'SỐ DƯ XU CỦA BẠN',
+                        style: GoogleFonts.cinzel(
+                          color: AppTheme.mysticalTextSecondary,
+                          fontSize: 13,
                           letterSpacing: 2.0,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Consumer(
                         builder: (context, ref, child) {
                           final balanceAsyncValue = ref.watch(walletBalanceProvider);
@@ -218,34 +272,29 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                               children: [
                                 Text(
                                   '$balance',
-                                  style: const TextStyle(
-                                    color: Color(0xFFFFD700), // Gold
+                                  style: GoogleFonts.cinzel(
+                                    color: AppTheme.goldBright,
                                     fontSize: 64,
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w900,
                                     height: 1.0,
-                                    shadows: [
-                                      Shadow(
-                                        color: Color(0x66FFD700),
-                                        blurRadius: 20,
-                                      ),
-                                    ],
+                                    shadows: CelestialShadows.goldGlow,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                const Padding(
-                                  padding: EdgeInsets.only(bottom: 8.0),
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
                                   child: Text(
                                     'XU',
-                                    style: TextStyle(
-                                      color: Color(0xFFFFD700),
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
+                                    style: GoogleFonts.cinzel(
+                                      color: AppTheme.goldBright,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                            loading: () => const CircularProgressIndicator(color: Color(0xFFFFD700)),
+                            loading: () => const CircularProgressIndicator(color: AppTheme.goldBright),
                             error: (err, stack) => const Text(
                               'Lỗi tải số dư',
                               style: TextStyle(color: Colors.redAccent, fontSize: 16),
@@ -262,19 +311,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                   flex: 7,
                   child: ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: _buildPackagesList(),
-                      ),
+                    child: GlassPanel(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                      borderGradient: CelestialGradients.goldBorder,
+                      child: _buildPackagesList(),
                     ),
                   ),
                 ),
@@ -285,9 +325,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
           // Purchasing Overlay
           if (_isPurchasing)
             Container(
-              color: Colors.black.withValues(alpha: 0.5),
+              color: Colors.black.withValues(alpha: 0.6),
               child: const Center(
-                child: CircularProgressIndicator(color: Color(0xFFFFD700)),
+                child: CircularProgressIndicator(color: AppTheme.goldBright),
               ),
             ),
             
@@ -303,9 +343,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               numberOfParticles: 50, 
               gravity: 0.2,
               colors: const [
-                Color(0xFFFFD700), // Gold
-                Color(0xFFFFDF00), // Golden yellow
-                Color(0xFFD4AF37), // Metallic gold
+                AppTheme.goldBright,
+                AppTheme.mysticalGold,
+                Color(0xFFFFDF00),
                 Colors.white,
               ],
               createParticlePath: drawCoin,
@@ -324,35 +364,135 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
 
   Widget _buildPackagesList() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return const Center(child: CircularProgressIndicator(color: AppTheme.goldBright));
     }
     
     if (_offerings == null || _offerings!.current == null || _offerings!.current!.availablePackages.isEmpty) {
       return const Center(
         child: Text(
           'Hiện tại chưa có gói XU nào khả dụng.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: AppTheme.mysticalTextSecondary),
         ),
       );
     }
+
+    final isPro = ref.watch(isProUserProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Center(
+          // VIP Pro Banner
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: CelestialGradients.imperialGold,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: CelestialShadows.goldGlow,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.workspace_premium, color: Color(0xFF141026), size: 28),
+                        const SizedBox(width: 8),
+                        Text(
+                          'TỬ VI TOÀN TẬP PRO',
+                          style: GoogleFonts.cinzel(
+                            color: const Color(0xFF141026),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isPro ? const Color(0xFF141026) : Colors.black.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        isPro ? 'ĐANG KÍCH HOẠT' : 'VIP PRO',
+                        style: TextStyle(
+                          color: isPro ? AppTheme.goldBright : const Color(0xFF141026),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Mở khóa toàn bộ thuật số (Tướng Mặt, Chỉ Tay, Bát Tự, Tử Vi, Tarot 3D, Kinh Dịch) không giới hạn.',
+                  style: TextStyle(
+                    color: Color(0xFF141026),
+                    fontSize: 13,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          HapticFeedback.mediumImpact();
+                          await ref.read(subscriptionProvider.notifier).presentPaywall();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF141026),
+                          foregroundColor: AppTheme.goldBright,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          isPro ? 'Xem Gói Đang Dùng' : 'Mở Khóa VIP PRO',
+                          style: GoogleFonts.cinzel(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: () async {
+                        HapticFeedback.lightImpact();
+                        await ref.read(subscriptionProvider.notifier).presentCustomerCenter();
+                      },
+                      icon: const Icon(Icons.settings_outlined, color: Color(0xFF141026)),
+                      tooltip: 'Customer Center (Quản lý)',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+
+          Center(
             child: Text(
-              'CHỌN GÓI NẠP',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+              'HOẶC CHỌN GÓI NẠP XU HOÀNG GIA',
+              style: GoogleFonts.cinzel(
+                color: AppTheme.goldBright,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
                 letterSpacing: 1.5,
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 18),
           ..._offerings!.current!.availablePackages.map((package) {
             int xuDisplay = 0;
             if (package.storeProduct.identifier.contains('100')) {
@@ -393,36 +533,28 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        boxShadow: isPopular
-            ? [
-                BoxShadow(
-                  color: const Color(0xFFFFD700).withValues(alpha: 0.3),
-                  blurRadius: 15,
-                  spreadRadius: 2,
-                )
-              ]
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                )
-              ],
+        boxShadow: isPopular ? CelestialShadows.goldGlow : [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          )
+        ],
       ),
       child: Material(
-        color: isPopular ? Colors.white.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
+        color: isPopular ? AppTheme.cosmosElevated : AppTheme.cosmosSurface.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => _handlePurchase(package),
-          splashColor: const Color(0xFFFFD700).withValues(alpha: 0.3),
-          highlightColor: Colors.white.withValues(alpha: 0.1),
+          splashColor: AppTheme.mysticalGold.withValues(alpha: 0.3),
+          highlightColor: Colors.white.withValues(alpha: 0.05),
           child: Container(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.all(18.0),
             decoration: BoxDecoration(
               border: Border.all(
-                color: isPopular ? const Color(0xFFFFD700) : Colors.white.withValues(alpha: 0.1),
-                width: isPopular ? 2.0 : 1.0,
+                color: isPopular ? AppTheme.goldBright : AppTheme.mysticalGold.withValues(alpha: 0.25),
+                width: isPopular ? 1.8 : 1.0,
               ),
               borderRadius: BorderRadius.circular(20),
             ),
@@ -430,18 +562,24 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               children: [
                 // Coin Icon
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700).withValues(alpha: 0.2),
+                    gradient: isPopular ? CelestialGradients.imperialGold : null,
+                    color: isPopular ? null : AppTheme.cosmosDark,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFFFFD700).withValues(alpha: 0.5),
-                      width: 2,
+                      color: AppTheme.goldBright,
+                      width: 1.5,
                     ),
+                    boxShadow: isPopular ? CelestialShadows.goldGlow : null,
                   ),
-                  child: const Center(
-                    child: Icon(Icons.stars, color: Color(0xFFFFD700), size: 32),
+                  child: Center(
+                    child: Icon(
+                      Icons.stars,
+                      color: isPopular ? const Color(0xFF141026) : AppTheme.goldBright,
+                      size: 28,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -457,25 +595,27 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                             child: Text(
                               package.storeProduct.title.split('(').first.trim(),
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.mysticalText,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 18,
+                                fontSize: 17,
                               ),
                             ),
                           ),
                           if (isPopular)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFD700),
+                                gradient: CelestialGradients.imperialGold,
                                 borderRadius: BorderRadius.circular(8),
+                                boxShadow: CelestialShadows.goldGlow,
                               ),
                               child: const Text(
-                                'HOT',
+                                'PHỔ BIẾN NHẤT',
                                 style: TextStyle(
-                                  color: Color(0xFF2A0845),
-                                  fontSize: 10,
+                                  color: Color(0xFF141026),
+                                  fontSize: 9,
                                   fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ),
@@ -483,10 +623,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        xu > 0 ? '$xu XU' : 'Gói XU',
+                        xu > 0 ? 'Nhận ngay +$xu XU' : 'Gói nạp XU',
                         style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
+                          color: AppTheme.mysticalTextSecondary,
+                          fontSize: 13,
                         ),
                       ),
                     ],
@@ -495,17 +635,22 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                 
                 // Price
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isPopular ? const Color(0xFFFFD700) : Colors.white.withValues(alpha: 0.1),
+                    gradient: isPopular ? CelestialGradients.imperialGold : null,
+                    color: isPopular ? null : AppTheme.cosmosElevated,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isPopular ? Colors.transparent : AppTheme.mysticalGold.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
                   ),
                   child: Text(
                     package.storeProduct.priceString,
                     style: TextStyle(
-                      color: isPopular ? const Color(0xFF2A0845) : Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      color: isPopular ? const Color(0xFF141026) : AppTheme.goldBright,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
                     ),
                   ),
                 ),

@@ -91,21 +91,23 @@ void main() {
     );
 
     // Initial state: home screen
-    expect(find.text('Nhập thông tin sinh'), findsOneWidget);
-    expect(find.text('Lập lá số Tử Vi'), findsOneWidget);
+    expect(find.text('THÔNG TIN LẬP LÁ SỐ'), findsOneWidget);
+    expect(find.text('LẬP LÁ SỐ TỬ VI'), findsOneWidget);
 
     // Enter data (optional, since there's default data)
     await tester.enterText(find.byType(TextField).first, '10');
 
     // Tap submit
-    await tester.tap(find.text('Lập lá số Tử Vi'));
+    await tester.tap(find.text('LẬP LÁ SỐ TỬ VI'));
     await tester.pump();
 
     // Verify loading indicator is present
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-    // Wait for the simulated network delay
-    await tester.pumpAndSettle();
+    // Wait for the simulated network delay and animations
+    await tester.pump(const Duration(milliseconds: 150));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(seconds: 1));
 
     final errorFinder = find.textContaining('Lỗi:');
     if (errorFinder.evaluate().isNotEmpty) {

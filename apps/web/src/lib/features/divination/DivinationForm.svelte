@@ -233,20 +233,26 @@
   .form {
     display: flex;
     flex-direction: column;
-    gap: var(--space-md);
+    gap: var(--space-lg);
+    background: rgba(22, 27, 46, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    backdrop-filter: blur(16px);
   }
 
   .question {
     width: 100%;
     box-sizing: border-box;
     padding: var(--space-md);
-    border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-xs);
-    background: var(--color-bg-surface);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    background: rgba(11, 13, 20, 0.6);
     color: var(--color-text-primary);
-    font-size: 16px;
+    font-size: 15px;
     font-family: inherit;
     resize: vertical;
+    transition: all 0.2s ease;
   }
 
   .question::placeholder {
@@ -254,8 +260,9 @@
   }
 
   .question:focus-visible {
-    outline: 2px solid var(--color-accent-primary);
-    outline-offset: 1px;
+    outline: none;
+    border-color: #d4af37;
+    box-shadow: 0 0 16px rgba(212, 175, 55, 0.2);
   }
 
   .question[aria-invalid='true'] {
@@ -278,39 +285,48 @@
     grid-template-columns: 1fr;
     gap: var(--space-md);
     margin: 0;
-    padding: 0;
-    border: 0;
+    padding: var(--space-md);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-radius: var(--radius-md);
+    background: rgba(11, 13, 20, 0.4);
   }
 
   .lines-legend {
     grid-column: 1 / -1;
-    padding: 0;
-    color: var(--color-text-secondary);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.2px;
+    padding: 0 8px;
+    color: #fce99f;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
   }
 
   .toss-all {
     justify-self: start;
-    min-height: 36px;
-    padding: var(--space-xs) var(--space-md);
-    border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-surface);
-    color: var(--color-text-primary);
+    min-height: 40px;
+    padding: var(--space-xs) var(--space-lg);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    border-radius: var(--radius-pill);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(184, 134, 11, 0.1));
+    color: #fce99f;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: border-color var(--duration, 150ms) ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .toss-all:hover:not(:disabled) {
-    border-color: var(--color-accent-primary);
+    border-color: #fce99f;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.35), rgba(184, 134, 11, 0.2));
+    box-shadow: 0 0 16px rgba(212, 175, 55, 0.35);
+    transform: translateY(-1px);
   }
 
   .toss-all:focus-visible {
-    outline: 2px solid var(--color-accent-primary);
+    outline: 2px solid #d4af37;
     outline-offset: 2px;
   }
 
@@ -319,66 +335,102 @@
     cursor: progress;
   }
 
-  /* Moi hao: cot dong xu | select trang thai | nut gieo rieng. */
+  /* Mỗi hào: cột đồng xu | select trạng thái | nút gieo riêng */
   .line-row {
     display: grid;
     grid-template-columns: auto 1fr auto;
-    align-items: end;
-    gap: var(--space-sm);
+    align-items: center;
+    gap: var(--space-md);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.15s ease;
+  }
+
+  .line-row:hover {
+    background: rgba(255, 255, 255, 0.04);
   }
 
   .coins {
     display: inline-flex;
-    gap: 4px;
-    padding-bottom: 6px;
+    gap: 6px;
+    perspective: 600px;
   }
 
+  /* ĐỒNG XU CỔ 3D HOÀNG KIM */
   .coin {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    border: 1px solid var(--color-border-hairline);
-    background: var(--color-bg-surface);
-    color: var(--color-text-secondary);
-    font-size: 12px;
-    font-weight: 700;
-    /* Reveal animation: chi animate transform + opacity (compositor-friendly). */
-    animation: coin-reveal 360ms ease both;
+    border: 2px solid #d4af37;
+    background: radial-gradient(circle at 35% 35%, #fff1b8 0%, #d4af37 50%, #855806 100%);
+    color: #3b2803;
+    font-size: 13px;
+    font-weight: 800;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 0 4px rgba(255, 255, 255, 0.6);
+    animation: coin-flip 500ms cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
     animation-delay: var(--coin-delay, 0ms);
+    user-select: none;
+  }
+
+  /* Lỗ vuông giữa đồng xu cổ */
+  .coin::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: rgba(11, 13, 20, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.8);
+    box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
   }
 
   .coin.head {
-    border-color: var(--color-accent-primary);
-    color: var(--color-accent-primary);
+    border-color: #fce99f;
+    background: radial-gradient(circle at 35% 35%, #ffffff 0%, #fce99f 40%, #d4af37 80%, #996515 100%);
+    color: #1e1302;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.6), inset 0 0 4px rgba(255, 255, 255, 0.8);
   }
 
   .coin.placeholder {
     animation: none;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
     color: var(--color-text-muted);
+    box-shadow: none;
+  }
+
+  .coin.placeholder::after {
+    display: none;
   }
 
   .toss-one {
     min-height: 36px;
-    padding: var(--space-xs) var(--space-sm);
-    border: 1px solid var(--color-border-hairline);
+    padding: var(--space-xs) var(--space-md);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: var(--radius-md);
-    background: var(--color-bg-surface);
-    color: var(--color-text-secondary);
+    background: rgba(22, 27, 46, 0.6);
+    color: var(--color-text-primary);
     font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
-    transition: border-color var(--duration, 150ms) ease;
+    transition: all 0.15s ease;
   }
 
   .toss-one:hover:not(:disabled) {
-    border-color: var(--color-accent-primary);
+    border-color: #d4af37;
+    color: #fce99f;
+    background: rgba(212, 175, 55, 0.1);
   }
 
   .toss-one:focus-visible {
-    outline: 2px solid var(--color-accent-primary);
+    outline: 2px solid #d4af37;
     outline-offset: 2px;
   }
 
@@ -387,18 +439,20 @@
     cursor: progress;
   }
 
-  @keyframes coin-reveal {
-    from {
+  @keyframes coin-flip {
+    0% {
       opacity: 0;
-      transform: translateY(-6px) scale(0.85);
+      transform: translateY(-20px) rotateY(0deg) scale(0.6);
     }
-    to {
+    60% {
+      transform: translateY(-5px) rotateY(540deg) scale(1.15);
+    }
+    100% {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateY(0) rotateY(720deg) scale(1);
     }
   }
 
-  /* Ton trong nguoi dung tat chuyen dong: bo animation reveal. */
   @media (prefers-reduced-motion: reduce) {
     .coin {
       animation: none;
@@ -409,13 +463,21 @@
     margin: 0;
     color: var(--color-text-muted);
     font-size: 13px;
-    line-height: 1.4;
+    line-height: 1.5;
   }
 
   @media (max-width: 480px) {
+    .form {
+      padding: var(--space-md);
+    }
     .grid-2,
     .lines {
       grid-template-columns: 1fr;
+    }
+    .line-row {
+      grid-template-columns: 1fr;
+      justify-items: start;
+      gap: 8px;
     }
   }
 </style>

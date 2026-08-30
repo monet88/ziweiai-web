@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'api_client.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) {
-  return ApiClient();
+  return ApiClient(ref);
 });
 
 final dioProvider = Provider<Dio>((ref) {

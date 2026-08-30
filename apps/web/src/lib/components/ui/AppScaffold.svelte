@@ -60,11 +60,13 @@
 
 <style>
   .screen {
+    position: relative;
     min-height: 100dvh;
     background:
       linear-gradient(180deg, var(--color-bg-surface) 0%, var(--color-bg-primary) 260px),
       var(--color-bg-primary);
     color: var(--color-text-primary);
+    overflow-x: hidden;
   }
 
   .screen.theme-mystical {
@@ -77,10 +79,10 @@
 
   :global([data-theme="dark"]) .screen.theme-mystical {
     background:
-      radial-gradient(ellipse 70% 45% at 12% 0%, var(--mystical-glow-a), transparent 58%),
-      radial-gradient(ellipse 55% 40% at 88% 8%, var(--mystical-glow-b), transparent 52%),
-      radial-gradient(ellipse 80% 60% at 50% 100%, var(--mystical-glow-c), transparent 60%),
-      linear-gradient(180deg, #14121c 0%, var(--color-bg-primary) 42%, #09080f 100%);
+      radial-gradient(ellipse 70% 45% at 12% 0%, rgba(247, 231, 206, 0.08), transparent 58%),
+      radial-gradient(ellipse 55% 40% at 88% 8%, rgba(192, 132, 252, 0.12), transparent 52%),
+      radial-gradient(ellipse 80% 60% at 50% 100%, rgba(15, 12, 27, 0.7), transparent 60%),
+      linear-gradient(180deg, #120f20 0%, #0a0812 100%);
   }
 
   .container {
@@ -107,7 +109,7 @@
     flex-direction: column;
     gap: var(--space-lg);
     padding-bottom: 28px;
-    border-bottom: 1px solid var(--color-border-hairline);
+    border-bottom: 1px solid var(--overlay-border);
   }
 
   .hero-text {
@@ -123,6 +125,7 @@
     font-size: var(--text-eyebrow);
     font-weight: 700;
     letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
   }
 
   .title {
@@ -130,8 +133,8 @@
     color: var(--color-text-primary);
     max-width: 13ch;
     font-size: var(--text-h1);
-    font-weight: 700;
-    letter-spacing: 0;
+    font-weight: 800;
+    letter-spacing: -0.01em;
     line-height: var(--text-h1-line);
     text-wrap: balance;
   }
@@ -166,6 +169,13 @@
     align-items: center;
     gap: 12px;
     flex-shrink: 0;
+    background: var(--glass-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--overlay-border);
+    box-shadow: var(--shadow-card);
   }
 
   /* >=768px: hero title + action nằm cùng hàng. */
@@ -181,6 +191,7 @@
       padding-bottom: 72px;
     }
   }
+
 
   /* >=1080px (DESIGN.md desktop): 2 cột main + sidebar (thay đo width bằng JS của RN). */
   @media (min-width: 1080px) {

@@ -6,7 +6,6 @@
   // tự chọn card theo chartSystem của snapshot). Token đọc tươi trong queryFn (§3).
   import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
   import { SvelteSet } from 'svelte/reactivity';
-  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { deleteVisionResult } from '$lib/api-client/divinations';

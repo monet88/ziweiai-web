@@ -8,7 +8,7 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 
 ## 🚀 Trạng Thái Tính Năng & Sprint (Phase 8: Production Store Distribution & Advanced AI Capabilities — Sprint 39 — 30/08/2026)
 - **Current Branch:** `feature/sprint39-mobile-perfection-and-aab`
-- **Rollback Anchor:** `79cb2c8` (feat(mobile): complete sprint 39 ticket 39.2 (admob) and ticket 39.3 (voice synthesis))
+- **Rollback Anchor:** `587bd35` (feat(mobile): complete sprint 39 ticket 39.4 (annual horoscope flow & luxury pdf report))
 - **Base Release Tag:** `v1.0.0` (commit `1a63fd5` trên `main`)
 - **Total Tests:** **899/899 Passed** (Mobile: 38, API: 443, Web: 258, Contracts: 125, Astro-Engine: 35)
 - **Google Play App Bundle:** `apps/mobile/build/app/outputs/bundle/release/app-release.aab` (**59.3MB**)

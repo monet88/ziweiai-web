@@ -6,7 +6,11 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 
 ---
 
-## 🚀 Trạng Thái Tính Năng & Sprint (Phase 5: Mobile Release & Production Hardening - Sprint 36 - 28/08/2026)
+## 🚀 Trạng Thái Tính Năng & Sprint (Phase 7: Biometric Vision AI, RevenueCat Guard & Release v1.0.0 — Sprint 38 — 30/08/2026)
+- **Rollback Anchor:** `1a63fd5` (Nhánh `main` trên GitHub `galaxypro710-stack/ziweiai-web`)
+- **Release Tag:** `v1.0.0`
+- **Total Tests:** 844/844 Passed (API: 439, Web: 258, Mobile: 22, Contracts: 125)
+- **Mobile Release APK:** 24.8MB (arm64, Impeller Vulkan, test UAT trên Samsung Galaxy A53 5G thành công 100%)
 
 1. **Luồng sản phẩm cốt lõi (Core Flow)**
    - Khởi tạo lá số Tử Vi, Bát Tự, gieo quẻ Kinh Dịch, Mai Hoa, Lục Hào, Manh Phái, Hợp Hôn.

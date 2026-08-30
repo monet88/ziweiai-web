@@ -104,6 +104,14 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 19. **Kế Hoạch Nâng Cấp Giao Diện Mobile "Celestial Luxury" (Sprint 37 - Phase 6)**
     - Chuẩn bị bước vào Sprint 37 để đại tu giao diện Mobile Flutter từ đơn giản lên đẳng cấp **Celestial Luxury Glassmorphism** (Bento Grid 12 bộ môn, viền vàng phát quang, hiệu ứng Haptic Feedback cảm ứng rung tinh tế, Floating Pill NavBar).
 
+20. **Hoàn Thành Ticket 1 - Sprint 37: Design System & Bento Grid HomeScreen (30/08/2026)**
+    - Nâng cấp `AppTheme` với bảng màu **Deep Cosmos** (`#08060F` ➜ `#120E24`), hệ dải màu **Imperial Gold** & **Nebula Glow**, typography hoàng gia (`GoogleFonts.cinzel` & `PlayfairDisplay`).
+    - Nâng cấp `GlassPanel 2.0` (BackdropFilter blur, viền gradient hoàng gia phát quang, quầng sáng aura và rung cảm ứng Haptic Feedback).
+    - Nâng cấp `AnimatedBackground` tích hợp canvas hạt sao lấp lánh `_StarfieldPainter` và 3 quầng sáng tinh vân tối ưu GPU 60-120 FPS.
+    - Xây dựng component mới `FloatingPillNavBar` (thanh điều hướng đáy lơ lửng bọc kính mờ viền vàng).
+    - Tái thiết kế toàn diện `HomeScreen` thành **Bento Grid Thuật Số AI** (Hero Tử Vi AI Quick-Form + Bento Grid 6 công cụ Tarot, Kinh Dịch, Thần Số Học, Tướng Mặt AI, Chỉ Tay AI, Ví XU).
+    - Hoàn tất 100% Verification Gates: `flutter analyze` (0 issues), `flutter test` (19/19 tests passed), `contracts` (125 tests passed), `web` (258 tests passed), `api` (439 tests passed).
+
 ---
 
 ## 📊 Trạng Thái Kiểm Thử (Verification Gates)

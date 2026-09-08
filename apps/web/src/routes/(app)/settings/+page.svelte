@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { deleteAccount } from '$lib/api-client/users';;
+  import { useQueryClient } from '@tanstack/svelte-query';
+  import { deleteAccount } from '$lib/api-client/users';
   import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -15,12 +16,15 @@
     Coins,
     Shield,
     Sparkles,
+    LogOut,
   } from 'lucide-svelte';
 
   const auth = getAuthStore();
+  const queryClient = useQueryClient();
   const walletModel = createWalletModel(auth);
 
   let isDeleting = $state(false);
+  let isSigningOut = $state(false);
   let showConfirmModal = $state(false);
   let copied = $state(false);
 
@@ -37,6 +41,20 @@
     setTimeout(() => (copied = false), 2000);
   }
 
+  async function handleSignOut() {
+    if (isSigningOut) return;
+    isSigningOut = true;
+    try {
+      await auth.signOut();
+      queryClient.clear();
+      await goto(resolve('/sign-in'), { replaceState: true });
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Lỗi không xác định khi đăng xuất.');
+    } finally {
+      isSigningOut = false;
+    }
+  }
+
   async function handleDeleteAccount() {
     const token = auth.getAccessToken();
     if (!token) return;
@@ -45,7 +63,8 @@
       await deleteAccount(token);
       alert('Tài khoản đã được xoá thành công.');
       await auth.signOut();
-      goto(resolve('/sign-in'));
+      queryClient.clear();
+      await goto(resolve('/sign-in'), { replaceState: true });
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Lỗi không xác định khi xoá tài khoản.');
     } finally {
@@ -109,6 +128,20 @@
             {walletModel.balance} XU
           </span>
         </div>
+
+        {#if !auth.isAnonymous}
+          <div class="account-actions">
+            <button
+              type="button"
+              class="btn-signout"
+              disabled={isSigningOut}
+              onclick={handleSignOut}
+            >
+              <LogOut class="btn-icon" />
+              <span>{isSigningOut ? 'Đang đăng xuất...' : 'Đăng xuất tài khoản'}</span>
+            </button>
+          </div>
+        {/if}
       </div>
     </section>
 
@@ -253,7 +286,7 @@
     background: var(--overlay-ink-wash);
   }
 
-  .btn-back .icon {
+  .btn-back :global(.icon) {
     width: 20px;
     height: 20px;
   }
@@ -304,14 +337,14 @@
     gap: var(--space-sm);
   }
 
-  .section-icon {
+  :global(.section-icon) {
     width: 22px;
     height: 22px;
   }
 
-  .icon-primary { color: var(--color-accent-primary); }
-  .icon-accent { color: var(--color-accent-gold, #d97706); }
-  .icon-danger { color: var(--color-accent-danger, #ef4444); }
+  :global(.icon-primary) { color: var(--color-accent-primary); }
+  :global(.icon-accent) { color: var(--color-accent-gold, #d97706); }
+  :global(.icon-danger) { color: var(--color-accent-danger, #ef4444); }
 
   .card-title {
     margin: 0;
@@ -368,9 +401,37 @@
     color: var(--color-accent-sienna, #c2410c);
   }
 
-  .xu-icon {
+  :global(.xu-icon) {
     width: 16px;
     height: 16px;
+  }
+
+  .account-actions {
+    display: flex;
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border-hairline);
+  }
+
+  .btn-signout {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-hairline);
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast);
+  }
+
+  .btn-signout:hover:not(:disabled) {
+    color: var(--color-text-primary);
+    border-color: var(--color-border-strong);
+    background: var(--overlay-ink-wash);
   }
 
   /* Notice Box */
@@ -387,7 +448,7 @@
     border-color: rgba(217, 119, 6, 0.3);
   }
 
-  .box-icon {
+  :global(.box-icon) {
     width: 20px;
     height: 20px;
     color: var(--color-accent-gold, #d97706);
@@ -459,7 +520,7 @@
     filter: brightness(1.1);
   }
 
-  .btn-icon {
+  :global(.btn-icon) {
     width: 14px;
     height: 14px;
   }
@@ -522,7 +583,7 @@
     border: 1px solid rgba(217, 119, 6, 0.3);
   }
 
-  .badge-icon {
+  :global(.badge-icon) {
     width: 12px;
     height: 12px;
   }

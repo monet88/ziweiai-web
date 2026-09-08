@@ -22,7 +22,6 @@
     Coins as CoinsIcon,
     Flame,
     BookOpen,
-    Moon,
     Calendar,
     Settings,
     ArrowRight,

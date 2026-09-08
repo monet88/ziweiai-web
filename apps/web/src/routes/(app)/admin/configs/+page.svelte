@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { Sliders, Gift, ArrowLeftRight, Sparkles, CheckCircle2, XCircle, RefreshCw } from 'lucide-svelte';
+  import { Sliders, Gift, CheckCircle2, XCircle, RefreshCw } from 'lucide-svelte';
 
   interface ConfigData {
     dailyCheckinXu: number;

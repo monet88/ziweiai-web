@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import type { PageData } from './$types';
-  import { ScrollText, Filter, Calendar, X, Shield, ArrowLeft, ArrowRight } from 'lucide-svelte';
+  import { Filter, Calendar, X, Shield, ArrowLeft, ArrowRight } from 'lucide-svelte';
 
   let { data }: { data: PageData } = $props();
   let logs = $derived(data.logs);

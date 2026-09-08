@@ -16,6 +16,15 @@ describe('RewardsController & RewardsService', () => {
   beforeEach(() => {
     mockSupabaseClient = {
       rpc: vi.fn(),
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              gte: vi.fn().mockResolvedValue({ count: 0, error: null }),
+            }),
+          }),
+        }),
+      }),
     };
 
     mockProfilesRepo = {
@@ -53,6 +62,26 @@ describe('RewardsController & RewardsService', () => {
       });
       expect(mockWalletEngineService.addXU).toHaveBeenCalledWith('user-uuid-123', 5, 'ad_reward');
       expect(mockWalletEngineService.getBalance).toHaveBeenCalledWith('user-uuid-123');
+    });
+
+    it('should throw BadRequestException when user exceeds daily ad reward limit', async () => {
+      mockSupabaseClient.from.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              gte: vi.fn().mockResolvedValue({ count: 5, error: null }),
+            }),
+          }),
+        }),
+      });
+
+      const mockReq = {
+        authenticatedUser: { userId: 'user-uuid-123' },
+      } as AuthenticatedRequest;
+
+      await expect(controller.claimAdReward(mockReq)).rejects.toThrow(
+        'Bạn đã đạt giới hạn nhận thưởng quảng cáo trong ngày (tối đa 5 lượt/ngày).',
+      );
     });
 
     it('should throw BadRequestException if userId is missing', async () => {

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IChingHexagram, IChingLineValue } from '@ziweiai/contracts';
+import { IChingHexagram } from '@ziweiai/contracts';
 
 // Cấu trúc 64 quẻ Kinh Dịch theo thứ tự Văn Vương (King Wen sequence)
 export const HEXAGRAM_NAMES_VI = [

@@ -70,9 +70,13 @@ describe('PaymentService', () => {
           }),
         }),
       })).mockImplementationOnce(() => ({
-        select: async () => ({
-          data: [{ user_id: '12345678-abcd-1234-5678-123456789012' }],
-          error: null,
+        select: () => ({
+          gte: () => ({
+            lte: async () => ({
+              data: [{ user_id: '12345678-abcd-1234-5678-123456789012' }],
+              error: null,
+            }),
+          }),
         }),
       }));
       // 3. Insert transaction -> ok

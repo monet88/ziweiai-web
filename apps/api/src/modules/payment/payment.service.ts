@@ -34,17 +34,36 @@ export class PaymentService {
       return;
     }
 
-    // Resolve user by matching first 8 chars of user_id UUID
-    const { data: userProfiles, error: userError } = await this.client
-      .from('profiles')
-      .select('user_id');
+    // Resolve user by matching first 8 chars of user_id UUID using index range
+    const isHex = /^[0-9a-f]{8}$/i.test(shortUuid);
+    const minUuid = isHex ? `${shortUuid}-0000-0000-0000-000000000000` : null;
+    const maxUuid = isHex ? `${shortUuid}-ffff-ffff-ffff-ffffffffffff` : null;
 
-    if (userError || !userProfiles || userProfiles.length === 0) {
-      this.logger.error(`Failed to fetch profiles to match short UUID: ${shortUuid}`, userError);
-      return;
+    let matchedUsers: { user_id: string }[] = [];
+
+    if (minUuid && maxUuid) {
+      const { data, error } = await this.client
+        .from('profiles')
+        .select('user_id')
+        .gte('user_id', minUuid)
+        .lte('user_id', maxUuid);
+
+      if (error) {
+        this.logger.error(`Failed to fetch profiles for short UUID prefix: ${shortUuid}`, error);
+        return;
+      }
+      matchedUsers = data || [];
+    } else {
+      const { data: userProfiles, error: userError } = await this.client
+        .from('profiles')
+        .select('user_id');
+
+      if (userError || !userProfiles) {
+        this.logger.error(`Failed to fetch profiles to match short UUID: ${shortUuid}`, userError);
+        return;
+      }
+      matchedUsers = userProfiles.filter((p) => p.user_id.toLowerCase().startsWith(shortUuid));
     }
-
-    const matchedUsers = userProfiles.filter((p) => p.user_id.toLowerCase().startsWith(shortUuid));
 
     if (matchedUsers.length === 0) {
       this.logger.error(`Could not find user with short UUID prefix: ${shortUuid}`);

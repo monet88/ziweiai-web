@@ -65,16 +65,6 @@
     padding: var(--space-lg);
   }
 
-  .modal-wrapper {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-lg);
-  }
-
   .modal-backdrop {
     position: absolute;
     inset: 0;
@@ -98,9 +88,9 @@
     box-shadow:
       0 0.7px 2.2px rgba(0, 0, 0, 0.02),
       0 2px 8px rgba(0, 0, 0, 0.05),
-      0 12px 40px rgba(0, 0, 0, 0.4),
-      0 0 40px rgba(99, 102, 241, 0.15);
-    animation: modalPopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      0 12px 24px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   @keyframes fadeIn {
@@ -108,7 +98,7 @@
     to { opacity: 1; }
   }
 
-  @keyframes modalPopIn {
+  @keyframes slideUp {
     from {
       opacity: 0;
       transform: scale(0.95) translateY(8px);
@@ -123,9 +113,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-sm);
-    padding: var(--space-lg);
+    padding: var(--space-md) var(--space-lg);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
   }
 
   .modal-title {
@@ -135,6 +125,7 @@
     color: var(--color-text-primary);
     background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 

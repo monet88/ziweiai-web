@@ -32,6 +32,21 @@ export class RewardsService {
   }
 
   async claimAdReward(userId: string, rewardAmount = 5) {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const startOfTodayIso = today.toISOString();
+
+    const { count, error: countError } = await this.client
+      .from('xu_transactions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('transaction_type', 'ad_reward')
+      .gte('created_at', startOfTodayIso);
+
+    if (!countError && typeof count === 'number' && count >= 5) {
+      throw new BadRequestException('Bạn đã đạt giới hạn nhận thưởng quảng cáo trong ngày (tối đa 5 lượt/ngày).');
+    }
+
     const success = await this.walletEngineService.addXU(userId, rewardAmount, 'ad_reward');
     if (!success) {
       this.logger.error(`Failed to credit ad reward for user ${userId}`);

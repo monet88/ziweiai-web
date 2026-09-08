@@ -22,6 +22,7 @@ Khi cần kết luận trạng thái hiện tại, đọc theo thứ tự:
 | `20260713-vercel-safe-smoke.md` | Safe smoke Vercel không ghi dữ liệu | Smoke không ghi dữ liệu mới nhất. Không chứng minh live mutation flow hay provider thật. |
 | `20260713-1019-pm-goal-status.md` | Báo cáo PM trạng thái goal hiện hành | Trạng thái PM mới nhất. Dùng để biết phần đã xong, blocker còn lại và câu hỏi cần chủ dự án chốt. |
 | `20260713-1029-goal-continuation.md` | Báo cáo tiếp tục goal, tool discovery và đồng bộ docs điều hành | Cập nhật docs/tooling mới nhất, bao gồm phiếu chốt quyết định A/B. Không thay thế live mutation smoke production. |
+| `20260908-behavior-audit-security-refactor-summary.md` | Báo cáo toàn diện audit hành vi, bảo mật, hiệu năng và vá lỗi mobile | Báo cáo mới nhất xác minh 100% test gates, fail-closed webhook, anti-abuse ad-rewards, dải UUID và xử lý sạch sẽ @[current_problems] mobile. |
 
 ## Quy Tắc Đọc Evidence
 

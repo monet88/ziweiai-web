@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import * as opsAlert from '../../observability/ops-alert';
 import { ExplanationProviderRouter } from './explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';

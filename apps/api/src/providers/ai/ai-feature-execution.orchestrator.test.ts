@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpStatus } from '@nestjs/common';
 import { apiEnv } from '../../config/env';
-import { ApiErrorHttpException } from '../../common/http/api-error';
 import * as opsAlert from '../../observability/ops-alert';
-import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
+import { ProviderTimeoutError } from './provider-errors';
 import { AiFeatureExecutionOrchestrator } from './ai-feature-execution.orchestrator';
 
 describe('AiFeatureExecutionOrchestrator', () => {

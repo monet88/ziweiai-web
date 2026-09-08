@@ -107,7 +107,12 @@
   {:else}
     <section class="form">
       {#if model.isAnonymous}
-        <NoticeBanner message={copy.identityRequired} tone="warning" />
+        <div class="anon-prompt">
+          <NoticeBanner message={copy.identityRequired} tone="warning" />
+          <a href={resolve('/sign-in')} class="anon-signin-link">
+            Đăng nhập / Đăng ký bằng Email để mở khoá tính năng &rarr;
+          </a>
+        </div>
       {/if}
 
       <NoticeBanner message={copy.privacyNotice} tone="info" />
@@ -233,6 +238,24 @@
     flex-direction: column;
     gap: var(--space-lg);
     max-width: 640px;
+  }
+
+  .anon-prompt {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .anon-signin-link {
+    align-self: flex-start;
+    color: var(--color-accent-primary);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .anon-signin-link:hover {
+    text-decoration: underline;
   }
 
   .field {

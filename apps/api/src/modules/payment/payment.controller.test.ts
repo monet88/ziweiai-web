@@ -81,5 +81,33 @@ describe('PaymentController', () => {
         controller.handleSepayWebhook('', { invalidField: true }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('should fail-closed and throw UnauthorizedException in production when secret is missing', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      const originalSecret = apiEnv.SEPAY_WEBHOOK_SECRET;
+      process.env.NODE_ENV = 'production';
+      Object.assign(apiEnv, { SEPAY_WEBHOOK_SECRET: undefined });
+
+      try {
+        await expect(
+          controller.handleSepayWebhook('Bearer any', {
+            id: 123,
+            gateway: 'MBBank',
+            transactionDate: '2026-07-24 12:00:00',
+            accountNumber: '0123456789',
+            code: null,
+            content: 'TVTT 12345678',
+            transferType: 'in',
+            transferAmount: 50000,
+            accumulated: 150000,
+            referenceCode: 'REF123',
+            description: 'Test',
+          }),
+        ).rejects.toThrow(UnauthorizedException);
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+        Object.assign(apiEnv, { SEPAY_WEBHOOK_SECRET: originalSecret });
+      }
+    });
   });
 });

@@ -16,8 +16,13 @@ export class PaymentController {
     @Headers('Authorization') authHeader: string,
     @Body() payload: unknown,
   ) {
-    if (apiEnv.SEPAY_WEBHOOK_SECRET) {
-      if (!authHeader || authHeader !== `Bearer ${apiEnv.SEPAY_WEBHOOK_SECRET}`) {
+    const sepaySecret = apiEnv.SEPAY_WEBHOOK_SECRET;
+    if (process.env.NODE_ENV === 'production' && !sepaySecret) {
+      this.logger.error('SePay webhook secret is not configured in production');
+      throw new UnauthorizedException('Webhook configuration error');
+    }
+    if (sepaySecret) {
+      if (!authHeader || authHeader !== `Bearer ${sepaySecret}`) {
         this.logger.warn('Invalid or missing Authorization header for SePay webhook');
         throw new UnauthorizedException('Invalid webhook token');
       }
@@ -40,8 +45,13 @@ export class PaymentController {
     @Headers('Authorization') authHeader: string,
     @Body() payload: unknown,
   ) {
-    if (apiEnv.REVENUECAT_WEBHOOK_SECRET) {
-      if (!authHeader || authHeader !== `Bearer ${apiEnv.REVENUECAT_WEBHOOK_SECRET}`) {
+    const revenuecatSecret = apiEnv.REVENUECAT_WEBHOOK_SECRET;
+    if (process.env.NODE_ENV === 'production' && !revenuecatSecret) {
+      this.logger.error('RevenueCat webhook secret is not configured in production');
+      throw new UnauthorizedException('Webhook configuration error');
+    }
+    if (revenuecatSecret) {
+      if (!authHeader || authHeader !== `Bearer ${revenuecatSecret}`) {
         this.logger.warn('Invalid or missing Authorization header for RevenueCat webhook');
         throw new UnauthorizedException('Invalid webhook token');
       }

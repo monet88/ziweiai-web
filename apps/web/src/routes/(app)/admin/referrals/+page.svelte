@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { UserPlus, Trophy, Coins, Calendar, Sparkles, RefreshCw } from 'lucide-svelte';
+  import { UserPlus, Trophy, Coins, Sparkles, RefreshCw } from 'lucide-svelte';
 
   interface TopReferrer {
     referrerId: string;

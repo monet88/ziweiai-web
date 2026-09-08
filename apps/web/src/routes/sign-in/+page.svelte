@@ -178,17 +178,6 @@
     padding-right: 24px;
   }
 
-  .brand {
-    margin: 0;
-    width: fit-content;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--color-border-hairline);
-    color: var(--color-text-muted);
-    font-size: var(--text-eyebrow);
-    font-weight: 700;
-    letter-spacing: var(--tracking-eyebrow);
-  }
-
   .intro-copy {
     margin: 0;
     max-width: 12ch;

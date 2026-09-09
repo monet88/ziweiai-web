@@ -1137,7 +1137,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 description: 'Lắc ống xăm linh thiêng & Thoại bôi',
                 icon: Icons.flare,
                 iconGradient: CelestialGradients.cinnabarImperial,
-                onTap: () => context.push('/iching'),
+                onTap: () => context.push('/stick'),
               ),
             ),
           ],

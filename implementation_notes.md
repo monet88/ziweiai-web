@@ -163,6 +163,23 @@
 - **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 3.1s)`.
 - **Flutter Test Suite**: 43/43 tests passed 100%, bổ sung test suite `iching_screen_test.dart` đạt 3/3 tests pass tuyệt đối.
 
+## Decisions Made During Sprint 44 — Phase 2.4: Linh Xăm Quan Thánh 3D & Cặp Keo Thoại Bôi (Stitch 587ad2cf)
 
+### 1. Ống Xăm Tre Sơn Son Thếp Vàng & Ejected Stick Animation
+- **Decision**: Thiết kế ống xăm 100 quẻ bằng gỗ tre già sơn son thếp vàng, chạm khắc rồng vàng uốn lượn phong cách cung đình. Tích hợp `AnimationController` mô phỏng chuyển động lắc lư đa trục $\pm 14^\circ$ kèm rung haptic `HapticFeedback.mediumImpact()`.
+- **Decision**: Khi lắc đủ lực, thẻ xăm bằng trúc già nhô cao và văng ra với số quẻ ngẫu nhiên (hoặc từ backend `POST /draws/stick`), chuyển tiếp mượt mà sang bước Gieo Keo (Thoại Bôi).
 
+### 2. Đài Gieo Cặp Keo Thoại Bôi Âm Dương Gỗ Đào
+- **Decision**: Mô phỏng cặp keo (Thoại Bôi) hình trăng lưỡi liềm bằng gỗ đào ngàn năm với hiệu ứng 3D lật quay không gian (`Matrix4.identity()..rotateZ(..)..rotateX(..)`).
+- **Decision**: Quy tắc linh ứng chuẩn Đền Quan Thánh:
+  - **Thánh Bôi (1 Ngửa 1 Sấp)**: Thần linh chuẩn y, quẻ linh ứng đại cát ➜ mở khóa bài thơ quẻ tứ tuyệt và luận giải.
+  - **Tiếu Bôi (2 Ngửa)**: Thần linh mỉm cười chưa định ➜ khấn lại thành tâm và lắc lại ống xăm.
+  - **Âm Bôi (2 Sấp)**: Thần linh quở trách hoặc lòng còn tạp niệm ➜ tĩnh tâm sám hối và gieo lại.
 
+### 3. Thơ Quẻ Tứ Tuyệt & Luận Giải 7 Lĩnh Vực Cốt Lõi
+- **Decision**: Hiển thị thẻ sớ quẻ giấy điệp hoàng cung cổ điển với: Thơ quẻ chữ Hán/Việt âm điệu trang nghiêm, Cát hung phân định (Thượng Thượng Cát, Trung Cát, Hạ Hạ Hung...), và phân tích 7 phương diện: Công danh, Cầu tài, Gia đạo, Hôn nhân, Sức khỏe, Xuất hành, Kiện tụng.
+- **Decision**: Tích hợp Khâm Thiên Giám Ngự Phê (luận giải sâu AI độc bản) tiêu tốn 5 XU, có Modal xác nhận bảo vệ quyền lợi tài chính của thân chủ và tự động đồng bộ số dư ví (`ref.invalidate(walletBalanceProvider)`).
+
+### 4. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 3.5s)`.
+- **Flutter Test Suite**: 45/45 tests passed 100%, bao gồm toàn bộ test suite mới `stick_screen_test.dart` (2/2 passed) kiểm tra toàn vẹn luồng lắc xăm ➜ gieo keo ➜ hiển thị thơ quẻ ➜ mở khóa luận giải chi tiết.

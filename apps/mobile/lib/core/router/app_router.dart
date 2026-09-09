@@ -13,6 +13,7 @@ import '../../features/tarot/presentation/tarot_screen.dart';
 import '../../features/numerology/presentation/numerology_screen.dart';
 import '../../features/wallet/presentation/wallet_history_screen.dart';
 import '../../features/iching/presentation/iching_screen.dart';
+import '../../features/stick/presentation/stick_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -83,6 +84,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/iching',
       builder: (context, state) => const IChingScreen(),
+    ),
+    GoRoute(
+      path: '/stick',
+      builder: (context, state) => const StickScreen(),
     ),
   ],
 );

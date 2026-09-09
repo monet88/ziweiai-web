@@ -13,6 +13,7 @@ import {
   conversationMessageRecordSchema,
   divinationContextRecordSchema,
   divinationPurposeKeySchema,
+  annualReportRecordSchema,
 } from '../persistence/persistence-records';
 import { implementedChartSystems } from '../chart/chart-system';
 import { liuyaoLineStateKeys } from '../chart/liuyao-terms';
@@ -236,6 +237,8 @@ export const chartDetailResponseSchema = z.object({
   chartRecord: chartSnapshotRecordSchema,
   snapshot: chartSnapshotSchema,
   explanationResults: z.array(explanationResultRecordSchema),
+  isOwner: z.boolean().default(true),
+  latestAnnualReport: annualReportRecordSchema.nullable().default(null),
 });
 
 export const historyItemSchema = z.object({
@@ -252,6 +255,8 @@ export const historyItemSchema = z.object({
   // read by path on the client). Generated per list request; null for non-vision views or
   // when signing fails. The web renders the image from this, never from visionResult.imagePath.
   visionImageUrl: z.url().nullable(),
+  // US-016: Báo cáo năm nếu đã có cho lá số này.
+  annualReport: annualReportRecordSchema.nullable().default(null),
 });
 
 export const historyListResponseSchema = z.object({

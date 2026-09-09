@@ -7,6 +7,10 @@ const packageRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(packageRoot, '..', '..');
 const { distRoot, entryFile } = resolveApiBuildOutputPaths(packageRoot);
 const nestCliPath = path.join(repoRoot, 'node_modules', '@nestjs', 'cli', 'bin', 'nest.js');
+const envLocalPath = path.join(repoRoot, '.env.local');
+if (fs.existsSync(envLocalPath)) {
+  process.loadEnvFile(envLocalPath);
+}
 const envPath = path.join(repoRoot, '.env');
 if (fs.existsSync(envPath)) {
   process.loadEnvFile(envPath);

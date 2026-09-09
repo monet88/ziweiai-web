@@ -60,14 +60,6 @@
 </script>
 
 <AppScaffold eyebrow={copy.heroEyebrow} title={copy.heroTitle} subtitle={copy.heroSubtitle}>
-  {#snippet action()}
-    <PrimaryButton
-      label={copy.backToDashboard}
-      variant="surface"
-      onclick={() => goto(resolve('/'))}
-    />
-  {/snippet}
-
   {#if auth.isAnonymous}
     <EmptyStateCard 
       title="Yêu cầu đăng nhập"

@@ -60,6 +60,28 @@ describe('dedupeHistoryChartEntries', () => {
     expect(entries[0].hasExplanation).toBe(true);
   });
 
+  it('gộp annualReport nếu bất kỳ view nào của lá số có báo cáo năm', () => {
+    const report = { id: 'rep-1', year: 2026, markdown: '# Sớ 2026' };
+    const items = [
+      {
+        view: { id: 'v1' },
+        chartRecord: { id: 'chart-annual', chartSystem: 'zi-wei-dou-shu', createdAt: '2026-06-14T00:00:00.000Z' },
+        explanationResult: null,
+        annualReport: null,
+      },
+      {
+        view: { id: 'v2' },
+        chartRecord: { id: 'chart-annual', chartSystem: 'zi-wei-dou-shu', createdAt: '2026-06-14T00:00:00.000Z' },
+        explanationResult: null,
+        annualReport: report,
+      },
+    ] as unknown as HistoryItem[];
+
+    const entries = dedupeHistoryChartEntries(items);
+    expect(entries).toHaveLength(1);
+    expect(entries[0].annualReport).toEqual(report);
+  });
+
   it('giữ thứ tự xuất hiện đầu tiên của mỗi lá số', () => {
     const items = [
       makeView({ chartId: 'chart-b', hasExplanation: false }),

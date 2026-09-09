@@ -84,6 +84,8 @@ export function createChartDetailModel(options: ChartDetailModelOptions) {
   const explanationResults = $derived<ChartDetailResponse['explanationResults']>(
     query.data?.explanationResults ?? [],
   );
+  const isOwner = $derived(query.data?.isOwner ?? true);
+  const latestAnnualReport = $derived(query.data?.latestAnnualReport ?? null);
 
   return {
     get chartId(): string {
@@ -94,6 +96,12 @@ export function createChartDetailModel(options: ChartDetailModelOptions) {
     },
     get isError(): boolean {
       return query.isError;
+    },
+    get isOwner(): boolean {
+      return isOwner;
+    },
+    get latestAnnualReport() {
+      return latestAnnualReport;
     },
     get snapshot(): ChartDetailResponse['snapshot'] | null {
       return snapshot;

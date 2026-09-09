@@ -27,6 +27,7 @@ export function loadWorkspaceEnvFile(searchRoots: string[] = [process.cwd(), __d
     return null;
   }
 
+  let loadedEnvPath: string | null = null;
   const visitedRoots = new Set<string>();
   for (const root of searchRoots) {
     const normalizedRoot = path.resolve(root);
@@ -35,10 +36,24 @@ export function loadWorkspaceEnvFile(searchRoots: string[] = [process.cwd(), __d
     }
     visitedRoots.add(normalizedRoot);
 
-    const envPath = walkUpForEnvFile(normalizedRoot);
+    // Nạp .env.local trước (nếu có) khi chạy runtime (tránh làm lệch mock trong unit test)
+    if (process.env.NODE_ENV !== 'test') {
+      const envLocalPath = walkUpForEnvFile(normalizedRoot, '.env.local');
+      if (envLocalPath) {
+        process.loadEnvFile(envLocalPath);
+        loadedEnvPath = envLocalPath;
+      }
+    }
+
+    // Nạp tiếp .env (những biến chưa có trong process.env sẽ được điền từ .env)
+    const envPath = walkUpForEnvFile(normalizedRoot, '.env');
     if (envPath) {
       process.loadEnvFile(envPath);
-      return envPath;
+      loadedEnvPath = loadedEnvPath ?? envPath;
+    }
+
+    if (loadedEnvPath) {
+      return loadedEnvPath;
     }
   }
 
@@ -85,7 +100,7 @@ export const apiEnvSchema = z.object({
     const val = value ?? process.env.GEMINI_API_BASE_URL;
     return val === '' ? undefined : val;
   }, z.url().optional()),
-  GEMINI_MODEL: z.string().min(1).default('gemini-3.5-flash'),
+  GEMINI_MODEL: z.string().min(1).default('gemini-flash-latest'),
   // 'auto' dùng thứ tự chain gốc của router: [openai-compat, deepseek, gemini]
   // (openai-compat mặc định, deepseek fallback kế, gemini cuối). Đặt giá trị khác để ép một
   // provider cụ thể lên đầu chain mà vẫn giữ phần còn lại làm fallback.
@@ -94,7 +109,7 @@ export const apiEnvSchema = z.object({
   // KHÔNG dùng z.coerce.boolean() — nó chạy Boolean(string) nên mọi chuỗi non-empty
   // (kể cả "false") đều thành true, khiến AI_EXPLANATION_FREE_FOR_ALL=false vô hiệu ở prod.
   AI_EXPLANATION_FREE_FOR_ALL: z.stringbool().default(true),
-  AI_CONVERSATION_ENABLED: z.stringbool().default(false),
+  AI_CONVERSATION_ENABLED: z.stringbool().default(true),
   // z.preprocess '' → undefined: env khai báo nhưng để trống (VAR=) đọc ra '' khiến
   // z.coerce.number() ép thành 0, fail .positive() → crash khởi động và .default() KHÔNG áp
   // (vì '' ≠ undefined). Chuẩn hoá '' → undefined để default(30)/default(12) áp đúng.

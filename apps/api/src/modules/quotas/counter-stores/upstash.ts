@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import type { QuotaCounterStore } from './quota-counter-store';
+import { MemoryQuotaCounterStore } from './memory';
 
 type FailMode = 'open' | 'closed';
 
@@ -7,6 +8,7 @@ interface UpstashConfig {
   restUrl: string;
   restToken: string;
   failMode: FailMode;
+  memoryFallback?: QuotaCounterStore;
 }
 
 interface UpstashPipelineResult {
@@ -22,8 +24,9 @@ interface UpstashPipelineResult {
  * set ở lần tạo khoá đầu, không reset cửa sổ giữa chừng.
  *
  * Khi store ngoài lỗi (fetch reject / status != ok): theo `failMode` —
- *   - open: trả allowed=true + count=0 (cho qua, ưu tiên ổn định).
- *   - closed: trả allowed=false (chặn).
+ *   - open: ghi warn và fallback sang `memoryFallback` cục bộ (vừa đảm bảo tính liên tục,
+ *     vừa ngăn chặn việc spam lặp đi lặp lại không giới hạn trên cùng 1 instance).
+ *   - closed: trả allowed=false (chặn tuyệt đối).
  *
  * Alternative khi deploy có Redis TCP sẵn: dùng `ioredis` với pipeline
  * `INCR key` + `EXPIRE key ttl NX` (rẻ hơn REST khi QPS cao, nhưng cần dependency
@@ -34,12 +37,14 @@ export class UpstashRestQuotaCounterStore implements QuotaCounterStore {
   private readonly restUrl: string;
   private readonly restToken: string;
   private readonly failMode: FailMode;
+  private readonly memoryFallback: QuotaCounterStore;
 
   constructor(config: UpstashConfig) {
     // Bỏ dấu / cuối để ghép path /pipeline không bị double-slash.
     this.restUrl = config.restUrl.replace(/\/+$/, '');
     this.restToken = config.restToken;
     this.failMode = config.failMode;
+    this.memoryFallback = config.memoryFallback ?? new MemoryQuotaCounterStore();
   }
 
   async incrementAndCheck(
@@ -62,14 +67,14 @@ export class UpstashRestQuotaCounterStore implements QuotaCounterStore {
       });
 
       if (!response.ok) {
-        return this.onUnavailable(`status ${response.status}`);
+        return this.onUnavailable(`status ${response.status}`, key, limit, ttlSeconds);
       }
 
       const payload = (await response.json()) as UpstashPipelineResult[];
       const incrResult = payload?.[0];
       const expireResult = payload?.[1];
       if (!incrResult || incrResult.error !== undefined || incrResult.result === undefined) {
-        return this.onUnavailable('malformed pipeline response');
+        return this.onUnavailable('malformed pipeline response', key, limit, ttlSeconds);
       }
       if (expireResult?.error !== undefined) {
         this.logger.warn(
@@ -79,22 +84,28 @@ export class UpstashRestQuotaCounterStore implements QuotaCounterStore {
 
       const count = Number(incrResult.result);
       if (!Number.isFinite(count)) {
-        return this.onUnavailable('non-numeric INCR result');
+        return this.onUnavailable('non-numeric INCR result', key, limit, ttlSeconds);
       }
 
       return { count, allowed: count <= limit };
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'unknown error';
-      return this.onUnavailable(reason);
+      return this.onUnavailable(reason, key, limit, ttlSeconds);
     }
   }
 
-  private onUnavailable(reason: string): { count: number; allowed: boolean } {
-    // Quota store là chống lạm dụng, không phải hàng rào bảo mật → mặc định fail-open.
+  private async onUnavailable(
+    reason: string,
+    key: string,
+    limit: number,
+    ttlSeconds: number,
+  ): Promise<{ count: number; allowed: boolean }> {
     this.logger.warn(`quota-store.unavailable driver=upstash failMode=${this.failMode} reason=${reason}`);
     if (this.failMode === 'closed') {
       return { count: Number.POSITIVE_INFINITY, allowed: false };
     }
-    return { count: 0, allowed: true };
+    // Resilient memory fallback: thay vì mù quáng trả count=0 vô hạn,
+    // chuyển sang in-memory counter cục bộ để vẫn kiểm soát được hạn mức.
+    return this.memoryFallback.incrementAndCheck(key, limit, ttlSeconds);
   }
 }

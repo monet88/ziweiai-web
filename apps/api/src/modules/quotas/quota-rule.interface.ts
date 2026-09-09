@@ -4,6 +4,12 @@ export interface QuotaRule {
   readonly dailyErrorMessage: string;
 
   /**
+   * Hạn mức ngày riêng cho người dùng ẩn danh (Anonymous IP-based).
+   * Nếu không cấu hình, sẽ dùng chung `dailyLimit`.
+   */
+  readonly anonDailyLimit?: number;
+
+  /**
    * If provided, the engine will use this custom function to count daily usage for SIGNED-IN users.
    * If not provided, the engine defaults to using the generic `counterStore`.
    * Note: Anonymous users ALWAYS use the `counterStore` via IP.

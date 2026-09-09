@@ -8,6 +8,7 @@
  * Rewrite từ Expo: apps/app/src/features/auth/{auth-context,auth-provider}.* sang runes.
  */
 import type { Session, User } from '@supabase/supabase-js';
+import { isDisposableEmail } from '@ziweiai/contracts';
 import { supabase } from '$lib/supabase/supabase-client';
 
 function isAnonymousUser(user: User | null): boolean {
@@ -142,6 +143,11 @@ export class AuthStore {
     email: string,
     password: string,
   ): Promise<{ needsEmailConfirmation: boolean }> {
+    if (isDisposableEmail(email)) {
+      throw new Error(
+        'Hệ thống không chấp nhận email tạm thời. Vui lòng sử dụng Gmail hoặc đăng nhập Google 1-Click để nhận XU thưởng an toàn.',
+      );
+    }
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) {
       throw new Error(error.message || 'Tạo tài khoản thất bại. Vui lòng thử lại.');

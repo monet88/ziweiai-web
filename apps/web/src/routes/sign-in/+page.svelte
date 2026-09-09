@@ -2,8 +2,10 @@
   import { useQueryClient } from '@tanstack/svelte-query';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
+  import { isDisposableEmail } from '@ziweiai/contracts';
   import { getAuthStore } from '$lib/auth/auth-context';
   import { NoticeBanner, ViOSLogo } from '$lib/components/ui';
+  import TurnstileWidget from '$lib/components/security/TurnstileWidget.svelte';
   import { viCopy } from '$lib/i18n/vi';
 
   const t = viCopy.signIn;
@@ -16,6 +18,7 @@
   let errorMessage = $state<string | null>(null);
   let noticeMessage = $state<string | null>(null);
   let isBusy = $state(false);
+  let turnstileWidget = $state<any>(null);
 
   async function handleSubmit(event: Event) {
     event.preventDefault();
@@ -35,6 +38,31 @@
         queryClient.clear();
         await goto(resolve('/'));
       } else {
+        if (isDisposableEmail(email)) {
+          errorMessage =
+            'Hệ thống không chấp nhận email tạm thời. Vui lòng sử dụng Gmail hoặc đăng nhập Google 1-Click để nhận XU thưởng an toàn.';
+          isBusy = false;
+          return;
+        }
+
+        // Invisible Turnstile bot defense verification
+        const turnstileToken = await turnstileWidget?.execute?.();
+        if (turnstileToken) {
+          try {
+            const { fetchJson } = await import('$lib/api-client/fetch-json');
+            const { TurnstileVerifyResponseSchema } = await import('@ziweiai/contracts');
+            await fetchJson('/auth/turnstile/verify', TurnstileVerifyResponseSchema, {
+              method: 'POST',
+              body: { token: turnstileToken },
+            });
+          } catch {
+            errorMessage =
+              'Xác thực chống bot tự động không thành công. Vui lòng tải lại trang và thử lại.';
+            isBusy = false;
+            return;
+          }
+        }
+
         const { needsEmailConfirmation } = await auth.signUpWithPassword(email, password);
         if (needsEmailConfirmation) {
           noticeMessage = t.signUpCheckEmail;
@@ -144,6 +172,8 @@
         </svg>
         Tiếp tục với Google
       </button>
+
+      <TurnstileWidget bind:this={turnstileWidget} action="signup" />
     </form>
   </div>
 </main>

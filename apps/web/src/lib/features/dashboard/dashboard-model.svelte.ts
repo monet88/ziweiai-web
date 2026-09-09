@@ -79,14 +79,15 @@ export function createDashboardModel(options: DashboardModelOptions) {
       // Danh sách lịch sử cũ (staleTime 30s) giờ thiếu lá số vừa tạo → invalidate để lần
       // mở /history (hoặc sidebar dashboard) kế tiếp fetch lại và thấy ngay item mới.
       await queryClient.invalidateQueries({ queryKey: ['history'] });
-      // Đóng sheet nếu đang mở (để UX chuyển trang mượt)
-      sheetStore.close();
+      // Đóng sheet nếu đang mở; truyền true để không trigger history.back()
+      // vì ta sẽ replaceState ngay bên dưới sang trang chi tiết lá số (tránh race condition).
+      sheetStore.close(true);
       // Xoá bản nháp vì đã tạo thành công
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem('ziwei_birth_form_draft');
       }
       // id thật từ bản ghi lá số; mọi hệ vào chung route chi tiết /charts/[chartId].
-      await goto(resolve(`/charts/${response.chartRecord.id}`));
+      await goto(resolve(`/charts/${response.chartRecord.id}`), { replaceState: true });
     },
   }));
 

@@ -20,6 +20,7 @@ export interface DashboardChartHistoryEntry {
   chartRecord: ChartRecord;
   hasExplanation: boolean;
   divinationContext: DivinationContext | null;
+  annualReport: HistoryItem['annualReport'] | null;
 }
 
 export interface VisionHistoryEntry {
@@ -48,6 +49,9 @@ export function dedupeHistoryChartEntries(
     if (existingIndex !== undefined) {
       entries[existingIndex].hasExplanation =
         entries[existingIndex].hasExplanation || item.explanationResult !== null;
+      if (!entries[existingIndex].annualReport && item.annualReport) {
+        entries[existingIndex].annualReport = item.annualReport;
+      }
       continue;
     }
     indexByChartId[record.id] = entries.length;
@@ -55,6 +59,7 @@ export function dedupeHistoryChartEntries(
       chartRecord: record,
       hasExplanation: item.explanationResult !== null,
       divinationContext: item.divinationContext ?? null,
+      annualReport: item.annualReport ?? null,
     });
   }
 

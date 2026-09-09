@@ -7,7 +7,7 @@ EXPECTED_USER="galaxypro710-7060"
 source "${HOME}/.zshrc" >/dev/null 2>&1 || true
 
 if [[ -f ".env.local" ]]; then
-  export $(grep '^VERCEL_GALAXY=' .env.local | xargs)
+  export $(grep '^VERCEL_GALAXY=' .env.local | tr -d '"' | xargs)
 fi
 
 if [[ -z "${VERCEL_GALAXY:-}" ]]; then

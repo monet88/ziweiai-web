@@ -149,6 +149,14 @@ describe('AuthStore', () => {
     expect(result.needsEmailConfirmation).toBe(true);
   });
 
+  it('signUpWithPassword từ chối đăng ký với disposable email', async () => {
+    const store = new AuthStore();
+    await expect(store.signUpWithPassword('spammer@tempmail.com', 'x')).rejects.toThrow(
+      'Hệ thống không chấp nhận email tạm thời.',
+    );
+    expect(mockAuth.signUp).not.toHaveBeenCalled();
+  });
+
   it('signOut ném lỗi khi Supabase trả error', async () => {
     mockAuth.signOut.mockResolvedValue({ error: { message: 'Lỗi đăng xuất' } });
     const store = new AuthStore();

@@ -33,23 +33,28 @@ export class QuotasService {
 
     // 1. In-memory Rate Limiting
     const ipLimit = rule.ipMinuteLimit ?? apiEnv.API_REQUESTS_PER_MINUTE_PER_IP;
-    const userLimit = rule.userMinuteLimit ?? apiEnv.API_REQUESTS_PER_MINUTE_PER_USER;
     this.assertSlidingWindow(this.ipBuckets, `ip:${ipAddress}`, ipLimit, 60_000);
-    this.assertSlidingWindow(this.userBuckets, `user:${userId}`, userLimit, 60_000);
+
+    // Chỉ áp dụng rate limit per-user cho tài khoản đã xác thực có userId thật
+    if (!isAnonymous && userId) {
+      const userLimit = rule.userMinuteLimit ?? apiEnv.API_REQUESTS_PER_MINUTE_PER_USER;
+      this.assertSlidingWindow(this.userBuckets, `user:${userId}`, userLimit, 60_000);
+    }
 
     // 2. Daily Quota Enforcement
     const dayKey = utcDayKey(Date.now());
     
     if (isAnonymous) {
       // Anon ALWAYS uses counterStore to prevent bypass (e.g. incognito)
-      // Different keys depending on if it's a generic anon rule (e.g. anon-chart) or standard
-      // Historically, Chart, Explanation, and Conversation used "anon-X" prefixes
+      const anonLimit = rule.anonDailyLimit ?? rule.dailyLimit;
       let prefix = rule.featureKey;
       if (['chart', 'explanation', 'conversation'].includes(rule.featureKey)) {
         prefix = `anon-${rule.featureKey}`;
+      } else {
+        prefix = `anon:${rule.featureKey}`;
       }
       const counterKey = `${prefix}:ip:${ipAddress}:${dayKey}`;
-      await this.assertAnonDailyQuota(counterKey, rule.dailyLimit, rule.dailyErrorMessage);
+      await this.assertDailyQuota(counterKey, anonLimit, rule.dailyErrorMessage);
       return;
     }
 
@@ -63,11 +68,11 @@ export class QuotasService {
     } else {
       // Default generic counter store for signed-in users (e.g. tarot-draw, mbti-quiz)
       const counterKey = `${rule.featureKey}:user:${userId}:${dayKey}`;
-      await this.assertAnonDailyQuota(counterKey, rule.dailyLimit, rule.dailyErrorMessage);
+      await this.assertDailyQuota(counterKey, rule.dailyLimit, rule.dailyErrorMessage);
     }
   }
 
-  private async assertAnonDailyQuota(key: string, limit: number, message: string): Promise<void> {
+  private async assertDailyQuota(key: string, limit: number, message: string): Promise<void> {
     const { allowed } = await this.counterStore.incrementAndCheck(key, limit, ONE_DAY_SECONDS);
     if (!allowed) {
       throw new DailyQuotaExceededError(message);

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getAuthStore } from '$lib/auth/auth-context';
   import { setWalletStore } from '$lib/features/payment/wallet-context';
-  import { GlobalPaywallModal, GlobalAuthModal, BottomNavigation, GlobalBottomSheet } from '$lib/components/ui';
+  import { GlobalPaywallModal, GlobalAuthModal, MobileBottomNav, GlobalBottomSheet } from '$lib/components/ui';
   import type { Snippet } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -52,8 +52,8 @@
   <div class="app-content-wrapper">
     {@render children()}
   </div>
-  <!-- Không gian cho bottom nav sẽ không che nội dung nhờ app-content-wrapper -->
-  <BottomNavigation />
+  <!-- Thanh điều hướng đáy chỉ xuất hiện trên thiết bị di động (<=768px) -->
+  <MobileBottomNav />
 {/if}
 
 <GlobalPaywallModal />
@@ -73,8 +73,13 @@
   }
 
   .app-content-wrapper {
-    /* Tạo khoảng trống 64px ở đáy cho BottomNavigation */
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
     min-height: 100vh;
+  }
+
+  @media (max-width: 768px) {
+    .app-content-wrapper {
+      /* Tạo khoảng trống 64px ở đáy cho MobileBottomNav trên thiết bị di động */
+      padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    }
   }
 </style>

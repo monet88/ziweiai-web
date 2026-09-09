@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Logger } from '@nestjs/common';
 import { UpstashRestQuotaCounterStore } from './upstash';
+import { createQuotaCounterStore } from './index';
 
 function mockFetchResult(incrResult: number): void {
   vi.stubGlobal(
@@ -120,4 +121,30 @@ describe('UpstashRestQuotaCounterStore', () => {
       expect.stringContaining('EXPIRE NX failed'),
     );
   });
+
+  it('resilient memory fallback: ngăn chặn spam lặp đi lặp lại khi Upstash gặp sự cố (failMode=open)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('network down'); }) as never);
+    const store = new UpstashRestQuotaCounterStore({ ...config, failMode: 'open' });
+
+    // Limit = 2
+    const res1 = await store.incrementAndCheck('anon-test:key', 2, 86_400);
+    expect(res1).toEqual({ count: 1, allowed: true });
+
+    const res2 = await store.incrementAndCheck('anon-test:key', 2, 86_400);
+    expect(res2).toEqual({ count: 2, allowed: true });
+
+    // Vượt quá limit 2 trong đợt Upstash outage -> chặn ở memory fallback
+    const res3 = await store.incrementAndCheck('anon-test:key', 2, 86_400);
+    expect(res3).toEqual({ count: 3, allowed: false });
+  });
+
+  it('createQuotaCounterStore: falls back to memory when upstash driver selected without credentials', () => {
+    const store = createQuotaCounterStore({
+      QUOTA_STORE_DRIVER: 'upstash',
+      QUOTA_FAIL_MODE: 'open',
+    } as never);
+    expect(store).toBeDefined();
+  });
 });
+
+

@@ -648,7 +648,10 @@ describe('ChartsService.computeHoroscope', () => {
   });
 
   it('404 khi lá số không tồn tại / không sở hữu', async () => {
-    const persistenceGateway = { findChartSnapshotById: vi.fn(async () => null) };
+    const persistenceGateway = {
+      findChartSnapshotById: vi.fn(async () => null),
+      findPublicChartSnapshotById: vi.fn(async () => null),
+    };
     const quotasService = { assertCanExecute: vi.fn(async () => undefined) };
     const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
 
@@ -831,5 +834,84 @@ describe('buildChartSnapshotDedupeKey', () => {
     expect(buildChartSnapshotDedupeKey({ ...baseParams, viewYear: 2026 })).not.toBe(
       buildChartSnapshotDedupeKey({ ...baseParams, viewYear: 2035 }),
     );
+  });
+});
+
+describe('ChartsService shared charts and ownership privacy', () => {
+  const OWNER_USER = '11111111-1111-4111-8111-111111111111';
+  const GUEST_USER = '22222222-2222-4222-8222-222222222222';
+  const CHART_ID = '33333333-3333-4333-8333-333333333333';
+
+  it('returns isOwner=true when caller is the chart owner', async () => {
+    const snapshot = buildSnapshot();
+    const chartRecord = { ...buildChartRecord(snapshot), id: CHART_ID, ownerUserId: OWNER_USER };
+    const persistenceGateway = {
+      findChartSnapshotById: vi.fn(async (userId, id) => (userId === OWNER_USER && id === CHART_ID ? chartRecord : null)),
+      findPublicChartSnapshotById: vi.fn(async () => chartRecord),
+      createHistoryView: vi.fn(async () => undefined),
+      listExplanationResultsForChart: vi.fn(async () => []),
+    };
+    const quotasService = { assertCanExecute: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
+
+    const detail = await service.getChartDetail(OWNER_USER, CHART_ID);
+
+    expect(detail.isOwner).toBe(true);
+    expect(detail.chartRecord.id).toBe(CHART_ID);
+    expect(persistenceGateway.createHistoryView).toHaveBeenCalledWith({
+      ownerUserId: OWNER_USER,
+      chartSnapshotId: CHART_ID,
+      explanationResultId: null,
+    });
+  });
+
+  it('returns isOwner=false and allows guest to view chart via unguessable UUID without 404', async () => {
+    const snapshot = buildSnapshot();
+    const chartRecord = { ...buildChartRecord(snapshot), id: CHART_ID, ownerUserId: OWNER_USER };
+    const persistenceGateway = {
+      findChartSnapshotById: vi.fn(async () => null), // Guest doesn't own this chart
+      findPublicChartSnapshotById: vi.fn(async (id) => (id === CHART_ID ? chartRecord : null)),
+      createHistoryView: vi.fn(async () => undefined),
+      listExplanationResultsForChart: vi.fn(async () => []),
+    };
+    const quotasService = { assertCanExecute: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
+
+    const detail = await service.getChartDetail(GUEST_USER, CHART_ID);
+
+    expect(detail.isOwner).toBe(false);
+    expect(detail.chartRecord.id).toBe(CHART_ID);
+    expect(detail.snapshot).toStrictEqual(snapshot);
+    // Guest's history view is recorded for guest, not for owner
+    expect(persistenceGateway.createHistoryView).toHaveBeenCalledWith({
+      ownerUserId: GUEST_USER,
+      chartSnapshotId: CHART_ID,
+      explanationResultId: null,
+    });
+    // Explanations loaded are the owner's explanations
+    expect(persistenceGateway.listExplanationResultsForChart).toHaveBeenCalledWith(OWNER_USER, CHART_ID);
+  });
+
+  it('allows guest to compute horoscope on shared chart without 404', async () => {
+    const snapshot = buildSnapshot();
+    const chartRecord = { ...buildChartRecord(snapshot), ownerUserId: OWNER_USER };
+    const persistenceGateway = {
+      findChartSnapshotById: vi.fn(async () => null),
+      findPublicChartSnapshotById: vi.fn(async (id) => (id === CHART_ID ? chartRecord : null)),
+    };
+    const quotasService = { assertCanExecute: vi.fn(async () => undefined) };
+    const service = new ChartsService(persistenceGateway as never, persistenceGateway as never, persistenceGateway as never, quotasService as never);
+
+    const result = await service.computeHoroscope(
+      GUEST_USER,
+      '127.0.0.1',
+      CHART_ID,
+      '2026-06-17',
+      ['decadal', 'yearly'],
+    );
+
+    expect(result.chartId).toBe(CHART_ID);
+    expect(result.asOf).toBe('2026-06-17');
+    expect(result.frame.decadal.index).toBeGreaterThanOrEqual(0);
   });
 });

@@ -413,4 +413,45 @@
     background: var(--color-flow-daily-soft);
     color: var(--color-flow-daily);
   }
+
+  /* Tối ưu hiển thị vừa khít trên Mobile */
+  @media (max-width: 640px) {
+    .cell {
+      min-height: 85px;
+      padding: 4px 5px;
+      gap: 2px;
+    }
+
+    .palace-name {
+      font-size: 12px;
+    }
+
+    .stem-branch {
+      font-size: 10px;
+    }
+
+    .star.major {
+      font-size: 11px;
+    }
+
+    .star {
+      font-size: 10px;
+    }
+
+    .star-meta,
+    .star-mutagen {
+      font-size: 9px;
+    }
+
+    .cell-foot {
+      font-size: 9px;
+      gap: 2px 4px;
+    }
+
+    .flow-chip {
+      font-size: 9px;
+      padding: 0 4px;
+      gap: 2px;
+    }
+  }
 </style>

@@ -77,4 +77,23 @@
     line-height: 1.45;
     color: rgba(245, 242, 237, 0.65);
   }
+
+  :global([data-theme="light"]) .numerology-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(212, 175, 55, 0.35);
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.08);
+  }
+
+  :global([data-theme="light"]) .number-badge {
+    background: radial-gradient(circle at 30% 30%, #ffffff 0%, #fef3c7 70%, #fde68a 100%);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
+  }
+
+  :global([data-theme="light"]) .card-title {
+    color: #180d38;
+  }
+
+  :global([data-theme="light"]) .card-desc {
+    color: #57534e;
+  }
 </style>

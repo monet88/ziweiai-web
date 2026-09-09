@@ -143,4 +143,29 @@ describe('AnnualReportService', () => {
       status: HttpStatus.BAD_REQUEST,
     });
   });
+
+  it('lá số có blocksExactReading=true → 400 INVALID_INPUT', async () => {
+    const { service } = makeService({
+      ...ziweiSnapshot,
+      calculationConfidence: { ...ziweiSnapshot.calculationConfidence, blocksExactReading: true },
+    });
+    await expect(service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026)).rejects.toMatchObject({
+      status: HttpStatus.BAD_REQUEST,
+    });
+  });
+
+  it('hoàn 1 XU tự động khi provider generate ném lỗi trong annual report', async () => {
+    (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = false;
+    (apiEnv as any).AI_ANNUAL_REPORT_ENABLED = true;
+    const { service, providerRouter, walletEngine } = makeService();
+    (walletEngine as any).addXU = vi.fn().mockResolvedValue(true);
+    (providerRouter.generate as any).mockRejectedValue(new ProviderTimeoutError('timeout'));
+
+    await expect(service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026)).rejects.toMatchObject({
+      status: HttpStatus.GATEWAY_TIMEOUT,
+    });
+
+    expect(walletEngine.deductXU).toHaveBeenCalledWith(user.userId, 1, 'ai_usage');
+    expect((walletEngine as any).addXU).toHaveBeenCalledWith(user.userId, 1, 'ai_refund');
+  });
 });

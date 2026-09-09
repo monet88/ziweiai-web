@@ -33,7 +33,7 @@ export class ExplanationBillingService {
     return { requiresXu };
   }
 
-  async consumeXuIfNeeded(userId: string, input: CreateExplanationRequest, isOverDailyQuota: boolean): Promise<void> {
+  async consumeXuIfNeeded(userId: string, input: CreateExplanationRequest, isOverDailyQuota: boolean): Promise<number> {
     const isPremium = input.explanationKind !== 'overview';
     const needsXu = (isPremium || isOverDailyQuota) && !apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
 
@@ -49,6 +49,17 @@ export class ExplanationBillingService {
           message
         );
       }
+      return 10;
+    }
+    return 0;
+  }
+
+  async refundXu(userId: string, amount: number): Promise<void> {
+    if (amount <= 0) return;
+    try {
+      await this.walletEngine.addXU(userId, amount, 'ai_refund');
+    } catch {
+      // Best effort log if refund fails
     }
   }
 }

@@ -5,6 +5,8 @@ import { ChartsRepository } from '../../../database/repositories/charts.reposito
 import { ExplanationsRepository } from '../../../database/repositories/explanations.repository';
 import { DivinationsRepository } from '../../../database/repositories/divinations.repository';
 import { VisionRepository } from '../../../database/repositories/vision.repository';
+import { AnnualReportsRepository } from '../../../database/repositories/annual-reports.repository';
+import type { AnnualReportRecord } from '../../../database/persistence-mappers';
 import { VisionStorageGateway } from '../../vision-shared/vision-storage.gateway';
 
 @Injectable()
@@ -18,6 +20,7 @@ export class HistoryService {
     private readonly divinationsRepository: DivinationsRepository,
     private readonly visionRepository: VisionRepository,
     private readonly visionStorageGateway: VisionStorageGateway,
+    private readonly annualReportsRepository?: AnnualReportsRepository,
   ) {}
 
   async listHistory(userId: string, limit: number) {
@@ -34,12 +37,16 @@ export class HistoryService {
       latestExplanationResultsByChartId,
       divinationContextsByChartId,
       visionResultsById,
+      annualReportsByChartId,
     ] = await Promise.all([
       this.chartsRepository.findChartSnapshotsByIds(userId, chartSnapshotIds),
       this.explanationsRepository.findExplanationResultsByIds(userId, directExplanationResultIds),
       this.explanationsRepository.findLatestExplanationResultsForCharts(userId, chartSnapshotIds),
       this.divinationsRepository.findDivinationContextsByChartIds(userId, chartSnapshotIds),
       this.visionRepository.findVisionResultsByIds(userId, visionResultIds),
+      this.annualReportsRepository
+        ? this.annualReportsRepository.findLatestAnnualReportsForCharts(userId, chartSnapshotIds)
+        : Promise.resolve<Record<string, AnnualReportRecord>>({}),
     ]);
 
     // Sign image URLs once per distinct vision image path (a private bucket is not readable by
@@ -86,6 +93,7 @@ export class HistoryService {
         divinationContext: view.chartSnapshotId ? divinationContextsByChartId[view.chartSnapshotId] ?? null : null,
         visionResult,
         visionImageUrl: visionResult ? signedUrlByImagePath.get(visionResult.imagePath) ?? null : null,
+        annualReport: view.chartSnapshotId ? annualReportsByChartId[view.chartSnapshotId] ?? null : null,
       };
     });
 

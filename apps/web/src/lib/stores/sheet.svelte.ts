@@ -32,10 +32,15 @@ export class SheetStore {
     }
   }
 
-  close(fromPopState = false) {
+  /**
+   * Đóng sheet.
+   * @param skipHistoryBack - Nếu true, không gọi history.back(). Dùng khi popstate kích hoạt
+   * hoặc khi sắp navigate/replaceState sang route khác để tránh race condition với history.back().
+   */
+  close(skipHistoryBack = false) {
     this.isOpen = false;
     
-    if (typeof window !== 'undefined' && !fromPopState) {
+    if (typeof window !== 'undefined' && !skipHistoryBack) {
       // If we close manually, and the top history state is our dummy state, pop it
       if (window.history.state?.sheetOpen) {
         window.history.back();

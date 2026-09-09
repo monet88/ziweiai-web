@@ -10,6 +10,9 @@ let activeSubscriptions = 0;
 export function createWalletModel(auth: AuthStore) {
   const queryClient = useQueryClient();
 
+  let lastTopupEvent = $state<{ added: number; newBalance: number } | null>(null);
+  let previousBalance = $state<number | null>(null);
+
   const queryKey = () => ['wallet_balance', auth.user?.id];
 
   const query = createQuery(() => ({
@@ -32,6 +35,21 @@ export function createWalletModel(auth: AuthStore) {
     staleTime: 5 * 60 * 1000,
   }));
 
+  // Lắng nghe thay đổi số dư từ query (polling fallback)
+  $effect(() => {
+    const current = query.data?.xu_balance;
+    if (current !== undefined && current !== null) {
+      if (previousBalance !== null && current > previousBalance) {
+        const added = current - previousBalance;
+        lastTopupEvent = { added, newBalance: current };
+        import('$lib/stores/toast').then(({ toast }) => {
+          toast.show(`🎉 Nạp XU thành công! +${added} XU đã được cộng vào ví.`, 'success');
+        });
+      }
+      previousBalance = current;
+    }
+  });
+
   const referralsQueryKey = () => ['wallet_referrals', auth.user?.id];
   const referralsQuery = createQuery(() => ({
     queryKey: referralsQueryKey(),
@@ -45,7 +63,8 @@ export function createWalletModel(auth: AuthStore) {
         rewardXu: z.number(),
         status: z.string(),
         createdAt: z.string(),
-        completedAt: z.string().nullable()
+        completedAt: z.string().nullable(),
+        refereeEmailMasked: z.string().optional().nullable(),
       }));
       return fetchJson('/rewards/referrals', schema, {
         method: 'GET',
@@ -75,13 +94,15 @@ export function createWalletModel(auth: AuthStore) {
           (payload) => {
             const newBalance = payload.new.xu_balance;
             const newCheckinDate = payload.new.last_checkin_date;
+            if (newBalance !== undefined && previousBalance !== null && newBalance > previousBalance) {
+              const added = newBalance - previousBalance;
+              lastTopupEvent = { added, newBalance };
+              import('$lib/stores/toast').then(({ toast }) => {
+                toast.show(`🎉 Nạp XU thành công! +${added} XU đã được cộng vào ví.`, 'success');
+              });
+              previousBalance = newBalance;
+            }
             queryClient.setQueryData(queryKey(), (oldData: any) => {
-              if (oldData && newBalance !== undefined && newBalance > (oldData.xu_balance ?? 0)) {
-                const added = newBalance - (oldData.xu_balance ?? 0);
-                import('$lib/stores/toast').then(({ toast }) => {
-                  toast.show(`🎉 Nạp XU thành công! +${added} XU đã được cộng vào ví.`, 'success');
-                });
-              }
               if (!oldData) return { xu_balance: newBalance, last_checkin_date: newCheckinDate, referral_code: undefined };
               return {
                 ...oldData,
@@ -136,7 +157,13 @@ export function createWalletModel(auth: AuthStore) {
     get isError() {
       return query.isError;
     },
-    async checkin() {
+    get lastTopupEvent() {
+      return lastTopupEvent;
+    },
+    clearTopupEvent() {
+      lastTopupEvent = null;
+    },
+    async checkin(turnstileToken?: string) {
       if (!auth.user || auth.isAnonymous) throw new Error('Cần đăng nhập để điểm danh');
       
       const { fetchJson } = await import('$lib/api-client/fetch-json');
@@ -147,12 +174,14 @@ export function createWalletModel(auth: AuthStore) {
 
       const { sanitizeReferralCode } = await import('$lib/features/referral/append-referral-query');
       const refCode = sanitizeReferralCode(localStorage.getItem('ziweiai_ref_code'));
-      const body = refCode ? { referralCode: refCode } : undefined;
+      const body: { referralCode?: string; turnstileToken?: string } = {};
+      if (refCode) body.referralCode = refCode;
+      if (turnstileToken) body.turnstileToken = turnstileToken;
 
       const result = await fetchJson('/rewards/checkin', schema, {
         method: 'POST',
         token: auth.session?.access_token,
-        body,
+        body: Object.keys(body).length > 0 ? body : undefined,
       });
       
       if (result.success) {

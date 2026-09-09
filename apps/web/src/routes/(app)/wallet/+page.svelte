@@ -5,7 +5,10 @@
   import { browser } from '$app/environment';
   import { env } from '$env/dynamic/public';
   import { authModalStore } from '$lib/stores/auth-modal.svelte';
+  import XuSuccessModal from '$lib/features/payment/XuSuccessModal.svelte';
   import { onMount } from 'svelte';
+  import ViralReferralCardModal from '$lib/features/referral/ViralReferralCardModal.svelte';
+  import TurnstileWidget from '$lib/components/security/TurnstileWidget.svelte';
   import {
     Copy,
     Check,
@@ -54,6 +57,8 @@
 
   let refreshing = $state(false);
   let copiedField = $state<string | null>(null);
+  let showViralModal = $state(false);
+  let turnstileWidget = $state<any>(null);
 
   function copyToClipboard(text: string, fieldName: string) {
     if (!browser) return;
@@ -82,7 +87,8 @@
     checkinBusy = true;
     checkinError = null;
     try {
-      const res = await walletModel.checkin();
+      const turnstileToken = await turnstileWidget?.execute?.();
+      const res = await walletModel.checkin(turnstileToken);
       if (!res.success) {
         checkinError = 'Không thể điểm danh lúc này, vui lòng thử lại sau.';
       }
@@ -110,12 +116,12 @@
 
   onMount(() => {
     walletModel.subscribe();
-    // Auto-polling every 5s while wallet page is active
+    // Auto-polling every 2.5s while wallet page is active and visible
     const interval = setInterval(() => {
-      if (browser && auth.user && !auth.isAnonymous) {
+      if (browser && auth.user && !auth.isAnonymous && !document.hidden) {
         walletModel.refresh();
       }
-    }, 5000);
+    }, 2500);
 
     return () => {
       walletModel.unsubscribe();
@@ -134,12 +140,6 @@
   title="Ví XU & Điểm Danh"
   subtitle="Nạp XU tự động qua VietQR để mở khoá Luận Giải AI Chuyên Sâu, Xem Tướng và Gieo Quẻ."
 >
-  {#snippet action()}
-    <a href="/" class="btn-back-home">
-      ← Trang chủ
-    </a>
-  {/snippet}
-
   <div class="wallet-page-wrapper">
     <!-- Top Hero Overview Card -->
     <section class="hero-overview-card glass-panel">
@@ -321,14 +321,48 @@
             <p class="loading-text">Đang tải mã giới thiệu...</p>
           {/if}
 
+          <!-- Nút Tạo Thiệp Mời Celestial Luxury -->
+          <button
+            type="button"
+            class="btn-open-viral-card"
+            onclick={() => (showViralModal = true)}
+          >
+            <Sparkles size={16} class="gold-icon" />
+            <span>Tạo Thiệp Mời Celestial Luxury (QR + Ảnh Đẹp)</span>
+          </button>
+
+          <!-- 2 thẻ KPI thống kê Referral -->
+          <div class="referral-stats-grid">
+            <div class="ref-stat-card">
+              <span class="ref-stat-icon">👥</span>
+              <div class="ref-stat-info">
+                <span class="ref-stat-label">Bạn bè đã mời</span>
+                <span class="ref-stat-value">{walletModel.referrals.length} bạn</span>
+              </div>
+            </div>
+            <div class="ref-stat-card">
+              <span class="ref-stat-icon">🪙</span>
+              <div class="ref-stat-info">
+                <span class="ref-stat-label">Tổng XU nhận được</span>
+                <span class="ref-stat-value highlight">{walletModel.referrals.reduce((sum, r) => sum + (r.rewardXu || 10), 0)} XU</span>
+              </div>
+            </div>
+          </div>
+
           {#if walletModel.referrals.length > 0}
             <div class="referral-history">
-              <h4>Lịch sử giới thiệu thành công ({walletModel.referrals.length})</h4>
+              <h4>Lịch sử bạn bè kích hoạt ({walletModel.referrals.length})</h4>
               <div class="ref-list">
                 {#each walletModel.referrals as ref (ref.createdAt)}
                   <div class="ref-item">
-                    <span class="ref-date">{new Date(ref.createdAt).toLocaleDateString('vi-VN')}</span>
-                    <span class="ref-desc">Bạn mới đăng ký & điểm danh</span>
+                    <div class="ref-item-main">
+                      <span class="ref-date">
+                        {new Date(ref.createdAt).toLocaleDateString('vi-VN')} {new Date(ref.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span class="ref-desc">
+                        Bạn mới ({ref.refereeEmailMasked || 'ẩn danh'}) đã kích hoạt thành công
+                      </span>
+                    </div>
                     <span class="ref-reward">+{ref.rewardXu} XU</span>
                   </div>
                 {/each}
@@ -465,6 +499,21 @@
       </aside>
     </div>
   </div>
+
+  <XuSuccessModal
+    show={!!walletModel.lastTopupEvent}
+    addedXu={walletModel.lastTopupEvent?.added ?? 0}
+    newBalance={walletModel.lastTopupEvent?.newBalance ?? 0}
+    onClose={() => walletModel.clearTopupEvent()}
+  />
+
+  <ViralReferralCardModal
+    isOpen={showViralModal}
+    referralCode={walletModel.referralCode || shortUuid || 'VIP8888'}
+    onClose={() => (showViralModal = false)}
+  />
+
+  <TurnstileWidget bind:this={turnstileWidget} action="wallet_checkin" />
 </AppScaffold>
 
 <style>
@@ -996,6 +1045,86 @@
   .btn-share-social.facebook:hover { background: #1877f2; border-color: #1877f2; color: #fff; }
   .btn-share-social.telegram:hover { background: #229ed9; border-color: #229ed9; color: #fff; }
 
+  .btn-open-viral-card {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 16px;
+    border-radius: var(--radius-md, 12px);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(124, 58, 237, 0.16));
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #fbbf24;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+    transition: all 0.25s ease;
+  }
+
+  .btn-open-viral-card:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(124, 58, 237, 0.26));
+    border-color: #f59e0b;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.2);
+    color: #fef08a;
+  }
+
+  :global(.gold-icon) {
+    color: #f59e0b;
+  }
+
+  .referral-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+    margin-bottom: 8px;
+  }
+
+  .ref-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--color-bg-surface, #ffffff);
+    border: 1px solid var(--color-border-hairline, #e2e8f0);
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .ref-stat-icon {
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .ref-stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+  }
+
+  .ref-stat-label {
+    font-size: 11px;
+    color: var(--color-text-muted, #64748b);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .ref-stat-value {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--color-text-primary, #0f172a);
+  }
+
+  .ref-stat-value.highlight {
+    color: #16a34a;
+  }
+
   .referral-history {
     margin-top: 16px;
     padding-top: 16px;
@@ -1012,32 +1141,52 @@
   .ref-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    max-height: 280px;
+    overflow-y: auto;
   }
 
   .ref-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 10px;
+    padding: 8px 12px;
     background: var(--color-bg-elevated, #f8fafc);
-    border-radius: 6px;
+    border: 1px solid var(--color-border-hairline, #f1f5f9);
+    border-radius: 8px;
     font-size: 12px;
+    gap: 10px;
+  }
+
+  .ref-item-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
   }
 
   .ref-date {
+    font-size: 10.5px;
     color: var(--color-text-muted, #64748b);
-    min-width: 75px;
   }
 
   .ref-desc {
-    flex: 1;
     color: var(--color-text-primary, #0f172a);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .ref-reward {
-    font-weight: 700;
+    font-weight: 800;
     color: #16a34a;
+    background: #f0fdf4;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    white-space: nowrap;
   }
 
   /* Right Sticky Payment Card */
@@ -1252,25 +1401,6 @@
     font-size: 11px;
     color: var(--color-text-muted, #64748b);
     margin: 0;
-  }
-
-  .btn-back-home {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 14px;
-    border-radius: var(--radius-pill, 999px);
-    border: 1px solid var(--color-border-hairline, #cbd5e1);
-    background: var(--color-bg-surface, #ffffff);
-    color: var(--color-text-primary, #0f172a);
-    font-size: 13px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s ease;
-  }
-
-  .btn-back-home:hover {
-    background: var(--color-bg-elevated, #f1f5f9);
-    border-color: #d97706;
   }
 
   :global(.spin-icon) {

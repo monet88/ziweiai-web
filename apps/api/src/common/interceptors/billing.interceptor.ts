@@ -10,7 +10,7 @@ import {
   Type,
 } from '@nestjs/common';
 import { Observable, from, throwError } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, catchError } from 'rxjs/operators';
 import { ProfilesRepository } from '../../database/repositories/profiles.repository';
 import { WalletEngineService } from '../../modules/wallet/wallet-engine.service';
 
@@ -26,7 +26,8 @@ export function RequireXU(costOrFn: number | ((req: any) => number)): Type<NestI
 
     intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
       const request = context.switchToHttp().getRequest();
-      const user = request.user;
+      const user = request.authenticatedUser ?? request.user;
+      const userId = user?.userId ?? user?.sub;
       
       const cost = typeof costOrFn === 'function' ? costOrFn(request) : costOrFn;
       
@@ -34,7 +35,7 @@ export function RequireXU(costOrFn: number | ((req: any) => number)): Type<NestI
         return next.handle();
       }
 
-      if (!user || !user.sub) {
+      if (!userId) {
         return next.handle();
       }
 
@@ -43,7 +44,7 @@ export function RequireXU(costOrFn: number | ((req: any) => number)): Type<NestI
         return next.handle();
       }
 
-      return from(this.profilesRepository.findProfileByUserId(user.sub)).pipe(
+      return from(this.profilesRepository.findProfileByUserId(userId)).pipe(
         switchMap((profile) => {
           if (!profile || profile.xuBalance < cost) {
             return throwError(
@@ -61,7 +62,7 @@ export function RequireXU(costOrFn: number | ((req: any) => number)): Type<NestI
           }
 
           // Deduct XU first to prevent double-spending in race conditions
-          return from(this.walletEngine.deductXU(user.sub, cost, 'ai_usage')).pipe(
+          return from(this.walletEngine.deductXU(userId, cost, 'ai_usage')).pipe(
             switchMap((success) => {
               if (!success) {
                 return throwError(
@@ -77,8 +78,15 @@ export function RequireXU(costOrFn: number | ((req: any) => number)): Type<NestI
                     ),
                 );
               }
-              // After successful deduction, proceed with the request
-              return next.handle();
+              // After successful deduction, proceed with the request. Auto-refund if downstream fails.
+              return next.handle().pipe(
+                catchError((err) =>
+                  from(this.walletEngine.addXU(userId, cost, 'ai_refund')).pipe(
+                    switchMap(() => throwError(() => err)),
+                    catchError(() => throwError(() => err)),
+                  ),
+                ),
+              );
             })
           );
         })

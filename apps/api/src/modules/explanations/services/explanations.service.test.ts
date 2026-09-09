@@ -796,4 +796,41 @@ describe('US-010 AI explanation gate', () => {
     expect(apiEnvSchema.parse({ AI_EXPLANATION_FREE_FOR_ALL: 'true' }).AI_EXPLANATION_FREE_FOR_ALL).toBe(true);
     expect(apiEnvSchema.parse({}).AI_EXPLANATION_FREE_FOR_ALL).toBe(true);
   });
+
+  it('refunds 10 XU automatically when provider fails during explanation generation', async () => {
+    const prev = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
+    (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = false;
+    try {
+      const user = createAuthenticatedUser();
+      const input = createExplanationRequest('careerPalace', 'career');
+      const chartRecord = createChartRecord();
+      (persistence.findChartSnapshotById as any).mockResolvedValue(chartRecord);
+      (persistence.findExplanationRequestByIdempotencyKey as any).mockResolvedValue(null);
+      (persistence.findExplanationResultByRequestId as any).mockResolvedValue(null);
+      (persistence.createExplanationRequest as any).mockResolvedValue({
+        id: 'req-fail-refund',
+        ownerUserId: 'user-123',
+        chartSnapshotId: '11111111-1111-1111-1111-111111111111',
+        idempotencyKey: 'key',
+        requestState: 'pending',
+      });
+      (persistence.updateExplanationRequest as any).mockResolvedValue({
+        id: 'req-fail-refund',
+        requestState: 'failed',
+      });
+
+      walletEngine.deductXU = vi.fn().mockResolvedValue(true);
+      walletEngine.addXU = vi.fn().mockResolvedValue(true);
+      (providerRouter.generate as any).mockRejectedValue(new ProviderTimeoutError('DeepSeek timed out'));
+
+      await expect(service.createExplanation(user, '127.0.0.1', input)).rejects.toMatchObject({
+        status: HttpStatus.GATEWAY_TIMEOUT,
+      });
+
+      expect(walletEngine.deductXU).toHaveBeenCalledWith('user-123', 10, 'ai_usage');
+      expect(walletEngine.addXU).toHaveBeenCalledWith('user-123', 10, 'ai_refund');
+    } finally {
+      (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = prev;
+    }
+  });
 });

@@ -48,6 +48,16 @@ export class FortuneController {
     return this.fortuneService.getMonthlyFortune(currentUser, request.ip ?? 'unknown', chartId, query.asOf);
   }
 
+  @Get(':chartSnapshotId/annual-report')
+  async getAnnualReport(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('chartSnapshotId', new ZodValidationPipe(z.uuid(), 'Mã lá số không hợp lệ.')) chartId: string,
+    @Query('year') yearRaw?: unknown,
+  ): Promise<AnnualReportResponse | null> {
+    const year = yearRaw !== undefined ? annualReportRequestSchema.parse({ year: Number(yearRaw) }).year : undefined;
+    return this.annualReportService.getAnnualReport(currentUser, chartId, year);
+  }
+
   @Post(':chartSnapshotId/annual-report')
   async createAnnualReport(
     @CurrentUser() currentUser: AuthenticatedUser,

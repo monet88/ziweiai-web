@@ -26,6 +26,8 @@
   import QimenDetailCard from '$lib/features/chart/QimenDetailCard.svelte';
   import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
   import AIExplanationLoader from '$lib/features/explanation/AIExplanationLoader.svelte';
+  import AuspiciousSummaryCard from '$lib/features/explanation/AuspiciousSummaryCard.svelte';
+  import ExplanationToolbar from '$lib/features/explanation/ExplanationToolbar.svelte';
   import AssistantPanel from '$lib/features/assistant/AssistantPanel.svelte';
   import DailyFortuneCard from '$lib/features/fortune/DailyFortuneCard.svelte';
   import MonthlyFortuneCard from '$lib/features/fortune/MonthlyFortuneCard.svelte';
@@ -193,7 +195,7 @@
 </svelte:head>
 
 <AppScaffold
-  eyebrow={copy.heroEyebrow}
+  eyebrow={detail.isOwner ? copy.heroEyebrow : `${copy.heroEyebrow} · Lá số được chia sẻ`}
   title={copy.heroTitle}
   subtitle={copy.heroSubtitle}
   tone="mystical"
@@ -219,6 +221,13 @@
     <NoticeBanner tone="danger" message={copy.chartNotAvailableFallback} />
   {:else}
     <div class="detail-page" bind:this={detailRoot}>
+      {#if !detail.isOwner}
+        <NoticeBanner
+          tone="info"
+          message="Bạn đang xem lá số được chia sẻ qua liên kết an toàn. Bạn có thể tra cứu chi tiết cung sao, vận hạn và đọc các bài luận giải đã lập sẵn."
+        />
+      {/if}
+
       {#if showBoard}
         <section class="board-section" data-reveal aria-labelledby="palace-board-title">
           <h2 class="section-title" id="palace-board-title">{copy.twelvePalaceTitle}</h2>
@@ -273,20 +282,23 @@
             <DailyFortuneCard {auth} chartId={detail.chartId} />
             <MonthlyFortuneCard {auth} chartId={detail.chartId} />
           </div>
-          <AnnualReportButton {auth} chartId={detail.chartId} />
+          {#if detail.isOwner}
+            <AnnualReportButton {auth} chartId={detail.chartId} initialReport={detail.latestAnnualReport} />
+          {/if}
         </section>
       {/if}
 
       <section class="explanation-section" data-reveal aria-labelledby="explanation-title">
         <h2 class="section-title" id="explanation-title">{copy.explanationTitle}</h2>
-        <p class="hint">{explanationHint}</p>
-
-        <PrimaryButton
-          label={explanation.hasResult ? copy.regenerateExplanation : explanationButtonLabel}
-          loading={explanation.isPending}
-          disabled={explanationBlocked}
-          onclick={explanation.generate}
-        />
+        {#if detail.isOwner}
+          <p class="hint">{explanationHint}</p>
+          <PrimaryButton
+            label={explanation.hasResult ? copy.regenerateExplanation : explanationButtonLabel}
+            loading={explanation.isPending}
+            disabled={explanationBlocked}
+            onclick={explanation.generate}
+          />
+        {/if}
         {#if explanationBlocked}
           <NoticeBanner tone="warning" message={copy.explanationBlockedDescription} />
         {:else if explanation.isPending && !explanation.hasResult}
@@ -294,22 +306,42 @@
         {:else if explanation.isError && explanation.errorMessage}
           <NoticeBanner tone="danger" message={explanation.errorMessage} />
         {:else if explanation.hasResult && explanation.renderedMarkdown}
-          <article class="result surface-glass">
-            <MarkdownView markdown={explanation.renderedMarkdown} />
-          </article>
+          <div class="explanation-result-container">
+            <AuspiciousSummaryCard markdown={explanation.renderedMarkdown} />
+            <ExplanationToolbar
+              markdown={explanation.renderedMarkdown}
+              chartTitle={pageTitle}
+              birthInfo={summaryItems.map((i) => `${i.label}: ${i.value}`).join(' · ')}
+            />
+            <article class="result surface-glass printable-content">
+              <MarkdownView markdown={explanation.renderedMarkdown} />
+            </article>
+          </div>
         {:else}
-          <EmptyStateCard title={copy.noExplanationTitle} description={copy.noExplanationDescription} />
+          <EmptyStateCard
+            title={copy.noExplanationTitle}
+            description={detail.isOwner ? copy.noExplanationDescription : 'Lá số này hiện chưa có bài luận giải AI từ người tạo.'}
+          />
         {/if}
       </section>
 
-      <section class="assistant-section" data-reveal aria-labelledby="assistant-title">
-        <AssistantPanel
-          chartSnapshotId={detail.chartId}
-          onConversationCreated={() => {
-            /* no-op: panel tự quản lý conversation id; có thể mở rộng để lưu vào chart-detail cache */
-          }}
-        />
-      </section>
+      {#if detail.isOwner}
+        <section class="assistant-section" data-reveal aria-labelledby="assistant-title">
+          <AssistantPanel
+            chartSnapshotId={detail.chartId}
+            onConversationCreated={() => {
+              /* no-op: panel tự quản lý conversation id; có thể mở rộng để lưu vào chart-detail cache */
+            }}
+          />
+        </section>
+      {:else}
+        <section class="assistant-section" data-reveal aria-labelledby="assistant-title">
+          <NoticeBanner
+            tone="info"
+            message="Tính năng đàm thoại chuyên sâu với Trợ lý AI chỉ dành cho chủ sở hữu lá số. Hãy tạo lá số của riêng bạn để được tư vấn và giải đáp chi tiết!"
+          />
+        </section>
+      {/if}
     </div>
   {/if}
 </AppScaffold>
@@ -416,9 +448,22 @@
   }
 
   .result {
-    margin-top: var(--space-md);
-    padding: var(--space-lg);
-    border-radius: var(--radius-xl);
+    margin-top: 0;
+    padding: var(--space-xl, 24px);
+    border-radius: var(--radius-xl, 20px);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+  }
+
+  .explanation-result-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md, 16px);
+  }
+
+  :global([data-theme="light"]) .result {
+    background: #ffffff;
+    border-color: rgba(180, 83, 9, 0.18);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   }
 
   @media (min-width: 1080px) {
@@ -428,6 +473,38 @@
 
     .section-title {
       font-size: 24px;
+    }
+  }
+
+  /* Chế độ In Sớ / Xuất PDF (@media print) */
+  @media print {
+    :global(body) {
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    :global(nav),
+    :global(header),
+    :global(.mobile-bottom-nav),
+    :global(.explanation-toolbar),
+    :global(.assistant-section),
+    :global(.fortune-section),
+    :global(button) {
+      display: none !important;
+    }
+
+    .board-section,
+    .explanation-section {
+      border: none !important;
+      padding: 0 !important;
+    }
+
+    .result {
+      background: #ffffff !important;
+      border: 1px solid #d1d5db !important;
+      box-shadow: none !important;
+      color: #111827 !important;
+      padding: 0 !important;
     }
   }
 </style>

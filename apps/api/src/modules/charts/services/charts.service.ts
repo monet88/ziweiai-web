@@ -14,6 +14,7 @@ import { buildChartSnapshotDedupeKey } from '../../../database/idempotency';
 import { ChartsRepository } from '../../../database/repositories/charts.repository';
 import { HistoryRepository } from '../../../database/repositories/history.repository';
 import { ExplanationsRepository } from '../../../database/repositories/explanations.repository';
+import { AnnualReportsRepository } from '../../../database/repositories/annual-reports.repository';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 
 import { apiEnv } from '../../../config/env';
@@ -48,6 +49,7 @@ export class ChartsService {
     private readonly historyRepository: HistoryRepository,
     private readonly explanationsRepository: ExplanationsRepository,
     private readonly quotasService: QuotasService,
+    private readonly annualReportsRepository?: AnnualReportsRepository,
   ) {}
 
   async createChart(userId: string, ipAddress: string, input: CreateChartRequest, isAnonymous = false): Promise<CreateChartResponse> {
@@ -103,22 +105,46 @@ export class ChartsService {
   }
 
   async getChartDetail(userId: string, chartSnapshotId: string) {
-    const chartRecord = await this.chartsRepository.findChartSnapshotById(userId, chartSnapshotId);
+    let chartRecord = await this.chartsRepository.findChartSnapshotById(userId, chartSnapshotId);
+    let isOwner = true;
+
+    // Hỗ trợ chia sẻ: nếu không phải owner, tìm qua unguessable UUID công khai
+    if (!chartRecord) {
+      chartRecord = await this.chartsRepository.findPublicChartSnapshotById(chartSnapshotId);
+      isOwner = false;
+    }
+
     if (!chartRecord) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số đã lưu.');
     }
 
-    await this.historyRepository.createHistoryView({
-      ownerUserId: userId,
-      chartSnapshotId,
-      explanationResultId: null,
-    });
+    // Ghi nhận lịch sử xem cho caller hiện tại (không làm ô nhiễm lịch sử của chủ lá số)
+    if (userId) {
+      await this.historyRepository.createHistoryView({
+        ownerUserId: userId,
+        chartSnapshotId,
+        explanationResultId: null,
+      });
+    }
 
-    const explanationResults = await this.explanationsRepository.listExplanationResultsForChart(userId, chartSnapshotId);
+    const explanationResults = await this.explanationsRepository.listExplanationResultsForChart(
+      chartRecord.ownerUserId,
+      chartSnapshotId,
+    );
+
+    const latestAnnualReport = this.annualReportsRepository
+      ? await this.annualReportsRepository.findLatestAnnualReportByChartId(
+          chartRecord.ownerUserId,
+          chartSnapshotId,
+        )
+      : null;
+
     return {
       chartRecord,
       snapshot: chartRecord.snapshot,
       explanationResults,
+      isOwner,
+      latestAnnualReport,
     };
   }
 
@@ -141,7 +167,11 @@ export class ChartsService {
   ): Promise<HoroscopeResponse> {
     await this.assertCanCreateChart(userId, ipAddress, isAnonymous);
 
-    const chartRecord = await this.chartsRepository.findChartSnapshotById(userId, chartId);
+    let chartRecord = await this.chartsRepository.findChartSnapshotById(userId, chartId);
+    if (!chartRecord) {
+      chartRecord = await this.chartsRepository.findPublicChartSnapshotById(chartId);
+    }
+
     if (!chartRecord) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số đã lưu.');
     }

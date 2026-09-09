@@ -35,6 +35,8 @@ describe('ConversationsService entitlement gate', () => {
     persistenceGateway = {
       findConversationById: vi.fn().mockResolvedValue({ id: CONVERSATION_ID, chartSnapshotId: 'chart-1' }),
       findChartSnapshotById: vi.fn().mockResolvedValue({ snapshot: {} }),
+      listRecentConversationMessages: vi.fn().mockResolvedValue([]),
+      createConversationMessage: vi.fn().mockResolvedValue({ id: 'msg-1', role: 'user', content: 'test' }),
     };
     walletEngine = { deductXU: vi.fn().mockResolvedValue(true) };
     quotasService = { assertCanExecute: vi.fn().mockResolvedValue(undefined) };
@@ -81,6 +83,53 @@ describe('ConversationsService entitlement gate', () => {
       .catch(() => undefined);
     // With the gate open, quota enforcement is reached (provider stubs are intentionally minimal).
     expect(quotasService.assertCanExecute).toHaveBeenCalledTimes(1);
+  });
+
+  it('chặn INVALID_INPUT khi chart snapshot có blocksExactReading=true', async () => {
+    persistenceGateway.findChartSnapshotById = vi.fn().mockResolvedValue({
+      snapshot: {
+        calculationConfidence: { blocksExactReading: true },
+      },
+    });
+
+    try {
+      await service.appendMessageAndGenerate(emailUser, '127.0.0.1', CONVERSATION_ID, {
+        content: 'Xin chào',
+        providerPreference: 'auto',
+      });
+      throw new Error('expected snapshot eligibility check to throw');
+    } catch (error) {
+      expectApiError(error, HttpStatus.BAD_REQUEST, 'INVALID_INPUT');
+    }
+  });
+
+  it('hoàn lại 1 XU tự động khi provider generate ném lỗi', async () => {
+    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
+    persistenceGateway.findChartSnapshotById = vi.fn().mockResolvedValue({
+      snapshot: {
+        chartSystem: 'zi-wei-dou-shu',
+        calculationConfidence: {
+          level: 'medium',
+          reasons: [],
+          visibleMessageKey: 'birth.time.verified',
+          blocksExactReading: false,
+        },
+        ruleSource: { canonicalLibrary: { name: 'iztro', version: '2.0.0' } },
+      },
+    });
+    walletEngine.deductXU = vi.fn().mockResolvedValue(true);
+    (walletEngine as any).addXU = vi.fn().mockResolvedValue(true);
+    conversationRouter.generate = vi.fn().mockRejectedValue(new Error('Provider crashed'));
+
+    await expect(
+      service.appendMessageAndGenerate(emailUser, '127.0.0.1', CONVERSATION_ID, {
+        content: 'Xin chào',
+        providerPreference: 'auto',
+      }),
+    ).rejects.toThrow('Provider crashed');
+
+    expect(walletEngine.deductXU).toHaveBeenCalledWith(emailUser.userId, 1, 'ai_usage');
+    expect((walletEngine as any).addXU).toHaveBeenCalledWith(emailUser.userId, 1, 'ai_refund');
   });
 });
 

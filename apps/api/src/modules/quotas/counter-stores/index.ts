@@ -17,9 +17,11 @@ export function createQuotaCounterStore(env: ApiEnv = apiEnv): QuotaCounterStore
   switch (driver) {
     case 'upstash': {
       if (!env.QUOTA_UPSTASH_REST_URL || !env.QUOTA_UPSTASH_REST_TOKEN) {
-        throw new Error(
-          'QUOTA_STORE_DRIVER=upstash requires QUOTA_UPSTASH_REST_URL and QUOTA_UPSTASH_REST_TOKEN',
+        Logger.warn(
+          '[quotas] QUOTA_STORE_DRIVER=upstash requires QUOTA_UPSTASH_REST_URL and QUOTA_UPSTASH_REST_TOKEN. Falling back to memory driver to prevent server crash.',
         );
+        logDriver('memory (fallback)');
+        return new MemoryQuotaCounterStore();
       }
       logDriver('upstash');
       return new UpstashRestQuotaCounterStore({

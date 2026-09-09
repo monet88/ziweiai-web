@@ -5,8 +5,10 @@ import { DatabaseModule } from '../../database/database.module';
 import { AuthModule } from '../auth/auth.module';
 import { WalletModule } from '../wallet/wallet.module';
 
+import { TurnstileModule } from '../../common/turnstile/turnstile.module';
+
 @Module({
-  imports: [DatabaseModule, AuthModule, WalletModule],
+  imports: [DatabaseModule, AuthModule, WalletModule, TurnstileModule],
   controllers: [RewardsController],
   providers: [RewardsService],
   exports: [RewardsService],

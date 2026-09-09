@@ -18,10 +18,17 @@ export type InlineSpan = {
 export type MarkdownBlock =
   | { type: 'heading'; level: 1 | 2 | 3; spans: InlineSpan[] }
   | { type: 'paragraph'; spans: InlineSpan[] }
-  | { type: 'list-item'; spans: InlineSpan[] };
+  | { type: 'list-item'; spans: InlineSpan[] }
+  | { type: 'blockquote'; spans: InlineSpan[] }
+  | { type: 'divider' }
+  | { type: 'table'; headers: InlineSpan[][]; rows: InlineSpan[][][] };
 
 const HEADING_PATTERN = /^(#{1,3})\s+(.*)$/;
 const LIST_ITEM_PATTERN = /^[-*]\s+(.*)$/;
+const BLOCKQUOTE_PATTERN = /^>\s*(.*)$/;
+const DIVIDER_PATTERN = /^(\*{3,}|-{3,}|_{3,})$/;
+const TABLE_ROW_PATTERN = /^\|(.+)\|$/;
+const TABLE_DELIMITER_PATTERN = /^\|?(\s*:?-+:?\s*\|?)+$/;
 
 // Tách inline **đậm** thành các span. Cặp ** không đóng được coi là text thường (giữ nguyên ký tự).
 export function parseInlineSpans(text: string): InlineSpan[] {
@@ -58,6 +65,13 @@ function pushSpan(spans: InlineSpan[], text: string, bold: boolean): void {
   spans.push({ text, bold });
 }
 
+function parseTableCells(rowText: string): string[] {
+  let content = rowText.trim();
+  if (content.startsWith('|')) content = content.slice(1);
+  if (content.endsWith('|')) content = content.slice(0, -1);
+  return content.split('|').map((cell) => cell.trim());
+}
+
 // Chuyển markdown thô thành mảng block để render tuần tự.
 // Dòng trống chỉ dùng để ngắt block; nhiều dòng văn liền nhau gộp thành một đoạn.
 export function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
@@ -82,30 +96,76 @@ export function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
     }
   };
 
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i].trim();
 
     if (line.length === 0) {
       flushParagraph();
+      i++;
       continue;
     }
 
+    // Divider check (--- hoặc ***)
+    if (DIVIDER_PATTERN.test(line)) {
+      flushParagraph();
+      blocks.push({ type: 'divider' });
+      i++;
+      continue;
+    }
+
+    // Heading check (#, ##, ###)
     const headingMatch = HEADING_PATTERN.exec(line);
     if (headingMatch) {
       flushParagraph();
       const level = headingMatch[1].length as 1 | 2 | 3;
       blocks.push({ type: 'heading', level, spans: parseInlineSpans(headingMatch[2].trim()) });
+      i++;
       continue;
     }
 
+    // Blockquote check (> ...)
+    const blockquoteMatch = BLOCKQUOTE_PATTERN.exec(line);
+    if (blockquoteMatch) {
+      flushParagraph();
+      const quoteSpans = parseInlineSpans(blockquoteMatch[1].trim());
+      blocks.push({ type: 'blockquote', spans: quoteSpans });
+      i++;
+      continue;
+    }
+
+    // List item check (- ... hoặc * ...)
     const listMatch = LIST_ITEM_PATTERN.exec(line);
     if (listMatch) {
       flushParagraph();
       blocks.push({ type: 'list-item', spans: parseInlineSpans(listMatch[1].trim()) });
+      i++;
       continue;
     }
 
+    // Table check: line có định dạng | col1 | col2 | và line tiếp theo là delimiter |---|---|
+    if (TABLE_ROW_PATTERN.test(line) && i + 1 < lines.length) {
+      const nextLine = lines[i + 1].trim();
+      if (TABLE_ROW_PATTERN.test(nextLine) && TABLE_DELIMITER_PATTERN.test(nextLine)) {
+        flushParagraph();
+        const headerCells = parseTableCells(line);
+        const headers = headerCells.map((c) => parseInlineSpans(c));
+        const rows: InlineSpan[][][] = [];
+
+        i += 2; // bỏ qua header và delimiter
+        while (i < lines.length && TABLE_ROW_PATTERN.test(lines[i].trim())) {
+          const rowCells = parseTableCells(lines[i].trim());
+          rows.push(rowCells.map((c) => parseInlineSpans(c)));
+          i++;
+        }
+
+        blocks.push({ type: 'table', headers, rows });
+        continue;
+      }
+    }
+
     paragraphBuffer.push(line);
+    i++;
   }
 
   flushParagraph();

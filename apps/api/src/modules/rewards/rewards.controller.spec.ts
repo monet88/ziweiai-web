@@ -16,14 +16,35 @@ describe('RewardsController & RewardsService', () => {
   beforeEach(() => {
     mockSupabaseClient = {
       rpc: vi.fn(),
-      from: vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
+      from: vi.fn().mockImplementation((table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+              }),
+            }),
+          };
+        }
+        if (table === 'referrals') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                gte: vi.fn().mockResolvedValue({ count: 0, error: null }),
+              }),
+            }),
+          };
+        }
+        return {
+          select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                gte: vi.fn().mockResolvedValue({ count: 0, error: null }),
+              }),
               gte: vi.fn().mockResolvedValue({ count: 0, error: null }),
             }),
           }),
-        }),
+        };
       }),
     };
 
@@ -36,12 +57,16 @@ describe('RewardsController & RewardsService', () => {
       getBalance: vi.fn(),
     } as unknown as WalletEngineService;
 
+    const mockTurnstileService = {
+      verifyToken: vi.fn().mockResolvedValue({ success: true }),
+    };
+
     service = new RewardsService(
       mockSupabaseClient,
       mockProfilesRepo,
       mockWalletEngineService,
     );
-    controller = new RewardsController(service);
+    controller = new RewardsController(service, mockTurnstileService as any);
   });
 
   describe('claimAdReward', () => {
@@ -65,7 +90,7 @@ describe('RewardsController & RewardsService', () => {
     });
 
     it('should throw BadRequestException when user exceeds daily ad reward limit', async () => {
-      mockSupabaseClient.from.mockReturnValueOnce({
+      mockSupabaseClient.from.mockImplementationOnce(() => ({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
@@ -73,7 +98,7 @@ describe('RewardsController & RewardsService', () => {
             }),
           }),
         }),
-      });
+      }));
 
       const mockReq = {
         authenticatedUser: { userId: 'user-uuid-123' },
@@ -117,6 +142,128 @@ describe('RewardsController & RewardsService', () => {
         p_user_id: 'user-uuid-123',
         p_referral_code: 'REF123',
       });
+    });
+
+    it('should skip referral code if referee has disposable email', async () => {
+      mockSupabaseClient.rpc.mockResolvedValueOnce({ data: 5, error: null });
+      mockSupabaseClient.from.mockImplementation((table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { display_name: 'bot@tempmail.com' },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        return { select: vi.fn() };
+      });
+
+      const mockReq = {
+        authenticatedUser: { userId: 'bot-uuid' },
+      } as AuthenticatedRequest;
+
+      const result = await controller.checkin(mockReq, { referralCode: 'REF123' });
+      expect(result).toEqual({ success: true, xu_added: 5 });
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('daily_checkin', {
+        p_user_id: 'bot-uuid',
+        p_referral_code: null, // Bị bỏ qua vì dùng disposable email
+      });
+    });
+
+    it('should skip referral code if referrer reached daily referral cap', async () => {
+      mockSupabaseClient.rpc.mockResolvedValueOnce({ data: 5, error: null });
+      mockSupabaseClient.from.mockImplementation((table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockImplementation((col: string, _val: string) => {
+                if (col === 'user_id') {
+                  return {
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: { display_name: 'clean@gmail.com' },
+                      error: null,
+                    }),
+                  };
+                }
+                return {
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { user_id: 'referrer-uuid' },
+                    error: null,
+                  }),
+                };
+              }),
+            }),
+          };
+        }
+        if (table === 'referrals') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                gte: vi.fn().mockResolvedValue({ count: 5, error: null }), // Đã đủ 5 lượt
+              }),
+            }),
+          };
+        }
+        return { select: vi.fn() };
+      });
+
+      const mockReq = {
+        authenticatedUser: { userId: 'clean-user-uuid' },
+      } as AuthenticatedRequest;
+
+      const result = await controller.checkin(mockReq, { referralCode: 'REF123' });
+      expect(result).toEqual({ success: true, xu_added: 5 });
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('daily_checkin', {
+        p_user_id: 'clean-user-uuid',
+        p_referral_code: null, // Bị bỏ qua vì referrer đã đạt trần 5 lượt/ngày
+      });
+    });
+
+    it('should throw BadRequestException when Turnstile verification fails', async () => {
+      const mockFailingTurnstile = {
+        verifyToken: vi.fn().mockResolvedValue({ success: false }),
+      };
+      const failingController = new RewardsController(service, mockFailingTurnstile as any);
+
+      const mockReq = {
+        authenticatedUser: { userId: 'bot-user-uuid' },
+        headers: {},
+        socket: {},
+      } as unknown as AuthenticatedRequest;
+
+      await expect(
+        failingController.checkin(mockReq, { referralCode: 'REF123', turnstileToken: 'bot-token' }),
+      ).rejects.toThrow('Xác thực chống bot không thành công (Turnstile verification failed).');
+    });
+  });
+
+  describe('getReferrals', () => {
+    it('should return referral history for authenticated user', async () => {
+      const mockHistory = [
+        {
+          id: 'ref-1',
+          referrerId: 'user-uuid-123',
+          refereeId: 'referee-1',
+          rewardXu: 10,
+          status: 'completed' as const,
+          createdAt: '2026-09-09T10:00:00.000Z',
+          completedAt: '2026-09-09T10:05:00.000Z',
+          refereeEmailMasked: 'g***0@gmail.com',
+        },
+      ];
+      (mockProfilesRepo.listReferralsByReferrerId as any).mockResolvedValueOnce(mockHistory);
+
+      const mockReq = {
+        authenticatedUser: { userId: 'user-uuid-123' },
+      } as AuthenticatedRequest;
+
+      const result = await controller.getReferrals(mockReq);
+      expect(result).toEqual(mockHistory);
+      expect(mockProfilesRepo.listReferralsByReferrerId).toHaveBeenCalledWith('user-uuid-123');
     });
   });
 });

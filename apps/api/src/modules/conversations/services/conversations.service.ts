@@ -13,6 +13,7 @@ import {
   type CreateConversationResponse,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
+import { assertChartSnapshotEligibleForAi } from '../../../common/entitlement/ai-snapshot-eligibility';
 import { apiEnv } from '../../../config/env';
 import { ConversationsRepository } from '../../../database/repositories/conversations.repository';
 import { ChartsRepository } from '../../../database/repositories/charts.repository';
@@ -69,7 +70,7 @@ export class ConversationsService {
     input: CreateConversationMessageRequest,
   ): Promise<{ assistantMessage: ConversationMessageRecord; fullText: string }> {
     const prepared = await this.prepareGenerationTurn(user, ipAddress, conversationId, input);
-    const { promptPayload } = prepared;
+    const { promptPayload, didDeductXu } = prepared;
 
     try {
       const providerResult = await this.conversationRouter.generate(input.providerPreference, promptPayload);
@@ -86,6 +87,14 @@ export class ConversationsService {
         fullText: providerResult.renderedMarkdown,
       };
     } catch (error) {
+      if (didDeductXu) {
+        try {
+          await this.walletEngine.addXU(user.userId, 1, 'ai_refund');
+          this.logger.log('Refunded 1 XU to user due to conversation provider failure', { userId: user.userId, conversationId });
+        } catch (refundError) {
+          this.logger.error('Failed to refund XU to user', { userId: user.userId, error: refundError });
+        }
+      }
       throw this.mapProviderError(error);
     }
   }
@@ -105,7 +114,7 @@ export class ConversationsService {
     signal?: AbortSignal,
   ): AsyncGenerator<string, ConversationMessageRecord, void> {
     const prepared = await this.prepareGenerationTurn(user, ipAddress, conversationId, input);
-    const { promptPayload } = prepared;
+    const { promptPayload, didDeductXu } = prepared;
 
     const streamingProvider = this.conversationRouter.resolveStreamingProvider(input.providerPreference);
 
@@ -183,19 +192,25 @@ export class ConversationsService {
       this.logger.log('Conversation generation completed', { userId: user.userId, conversationId });
       return assistantMessage;
     } catch (error) {
+      if (didDeductXu) {
+        try {
+          await this.walletEngine.addXU(user.userId, 1, 'ai_refund');
+          this.logger.log('Refunded 1 XU to user due to conversation stream failure', { userId: user.userId, conversationId });
+        } catch (refundError) {
+          this.logger.error('Failed to refund XU to user', { userId: user.userId, error: refundError });
+        }
+      }
       throw this.mapProviderError(error);
     }
   }
 
   // Shared gate + user-persist preamble for both the stream and non-stream paths. Keeps the gate
-  // ordering identical: enabled flag -> NOT_FOUND checks -> entitlement (402) -> quota (429) ->
-  // persist user message. Returns the fully-built conversation prompt payload for the provider call.
   private async prepareGenerationTurn(
     user: AuthenticatedUser,
     ipAddress: string,
     conversationId: string,
     input: CreateConversationMessageRequest,
-  ): Promise<{ promptPayload: ConversationPromptPayload }> {
+  ): Promise<{ promptPayload: ConversationPromptPayload; didDeductXu: boolean }> {
     this.assertConversationEnabled();
 
     const conversation = await this.conversationsRepository.findConversationById(user.userId, conversationId);
@@ -208,7 +223,21 @@ export class ConversationsService {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số liên kết.');
     }
 
+    // Chặn snapshot không đủ tin cậy (blocksExactReading) trước khi xử lý
+    assertChartSnapshotEligibleForAi(chartRecord.snapshot);
+
+    // Resolve final user content trước khi trừ XU và check quota
+    let userContent: string;
+    if (input.quickPromptKey) {
+      userContent = resolveQuickPrompt(input.quickPromptKey);
+    } else if (input.content) {
+      userContent = input.content;
+    } else {
+      throw new ApiErrorHttpException(HttpStatus.BAD_REQUEST, 'INVALID_INPUT', 'Thiếu nội dung tin nhắn.');
+    }
+
     // GATE 3: Trừ XU cho tính năng premium (Hội thoại AI). Tốn 1 XU mỗi tin nhắn.
+    let didDeductXu = false;
     if (!apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
       const success = await this.walletEngine.deductXU(user.userId, 1, 'ai_usage');
       if (!success) {
@@ -218,18 +247,22 @@ export class ConversationsService {
           'Tính năng Hỏi đáp AI yêu cầu 1 XU mỗi lượt. Vui lòng nạp thêm XU để tiếp tục.'
         );
       }
+      didDeductXu = true;
     }
 
-    await this.assertCanCreateConversationMessage(user.userId, ipAddress, user.email === null);
-
-    // Resolve final user content (server owns the prompt text for quick prompts)
-    let userContent: string;
-    if (input.quickPromptKey) {
-      userContent = resolveQuickPrompt(input.quickPromptKey);
-    } else if (input.content) {
-      userContent = input.content;
-    } else {
-      throw new ApiErrorHttpException(HttpStatus.BAD_REQUEST, 'INVALID_INPUT', 'Thiếu nội dung tin nhắn.');
+    // Kiểm tra Quota; nếu vượt hạn mức thì hoàn lại XU ngay lập tức
+    try {
+      await this.assertCanCreateConversationMessage(user.userId, ipAddress, user.email === null);
+    } catch (quotaError) {
+      if (didDeductXu) {
+        try {
+          await this.walletEngine.addXU(user.userId, 1, 'ai_refund');
+          this.logger.log('Refunded 1 XU to user due to quota error', { userId: user.userId, conversationId });
+        } catch (refundError) {
+          this.logger.error('Failed to refund XU on quota error', { userId: user.userId, error: refundError });
+        }
+      }
+      throw quotaError;
     }
 
     const historyLimit = apiEnv.AI_CONVERSATION_BUFFER_MESSAGES;
@@ -272,6 +305,7 @@ export class ConversationsService {
     });
 
     return {
+      didDeductXu,
       promptPayload: {
         chartSnapshot: chartRecord.snapshot,
         explanationContext,

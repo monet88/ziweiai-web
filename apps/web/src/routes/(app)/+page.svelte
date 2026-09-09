@@ -4,7 +4,7 @@
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
   import { fetchFeatures } from '$lib/api-client/system';
-  import { PrimaryButton, ThemeToggle, ViOSLogo, MobileBottomNav } from '$lib/components/ui';
+  import { PrimaryButton, ThemeToggle, ViOSLogo } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { createDashboardModel } from '$lib/features/dashboard/dashboard-model.svelte';
   import { sheetStore } from '$lib/stores/sheet.svelte';
@@ -27,7 +27,10 @@
     ArrowRight,
     CheckCircle2,
     Shield,
-    Bot
+    Bot,
+    Gift,
+    Crown,
+    Zap
   } from 'lucide-svelte';
   import type { FeaturesResponse } from '@ziweiai/contracts';
 
@@ -54,55 +57,50 @@
     sheetStore.open(BirthForm, { model }, 'Lập Lá Số Tử Vi Chi Tiết');
   }
 
-  // 12 Hệ Thuật Số được phân nhóm theo 4 Đại Danh Mục (Universe Hub)
-  const systemCategories = [
+  // 12 Hệ Thuật Số được tinh gọn theo 3 Trụ Cột Phễu Lớn (Trụ Cột Bản Mệnh, Chiêm Bốc Tức Thì, Bí Thuật Chiêm Tinh)
+  const systemGroups = [
     {
-      category: 'Mệnh Lý & Chiêm Tinh',
+      groupTitle: 'Trụ Cột Bản Mệnh',
+      groupBadge: 'Chuyên Sâu Trọn Đời',
+      groupDesc: 'Phân tích tổng thể cốt cách, vận trình đại vận và nghiệp duyên',
       icon: Compass,
-      color: '#d4af37',
+      themeColor: '#ffd700',
       items: [
-        { route: '/charts' as const, label: 'Tử Vi Đẩu Số', badge: 'Chính Tông', desc: '12 Cung & Tinh Bàn Vận Hạn' },
-        { route: '/bazi' as const, label: 'Bát Tự Hà Lạc', badge: 'Tứ Trụ', desc: 'Can Chi & Ngũ Hành Thịnh Suy' },
-        { route: '/numerology' as const, label: 'Thần Số Học', badge: 'Pythagoras', desc: 'Con Số Chủ Đạo & Sứ Mệnh' },
-        { route: '/hepan' as const, label: 'Hợp Hôn So Mệnh', badge: 'Duyên Phận', desc: 'Tương Hợp Vợ Chồng & Đối Tác' }
+        { route: '/charts' as const, label: 'Tử Vi Đẩu Số', badge: 'Chính Tông', desc: 'Thiên Bàn 12 Cung & Sao Hạn Cát Hung' },
+        { route: '/bazi' as const, label: 'Bát Tự Tứ Trụ', badge: 'Hà Lạc', desc: 'Can Chi, Thập Thần & Ngũ Hành Thịnh Suy' },
+        { route: '/numerology' as const, label: 'Thần Số Học', badge: 'Pythagoras', desc: 'Con Số Chủ Đạo & Kim Tự Tháp Cuộc Đời' },
+        { route: '/hepan' as const, label: 'Hợp Hôn So Mệnh', badge: 'Duyên Phận', desc: 'Đối Chiếu Bản Mệnh Phu Thê & Đối Tác' }
       ]
     },
     {
-      category: 'Bói Dịch & Quẻ Linh',
+      groupTitle: 'Chiêm Bốc Linh Ứng',
+      groupBadge: 'Vấn Đề Trước Mắt',
+      groupDesc: 'Bấm quẻ định hướng tức thì cho sự nghiệp, tài lộc và tình duyên',
       icon: CoinsIcon,
-      color: '#c084fc',
+      themeColor: '#c084fc',
       items: [
-        { route: '/liuyao' as const, label: 'Kinh Dịch Lục Hào', badge: '3 Đồng Xu', desc: 'Dự Báo Vận Thời & Biến Dịch' },
-        { route: '/meihua' as const, label: 'Mai Hoa Dịch Số', badge: 'Tâm Dịch', desc: 'Bấm Quẻ Theo Thời Khắc' },
-        { route: '/qimen' as const, label: 'Kỳ Môn Độn Giáp', badge: 'Trận Đồ', desc: 'Bố Trận Thời Vị Thắng Cảnh' },
-        { route: '/daliuren' as const, label: 'Đại Lục Nhâm', badge: 'Cổ Điển', desc: 'Thần Toán Tam Thức' }
+        { route: '/liuyao' as const, label: 'Kinh Dịch Lục Hào', badge: '3 Đồng Xu', desc: 'Gieo Quẻ Cổ Tự Động & Hào Động Biến Dịch' },
+        { route: '/meihua' as const, label: 'Mai Hoa Dịch Số', badge: 'Tâm Dịch', desc: 'Khởi Quẻ Theo Thời Khắc & Hiện Tượng' },
+        { route: '/stick' as const, label: 'Xin Xăm Quán Âm', badge: '100 Thẻ Linh', desc: 'Cầu Điềm Lành & Thỉnh Lời Khuyên Hóa Giải' },
+        { route: '/dream' as const, label: 'Giải Mộng Triêm Bốc', badge: 'Giấc Mơ', desc: 'Giải Mã Điềm Báo Trong Giấc Chiêm Bao' }
       ]
     },
     {
-      category: 'Trực Giác & Bài Học',
+      groupTitle: 'Bí Thuật Chiêm Tinh & Thời Vận',
+      groupBadge: 'Kỳ Môn Cung Đình',
+      groupDesc: 'Các bộ môn thuật số thượng thừa dùng trong hoạch định chiến lược',
       icon: Layers,
-      color: '#38bdf8',
+      themeColor: '#38bdf8',
       items: [
-        { route: '/tarot' as const, label: 'Rút Bài Tarot AI', badge: '78 Lá', desc: 'Chiêm Nghiệm 1 Lá / 3 Lá' },
-        { route: '/vision-tarot' as const, label: 'Đọc Trải Bài Ảnh', badge: 'AI Scan', desc: 'Chụp Trải Bài Thực Tế' },
-        { route: '/lenormand' as const, label: 'Bài Lenormand', badge: '36 Lá', desc: 'Tiên Tri Sự Kiện Đời Thường' },
-        { route: '/dream' as const, label: 'Giải Mộng Triêm Bốc', badge: 'Giấc Mơ', desc: 'Giải Mã Giấc Mơ Ẩn Ý' }
-      ]
-    },
-    {
-      category: 'Sinh Trắc AI & Dân Gian',
-      icon: Eye,
-      color: '#10b981',
-      items: [
-        { route: '/face' as const, label: 'Nhân Tướng Học AI', badge: 'Vision AI', desc: 'Quét Ngũ Quan & Khí Sắc' },
-        { route: '/palm' as const, label: 'Xem Chỉ Tay AI', badge: 'Biometrics', desc: 'Nhận Diện 3 Đường Chính' },
-        { route: '/stick' as const, label: 'Xin Xăm Quán Âm', badge: '100 Thẻ', desc: 'Cầu Linh Ứng & Hóa Giải' },
-        { route: '/almanac' as const, label: 'Lịch Vạn Niên', badge: 'Hoàng Đạo', desc: 'Chọn Giờ Lành Xuất Hành' }
+        { route: '/qimen' as const, label: 'Kỳ Môn Độn Giáp', badge: 'Trận Đồ', desc: 'Bố Trận Thời Vị & Chọn Cửa Thắng Cảnh' },
+        { route: '/daliuren' as const, label: 'Đại Lục Nhâm', badge: 'Tam Thức', desc: 'Đệ Nhất Thần Toán Dự Đoán Nhật Nguyệt' },
+        { route: '/lenormand' as const, label: 'Bài Lenormand', badge: '36 Lá', desc: 'Tiên Tri Sự Kiện Cụ Thể Đời Thường' },
+        { route: '/almanac' as const, label: 'Lịch Vạn Niên Hoàng Đạo', badge: 'Trực Trừ', desc: 'Chọn Ngày Giờ Lành Xuất Hành & Khai Trương' }
       ]
     }
   ];
 
-  // AI Tools Bento Grid
+  // AI Tools Bento Grid - Bộ công cụ trực giác & sinh trắc AI
   const bentoTools = [
     {
       route: '/face' as const,
@@ -117,8 +115,8 @@
     {
       route: '/palm' as const,
       flag: 'palm' as keyof FeaturesResponse,
-      badge: 'BIOMETRIC SCAN',
-      badgeColor: 'green',
+      badge: 'BIOMETRICS SCAN',
+      badgeColor: 'gold',
       icon: Hand,
       title: viCopy.dashboard.toolPalmTitle,
       desc: viCopy.dashboard.toolPalmDescription,
@@ -137,7 +135,7 @@
     {
       route: '/vision-tarot' as const,
       flag: 'tarot' as keyof FeaturesResponse,
-      badge: 'PHOTO ORACLE',
+      badge: 'AI PHOTO ORACLE',
       badgeColor: 'blue',
       icon: Camera,
       title: viCopy.dashboard.toolVisionTarotTitle,
@@ -151,7 +149,7 @@
       badgeColor: 'gold',
       icon: Hash,
       title: 'Thần Số Học Toàn Diện',
-      desc: 'Tính toán con số chủ đạo, kim tự tháp đỉnh cao cuộc đời và biểu đồ ngày sinh.',
+      desc: 'Tính toán con số chủ đạo, 4 đỉnh cao cuộc đời và biểu đồ ngày sinh.',
       highlight: false
     },
     {
@@ -180,43 +178,50 @@
     {
       icon: Calendar,
       title: 'Vận Hạn Hôm Nay',
-      description: 'Theo dõi đại vận, lưu niên, lưu nguyệt và lưu nhật cập nhật chuẩn xác từng giờ.'
+      description: 'Theo dõi đại vận, lưu niên, lưu nguyệt và lưu nhật cập nhật chuẩn xác theo từng khắc giờ.'
     },
     {
       icon: Compass,
       title: 'Lá Số 12 Cung Bản Vị',
-      description: 'An sao chuẩn xác theo ngày giờ sinh, hiển thị thế đứng tinh bàn và cung Vô Chính Diệu.'
+      description: 'An sao chuẩn mực theo thiên văn lịch pháp, thể hiện rõ thế đứng tinh bàn và cung Thân ký gửi.'
     },
     {
       icon: Flame,
       title: 'Hợp Hôn So Mệnh',
-      description: 'Đối sánh hai bản đồ mệnh lý để xem độ tương hợp tình duyên, gia đạo và kinh doanh.'
+      description: 'Đối sánh hai bản đồ mệnh lý sâu sắc để xem độ tương hợp phu thê, đường con cái và quý nhân hợp tác.'
     },
     {
       icon: Bot,
-      title: 'AI Luận Giải Tiếng Việt',
-      description: 'Phân tích lá số bằng AI thông minh, bám sát các bộ sao chính tinh và cảnh báo rủi ro.'
+      title: 'AI Luận Giải Hoàng Gia',
+      description: 'Phân tích đa tầng theo cổ thư và học thuật chính tông, cảnh báo rủi ro thực tiễn, không hề ảo giác.'
     }
   ] as const;
 </script>
 
 <svelte:head>
-  <title>Tử Vi Toàn Tập (ViOS) - Không Gian Thuật Số Toàn Diện Đẳng Cấp AI</title>
+  <title>ViOS - Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia</title>
 </svelte:head>
 
-<main class="dashboard-page">
+<main class="celestial-page">
+  <!-- Dynamic Celestial Stardust Aura Background -->
+  <div class="celestial-stardust-bg" aria-hidden="true">
+    <div class="aurora-glow glow-gold"></div>
+    <div class="aurora-glow glow-purple"></div>
+  </div>
+
   <div class="shell">
-    <!-- Top Navigation HUD Bar -->
-    <header class="topbar-glass">
+    <!-- TOPBAR HUD: Navigation & Wallet Bar -->
+    <header class="topbar-celestial">
       <a class="brand-link" href={resolve('/')}>
-        <ViOSLogo size="sm" showTagline={false} />
-        <span class="version-tag">AI v2.5</span>
+        <ViOSLogo size="md" showTagline={false} />
+        <span class="vios-badge">CELESTIAL AI</span>
       </a>
 
       <nav class="top-links" aria-label="Điều hướng chính">
         <a href="#quick-create" class="nav-btn">Lập Lá Số</a>
-        <a href="#ai-tools" class="nav-btn">AI Tools</a>
-        <a href="#universe-hub" class="nav-btn">12 Hệ Thuật Số</a>
+        <a href="#ai-tools" class="nav-btn">Thần Khí AI</a>
+        <a href="#vip-conversion" class="nav-btn">Ví XU & Ưu Đãi</a>
+        <a href="#universe-hub" class="nav-btn">12 Thuật Số</a>
         {#if isMember}
           <a href={resolve('/history')} class="nav-btn">Lịch Sử</a>
         {/if}
@@ -224,13 +229,16 @@
 
       <div class="session-actions">
         <ThemeToggle />
-        <a class="wallet-pill" href={resolve('/wallet')}>
-          <CoinsIcon size={14} class="text-gold" />
-          <span>Ví & Điểm Danh</span>
+        
+        <!-- Nút Nạp XU Hoàng Kim -->
+        <a class="wallet-pill-luxury" href={resolve('/wallet')} title="Mở ví XU & Điểm danh">
+          <CoinsIcon size={15} class="coin-icon" />
+          <span class="wallet-text">Ví & Điểm Danh</span>
+          <span class="gift-indicator"><Gift size={11} /></span>
         </a>
 
         {#if !isMember}
-          <a class="btn-signin" href={resolve('/sign-in')}>Đăng Nhập</a>
+          <a class="btn-signin-luxury" href={resolve('/sign-in')}>Đăng Nhập</a>
         {:else}
           <WalletBalance />
           <span class="user-email-tag" title={auth.user?.email ?? undefined}>
@@ -246,11 +254,11 @@
       </div>
     </header>
 
-    <!-- HERO SECTION: Celestial Astro Wheel & Value Proposition -->
+    <!-- TẦNG 1: HERO SECTION - CELESTIAL ASTRO WHEEL & TEASER HOOK -->
     <section class="hero-section" aria-labelledby="hero-heading">
       <div class="hero-content">
-        <div class="hero-badge">
-          <Sparkles size={14} class="text-gold" />
+        <div class="hero-eyebrow-pill">
+          <Sparkles size={14} class="text-celestial-gold" />
           <span>VIOS CELESTIAL INTELLIGENCE PLATFORM</span>
         </div>
 
@@ -262,37 +270,41 @@
           {viCopy.dashboard.heroSubtitle}
         </p>
 
+        <!-- CTA Groups -->
         <div class="hero-cta-group">
-          <button class="btn-hero-primary" onclick={openBirthForm}>
+          <button class="btn-cta-gold-luxury" onclick={openBirthForm}>
             <Sparkles size={18} />
-            <span>{viCopy.dashboard.createChart}</span>
+            <span>Lập Lá Số Tử Vi Chi Tiết (Miễn Phí)</span>
+            <div class="cta-shimmer"></div>
           </button>
-          <a class="btn-hero-secondary" href="#universe-hub">
-            <span>Khám Phá 12 Thuật Số</span>
+          
+          <a class="btn-cta-secondary" href="#ai-tools">
+            <span>Trải Nghiệm Thần Khí AI</span>
             <ArrowRight size={16} />
           </a>
         </div>
 
+        <!-- 3 Trust Badges Hoàng Gia -->
         <div class="hero-trust-list">
           <div class="trust-item">
-            <CheckCircle2 size={15} class="text-gold" />
-            <span>An Sao Chuẩn Thiên Văn</span>
+            <CheckCircle2 size={16} class="text-celestial-gold" />
+            <span>An Sao Chuẩn Thiên Văn Cổ</span>
           </div>
           <div class="trust-item">
-            <Shield size={15} class="text-gold" />
+            <Shield size={16} class="text-celestial-gold" />
             <span>Bảo Mật Riêng Tư 100%</span>
           </div>
           <div class="trust-item">
-            <Bot size={15} class="text-purple" />
+            <Bot size={16} class="text-celestial-purple" />
             <span>AI Đa Tầng Không Ảo Giác</span>
           </div>
         </div>
       </div>
 
-      <!-- CELESTIAL ASTRO DIAL (Thiên Bàn 12 Cung & Bát Quái Xoay Phát Sáng) -->
+      <!-- CELESTIAL ASTRO DIAL (Thiên Bàn 12 Cung Hoàng Kim) -->
       <div class="hero-dial-wrapper">
         <div class="celestial-astro-dial">
-          <div class="dial-outer-ring"></div>
+          <div class="dial-outer-orbit"></div>
           <div class="dial-zodiac-ring">
             <span class="zodiac-node pos-0">Tý</span>
             <span class="zodiac-node pos-1">Sửu</span>
@@ -309,10 +321,13 @@
           </div>
           
           <div class="dial-inner-core">
-            <div class="taiji-symbol"></div>
+            <div class="taiji-symbol">
+              <div class="taiji-dot dot-top"></div>
+              <div class="taiji-dot dot-bottom"></div>
+            </div>
           </div>
 
-          <!-- Floating Orbit Highlights -->
+          <!-- Floating Orbit Badges (Cung Mệnh, Thân, Tài, Quan) -->
           <div class="orbit-hud-tag tag-menh">
             <span class="hud-dot"></span>
             <strong>Cung Mệnh</strong>
@@ -331,38 +346,47 @@
           </div>
         </div>
 
-        <!-- 3 Quick Features Mini Grid -->
+        <!-- 3 Feature Pills -->
         <div class="dial-features-bar">
           <div class="feat-pill">
-            <strong>12 Cung Số</strong>
-            <span>Thiên bàn cá nhân</span>
+            <Compass size={14} class="text-celestial-gold" />
+            <div class="feat-info">
+              <strong>12 Cung Vận Mệnh</strong>
+              <small>Thiên bàn cá nhân</small>
+            </div>
           </div>
           <div class="feat-pill">
-            <strong>AI Luận Giải</strong>
-            <span>Giải mã vận trình</span>
+            <Bot size={14} class="text-celestial-purple" />
+            <div class="feat-info">
+              <strong>AI Luận Giải</strong>
+              <small>Cốt tủy đại vận</small>
+            </div>
           </div>
           <div class="feat-pill">
-            <strong>Lưu Hồ Sơ</strong>
-            <span>Xem lại bất kỳ lúc nào</span>
+            <Crown size={14} class="text-celestial-gold" />
+            <div class="feat-info">
+              <strong>Lưu Hồ Sơ VIP</strong>
+              <small>Xem lại trọn đời</small>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- SECTION 2: BENTO GRID AI MYSTICAL TOOLS -->
+    <!-- TẦNG 2: THẦN KHÍ AI — TRỰC GIÁC & SINH TRẮC TỨC THỜI (BENTO GRID) -->
     <section class="bento-section" id="ai-tools">
       <div class="section-title-wrap">
         <div class="eyebrow-tag">
-          <Eye size={14} class="text-gold" />
-          <span>BỘ CÔNG CỤ SINH TRẮC & TRỰC GIÁC AI</span>
+          <Zap size={15} class="text-celestial-gold" />
+          <span>THẦN KHÍ AI TỨC THỜI — TRẢI NGHIỆM TRONG 30 GIÂY</span>
         </div>
         <h2 class="section-heading">{viCopy.dashboard.toolSectionTitle}</h2>
         <p class="section-subtext">{viCopy.dashboard.toolSectionDescription}</p>
       </div>
 
-      <div class="bento-grid tool-grid">
+      <div class="bento-grid">
         {#each visibleBentoTools as tool (tool.route)}
-          <a href={resolve(tool.route as any)} class="bento-card {tool.highlight ? 'bento-highlight' : ''}">
+          <a href={resolve(tool.route as any)} class="bento-card-celestial {tool.highlight ? 'bento-highlight' : ''}">
             <div class="bento-card-top">
               <span class="bento-badge badge-{tool.badgeColor}">{tool.badge}</span>
               <div class="bento-icon-box">
@@ -384,45 +408,117 @@
       </div>
     </section>
 
-    <!-- SECTION 3: INLINE QUICK-FORM & UNIVERSE HUB (12 HỆ THUẬT SỐ) -->
+    <!-- TẦNG 3: THIỆP VÀNG HOÀNG GIA (CONVERSION TEASER PAYWALL & NẠP XU) -->
+    <section class="vip-conversion-section" id="vip-conversion">
+      <div class="royal-card">
+        <div class="royal-badge-wrap">
+          <Crown size={16} class="text-celestial-gold" />
+          <span>ĐẶC QUYỀN HỘI VIÊN VIOS VIP</span>
+        </div>
+
+        <div class="royal-content">
+          <div class="royal-main-text">
+            <h2 class="royal-title">Thiệp Khởi Vận — Điểm Danh Nhận 50 XU Mỗi Ngày</h2>
+            <p class="royal-sub">
+              Nạp XU tự động siêu tốc qua VietQR 1-chạm hoặc quét mã thẻ. Tặng ngay <strong>+20% XU</strong> cho lần nạp đầu tiên để mở khóa luận giải chi tiết 12 cung và đại vận 10 năm.
+            </p>
+
+            <div class="royal-perks-list">
+              <div class="perk-item">
+                <CheckCircle2 size={15} class="text-celestial-gold" />
+                <span>Không giới hạn câu hỏi đàm đạo cùng AI Tử Vi</span>
+              </div>
+              <div class="perk-item">
+                <CheckCircle2 size={15} class="text-celestial-gold" />
+                <span>Lưu trữ không giới hạn gia phả & lá số người thân</span>
+              </div>
+              <div class="perk-item">
+                <CheckCircle2 size={15} class="text-celestial-gold" />
+                <span>Báo cáo dự đoán tài lộc, sự nghiệp, tình cảm hàng tháng</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="royal-action-card">
+            <div class="action-card-header">
+              <CoinsIcon size={24} class="text-celestial-gold" />
+              <div>
+                <strong>Nạp XU Khởi Vận</strong>
+                <small>Hỗ trợ VietQR, Thẻ Nội Địa & Quốc Tế</small>
+              </div>
+            </div>
+
+            <div class="action-buttons-group">
+              <a href={resolve('/wallet')} class="btn-royal-deposit">
+                <Zap size={16} />
+                <span>Mở Ví & Nạp XU Ngay</span>
+              </a>
+              <a href={resolve('/wallet')} class="btn-royal-checkin">
+                <Gift size={16} />
+                <span>Điểm Danh Nhận XU Miễn Phí</span>
+              </a>
+            </div>
+            <small class="secure-note">
+              <Shield size={12} /> Giao dịch bảo mật chuẩn ngân hàng — Cộng XU tức thì 3s
+            </small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TẦNG 4: KHỞI TẠO LÁ SỐ & MA TRẬN 12 BỘ MÔN THUẬT SỐ -->
     <section class="workspace-section" id="quick-create">
       <!-- Cột Trái: Interactive Quick Form Card -->
       <div class="quickform-container" id="create-chart">
         <div class="quickform-header">
-          <Compass size={22} class="text-gold" />
+          <div class="quickform-icon-box">
+            <Compass size={24} class="text-celestial-gold" />
+          </div>
           <div>
-            <h2 class="quickform-title">Khởi Tạo Lá Số Tử Vi</h2>
-            <p class="quickform-sub">Nhập thông tin ngày giờ sinh để an sao và tạo bản đồ vận mệnh tức thì.</p>
+            <h2 class="quickform-title">Khởi Tạo Lá Số Tử Vi Ngay</h2>
+            <p class="quickform-sub">Nhập thông tin ngày giờ sinh để an sao chuẩn xác và khám phá vận mệnh.</p>
           </div>
         </div>
 
         <div class="quickform-action-box">
           <p class="quickform-action-text">
-            Hỗ trợ đầy đủ lịch Dương & Âm, tự động tính giờ Sóc, giờ Tý chuyển ngày và xác định chính xác múi giờ Việt Nam (GMT+7).
+            Hệ thống hỗ trợ cả Lịch Dương và Lịch Âm, tự động tính giờ Sóc, giờ Tý đổi ngày và xác định chuẩn xác múi giờ Việt Nam (GMT+7).
           </p>
           <PrimaryButton
-            label="Nhập Thông Tin & Lập Lá Số Ngay"
+            label="Nhập Thông Tin & Lập Lá Số Chi Tiết"
             onclick={openBirthForm}
           />
         </div>
       </div>
 
-      <!-- Cột Phải: UNIVERSE HUB 12 HỆ THUẬT SỐ -->
+      <!-- Cột Phải: UNIVERSE HUB (TINH GỌN 3 PHÂN NHÓM) -->
       <div class="universe-hub-container" id="universe-hub">
         <div class="universe-hub-header">
-          <BookOpen size={20} class="text-purple" />
-          <h2 class="universe-hub-title">Ma Trận 12 Bộ Môn Thuật Số</h2>
+          <BookOpen size={22} class="text-celestial-purple" />
+          <div>
+            <h2 class="universe-hub-title">Ma Trận 12 Bộ Môn Thuật Số</h2>
+            <p class="universe-hub-sub">Khám phá các phương thức chiêm nghiệm phong thủy & vận mệnh cổ truyền</p>
+          </div>
         </div>
 
-        <div class="universe-categories-grid">
-          {#each systemCategories as cat (cat.category)}
-            <div class="category-block">
-              <div class="category-header">
-                <cat.icon size={16} style="color: {cat.color};" />
-                <span class="category-name">{cat.category}</span>
+        <div class="universe-groups-list">
+          {#each systemGroups as group (group.groupTitle)}
+            <div class="group-accordion-card">
+              <div class="group-card-header">
+                <div class="group-header-left">
+                  <group.icon size={18} style="color: {group.themeColor};" />
+                  <div>
+                    <h3 class="group-title">{group.groupTitle}</h3>
+                    <span class="group-desc">{group.groupDesc}</span>
+                  </div>
+                </div>
+                <span class="group-badge" style="border-color: {group.themeColor}44; color: {group.themeColor};">
+                  {group.groupBadge}
+                </span>
               </div>
-              <div class="category-links">
-                {#each cat.items as item (item.route)}
+
+              <div class="group-items-grid">
+                {#each group.items as item (item.route)}
                   <a href={resolve(item.route as any)} class="system-item-pill">
                     <div class="item-text-group">
                       <span class="item-label">{item.label}</span>
@@ -444,21 +540,21 @@
       </div>
     </section>
 
-    <!-- SECTION 4: 4 LỚP LUẬN GIẢI CHUYÊN SÂU -->
+    <!-- TẦNG 5: PHƯƠNG PHÁP LUẬN ĐA TẦNG & BẢO CHỨNG -->
     <section class="promise-section">
       <div class="section-title-wrap text-center">
         <div class="eyebrow-tag center">
-          <Layers size={14} class="text-gold" />
+          <Layers size={15} class="text-celestial-gold" />
           <span>PHƯƠNG PHÁP LUẬN ĐA TẦNG</span>
         </div>
-        <h2 class="section-heading">Bốn Trọng Tâm Phân Tích Mệnh Lý</h2>
+        <h2 class="section-heading">Bốn Trọng Tâm Luận Giải Mệnh Lý ViOS</h2>
       </div>
 
       <div class="promise-cards-grid">
         {#each promiseCards as card (card.title)}
           <div class="promise-glass-card">
             <div class="promise-icon-wrap">
-              <card.icon size={24} class="text-gold" />
+              <card.icon size={22} class="text-celestial-gold" />
             </div>
             <h3 class="promise-card-title">{card.title}</h3>
             <p class="promise-card-desc">{card.description}</p>
@@ -468,8 +564,13 @@
     </section>
 
     <!-- FOOTER -->
-    <footer class="footer-glass">
+    <footer class="footer-celestial">
       <div class="footer-inner">
+        <div class="footer-brand-summary">
+          <ViOSLogo size="sm" showTagline={false} />
+          <span>ViOS — Hệ Điều Hành Mệnh Lý & Thuật Số AI Toàn Diện</span>
+        </div>
+
         <div class="footer-links">
           <a href={resolve('/terms')}>Điều Khoản Dịch Vụ</a>
           <span class="sep">•</span>
@@ -477,56 +578,100 @@
           <span class="sep">•</span>
           <a href={resolve('/wallet')}>Quy Chế Ví XU</a>
         </div>
+
         <div class="footer-copy">
-          &copy; {new Date().getFullYear()} Tử Vi Toàn Tập (ViOS). All rights reserved.
+          &copy; {new Date().getFullYear()} ViOS (Tử Vi Toàn Tập). All rights reserved.
         </div>
       </div>
     </footer>
   </div>
-
-  <MobileBottomNav />
 </main>
 
 <style>
-  .dashboard-page {
+  /* ---------------------------------------------------------------------------
+     CELESTIAL LUXURY PAGE CONTAINER & AMBIENCE
+     --------------------------------------------------------------------------- */
+  .celestial-page {
+    position: relative;
     min-height: 100dvh;
     background:
-      radial-gradient(ellipse 70% 45% at 12% 0%, rgba(212, 175, 55, 0.08), transparent 58%),
-      radial-gradient(ellipse 55% 40% at 88% 8%, rgba(192, 132, 252, 0.1), transparent 52%),
-      linear-gradient(180deg, #120f20 0%, #090810 100%);
+      radial-gradient(ellipse 75% 50% at 15% 0%, rgba(212, 175, 55, 0.1), transparent 60%),
+      radial-gradient(ellipse 60% 45% at 85% 10%, rgba(168, 85, 247, 0.12), transparent 55%),
+      linear-gradient(180deg, #110d22 0%, #0a0815 50%, #06050e 100%);
     color: var(--color-text-primary);
     overflow-x: hidden;
   }
 
-  :global([data-theme="light"]) .dashboard-page {
+  :global([data-theme="light"]) .celestial-page {
     background:
-      radial-gradient(ellipse 70% 45% at 12% 0%, rgba(212, 175, 55, 0.06), transparent 58%),
-      radial-gradient(ellipse 55% 40% at 88% 8%, rgba(192, 132, 252, 0.05), transparent 52%),
-      linear-gradient(180deg, #faf9f6 0%, #f3f0e8 100%);
+      radial-gradient(ellipse 75% 50% at 15% 0%, rgba(212, 175, 55, 0.08), transparent 60%),
+      radial-gradient(ellipse 60% 45% at 85% 10%, rgba(168, 85, 247, 0.06), transparent 55%),
+      linear-gradient(180deg, #faf8f5 0%, #f4f0e6 100%);
+  }
+
+  /* Stardust Layer Effect */
+  .celestial-stardust-bg {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .aurora-glow {
+    position: absolute;
+    width: 60vw;
+    height: 60vw;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.25;
+    transform: translateZ(0);
+  }
+
+  .glow-gold {
+    top: -20vw;
+    left: -10vw;
+    background: radial-gradient(circle, #d4af37, transparent 70%);
+  }
+
+  .glow-purple {
+    top: 5vw;
+    right: -15vw;
+    background: radial-gradient(circle, #a855f7, transparent 70%);
   }
 
   .shell {
+    position: relative;
+    z-index: 1;
     box-sizing: border-box;
     width: min(100%, 1240px);
     margin: 0 auto;
-    padding: var(--space-md) var(--space-lg) 80px;
+    padding: var(--space-md) var(--space-lg) 90px;
     display: flex;
     flex-direction: column;
-    gap: 48px;
+    gap: 52px;
   }
 
-  /* TOP NAVIGATION HUD */
-  .topbar-glass {
+  /* ---------------------------------------------------------------------------
+     TOPBAR HUD
+     --------------------------------------------------------------------------- */
+  .topbar-celestial {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px var(--space-lg);
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid var(--overlay-border);
+    padding: 10px 20px;
+    background: rgba(22, 17, 38, 0.75);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(212, 175, 55, 0.22);
     border-radius: var(--radius-pill);
-    box-shadow: var(--shadow-card);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  :global([data-theme="light"]) .topbar-celestial {
+    background: rgba(255, 255, 255, 0.82);
+    border-color: rgba(212, 175, 55, 0.25);
+    box-shadow: 0 10px 30px rgba(212, 175, 55, 0.1);
   }
 
   .brand-link {
@@ -536,14 +681,15 @@
     text-decoration: none;
   }
 
-  .version-tag {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 6px;
+  .vios-badge {
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    padding: 2px 7px;
     border-radius: var(--radius-pill);
-    background: rgba(212, 175, 55, 0.15);
-    color: #d4af37;
-    border: 1px solid rgba(212, 175, 55, 0.3);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(212, 175, 55, 0.1));
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.35);
   }
 
   .top-links {
@@ -552,7 +698,7 @@
     gap: 6px;
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 820px) {
     .top-links {
       display: flex;
     }
@@ -569,8 +715,8 @@
   }
 
   .nav-btn:hover {
-    background: var(--overlay-ink-wash);
-    color: var(--color-text-primary);
+    background: rgba(212, 175, 55, 0.1);
+    color: #ffd700;
   }
 
   .session-actions {
@@ -579,37 +725,64 @@
     gap: 10px;
   }
 
-  .wallet-pill {
+  .wallet-pill-luxury {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
     border-radius: var(--radius-pill);
-    background: rgba(212, 175, 55, 0.12);
-    border: 1px solid rgba(212, 175, 55, 0.25);
-    color: #d4af37;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(212, 175, 55, 0.12) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.45);
+    color: #ffd700;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 750;
     text-decoration: none;
-    transition: transform 0.15s ease;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.2);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .wallet-pill:hover {
+  .wallet-pill-luxury:hover {
     transform: translateY(-1px);
+    border-color: #ffd700;
+    box-shadow: 0 0 18px rgba(212, 175, 55, 0.4);
   }
 
-  .btn-signin {
+  .coin-icon {
+    color: #ffd700;
+    filter: drop-shadow(0 0 4px #ffd700);
+  }
+
+  .gift-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 9px;
+  }
+
+  .btn-signin-luxury {
     padding: 6px 16px;
     border-radius: var(--radius-pill);
-    background: var(--color-accent-primary);
-    color: var(--color-text-on-primary);
+    background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);
+    color: #100c22;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 800;
     text-decoration: none;
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);
+    transition: all 0.2s ease;
+  }
+
+  .btn-signin-luxury:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(212, 175, 55, 0.5);
   }
 
   .user-email-tag {
-    max-width: 140px;
+    max-width: 130px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -625,7 +798,7 @@
   }
 
   .btn-icon-link:hover {
-    color: var(--color-text-primary);
+    color: #ffd700;
   }
 
   .btn-signout {
@@ -643,13 +816,15 @@
     color: var(--color-text-primary);
   }
 
-  /* HERO SECTION */
+  /* ---------------------------------------------------------------------------
+     HERO SECTION
+     --------------------------------------------------------------------------- */
   .hero-section {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+    grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
     gap: clamp(32px, 5vw, 64px);
     align-items: center;
-    padding: 20px 0;
+    padding: 16px 0;
   }
 
   @media (max-width: 980px) {
@@ -665,31 +840,35 @@
     gap: 20px;
   }
 
-  .hero-badge {
+  .hero-eyebrow-pill {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 4px 12px;
     border-radius: var(--radius-pill);
-    background: rgba(212, 175, 55, 0.12);
-    border: 1px solid rgba(212, 175, 55, 0.25);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(212, 175, 55, 0.08));
+    border: 1px solid rgba(255, 215, 0, 0.3);
     font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-    color: #d4af37;
+    font-weight: 850;
+    letter-spacing: 0.06em;
+    color: #ffd700;
   }
 
   .hero-title {
     margin: 0;
     font-family: var(--font-serif);
-    font-size: clamp(34px, 4.5vw, 54px);
-    font-weight: 800;
+    font-size: clamp(34px, 4.2vw, 54px);
+    font-weight: 850;
     line-height: 1.12;
     letter-spacing: -0.01em;
+    background: linear-gradient(135deg, #ffffff 30%, #fef08a 70%, #d4af37 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  .gradient-gold {
-    background: linear-gradient(135deg, #fce99f 0%, #d4af37 60%, #b8860b 100%);
+  :global([data-theme="light"]) .hero-title {
+    background: linear-gradient(135deg, #110d22 30%, #996515 80%, #7a4f0b 100%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -699,7 +878,7 @@
     margin: 0;
     max-width: 580px;
     font-size: 16px;
-    line-height: 1.6;
+    line-height: 1.65;
     color: var(--color-text-secondary);
   }
 
@@ -711,47 +890,68 @@
     margin-top: 6px;
   }
 
-  .btn-hero-primary {
+  .btn-cta-gold-luxury {
+    position: relative;
+    overflow: hidden;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    min-height: 48px;
-    padding: 0 24px;
+    min-height: 50px;
+    padding: 0 26px;
     border-radius: var(--radius-pill);
-    background: linear-gradient(135deg, #fce99f 0%, #d4af37 100%);
-    color: #0f0c1b;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: linear-gradient(135deg, #fff7c2 0%, #ffd700 35%, #d4af37 70%, #aa7c11 100%);
+    color: #100c22;
+    border: 1px solid rgba(255, 255, 255, 0.4);
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 850;
     cursor: pointer;
-    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.35);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 28px rgba(212, 175, 55, 0.42);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .btn-hero-primary:hover {
+  .btn-cta-gold-luxury:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(212, 175, 55, 0.5);
+    box-shadow: 0 14px 36px rgba(212, 175, 55, 0.6);
   }
 
-  .btn-hero-secondary {
+  .cta-shimmer {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transform: skewX(-20deg);
+    animation: shimmerGlow 3.5s infinite;
+  }
+
+  @keyframes shimmerGlow {
+    0% { left: -100%; }
+    40% { left: 160%; }
+    100% { left: 160%; }
+  }
+
+  .btn-cta-secondary {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    min-height: 48px;
-    padding: 0 20px;
+    min-height: 50px;
+    padding: 0 22px;
     border-radius: var(--radius-pill);
-    background: var(--glass-bg);
-    border: 1px solid var(--overlay-border);
+    background: rgba(26, 20, 48, 0.65);
+    border: 1px solid rgba(212, 175, 55, 0.25);
     color: var(--color-text-primary);
     font-size: 14px;
     font-weight: 700;
     text-decoration: none;
+    backdrop-filter: blur(14px);
     transition: all 0.2s ease;
   }
 
-  .btn-hero-secondary:hover {
-    background: var(--overlay-ink-wash);
-    border-color: var(--overlay-border-strong);
+  .btn-cta-secondary:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: rgba(212, 175, 55, 0.5);
+    color: #ffd700;
     transform: translateY(-1px);
   }
 
@@ -761,7 +961,7 @@
     gap: 18px;
     margin-top: 8px;
     padding-top: 18px;
-    border-top: 1px solid var(--overlay-border);
+    border-top: 1px solid rgba(212, 175, 55, 0.18);
   }
 
   .trust-item {
@@ -769,11 +969,13 @@
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 650;
     color: var(--color-text-secondary);
   }
 
-  /* CELESTIAL ASTRO DIAL */
+  /* ---------------------------------------------------------------------------
+     CELESTIAL ASTRO DIAL (Thiên Bàn 12 Cung)
+     --------------------------------------------------------------------------- */
   .hero-dial-wrapper {
     display: flex;
     flex-direction: column;
@@ -783,38 +985,38 @@
 
   .celestial-astro-dial {
     position: relative;
-    width: min(100%, 380px);
+    width: min(100%, 390px);
     aspect-ratio: 1;
     display: grid;
     place-items: center;
     border-radius: 50%;
     background:
-      radial-gradient(circle at center, rgba(212, 175, 55, 0.15) 0%, rgba(192, 132, 252, 0.08) 45%, transparent 70%);
-    box-shadow: 0 0 50px rgba(212, 175, 55, 0.12);
+      radial-gradient(circle at center, rgba(212, 175, 55, 0.18) 0%, rgba(168, 85, 247, 0.1) 45%, transparent 72%);
+    box-shadow: 0 0 60px rgba(212, 175, 55, 0.18);
   }
 
-  .dial-outer-ring {
+  .dial-outer-orbit {
     position: absolute;
     inset: 0;
-    border: 2px dashed rgba(212, 175, 55, 0.35);
+    border: 2px dashed rgba(212, 175, 55, 0.4);
     border-radius: 50%;
-    animation: rotateAstro 80s linear infinite;
+    animation: rotateAstro 75s linear infinite;
   }
 
   .dial-zodiac-ring {
     position: absolute;
     inset: 12%;
-    border: 1px solid rgba(192, 132, 252, 0.3);
+    border: 1px solid rgba(168, 85, 247, 0.35);
     border-radius: 50%;
-    animation: rotateAstroReverse 60s linear infinite;
+    animation: rotateAstroReverse 55s linear infinite;
   }
 
   .zodiac-node {
     position: absolute;
     font-size: 11px;
-    font-weight: 800;
-    color: #d4af37;
-    text-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+    font-weight: 850;
+    color: #ffd700;
+    text-shadow: 0 0 8px rgba(212, 175, 55, 0.7);
   }
 
   .pos-0 { top: 4px; left: calc(50% - 8px); }
@@ -836,18 +1038,38 @@
     display: grid;
     place-items: center;
     border-radius: 50%;
-    background: radial-gradient(circle, #251d38 0%, #0d0a17 100%);
-    border: 2px solid rgba(212, 175, 55, 0.5);
-    box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.4), 0 0 30px rgba(192, 132, 252, 0.3);
+    background: radial-gradient(circle, #2a1f42 0%, #0e0a1b 100%);
+    border: 2px solid rgba(212, 175, 55, 0.6);
+    box-shadow: inset 0 0 24px rgba(212, 175, 55, 0.45), 0 0 35px rgba(168, 85, 247, 0.35);
   }
 
   .taiji-symbol {
-    width: 50px;
-    height: 50px;
+    position: relative;
+    width: 54px;
+    height: 54px;
     border-radius: 50%;
-    background: linear-gradient(180deg, #fce99f 50%, #120f20 50%);
-    border: 1px solid rgba(212, 175, 55, 0.6);
-    box-shadow: 0 0 16px rgba(212, 175, 55, 0.5);
+    background: linear-gradient(180deg, #ffd700 50%, #150f29 50%);
+    border: 1.5px solid rgba(212, 175, 55, 0.8);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+    animation: rotateAstro 25s linear infinite;
+  }
+
+  .taiji-dot {
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    left: calc(50% - 3.5px);
+  }
+
+  .dot-top {
+    top: 11px;
+    background: #150f29;
+  }
+
+  .dot-bottom {
+    bottom: 11px;
+    background: #ffd700;
   }
 
   @keyframes rotateAstro {
@@ -868,11 +1090,11 @@
     gap: 6px;
     padding: 4px 10px;
     border-radius: var(--radius-pill);
-    background: var(--glass-bg-strong);
+    background: rgba(26, 20, 48, 0.85);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    border: 1px solid var(--overlay-border-strong);
-    box-shadow: var(--shadow-card);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
     font-size: 11px;
   }
 
@@ -880,11 +1102,11 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #d4af37;
-    box-shadow: 0 0 6px #d4af37;
+    background: #ffd700;
+    box-shadow: 0 0 8px #ffd700;
   }
 
-  .tag-menh { top: 6%; left: 8%; color: #d4af37; }
+  .tag-menh { top: 6%; left: 8%; color: #ffd700; }
   .tag-quan { top: 10%; right: 4%; color: #c084fc; }
   .tag-tai { bottom: 8%; left: 10%; color: #38bdf8; }
   .tag-di { bottom: 12%; right: 6%; color: #10b981; }
@@ -892,32 +1114,41 @@
   .dial-features-bar {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    width: min(100%, 380px);
+    gap: 10px;
+    width: min(100%, 390px);
   }
 
   .feat-pill {
     display: flex;
-    flex-direction: column;
-    padding: 8px 12px;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
     border-radius: var(--radius-md);
-    background: var(--glass-bg);
-    border: 1px solid var(--overlay-border);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(26, 20, 48, 0.65);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
   }
 
-  .feat-pill strong {
-    font-size: 12px;
+  .feat-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .feat-info strong {
+    font-size: 11px;
+    font-weight: 750;
     color: var(--color-text-primary);
   }
 
-  .feat-pill span {
-    font-size: 11px;
+  .feat-info small {
+    font-size: 10px;
     color: var(--color-text-muted);
   }
 
-  /* SECTION 2: BENTO GRID AI TOOLS */
+  /* ---------------------------------------------------------------------------
+     TẦNG 2: BENTO GRID AI TOOLS
+     --------------------------------------------------------------------------- */
   .bento-section {
     display: flex;
     flex-direction: column;
@@ -940,23 +1171,27 @@
     align-items: center;
     gap: 6px;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 850;
     letter-spacing: 0.06em;
-    color: #d4af37;
+    color: #ffd700;
     text-transform: uppercase;
+  }
+
+  .eyebrow-tag.center {
+    justify-content: center;
   }
 
   .section-heading {
     margin: 0;
     font-family: var(--font-serif);
-    font-size: clamp(26px, 3.5vw, 36px);
-    font-weight: 800;
+    font-size: clamp(26px, 3.4vw, 36px);
+    font-weight: 850;
     color: var(--color-text-primary);
   }
 
   .section-subtext {
     margin: 0;
-    max-width: 600px;
+    max-width: 620px;
     font-size: 15px;
     color: var(--color-text-secondary);
   }
@@ -967,33 +1202,40 @@
     gap: 20px;
   }
 
-  .bento-card {
+  .bento-card-celestial {
     position: relative;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     min-height: 200px;
     padding: 24px;
     border-radius: 20px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(18px) saturate(170%);
-    -webkit-backdrop-filter: blur(18px) saturate(170%);
-    border: 1px solid var(--overlay-border);
-    box-shadow: var(--shadow-card);
+    background: rgba(24, 18, 44, 0.72);
+    backdrop-filter: blur(20px) saturate(170%);
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
     text-decoration: none;
     color: var(--color-text-primary);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .bento-card:hover {
+  :global([data-theme="light"]) .bento-card-celestial {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(212, 175, 55, 0.3);
+    box-shadow: 0 12px 32px rgba(212, 175, 55, 0.08);
+  }
+
+  .bento-card-celestial:hover {
     transform: translateY(-4px);
-    border-color: rgba(212, 175, 55, 0.4);
-    box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.4), 0 0 20px rgba(212, 175, 55, 0.15);
+    border-color: rgba(255, 215, 0, 0.55);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba(212, 175, 55, 0.25);
   }
 
   .bento-highlight {
-    border-color: rgba(212, 175, 55, 0.25);
-    background: radial-gradient(circle at 100% 0%, rgba(212, 175, 55, 0.08), transparent 50%), var(--glass-bg);
+    border-color: rgba(255, 215, 0, 0.35);
+    background: radial-gradient(circle at 100% 0%, rgba(255, 215, 0, 0.12), transparent 50%), rgba(24, 18, 44, 0.8);
   }
 
   .bento-card-top {
@@ -1004,45 +1246,40 @@
 
   .bento-badge {
     font-size: 10px;
-    font-weight: 800;
+    font-weight: 850;
     padding: 3px 8px;
     border-radius: var(--radius-pill);
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
   }
 
   .badge-gold {
-    background: rgba(212, 175, 55, 0.15);
-    color: #d4af37;
-    border: 1px solid rgba(212, 175, 55, 0.3);
+    background: rgba(255, 215, 0, 0.15);
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.35);
   }
 
   .badge-purple {
-    background: rgba(192, 132, 252, 0.15);
+    background: rgba(168, 85, 247, 0.15);
     color: #c084fc;
-    border: 1px solid rgba(192, 132, 252, 0.3);
-  }
-
-  .badge-green {
-    background: rgba(16, 185, 129, 0.15);
-    color: #10b981;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    border: 1px solid rgba(168, 85, 247, 0.35);
   }
 
   .badge-blue {
     background: rgba(56, 189, 248, 0.15);
     color: #38bdf8;
-    border: 1px solid rgba(56, 189, 248, 0.3);
+    border: 1px solid rgba(56, 189, 248, 0.35);
   }
 
   .bento-icon-box {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 12px;
-    background: var(--overlay-ink-wash);
-    color: #d4af37;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    color: #ffd700;
   }
 
   .bento-card-body {
@@ -1055,7 +1292,7 @@
   .bento-title {
     margin: 0;
     font-size: 20px;
-    font-weight: 800;
+    font-weight: 850;
   }
 
   .bento-desc {
@@ -1070,22 +1307,215 @@
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    font-weight: 700;
-    color: #d4af37;
+    font-weight: 750;
+    color: #ffd700;
   }
 
   .arrow-icon {
     transition: transform 0.2s ease;
   }
 
-  .bento-card:hover .arrow-icon {
+  .bento-card-celestial:hover .arrow-icon {
     transform: translateX(4px);
   }
 
-  /* SECTION 3: WORKSPACE & UNIVERSE HUB */
+  /* ---------------------------------------------------------------------------
+     TẦNG 3: THIỆP VÀNG HOÀNG GIA (CONVERSION TEASER PAYWALL)
+     --------------------------------------------------------------------------- */
+  .vip-conversion-section {
+    position: relative;
+    width: 100%;
+  }
+
+  .royal-card {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: clamp(24px, 4vw, 36px);
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(32, 24, 60, 0.85) 0%, rgba(18, 14, 34, 0.95) 100%);
+    border: 1.5px solid rgba(255, 215, 0, 0.38);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), inset 0 0 24px rgba(212, 175, 55, 0.12);
+  }
+
+  :global([data-theme="light"]) .royal-card {
+    background: linear-gradient(135deg, #fffdfa 0%, #f7f3e8 100%);
+    border-color: rgba(212, 175, 55, 0.5);
+    box-shadow: 0 16px 48px rgba(212, 175, 55, 0.15);
+  }
+
+  .royal-badge-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 14px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 215, 0, 0.15);
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: 0.06em;
+    color: #ffd700;
+    width: fit-content;
+  }
+
+  .royal-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+    gap: 32px;
+    align-items: center;
+  }
+
+  @media (max-width: 860px) {
+    .royal-content {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .royal-title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: clamp(22px, 3vw, 30px);
+    font-weight: 850;
+    background: linear-gradient(135deg, #ffffff 0%, #ffd700 80%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  :global([data-theme="light"]) .royal-title {
+    background: linear-gradient(135deg, #110d22 0%, #996515 80%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .royal-sub {
+    margin: 8px 0 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+  }
+
+  .royal-sub strong {
+    color: #ffd700;
+  }
+
+  .royal-perks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .perk-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .royal-action-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+    border-radius: 18px;
+    background: rgba(14, 10, 26, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  :global([data-theme="light"]) .royal-action-card {
+    background: #ffffff;
+    border-color: rgba(212, 175, 55, 0.35);
+  }
+
+  .action-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .action-card-header strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--color-text-primary);
+  }
+
+  .action-card-header small {
+    display: block;
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+
+  .action-buttons-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn-royal-deposit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);
+    color: #100c22;
+    font-size: 14px;
+    font-weight: 850;
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(212, 175, 55, 0.4);
+    transition: all 0.2s ease;
+  }
+
+  .btn-royal-deposit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.55);
+  }
+
+  .btn-royal-checkin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    border-radius: var(--radius-pill);
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: #ffd700;
+    font-size: 13px;
+    font-weight: 750;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-royal-checkin:hover {
+    background: rgba(212, 175, 55, 0.22);
+    border-color: #ffd700;
+  }
+
+  .secure-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+
+  /* ---------------------------------------------------------------------------
+     TẦNG 4: WORKSPACE & UNIVERSE HUB
+     --------------------------------------------------------------------------- */
   .workspace-section {
     display: grid;
-    grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+    grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
     gap: 28px;
     align-items: start;
   }
@@ -1102,24 +1532,40 @@
     gap: 20px;
     padding: 32px;
     border-radius: 24px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(18px) saturate(170%);
-    -webkit-backdrop-filter: blur(18px) saturate(170%);
-    border: 1px solid var(--overlay-border);
-    box-shadow: var(--shadow-card);
+    background: rgba(24, 18, 44, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  :global([data-theme="light"]) .quickform-container {
+    background: rgba(255, 255, 255, 0.85);
   }
 
   .quickform-header {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: 14px;
+  }
+
+  .quickform-icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    flex-shrink: 0;
   }
 
   .quickform-title {
     margin: 0;
     font-family: var(--font-serif);
     font-size: 24px;
-    font-weight: 800;
+    font-weight: 850;
   }
 
   .quickform-sub {
@@ -1134,8 +1580,12 @@
     gap: 20px;
     padding: 24px;
     border-radius: 16px;
-    background: var(--overlay-ink-wash);
-    border: 1px solid var(--overlay-border);
+    background: rgba(14, 10, 26, 0.6);
+    border: 1px solid rgba(212, 175, 55, 0.18);
+  }
+
+  :global([data-theme="light"]) .quickform-action-box {
+    background: rgba(245, 242, 237, 0.7);
   }
 
   .quickform-action-text {
@@ -1145,60 +1595,101 @@
     line-height: 1.6;
   }
 
-  /* UNIVERSE HUB */
+  /* UNIVERSE HUB (3 NHÓM PHỄU) */
   .universe-hub-container {
     display: flex;
     flex-direction: column;
     gap: 20px;
     padding: 32px;
     border-radius: 24px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(18px) saturate(170%);
-    -webkit-backdrop-filter: blur(18px) saturate(170%);
-    border: 1px solid var(--overlay-border);
-    box-shadow: var(--shadow-card);
+    background: rgba(24, 18, 44, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  :global([data-theme="light"]) .universe-hub-container {
+    background: rgba(255, 255, 255, 0.85);
   }
 
   .universe-hub-header {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    align-items: flex-start;
+    gap: 12px;
   }
 
   .universe-hub-title {
     margin: 0;
     font-family: var(--font-serif);
     font-size: 22px;
-    font-weight: 800;
+    font-weight: 850;
   }
 
-  .universe-categories-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  .universe-hub-sub {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+
+  .universe-groups-list {
+    display: flex;
+    flex-direction: column;
     gap: 16px;
   }
 
-  .category-block {
+  .group-accordion-card {
     display: flex;
     flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 16px;
+    background: rgba(14, 10, 26, 0.55);
+    border: 1px solid rgba(212, 175, 55, 0.16);
+  }
+
+  :global([data-theme="light"]) .group-accordion-card {
+    background: rgba(250, 248, 244, 0.8);
+  }
+
+  .group-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .group-header-left {
+    display: flex;
+    align-items: center;
     gap: 10px;
   }
 
-  .category-header {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+  .group-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .group-desc {
+    display: block;
+    font-size: 11px;
     color: var(--color-text-muted);
   }
 
-  .category-links {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+  .group-badge {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    border: 1px solid;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .group-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 8px;
   }
 
   .system-item-pill {
@@ -1207,16 +1698,20 @@
     justify-content: space-between;
     padding: 10px 14px;
     border-radius: var(--radius-md);
-    background: var(--glass-bg);
-    border: 1px solid var(--overlay-border);
+    background: rgba(26, 20, 48, 0.6);
+    border: 1px solid rgba(212, 175, 55, 0.15);
     text-decoration: none;
     color: var(--color-text-primary);
     transition: all 0.2s ease;
   }
 
+  :global([data-theme="light"]) .system-item-pill {
+    background: #ffffff;
+  }
+
   .system-item-pill:hover {
-    background: var(--overlay-ink-wash);
-    border-color: rgba(212, 175, 55, 0.4);
+    background: rgba(212, 175, 55, 0.15);
+    border-color: rgba(255, 215, 0, 0.45);
     transform: translateX(2px);
   }
 
@@ -1228,7 +1723,7 @@
 
   .item-label {
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 750;
   }
 
   .item-desc {
@@ -1241,17 +1736,19 @@
     font-weight: 700;
     padding: 2px 6px;
     border-radius: var(--radius-pill);
-    background: var(--overlay-ink-wash);
-    color: var(--color-text-secondary);
+    background: rgba(255, 215, 0, 0.1);
+    color: #ffd700;
   }
 
   .sidebar-history-wrap {
     margin-top: 12px;
     padding-top: 16px;
-    border-top: 1px solid var(--overlay-border);
+    border-top: 1px solid rgba(212, 175, 55, 0.18);
   }
 
-  /* SECTION 4: PROMISES */
+  /* ---------------------------------------------------------------------------
+     TẦNG 5: PROMISE SECTION
+     --------------------------------------------------------------------------- */
   .promise-section {
     display: flex;
     flex-direction: column;
@@ -1270,17 +1767,21 @@
     gap: 12px;
     padding: 24px;
     border-radius: 20px;
-    background: var(--glass-bg);
+    background: rgba(24, 18, 44, 0.72);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--overlay-border);
-    box-shadow: var(--shadow-card);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
     transition: transform 0.2s ease;
+  }
+
+  :global([data-theme="light"]) .promise-glass-card {
+    background: rgba(255, 255, 255, 0.85);
   }
 
   .promise-glass-card:hover {
     transform: translateY(-2px);
-    border-color: var(--overlay-border-strong);
+    border-color: rgba(255, 215, 0, 0.4);
   }
 
   .promise-icon-wrap {
@@ -1290,13 +1791,14 @@
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: rgba(212, 175, 55, 0.12);
+    background: rgba(212, 175, 55, 0.14);
+    border: 1px solid rgba(212, 175, 55, 0.25);
   }
 
   .promise-card-title {
     margin: 0;
     font-size: 18px;
-    font-weight: 750;
+    font-weight: 800;
   }
 
   .promise-card-desc {
@@ -1306,26 +1808,36 @@
     line-height: 1.5;
   }
 
-  /* FOOTER */
-  .footer-glass {
+  /* ---------------------------------------------------------------------------
+     FOOTER
+     --------------------------------------------------------------------------- */
+  .footer-celestial {
     padding-top: 24px;
-    border-top: 1px solid var(--overlay-border);
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
   }
 
   .footer-inner {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     font-size: 13px;
     color: var(--color-text-muted);
   }
 
-  @media (min-width: 640px) {
+  @media (min-width: 768px) {
     .footer-inner {
       flex-direction: row;
       justify-content: space-between;
     }
+  }
+
+  .footer-brand-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
   }
 
   .footer-links {
@@ -1341,33 +1853,236 @@
   }
 
   .footer-links a:hover {
-    color: #d4af37;
+    color: #ffd700;
   }
 
   .sep {
-    color: var(--overlay-border-strong);
+    color: rgba(212, 175, 55, 0.3);
   }
 
-  .text-gold { color: #d4af37; }
-  .text-purple { color: #c084fc; }
+  .text-celestial-gold { color: #ffd700; }
+  .text-celestial-purple { color: #c084fc; }
 
   @media (max-width: 640px) {
     .shell {
-      padding: var(--space-sm) var(--space-sm) 100px;
+      padding: var(--space-sm) var(--space-sm) 40px;
       gap: 36px;
     }
 
     .hero-title {
-      font-size: 32px;
+      font-size: clamp(26px, 6.5vw, 36px);
+    }
+
+    .hero-cta-group {
+      width: 100%;
+    }
+
+    .btn-cta-gold-luxury,
+    .btn-cta-secondary {
+      width: 100%;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .hero-trust-list {
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-start;
+      width: 100%;
+    }
+
+    .dial-features-bar {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      gap: 8px;
     }
 
     .bento-grid {
       grid-template-columns: 1fr;
     }
 
+    .royal-card {
+      padding: 24px 18px;
+    }
+
+    .royal-action-card {
+      padding: 18px 14px;
+    }
+
+    .btn-royal-deposit,
+    .btn-royal-checkin {
+      width: 100%;
+      justify-content: center;
+    }
+
     .quickform-container,
     .universe-hub-container {
-      padding: 20px;
+      padding: 20px 16px;
+    }
+
+    .group-items-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .topbar-celestial {
+      padding: 8px 12px;
+    }
+
+    .user-email-tag {
+      display: none;
+    }
+
+    .wallet-pill-luxury {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+  }
+
+  @media (max-width: 374px) {
+    .shell {
+      padding: 8px 8px 36px;
+      gap: 28px;
+    }
+
+    .topbar-celestial {
+      padding: 6px 8px;
+    }
+
+    .vios-badge {
+      display: none;
+    }
+
+    .wallet-text {
+      display: none;
+    }
+
+    .wallet-pill-luxury {
+      padding: 6px 8px;
+      gap: 4px;
+    }
+
+    .btn-signin-luxury {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .hero-eyebrow-pill {
+      font-size: 10px;
+      padding: 3px 8px;
+      letter-spacing: 0.03em;
+      max-width: 100%;
+      white-space: normal;
+      text-align: center;
+    }
+
+    .hero-title {
+      font-size: 24px;
+    }
+
+    .hero-description {
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+
+    .btn-cta-gold-luxury {
+      font-size: 13px;
+      padding: 0 12px;
+      min-height: 46px;
+    }
+
+    .btn-cta-secondary {
+      font-size: 13px;
+      padding: 0 12px;
+      min-height: 46px;
+    }
+
+    .celestial-astro-dial {
+      width: 100%;
+      max-width: 290px;
+    }
+
+    .orbit-hud-tag {
+      font-size: 9.5px;
+      padding: 2px 7px;
+      gap: 4px;
+    }
+
+    .hud-dot {
+      width: 5px;
+      height: 5px;
+    }
+
+    .tag-menh { top: 4%; left: 4%; }
+    .tag-quan { top: 6%; right: 2%; }
+    .tag-tai { bottom: 4%; left: 4%; }
+    .tag-di { bottom: 6%; right: 2%; }
+
+    .zodiac-node {
+      font-size: 10px;
+    }
+
+    .royal-card {
+      padding: 16px 12px;
+      gap: 14px;
+    }
+
+    .royal-title {
+      font-size: 19px;
+    }
+
+    .royal-sub {
+      font-size: 13px;
+    }
+
+    .perk-item {
+      font-size: 12px;
+      gap: 6px;
+    }
+
+    .royal-action-card {
+      padding: 14px 10px;
+      gap: 12px;
+    }
+
+    .bento-card-celestial {
+      padding: 16px 14px;
+    }
+
+    .bento-title {
+      font-size: 16px;
+    }
+
+    .bento-desc {
+      font-size: 12.5px;
+    }
+
+    .quickform-container,
+    .universe-hub-container {
+      padding: 16px 12px;
+    }
+
+    .quickform-title,
+    .universe-hub-title {
+      font-size: 18px;
+    }
+
+    .group-card-header {
+      padding: 12px 10px;
+    }
+
+    .group-title {
+      font-size: 14px;
+    }
+
+    .group-desc {
+      font-size: 11px;
+    }
+
+    .system-item-pill {
+      padding: 10px 10px;
     }
   }
 </style>

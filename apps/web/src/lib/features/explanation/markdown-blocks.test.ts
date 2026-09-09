@@ -94,6 +94,63 @@ describe('parseMarkdownBlocks', () => {
     expect(parseMarkdownBlocks(123 as unknown as string)).toEqual([]);
   });
 
+  it('parses blockquotes with >', () => {
+    const blocks = parseMarkdownBlocks('> Thiên cơ **bất khả lộ**, hữu duyên tương ngộ.');
+    expect(blocks).toEqual([
+      {
+        type: 'blockquote',
+        spans: [
+          { text: 'Thiên cơ ', bold: false },
+          { text: 'bất khả lộ', bold: true },
+          { text: ', hữu duyên tương ngộ.', bold: false },
+        ],
+      },
+    ]);
+  });
+
+  it('parses horizontal dividers with --- or ***', () => {
+    const blocks = parseMarkdownBlocks('Đoạn 1\n\n---\n\nĐoạn 2\n\n***');
+    expect(blocks).toEqual([
+      { type: 'paragraph', spans: [{ text: 'Đoạn 1', bold: false }] },
+      { type: 'divider' },
+      { type: 'paragraph', spans: [{ text: 'Đoạn 2', bold: false }] },
+      { type: 'divider' },
+    ]);
+  });
+
+  it('parses markdown tables with headers and rows', () => {
+    const markdown = [
+      '| Cung | Chính Tinh | Cát Hung |',
+      '| --- | --- | --- |',
+      '| Mệnh | **Tử Vi** | Đại Cát |',
+      '| Thân | Thất Sát | Bình Hòa |',
+    ].join('\n');
+
+    const blocks = parseMarkdownBlocks(markdown);
+    expect(blocks).toEqual([
+      {
+        type: 'table',
+        headers: [
+          [{ text: 'Cung', bold: false }],
+          [{ text: 'Chính Tinh', bold: false }],
+          [{ text: 'Cát Hung', bold: false }],
+        ],
+        rows: [
+          [
+            [{ text: 'Mệnh', bold: false }],
+            [{ text: 'Tử Vi', bold: true }],
+            [{ text: 'Đại Cát', bold: false }],
+          ],
+          [
+            [{ text: 'Thân', bold: false }],
+            [{ text: 'Thất Sát', bold: false }],
+            [{ text: 'Bình Hòa', bold: false }],
+          ],
+        ],
+      },
+    ]);
+  });
+
   it('keeps a realistic mixed document in order', () => {
     const markdown = [
       '## Tổng quan',
@@ -102,6 +159,10 @@ describe('parseMarkdownBlocks', () => {
       '',
       '- Điểm mạnh: kiên trì',
       '- Điểm cần lưu ý: nóng vội',
+      '',
+      '> Lời khuyên: Tu thân tích đức.',
+      '',
+      '---',
       '',
       '## Tóm lại',
       'Hãy giữ nhịp ổn định.',
@@ -113,8 +174,11 @@ describe('parseMarkdownBlocks', () => {
       'paragraph',
       'list-item',
       'list-item',
+      'blockquote',
+      'divider',
       'heading',
       'paragraph',
     ]);
   });
 });
+

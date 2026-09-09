@@ -121,6 +121,49 @@ describe('QuotasService (Rules Engine)', () => {
     });
   });
 
+  describe('anonDailyLimit vs dailyLimit (Tách bạch hạn mức)', () => {
+    it('áp dụng anonDailyLimit nghiêm ngặt hơn cho khách ẩn danh, trong khi user đăng nhập dùng dailyLimit', async () => {
+      const { service, registry } = makeService();
+      registry.register({
+        featureKey: 'custom-ai',
+        dailyLimit: 10,
+        anonDailyLimit: 2,
+        dailyErrorMessage: 'Custom AI quota exceeded.',
+      });
+
+      // Khách ẩn danh: chỉ được 2 lần
+      await expect(service.assertCanExecute('custom-ai', 'anon-1', '192.168.1.1', true)).resolves.toBeUndefined();
+      await expect(service.assertCanExecute('custom-ai', 'anon-2', '192.168.1.1', true)).resolves.toBeUndefined();
+      await expect(service.assertCanExecute('custom-ai', 'anon-3', '192.168.1.1', true)).rejects.toThrow(
+        'Custom AI quota exceeded.',
+      );
+
+      // User đã đăng nhập (isAnonymous=false): được tới 10 lần
+      for (let i = 0; i < 10; i++) {
+        await expect(service.assertCanExecute('custom-ai', 'user-vip', '192.168.1.100', false)).resolves.toBeUndefined();
+      }
+      await expect(service.assertCanExecute('custom-ai', 'user-vip', '192.168.1.100', false)).rejects.toThrow(
+        'Custom AI quota exceeded.',
+      );
+    });
+
+    it('chuẩn hóa prefix key cho tính năng ẩn danh mở rộng (anon:featureKey)', async () => {
+      const { service, registry } = makeService();
+      registry.register({
+        featureKey: 'tarot-draw',
+        dailyLimit: 3,
+        dailyErrorMessage: 'Tarot quota exceeded.',
+      });
+
+      await expect(service.assertCanExecute('tarot-draw', 'anon-x', '10.0.99.1', true)).resolves.toBeUndefined();
+      await expect(service.assertCanExecute('tarot-draw', 'anon-x', '10.0.99.1', true)).resolves.toBeUndefined();
+      await expect(service.assertCanExecute('tarot-draw', 'anon-x', '10.0.99.1', true)).resolves.toBeUndefined();
+      await expect(service.assertCanExecute('tarot-draw', 'anon-x', '10.0.99.1', true)).rejects.toThrow(
+        'Tarot quota exceeded.',
+      );
+    });
+  });
+
   describe('Unknown features', () => {
     it('throws error if rule not registered', async () => {
       const { service } = makeService();
@@ -130,3 +173,4 @@ describe('QuotasService (Rules Engine)', () => {
     });
   });
 });
+

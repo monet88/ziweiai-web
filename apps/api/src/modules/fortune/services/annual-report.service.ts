@@ -7,6 +7,7 @@ import {
   type ChartSnapshot,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
+import { assertChartSnapshotEligibleForAi } from '../../../common/entitlement/ai-snapshot-eligibility';
 import { throwQuotaRateLimited } from '../../quotas/quota-http';
 import { assertAnnualReportEnabled } from '../../../common/entitlement/ai-entitlement.guard';
 import { apiEnv } from '../../../config/env';
@@ -39,6 +40,17 @@ export class AnnualReportService {
     private readonly walletEngine: WalletEngineService,
   ) {}
 
+  async getAnnualReport(user: AuthenticatedUser, chartId: string, year?: number): Promise<AnnualReportResponse | null> {
+    const snapshot = await this.loadZiweiSnapshot(user, chartId);
+    const targetYear = year ?? new Date().getFullYear();
+    const cached = await this.annualReportsRepository.findAnnualReportByChartAndYear(user.userId, chartId, targetYear);
+    if (!cached) {
+      return null;
+    }
+    const frame = this.engine.computeAnnualFrame(snapshot, targetYear);
+    return annualReportResponseSchema.parse({ chartId, year: targetYear, frame, markdown: cached.markdown });
+  }
+
   async createAnnualReport(user: AuthenticatedUser, ipAddress: string, chartId: string, year: number): Promise<AnnualReportResponse> {
     const snapshot = await this.loadZiweiSnapshot(user, chartId);
 
@@ -54,6 +66,7 @@ export class AnnualReportService {
     assertAnnualReportEnabled(this.logger);
 
     // GATE 3: Trừ XU cho tính năng premium (Báo cáo năm). Tốn 1 XU.
+    let didDeductXu = false;
     if (!apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
       const success = await this.walletEngine.deductXU(user.userId, 1, 'ai_usage');
       if (!success) {
@@ -63,10 +76,20 @@ export class AnnualReportService {
           'Tính năng Báo cáo năm yêu cầu 1 XU. Vui lòng nạp thêm XU để tiếp tục.'
         );
       }
+      didDeductXu = true;
     }
+
     try {
       await this.quotasService.assertCanExecute('annual-report', user.userId, ipAddress, user.email === null);
     } catch (error) {
+      if (didDeductXu) {
+        try {
+          await this.walletEngine.addXU(user.userId, 1, 'ai_refund');
+          this.logger.log(`Refunded 1 XU to user due to quota error`, { userId: user.userId, chartId });
+        } catch (e) {
+          this.logger.error('Failed to refund XU on quota error', e);
+        }
+      }
       this.logger.warn(`[annual] quota exceeded userId=${user.userId}`);
       throwQuotaRateLimited(error, 'Đã vượt hạn mức báo cáo năm.');
     }
@@ -86,6 +109,14 @@ export class AnnualReportService {
         timeoutMsOverride: apiEnv.AI_ANNUAL_REPORT_TIMEOUT_MS,
       });
     } catch (error) {
+      if (didDeductXu) {
+        try {
+          await this.walletEngine.addXU(user.userId, 1, 'ai_refund');
+          this.logger.log(`Refunded 1 XU to user due to annual-report provider failure`, { userId: user.userId, chartId });
+        } catch (e) {
+          this.logger.error('Failed to refund XU on provider error', e);
+        }
+      }
       if (error instanceof ProviderTimeoutError) {
         throw new ApiErrorHttpException(HttpStatus.GATEWAY_TIMEOUT, 'PROVIDER_TIMEOUT', error.message);
       }
@@ -120,6 +151,7 @@ export class AnnualReportService {
     if (chartRecord.snapshot.chartSystem !== 'zi-wei-dou-shu') {
       throw new ApiErrorHttpException(HttpStatus.BAD_REQUEST, 'INVALID_INPUT', 'Báo cáo năm chỉ áp dụng cho lá số Tử Vi.');
     }
+    assertChartSnapshotEligibleForAi(chartRecord.snapshot);
     return chartRecord.snapshot;
   }
 

@@ -182,14 +182,17 @@
   .tarot-screen {
     min-height: 100dvh;
     overflow-x: hidden;
-    background: var(--color-bg-primary);
-    color: var(--color-text-primary);
+    background:
+      radial-gradient(ellipse 70% 35% at 50% 0%, rgba(212, 175, 55, 0.16), transparent 70%),
+      radial-gradient(ellipse 55% 30% at 85% 15%, rgba(192, 132, 252, 0.15), transparent 60%),
+      linear-gradient(180deg, #090615 0%, #130c2b 30%, #070512 100%);
+    color: #f7eed8;
   }
 
   .shell {
     box-sizing: border-box;
     width: 100%;
-    max-width: 680px;
+    max-width: 720px;
     margin: 0 auto;
     padding: 0 var(--space-lg) var(--space-xxl);
     display: flex;
@@ -201,30 +204,30 @@
     position: relative;
     margin-top: var(--space-lg);
     padding: var(--space-xl) var(--space-lg) var(--space-lg);
-    border-radius: var(--radius-xl);
+    border-radius: 24px;
     text-align: center;
-    background: radial-gradient(circle at 50% 0%, rgba(192, 132, 252, 0.15), transparent 70%),
-                rgba(22, 27, 46, 0.6);
-    border: 1px solid rgba(192, 132, 252, 0.25);
+    background: rgba(22, 16, 42, 0.75);
+    border: 1px solid rgba(212, 175, 55, 0.3);
     backdrop-filter: blur(16px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.6), 0 0 30px rgba(212, 175, 55, 0.12);
   }
 
   .band-back {
     position: absolute;
     top: var(--space-md);
     left: var(--space-md);
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-pill);
-    background: rgba(11, 13, 20, 0.6);
-    color: var(--color-text-primary);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    color: #f7eed8;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .band-back svg {
@@ -233,9 +236,11 @@
   }
 
   .band-back:hover {
-    border-color: #d4af37;
-    background: rgba(212, 175, 55, 0.1);
-    color: #fce99f;
+    border-color: #ffd700;
+    background: rgba(212, 175, 55, 0.2);
+    color: #ffd700;
+    transform: translateX(-2px);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
   }
 
   .band-back:focus-visible {
@@ -244,17 +249,23 @@
   }
 
   .band-eyebrow {
-    margin: 0;
-    color: #c084fc;
-    font-size: 12px;
+    display: inline-flex;
+    margin: 0 auto;
+    padding: 3px 12px;
+    border-radius: 999px;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: #ffd700;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 1px;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 
   .band-title {
-    margin: 8px 0 0;
-    font-size: 28px;
+    margin: 10px 0 0;
+    font-family: var(--font-serif);
+    font-size: clamp(26px, 4vw, 36px);
     font-weight: 800;
     line-height: 1.25;
     background: linear-gradient(135deg, #ffffff 0%, #fce99f 50%, #d4af37 100%);
@@ -265,9 +276,9 @@
 
   .band-sub {
     margin: var(--space-sm) auto 0;
-    max-width: 480px;
-    color: var(--color-text-muted);
-    font-size: 14px;
+    max-width: 520px;
+    color: rgba(226, 216, 184, 0.8);
+    font-size: 14.5px;
     line-height: 1.6;
   }
 
@@ -282,11 +293,13 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-lg);
-    background: rgba(22, 27, 46, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius-xl);
+    background: rgba(22, 16, 42, 0.65);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 20px;
     padding: var(--space-xl);
     backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
   .field {
@@ -583,5 +596,96 @@
       opacity: 1;
       transform: translateY(0) scale(1);
     }
+  }
+
+  /* Đồng bộ Theme Light Hoàng Gia */
+  :global([data-theme="light"]) .tarot-screen {
+    background:
+      radial-gradient(ellipse 75% 50% at 15% 0%, rgba(212, 175, 55, 0.1), transparent 60%),
+      radial-gradient(ellipse 60% 45% at 85% 10%, rgba(168, 85, 247, 0.08), transparent 55%),
+      linear-gradient(180deg, #faf8f5 0%, #f4f0e6 100%);
+    color: #1a162b;
+  }
+
+  :global([data-theme="light"]) .band {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(212, 175, 55, 0.45);
+    box-shadow: 0 16px 45px rgba(212, 175, 55, 0.12);
+  }
+
+  :global([data-theme="light"]) .band-back {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(212, 175, 55, 0.4);
+    color: #78350f;
+  }
+
+  :global([data-theme="light"]) .band-back:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #b45309;
+    color: #451a03;
+  }
+
+  :global([data-theme="light"]) .band-eyebrow {
+    background: rgba(212, 175, 55, 0.18);
+    border-color: rgba(212, 175, 55, 0.5);
+    color: #854d0e;
+  }
+
+  :global([data-theme="light"]) .band-title {
+    background: linear-gradient(135deg, #180d38 0%, #78350f 60%, #b45309 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  :global([data-theme="light"]) .band-sub {
+    color: #57534e;
+  }
+
+  :global([data-theme="light"]) .form,
+  :global([data-theme="light"]) .result {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(212, 175, 55, 0.45);
+    box-shadow: 0 16px 45px rgba(212, 175, 55, 0.12);
+  }
+
+  :global([data-theme="light"]) .field-label {
+    color: #78350f;
+  }
+
+  :global([data-theme="light"]) .question-input {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(212, 175, 55, 0.35);
+    color: #1c1917;
+  }
+
+  :global([data-theme="light"]) .spread-option {
+    background: rgba(248, 246, 240, 0.85);
+    border-color: rgba(212, 175, 55, 0.35);
+    color: #292524;
+  }
+
+  :global([data-theme="light"]) .spread-option:hover {
+    border-color: #b45309;
+    background: rgba(254, 243, 199, 0.6);
+  }
+
+  :global([data-theme="light"]) .card {
+    background: rgba(248, 246, 240, 0.85);
+    border-color: rgba(212, 175, 55, 0.35);
+    color: #1c1917;
+  }
+
+  :global([data-theme="light"]) .card-name {
+    color: #180d38;
+  }
+
+  :global([data-theme="light"]) .reading {
+    background: rgba(248, 246, 240, 0.85);
+    border-color: rgba(212, 175, 55, 0.25);
+  }
+
+  :global([data-theme="light"]) .reading-title {
+    color: #78350f;
   }
 </style>

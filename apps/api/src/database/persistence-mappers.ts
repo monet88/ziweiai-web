@@ -185,7 +185,7 @@ export function toConversationMessageRecord(row: SupabaseRow): ConversationMessa
   });
 }
 
-export function toReferralRecord(row: SupabaseRow): ReferralRecord {
+export function toReferralRecord(row: SupabaseRow, refereeEmailMasked?: string | null): ReferralRecord {
   return referralRecordSchema.parse({
     id: row.id,
     referrerId: row.referrer_id,
@@ -194,6 +194,7 @@ export function toReferralRecord(row: SupabaseRow): ReferralRecord {
     status: row.status,
     createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
     completedAt: normalizePostgresTimestamp(row.completed_at as string | null | undefined),
+    refereeEmailMasked: refereeEmailMasked ?? (row.referee_email_masked as string | null | undefined) ?? null,
   });
 }
 

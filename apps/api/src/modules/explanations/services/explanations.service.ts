@@ -52,6 +52,7 @@ export class ExplanationsService {
 
     const existingRequest = await this.explanationsRepository.findExplanationRequestByIdempotencyKey(user.userId, idempotencyKey);
     let request;
+    let xuDeducted = 0;
 
     if (existingRequest) {
       const resolution = await this.raceController.resolveExistingRequest(
@@ -70,7 +71,7 @@ export class ExplanationsService {
       }
       
       // If claimed (it was failed or stale), pay before generating!
-      await this.billingService.consumeXuIfNeeded(user.userId, input, requiresXu);
+      xuDeducted = await this.billingService.consumeXuIfNeeded(user.userId, input, requiresXu);
       request = resolution.claimedRequest;
       this.logger.log(`Yêu cầu giải thích được tái sử dụng (khôi phục race/idempotency hoặc retry từ failed)`, {
         userId: user.userId,
@@ -78,7 +79,7 @@ export class ExplanationsService {
         palaceScope: input.palaceScope ?? null,
       });
     } else {
-      await this.billingService.consumeXuIfNeeded(user.userId, input, requiresXu);
+      xuDeducted = await this.billingService.consumeXuIfNeeded(user.userId, input, requiresXu);
       const failureRetainsUntil = buildFailedExplanationRetentionTimestamp(new Date());
       request = await this.explanationsRepository.createExplanationRequest({
         ownerUserId: user.userId,
@@ -192,6 +193,14 @@ export class ExplanationsService {
         requestState: 'failed',
         failureRetainsUntil: buildFailedExplanationRetentionTimestamp(new Date()),
       });
+
+      if (xuDeducted > 0) {
+        await this.billingService.refundXu(user.userId, xuDeducted);
+        this.logger.log(`Refunded ${xuDeducted} XU to user due to explanation failure`, {
+          userId: user.userId,
+          requestId: request.id,
+        });
+      }
 
       if (error instanceof ProviderTimeoutError) {
         throw new ApiErrorHttpException(HttpStatus.GATEWAY_TIMEOUT, 'PROVIDER_TIMEOUT', error.message);

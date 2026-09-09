@@ -202,3 +202,48 @@
 - **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 3.1s)`.
 - **Flutter Test Suite**: 47/47 tests passed 100%, bao gồm toàn bộ test suite mới `bazi_screen_test.dart` (2/2 passed).
 
+## Decisions Made During Sprint 48 — Phase 1: Duyên Định Cung Đình (Imperial Compatibility)
+
+### 1. Thuật Toán 4 Trụ Cột Thuần Túy Offline-First
+- **Decision**: Xây dựng `CompatibilityCalculator` chạy 100% thuần Dart trên máy khách, phản hồi tức thì <50ms:
+  - **Ngũ Hành Nạp Âm**: Tra cứu 60 Hoa Giáp và đánh giá tương sinh (+25đ), tương hòa (+21đ), bình hòa (+16đ), tương khắc (+8đ).
+  - **Cung Phi Bát Trạch**: Tính Cung Phi nam nữ chuẩn hóa theo năm sinh âm lịch; kết hợp 64 phối quẻ (Sinh Khí, Diên Niên, Thiên Y, Phục Vị vs Tuyệt Mệnh, Ngũ Quỷ, Lục Sát, Họa Hại).
+  - **Thiên Can Hợp Phối**: Ngũ Hợp (Giáp Kỷ hóa Thổ, Ất Canh hóa Kim...) vs Trực Xung (Giáp Canh, Ất Tân...).
+  - **Địa Chi Tương Phối**: Lục Hợp (+25đ), Tam Hợp (+24đ), Tứ Hành Xung trực xung (+5đ), Lục Hại (+8đ).
+  - **Thang điểm 100 & Thơ Hoàng Gia**: Xếp hạng Cung Đình (Đại Cát, Cát Tường, Thứ Cát, Trắc Trở) và sinh thơ tứ tuyệt ngự phán.
+
+### 2. Thẻ Chia Sẻ Story 9:16 Cung Đình Hoàng Gia (`RoyalCompatibilityCard`)
+- **Decision**: Thiết kế chuẩn tỷ lệ Story 9:16 (`AspectRatio(aspectRatio: 9 / 16)`) phục vụ chia sẻ lên Zalo/Facebook/Instagram Story:
+  - Khung viền thếp vàng cổ phong, hoa văn mây lành 4 góc Cung Đình.
+  - Vòng tròn điểm số trung tâm rực rỡ kèm huy hiệu Ngự Phê.
+  - 4 thanh chỉ số hòa hợp 4 trụ cột có bọc `Expanded` chống RenderFlex overflow.
+  - Con dấu son đỏ Khâm Thiên Giám và QR Code dẫn link tra cứu.
+  - Hỗ trợ `captureCard` tĩnh để render ảnh PNG chất lượng cao (pixelRatio 3.0).
+
+### 3. Giao Diện & Cơ Chế Thu Phí
+- **Decision**: Tra cứu điểm số 4 trụ cột và xuất thẻ 9:16 **hoàn toàn miễn phí**.
+- **Decision**: Luận giải sâu AI độc bản thu phí **15 XU**, trang bị Dialog xác nhận và tự động cập nhật số dư ví `walletBalanceProvider`.
+
+### 4. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 2.5s)`.
+- **Flutter Test Suite**: 85/85 tests passed 100% (tăng từ 77 lên 85 tests), bao gồm 4 unit tests cho Calculator engine và 4 widget tests cho `CompatibilityScreen` và `RoyalCompatibilityCard`.
+
+## Decisions Made During Sprint 48 — Phase 2: Ngự Phán Phòng Toàn Năng (Global AI Divination Chat)
+
+### 1. Kiến Trúc Chat Toàn Năng Độc Lập
+- **Decision**: Tách biệt `divinationChatProvider` khỏi `AssistantPanel` (vốn gắn liền với `chartSnapshotId`). `DivinationChatScreen` là thư phòng chiêm bái độc lập toàn năng, nơi người dùng có thể vấn an Khâm Thiên Giám bất kỳ điều gì: thời vận, công danh, tài lộc, tình cảm, phong thủy, giải mộng.
+- **Decision**: Khởi tạo với lời chào mừng trang trọng từ Khâm Thiên Giám Ngự Bút, tích hợp 5 dải gợi ý Quick Prompts hoàng gia kinh điển.
+- **Decision**: Chi phí cố định **1 XU / câu hỏi**. Nếu số dư ví < 1 XU, hiển thị Dialog cảnh báo nạp XU mà không làm mất nội dung đang nhập. Khi ví đang trong trạng thái loading, provider chủ động await `walletBalanceProvider.future` để tránh phán đoán nhầm số dư là 0.
+
+### 2. Audio Ducking & Đồng Bộ TTS với Zen Soundscape
+- **Decision**: Mở rộng `VoicePlayerState` với thuộc tính `isDucked` và getter `isZenDucked => isZenMode && isPlaying`.
+- **Decision**: Khi giọng ngự phán AI cất lên (`VoiceStatus.playing`), nếu người dùng đang bật Khí Âm Thiền Định (`isZenMode == true`), trạng thái ducking tự động kích hoạt giúp giảm âm lượng nhạc nền thiền và khôi phục lại khi AI ngừng nói.
+- **Decision**: Tích hợp nút nghe đọc `VoicePlayIconButton` cho từng tin nhắn của Khâm Thiên Giám và thanh phát `VoiceAudioPlayerBar` cố định dưới đáy màn hình.
+
+### 3. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 3.8s)`.
+- **Flutter Test Suite**: **93/93 tests passed 100%** (tăng thêm 8 tests từ 85 lên 93 tests), bao gồm:
+  - 2 unit tests cho `DivinationMessage` serialization và 5 categories `kRoyalDivinationPrompts`.
+  - 4 unit tests cho `DivinationChatNotifier` (chào mừng ban đầu, chặn khi thiếu XU, stream khi đủ XU, clear chat).
+  - 2 widget tests cho `DivinationChatScreen` (render UI, prompt chips, input và insufficient coins dialog).
+

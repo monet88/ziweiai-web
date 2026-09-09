@@ -17,6 +17,8 @@ import '../../features/stick/presentation/stick_screen.dart';
 import '../../features/bazi/presentation/bazi_screen.dart';
 import '../../features/dossier/presentation/royal_dossier_screen.dart';
 import '../../features/referral/presentation/referral_screen.dart';
+import '../../features/compatibility/presentation/screens/compatibility_screen.dart';
+import '../../features/divination/presentation/screens/divination_chat_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -24,6 +26,14 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/',
       builder: (context, state) => const HomeScreen(),
+    ),
+    GoRoute(
+      path: '/compatibility',
+      builder: (context, state) => const CompatibilityScreen(),
+    ),
+    GoRoute(
+      path: '/divination-chat',
+      builder: (context, state) => const DivinationChatScreen(),
     ),
     GoRoute(
       path: '/charts/:id',

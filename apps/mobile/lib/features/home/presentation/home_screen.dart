@@ -1197,6 +1197,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
         const SizedBox(height: 12),
 
+        // Duyên Định Cung Đình (Astrological Compatibility)
+        _buildBentoCard(
+          context: context,
+          title: 'Duyên Định Cung Đình',
+          badge: 'HỢP HÔN & TƯƠNG HỢP',
+          badgeColor: AppTheme.cinnabarLight,
+          description: 'Xét hòa hợp tình duyên & làm ăn 2 người theo Nạp Âm, Cung Phi, Can Chi',
+          icon: Icons.favorite,
+          iconGradient: CelestialGradients.cinnabarImperial,
+          onTap: () => context.push('/compatibility'),
+          isHorizontal: true,
+        ),
+
+        const SizedBox(height: 12),
+
+        // Ngự Phán Phòng Toàn Năng (Global AI Divination Chat)
+        _buildBentoCard(
+          context: context,
+          title: 'Ngự Phán Phòng Toàn Năng',
+          badge: 'AI CHIÊM BÁI TOÀN CẢNH',
+          badgeColor: AppTheme.goldBright,
+          description: 'Vấn an Khâm Thiên Giám mọi sự thời vận, công danh sự nghiệp, tài lộc & tình cảm',
+          icon: Icons.auto_awesome,
+          iconGradient: CelestialGradients.imperialGold,
+          onTap: () => context.push('/divination-chat'),
+          isHorizontal: true,
+        ),
+
+        const SizedBox(height: 12),
+
         // Row 5: Wallet History & Records
         _buildBentoCard(
           context: context,

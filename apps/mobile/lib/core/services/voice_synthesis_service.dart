@@ -10,6 +10,7 @@ class VoicePlayerState {
   final String title;
   final double speechRate;
   final bool isZenMode;
+  final bool isDucked;
 
   const VoicePlayerState({
     this.status = VoiceStatus.idle,
@@ -17,11 +18,13 @@ class VoicePlayerState {
     this.title = '',
     this.speechRate = 1.0,
     this.isZenMode = false,
+    this.isDucked = false,
   });
 
   bool get isPlaying => status == VoiceStatus.playing;
   bool get isPaused => status == VoiceStatus.paused;
   bool get isIdle => status == VoiceStatus.idle;
+  bool get isZenDucked => isZenMode && isPlaying;
 
   VoicePlayerState copyWith({
     VoiceStatus? status,
@@ -29,6 +32,7 @@ class VoicePlayerState {
     String? title,
     double? speechRate,
     bool? isZenMode,
+    bool? isDucked,
   }) {
     return VoicePlayerState(
       status: status ?? this.status,
@@ -36,6 +40,7 @@ class VoicePlayerState {
       title: title ?? this.title,
       speechRate: speechRate ?? this.speechRate,
       isZenMode: isZenMode ?? this.isZenMode,
+      isDucked: isDucked ?? (isZenMode ?? this.isZenMode ? (status ?? this.status) == VoiceStatus.playing : false),
     );
   }
 }

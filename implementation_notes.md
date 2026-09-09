@@ -126,4 +126,28 @@
 - **Frontend Web**: 51 test files, 277 tests passed. Svelte-check 0 errors, 0 warnings.
 - **Playwright E2E**: 2 passed (100%) cho `viral-referral-and-turnstile.spec.ts` và 2 passed (100%) cho `anti-cheat-referral.spec.ts`.
 
+## Decisions Made During Sprint 44 — Phase 2: Mobile Royal Edition (Flutter apps/mobile)
+
+### 1. Kiểm soát chiều cao FloatingPillNavBar để khắc phục Hit Test Miss
+- **Decision**: Khi `extendBody: true` được kích hoạt trên `Scaffold`, `FloatingPillNavBar` nằm trong `bottomNavigationBar` không có kích thước ràng buộc dọc cố định, khiến Flutter layout engine mở rộng RenderBox của thanh navigation lên toàn bộ viewport (`800x600`), che phủ toàn bộ sự kiện chạm của các widget phía sau dù chỉ có một phần nhỏ hiển thị ở đáy màn hình.
+- **Decision**: Đặt `SizedBox(height: 60)` bên trong `SafeArea(top: false, child: ...)`. Chiều cao thực tế cố định ở 68.0dp (60dp content + 8dp margin/padding) và neo chuẩn xác ở đáy màn hình `Offset(0.0, 532.0)`.
+
+### 2. Cơ chế hiển thị chi tiết Cung vị (PalaceDetailBottomSheet)
+- **Decision**: Thiết kế Modal Bottom Sheet hoàng gia chuẩn Stitch MCP `4cea86b5`, phân tầng 4 nhóm tinh diệu rõ ràng:
+  - **Chính Tinh Hoàng Triều**: Đi kèm độ sáng đắc hãm (`Miếu`, `Vượng`, `Đắc`, `Hãm`) bằng badge màu sắc quy chuẩn.
+  - **Tứ Hóa Tọa Thủ**: Gắn nhãn badge cung đình chuẩn phong thủy: `Hóa Lộc` (Ngọc bích), `Hóa Quyền` (Vàng kim), `Hóa Khoa` (Lam ngọc), `Hóa Kỵ` (Chu sa).
+  - **Cát Tinh Phước Thiện**: Tông ngọc bích `AppTheme.etherealJade`.
+  - **Sát Tinh & Bại Diệu**: Tông chu sa `AppTheme.cinnabarCrimson`.
+  - **Khâm Thiên Giám Ngự Phê**: Thẻ luận giải tổng quát thời vận cung vị.
+- **Decision**: Nút điều hướng Cung trước/Cung sau và Hoàn tất tra cứu đạt chuẩn tối thiểu 48dp (`AppTheme.touchTargetMin`).
+
+### 3. Hiệu ứng Hào Quang Hoàng Kim trên ZiweiBoard
+- **Decision**: Khi một cung được chạm chọn, viền của cung chuyển sang `AppTheme.goldBright` 2.0px cùng cặp hiệu ứng bóng mờ `BoxShadow` vàng kim (`CelestialShadows.goldGlow`) và tím tinh vân (`nebulaPurple`), giúp người dùng nhận diện ngay cung vị đang xem chi tiết.
+- **Decision**: Tự động mở `PalaceDetailBottomSheet` khi chạm vào cung nếu không truyền custom callback.
+
+### 4. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 2.0s)`.
+- **Flutter Test Suite**: 40/40 tests passed 100%, bao gồm widget test cho `home_flow_test.dart`, `palace_detail_bottom_sheet_test.dart` và `ziwei_board_test.dart`.
+
+
 

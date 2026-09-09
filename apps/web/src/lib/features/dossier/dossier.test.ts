@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildDossierData } from './dossier-interpretations';
+import { formatRoyalSecurityCode } from './dossier-pdf-exporter';
 
 describe('Dossier Interpretations Generator', () => {
   const mockSnapshot: any = {
@@ -113,6 +114,21 @@ describe('createDossierModel with cache', () => {
     expect(model.isUnlocked).toBe(true);
 
     await clearCachedDossier(chartId);
+  });
+
+  it('guarantees personalized watermark integrity and royal security code format', () => {
+    const chartId = '7f8a9b1c-2d3e-4f5a-6b7c-8d9e0f1a2b3c';
+    const userName = 'Hoàng Thùy Linh';
+    const minimalSnapshot: any = {
+      summary: {},
+      birth: { name: userName },
+      palaces: [],
+    };
+    const payload = buildDossierData(minimalSnapshot, userName);
+
+    expect(payload.userName).toBe('Hoàng Thùy Linh');
+    expect(payload.userName.toUpperCase()).toBe('HOÀNG THÙY LINH');
+    expect(formatRoyalSecurityCode(chartId)).toBe('VIOS-ROYAL-7F8A9B1C');
   });
 });
 

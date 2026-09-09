@@ -3,6 +3,7 @@
   import { browser } from '$app/environment';
   import {
     Printer,
+    Download,
     X,
     ChevronLeft,
     ChevronRight,
@@ -14,6 +15,13 @@
   } from 'lucide-svelte';
   import type { ChartSnapshot } from '@ziweiai/contracts';
   import { buildDossierData, type DossierInterpretationPayload } from './dossier-interpretations';
+  import {
+    exportDossierToPdf,
+    triggerDirectDownload,
+    formatRoyalSecurityCode,
+    type DossierExportProgress,
+  } from './dossier-pdf-exporter';
+  import DossierExportProgressModal from './DossierExportProgressModal.svelte';
   import { toast } from '$lib/stores/toast';
 
   interface Props {
@@ -26,11 +34,21 @@
   let { snapshot, chartId, userName = '', onClose }: Props = $props();
 
   const data: DossierInterpretationPayload = $derived(buildDossierData(snapshot, userName));
+  const royalSecurityCode = $derived(formatRoyalSecurityCode(chartId));
 
   let activePageIndex = $state(0);
   let viewMode = $state<'book' | 'scroll'>('book');
   let copied = $state(false);
   const totalPages = 19;
+
+  let isExportingPdf = $state(false);
+  let exportProgress = $state<DossierExportProgress>({
+    current: 0,
+    total: totalPages,
+    percent: 0,
+    stage: '',
+  });
+  let abortController = $state<AbortController | null>(null);
 
   onMount(() => {
     if (!browser) return;
@@ -129,7 +147,77 @@
       toast.show('Không thể sao chép liên kết, vui lòng thử lại.', 'warning');
     }
   }
+
+  async function handleDirectDownload() {
+    if (!browser) return;
+    if (isExportingPdf) return;
+
+    try {
+      isExportingPdf = true;
+      abortController = new AbortController();
+
+      // Thu thập 19 trang DOM A4
+      const pageElements: HTMLElement[] = [];
+      for (let i = 1; i <= totalPages; i++) {
+        const el = document.getElementById(`dossier-page-${i}`);
+        if (el) pageElements.push(el);
+      }
+
+      if (pageElements.length === 0) {
+        throw new Error('Không tìm thấy nội dung 19 trang hồ sơ.');
+      }
+
+      const result = await exportDossierToPdf({
+        pages: pageElements,
+        userName: data.userName,
+        chartId,
+        signal: abortController.signal,
+        onProgress: (p) => {
+          exportProgress = p;
+        },
+      });
+
+      triggerDirectDownload(result.blob, result.fileName);
+      toast.show('👑 Tải Hồ Sơ Mệnh Lý Hoàng Gia thành công!', 'success');
+
+      setTimeout(() => {
+        isExportingPdf = false;
+        abortController = null;
+      }, 800);
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        toast.show('Đã hủy bỏ xuất tệp PDF.', 'info');
+      } else {
+        console.error('Lỗi khi xuất PDF:', err);
+        toast.show(err?.message || 'Có lỗi khi xuất tệp PDF, vui lòng thử lại.', 'danger');
+      }
+      isExportingPdf = false;
+      abortController = null;
+    }
+  }
+
+  function handleCancelExport() {
+    if (abortController) {
+      abortController.abort();
+    }
+  }
 </script>
+
+{#snippet securityWatermark()}
+  <!-- Personalized Security Watermark -->
+  <div class="dossier-watermark" aria-hidden="true">
+    <div class="watermark-center">
+      <span class="watermark-symbol">❖</span>
+      <span class="watermark-text">
+        VIOS BẢO CHỨNG HOÀNG TRIỀU · {data.userName.toUpperCase()} · {royalSecurityCode}
+      </span>
+      <span class="watermark-symbol">❖</span>
+    </div>
+    <div class="watermark-footer-ribbon">
+      <span>BẢN QUYỀN: {data.userName.toUpperCase()} · MÃ BẢO CHỨNG: {royalSecurityCode} · KHÂM THIÊN GIÁM</span>
+    </div>
+  </div>
+{/snippet}
 
 <div class="dossier-overlay" role="dialog" aria-modal="true" aria-labelledby="dossier-modal-title">
   <!-- Screen-only Header Bar -->
@@ -217,6 +305,18 @@
         {/if}
       </button>
 
+      <!-- Direct Download PDF Button -->
+      <button
+        type="button"
+        class="btn-download-pdf"
+        onclick={handleDirectDownload}
+        disabled={isExportingPdf}
+        title="Tải trực tiếp tệp PDF 19 trang vector/raster chất lượng cao về máy"
+      >
+        <Download size={15} />
+        <span class="btn-text-desktop">Tải PDF (.pdf)</span>
+      </button>
+
       <!-- Print Button -->
       <button type="button" class="btn-print-dossier" onclick={handlePrint} title="In ấn hoặc Lưu PDF vector 300 DPI">
         <Printer size={16} />
@@ -269,6 +369,7 @@
       class="dossier-print-container"
       class:mode-book={viewMode === 'book'}
       class:mode-scroll={viewMode === 'scroll'}
+      class:is-exporting-pdf={isExportingPdf}
     >
 
       <!-- ================================================================= -->
@@ -277,6 +378,7 @@
       <section id="dossier-page-1" class="dossier-page page-cover" class:is-active={activePageIndex === 0}>
         <div class="page-border-ornament">
           <div class="inner-frame">
+            {@render securityWatermark()}
             <!-- Imperial Seal Header -->
             <div class="cover-top">
               <div class="seal-mark">✦ VIOS KHÂM THIÊN GIÁM ✦</div>
@@ -351,6 +453,7 @@
       <section id="dossier-page-2" class="dossier-page" class:is-active={activePageIndex === 1}>
         <div class="page-border-ornament">
           <div class="inner-frame page-content">
+            {@render securityWatermark()}
             <header class="page-header">
               <span class="chapter-num">CHƯƠNG I</span>
               <h2 class="page-title">TIÊN THIÊN KHÍ SỐ & BÁT TỰ TỨ TRỤ</h2>
@@ -432,6 +535,7 @@
       <section id="dossier-page-3" class="dossier-page" class:is-active={activePageIndex === 2}>
         <div class="page-border-ornament">
           <div class="inner-frame page-content">
+            {@render securityWatermark()}
             <header class="page-header">
               <span class="chapter-num">CHƯƠNG II</span>
               <h2 class="page-title">TOÀN CẢNH TINH BÀN THIÊN ĐỊA NHÂN</h2>
@@ -499,6 +603,7 @@
         >
           <div class="page-border-ornament">
             <div class="inner-frame page-content">
+              {@render securityWatermark()}
               <header class="page-header">
                 <span class="chapter-num">CHƯƠNG III · CUNG THỨ {pIdx + 1}</span>
                 <h2 class="page-title">
@@ -588,6 +693,7 @@
       <section id="dossier-page-16" class="dossier-page" class:is-active={activePageIndex === 15}>
         <div class="page-border-ornament">
           <div class="inner-frame page-content">
+            {@render securityWatermark()}
             <header class="page-header">
               <span class="chapter-num">CHƯƠNG IV · PHẦN I</span>
               <h2 class="page-title">THẬP NIÊN ĐẠI VẬN & QUỸ ĐẠO VẬN TRÌNH</h2>
@@ -632,6 +738,7 @@
       <section id="dossier-page-17" class="dossier-page" class:is-active={activePageIndex === 16}>
         <div class="page-border-ornament">
           <div class="inner-frame page-content">
+            {@render securityWatermark()}
             <header class="page-header">
               <span class="chapter-num">CHƯƠNG IV · PHẦN II</span>
               <h2 class="page-title">QUỸ ĐẠO HẬU VẬN & THÀNH TOÀN CƠ NGHIỆP</h2>
@@ -671,6 +778,7 @@
       <section id="dossier-page-18" class="dossier-page" class:is-active={activePageIndex === 17}>
         <div class="page-border-ornament">
           <div class="inner-frame page-content">
+            {@render securityWatermark()}
             <header class="page-header">
               <span class="chapter-num">CHƯƠNG V</span>
               <h2 class="page-title">ĐẠI VẬN LƯU NIÊN BÍNH NGỌ (2026)</h2>
@@ -728,6 +836,7 @@
       <section id="dossier-page-19" class="dossier-page page-seal" class:is-active={activePageIndex === 18}>
         <div class="page-border-ornament">
           <div class="inner-frame page-content seal-layout">
+            {@render securityWatermark()}
             <header class="page-header">
               <span class="chapter-num">CHƯƠNG KẾT</span>
               <h2 class="page-title">KIM CHỈ NAM CẢI MỆNH & TRIỆN THƯ HOÀNG GIA</h2>
@@ -800,6 +909,14 @@
 
     </div>
   </main>
+
+  <!-- Export Progress Modal Overlay -->
+  {#if isExportingPdf}
+    <DossierExportProgressModal
+      progress={exportProgress}
+      onCancel={handleCancelExport}
+    />
+  {/if}
 </div>
 
 <style>
@@ -972,6 +1089,33 @@
     transform: translateY(-1px);
   }
 
+  .btn-download-pdf {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #aa821c 0%, #d4af37 50%, #f59e0b 100%);
+    border: 1px solid #fde047;
+    border-radius: 6px;
+    color: #17130e;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 2px 12px rgba(212, 175, 55, 0.4);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-download-pdf:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.6);
+    filter: brightness(1.08);
+  }
+
+  .btn-download-pdf:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   .btn-close-modal {
     background: transparent;
     border: none;
@@ -1037,9 +1181,16 @@
     gap: 40px;
   }
 
-  /* In Book View, hide inactive pages on screen */
-  .dossier-print-container.mode-book .dossier-page:not(.is-active) {
+  /* In Book View, hide inactive pages on screen (unless exporting PDF) */
+  .dossier-print-container.mode-book:not(.is-exporting-pdf) .dossier-page:not(.is-active) {
     display: none !important;
+  }
+
+  /* Khi đang xuất PDF trực tiếp: Hiển thị đầy đủ 19 trang để capture */
+  .dossier-print-container.is-exporting-pdf .dossier-page {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   .dossier-print-container.mode-book .dossier-page.is-active {
@@ -1105,6 +1256,57 @@
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    position: relative;
+  }
+
+  /* =========================================================================
+     WATERMARK BẢO MẬT CÁ NHÂN HÓA (PERSONALIZED SECURITY WATERMARK)
+     ========================================================================= */
+  .dossier-watermark {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    user-select: none;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .watermark-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-25deg);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 3.5px;
+    color: #aa821c;
+    opacity: 0.055;
+    white-space: nowrap;
+  }
+
+  .watermark-symbol {
+    font-size: 16px;
+    color: #d4af37;
+  }
+
+  .watermark-footer-ribbon {
+    position: absolute;
+    bottom: 2.5mm;
+    left: 10mm;
+    right: 10mm;
+    display: flex;
+    justify-content: center;
+    font-size: 7.5px;
+    letter-spacing: 1.5px;
+    color: #8c734b;
+    opacity: 0.42;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-top: 1px dashed rgba(212, 175, 55, 0.25);
+    padding-top: 2px;
   }
 
   /* =========================================================================

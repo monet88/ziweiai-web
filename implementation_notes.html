@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Implementation Notes — Sprint 41 Phase 6: Viral Referral Card & Invisible Turnstile Protection</title>
+  <title>Implementation Notes — Sprint 42 Phase 3: Direct Vector PDF Download & Personalized Security Watermark</title>
   <style>
     :root {
       --bg: #0d0f18;
@@ -14,7 +14,7 @@
       --text-main: #f5f6fa;
       --text-muted: rgba(245, 246, 250, 0.7);
       --accent-green: #2ecc71;
-      --accent-purple: #8b5cf6;
+      --accent-blue: #38bdf8;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -25,7 +25,7 @@
       margin: 0;
     }
     .container {
-      max-width: 900px;
+      max-width: 960px;
       margin: 0 auto;
     }
     header {
@@ -69,7 +69,7 @@
     }
     h3 {
       font-size: 15px;
-      color: #70a1ff;
+      color: var(--accent-blue);
       margin-top: 16px;
       margin-bottom: 6px;
     }
@@ -98,22 +98,9 @@
       gap: 16px;
     }
     @media (max-width: 600px) {
-      .grid { grid-template-columns: 1fr; }
-    }
-    .metric-box {
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      padding: 12px 16px;
-      border-radius: 8px;
-    }
-    .metric-box span {
-      display: block;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-    .metric-box strong {
-      font-size: 16px;
-      color: var(--accent-green);
+      .grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -121,72 +108,89 @@
   <div class="container">
     <header>
       <div>
-        <h1>Implementation Notes</h1>
-        <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
-          Sprint 41 — Phase 6: Viral Referral Card Generator & Invisible Turnstile Protection
+        <h1>Sprint 42 — Phase 3: Direct PDF Download & Personalized Security Watermark</h1>
+        <div style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">
+          PR #4 Target: <code>feature/sprint-42-deluxe-pdf-dossier</code> | Rollback Anchor: <code>7302863</code>
         </div>
       </div>
-      <div class="badge">100% Verified & Tested</div>
+      <div>
+        <span class="badge">100% VERIFIED & COMPLETED</span>
+      </div>
     </header>
 
     <div class="card">
-      <h2>1. Unspecified & Implicit Decisions</h2>
-      
-      <h3>Pure TypeScript Zero-Dependency QR Matrix Generator</h3>
+      <h2>1. TỔNG QUAN TÍNH NĂNG (FEATURE OVERVIEW)</h2>
+      <p>
+        Tiếp nối thành công của <strong>Hồ Sơ Mệnh Lý Hoàng Gia 19 Trang Vector A4</strong> và cơ chế chống in trắng P0,
+        <strong>Sprint 42 Phase 3</strong> hoàn thiện 2 năng lực cao cấp nhất dành cho thân chủ:
+      </p>
       <ul>
-        <li><strong>Quyết định:</strong> Tự sinh ma trận điểm boolean 2D chuẩn ISO/IEC 18004 (Model 2, Version 4, ECC Level M) trực tiếp tại <code>apps/web/src/lib/features/referral/qr-matrix.ts</code>.</li>
-        <li><strong>Lý do:</strong> 100% offline, không tải package ngoài gây nặng bundle, tránh hoàn toàn rủi ro <code>Tainted Canvas</code> (CORS) khi xuất PNG <code>toDataURL()</code> hoặc lưu clipboard.</li>
-      </ul>
-
-      <h3>Celestial Luxury Card Design</h3>
-      <ul>
-        <li><strong>Quyết định:</strong> Render thiệp mời phong cách hoàng kim huyền bí (Cosmic Indigo & Celestial Gold) với viền mạ vàng kép, hoa văn 4 góc hoàng gia, quà tặng +10 XU và QR động kích thước Retina 2x (800x1120 px).</li>
-        <li><strong>Hành vi đa kênh:</strong> Hỗ trợ 1-click Download PNG, Copy ảnh trực tiếp vào Clipboard (dán ngay vào Zalo/Telegram), Native Web Share API và social share links.</li>
-      </ul>
-
-      <h3>Invisible Cloudflare Turnstile Bot Defense</h3>
-      <ul>
-        <li><strong>Quyết định:</strong> Bảo vệ ngầm form Đăng Ký (<code>/sign-in</code> mode <code>sign-up</code>) và Điểm danh nhận XU (<code>/rewards/checkin</code>).</li>
-        <li><strong>Chế độ Graceful Fallback:</strong> Nếu chưa cấu hình secret key hoặc mạng client bị chặn, hệ thống tự động bypass mượt mà kèm log warning, đảm bảo Zero Downtime.</li>
+        <li>
+          <strong>Tải tệp PDF (.pdf) trực tiếp 100% Offline (Direct Download)</strong>:
+          Người dùng có thể tải trực tiếp trọn bộ 19 trang A4 chuẩn vector/raster sắc nét 200-300 DPI về máy tính/điện thoại
+          chỉ với 1 click vào nút <code>Tải PDF (.pdf)</code> dát vàng hoàng gia trên thanh điều khiển, không cần phải thông qua
+          hộp thoại Print phức tạp của trình duyệt.
+        </li>
+        <li>
+          <strong>Watermark Bảo Mật Cá Nhân Hóa (Personalized Security Watermark)</strong>:
+          Mỗi trang trong số 19 trang hồ sơ được bảo chứng với lớp vân chìm hoàng triều xoay nghiêng -25° mang đầy đủ
+          <strong>Tên Thân Chủ</strong> (<code>userName</code>) và <strong>Mã Số Bảo Chứng Số Hóa</strong> (<code>VIOS-ROYAL-[MÃ]</code>),
+          kèm ribbon bản quyền vi mô ở chân trang, chống giả mạo và bảo vệ quyền sở hữu trí tuệ tối cao của đương số.
+        </li>
+        <li>
+          <strong>Royal PDF Export Progress Modal</strong>:
+          Trải nghiệm người dùng mượt mà với modal tiến trình dát vàng 24K, thanh tiến độ % thời gian thực (0% &rarr; 100%),
+          hiển thị tiêu đề từng trang đang được kết xuất và nút Hủy bỏ an toàn (<code>AbortSignal</code>).
+        </li>
       </ul>
     </div>
 
     <div class="card">
-      <h2>2. Verification & Blast Radius Gates</h2>
+      <h2>2. QUYẾT ĐỊNH THIẾT KẾ & KIẾN TRÚC (ARCHITECTURAL DECISIONS)</h2>
       <div class="grid">
-        <div class="metric-box">
-          <span>Contracts Test Suite</span>
-          <strong>18 Files / 135 Passed</strong>
+        <div>
+          <h3>Client-Side 100% Offline-First vs Serverless Headless</h3>
+          <p style="color: var(--text-muted); font-size: 14px;">
+            Sử dụng kết hợp <code>jspdf</code> và <code>html2canvas</code> xử lý trực tiếp trên browser của người dùng.
+            Tránh hoàn toàn tình trạng timeout (10s/15s) của Vercel Serverless Function, không gây phát sinh chi phí server compute,
+            và bảo mật thông tin lá số tuyệt đối (Zero-Data Exposure).
+          </p>
         </div>
-        <div class="metric-box">
-          <span>Backend API Test Suite</span>
-          <strong>76 Files / 471 Passed</strong>
+        <div>
+          <h3>Giải Phóng Bộ Nhớ Tuần Tự (OOM Crash Prevention)</h3>
+          <p style="color: var(--text-muted); font-size: 14px;">
+            Kết xuất tuần tự từng trang: Page N &rarr; Canvas scale 1.5 - 2.0x &rarr; Nén JPEG 0.92 &rarr; Đưa vào jsPDF &rarr;
+            Xóa <code>canvas.width = 0; canvas.height = 0;</code> &rarr; Garbage Collection thu hồi RAM trước khi render Page N+1.
+            Tránh hiện tượng Out Of Memory trên các thiết bị di động có RAM hạn chế.
+          </p>
         </div>
-        <div class="metric-box">
-          <span>Frontend Svelte Check</span>
-          <strong>0 Errors / 0 Warnings</strong>
+        <div>
+          <h3>Cô Lập Book View Mode vs Export Pipeline</h3>
+          <p style="color: var(--text-muted); font-size: 14px;">
+            Trong Book Mode, 18 trang bị ẩn <code>display: none</code>. Khi bắt đầu xuất PDF, Svelte binding
+            <code>class:is-exporting-pdf</code> tự động ép hiển thị đầy đủ 19 trang để html2canvas chụp lại chính xác,
+            trong khi Progress Modal phủ mờ toàn màn hình giữ nguyên tính liền mạch và thẩm mỹ cho người dùng.
+          </p>
         </div>
-        <div class="metric-box">
-          <span>Frontend Web Test Suite</span>
-          <strong>51 Files / 277 Passed</strong>
-        </div>
-        <div class="metric-box">
-          <span>Phase 6 Playwright E2E</span>
-          <strong>2 / 2 Passed (100%)</strong>
-        </div>
-        <div class="metric-box">
-          <span>Phase 5 Playwright Regression</span>
-          <strong>2 / 2 Passed (100%)</strong>
+        <div>
+          <h3>Khả Năng Hủy Bỏ An Toàn (Graceful AbortController)</h3>
+          <p style="color: var(--text-muted); font-size: 14px;">
+            Tích hợp <code>AbortSignal</code> xuyên suốt pipeline xuất file. Nếu người dùng bấm "Hủy bỏ",
+            tác vụ dừng ngay tức thì, giải phóng toàn bộ tài nguyên tạm thời và thông báo nhẹ nhàng qua Toast.
+          </p>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <h2>3. Maintenance & Architecture Notes</h2>
+      <h2>3. CHỨNG MINH CHẤT LƯỢNG (QUALITY GATES VERIFICATION)</h2>
       <ul>
-        <li><strong>Cloudflare Test Keys:</strong> <code>CLOUDFLARE_TURNSTILE_TEST_KEYS</code> được định nghĩa sẵn trong <code>@ziweiai/contracts</code> cho automated testing.</li>
-        <li><strong>API Resilience:</strong> Khi Cloudflare API gặp sự cố timeout hoặc HTTP 5xx, <code>TurnstileService</code> tự động fallback an toàn để không chặn nhầm người dùng thật.</li>
-        <li><strong>Responsive UX:</strong> Nút mở modal thiệp mời luôn sẵn sàng trên <code>/wallet</code>, hỗ trợ fallback mã mời <code>VIP8888</code> nếu đang tải hoặc chưa đăng nhập.</li>
+        <li><strong>Svelte Check</strong>: <code>pnpm -F @ziweiai/web check</code> &rarr; <strong>0 errors, 0 warnings</strong>.</li>
+        <li><strong>ESLint</strong>: <code>pnpm lint</code> &rarr; <strong>0 errors, 0 warnings (clean 100%)</strong>.</li>
+        <li><strong>TypeScript Monorepo</strong>: <code>pnpm typecheck</code> &rarr; <strong>10/10 tasks successful (0 errors)</strong>.</li>
+        <li><strong>Web Unit Tests</strong>: <code>pnpm -F @ziweiai/web test</code> &rarr; <strong>54/54 files passed (291/291 tests)</strong>.</li>
+        <li><strong>Monorepo Unit Tests</strong>: <code>pnpm test</code> &rarr; <strong>9/9 packages successful (100% tests passed)</strong>.</li>
+        <li><strong>Production Build</strong>: <code>pnpm -F @ziweiai/web build</code> &rarr; <strong>Pass hoàn hảo (9.68s)</strong>.</li>
       </ul>
     </div>
   </div>

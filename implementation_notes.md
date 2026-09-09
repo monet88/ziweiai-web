@@ -149,5 +149,20 @@
 - **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 2.0s)`.
 - **Flutter Test Suite**: 40/40 tests passed 100%, bao gồm widget test cho `home_flow_test.dart`, `palace_detail_bottom_sheet_test.dart` và `ziwei_board_test.dart`.
 
+## Decisions Made During Sprint 44 — Phase 2.3: Lục Hào Chiêm Bốc 3D (Stitch d028a9a3)
+
+### 1. Đài Gieo 3 Đồng Xu Khang Hy 3D Flip Physics
+- **Decision**: Tạo mô hình 3 đồng tiền cổ Khang Hy mạ vàng (hình tròn lỗ vuông, chữ Hán 'Khang Hy Thông Bảo' ở mặt ngửa, hoa văn khiên hộ mệnh ở mặt sấp) với hiệu ứng lật đa trục `Matrix4.identity()..setEntry(3, 2, 0.002)..rotateY(angle)` và rung lắc đĩa gấm nhung chu sa hoàng cung.
+- **Decision**: Hiển thị rõ lịch sử và kết quả từng lần gieo: `Ngửa/Sấp` ➜ `Thiếu Dương (7) / Thiếu Âm (8) / Lão Dương (9 - Biến) / Lão Âm (6 - Biến)`.
+
+### 2. Tháp Lục Hào Cổ Phong (Hexagram Stupa)
+- **Decision**: Vẽ 6 vạch hào từ dưới lên trên (Sơ Hào đến Thượng Hào) theo đúng dịch lý tiên thiên: Hào Dương liền vàng kim (`goldBright`), Hào Âm đứt ngọc bích (`etherealJade`), và Hào Biến (động) phát quang chu sa (`cinnabarLight`).
+- **Decision**: Thẻ kết quả quẻ chia 2 cột: Quẻ Chủ (Tiên Thiên) và Quẻ Biến (Hậu Thiên) đối xứng, tích hợp TTS `VoicePlayIconButton`.
+
+### 3. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 3.1s)`.
+- **Flutter Test Suite**: 43/43 tests passed 100%, bổ sung test suite `iching_screen_test.dart` đạt 3/3 tests pass tuyệt đối.
+
+
 
 

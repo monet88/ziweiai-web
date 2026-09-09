@@ -85,5 +85,84 @@ class ApiClient {
       rethrow;
     }
   }
+
+  // --- Dossier 19-Page Endpoints ---
+  Future<Map<String, dynamic>> getDossierStatus(String chartId) async {
+    try {
+      final response = await _dio.get('/charts/$chartId/dossier/status');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> unlockDossier(String chartId) async {
+    try {
+      final response = await _dio.post('/charts/$chartId/dossier/unlock');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // --- IChing Lục Hào Endpoints ---
+  Future<Map<String, dynamic>> drawIChing({
+    required String question,
+    required List<int> castArray,
+  }) async {
+    try {
+      final response = await _dio.post('/draws/iching', data: {
+        'question': question,
+        'cast_array': castArray,
+      });
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // --- Stick Linh Xăm Quan Thánh Endpoints ---
+  Future<Map<String, dynamic>> drawStick({
+    required String question,
+    int? seed,
+  }) async {
+    try {
+      final response = await _dio.post('/draws/stick', data: {
+        'question': question,
+        'seed': ?seed,
+      });
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // --- Charts & History Endpoints ---
+  Future<Map<String, dynamic>> getHistory({int limit = 20}) async {
+    try {
+      final response = await _dio.get('/history', queryParameters: {'limit': limit});
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getChartDetail(String chartId) async {
+    try {
+      final response = await _dio.get('/charts/$chartId');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> createChart(Map<String, dynamic> chartInput) async {
+    try {
+      final response = await _dio.post('/charts', data: chartInput);
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 

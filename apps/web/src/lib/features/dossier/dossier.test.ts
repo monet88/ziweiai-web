@@ -88,3 +88,31 @@ describe('Dossier Interpretations Generator', () => {
     expect(payload.yearly2026.analysis).toBeDefined();
   });
 });
+
+import { createDossierModel } from './dossier-model.svelte';
+import { setCachedDossier, clearCachedDossier } from './dossier-cache';
+
+describe('createDossierModel with cache', () => {
+  it('retrieves unlocked status from local cache without needing access token', async () => {
+    const chartId = 'cached-chart-offline-test';
+    await setCachedDossier(chartId, { userName: 'Tiêu Phong' });
+
+    const mockAuth: any = {
+      getAccessToken: () => null,
+      isAnonymous: true,
+      user: null,
+    };
+
+    const model = createDossierModel({
+      auth: mockAuth,
+      getChartId: () => chartId,
+    });
+
+    const status = await model.checkStatus();
+    expect(status).toBe(true);
+    expect(model.isUnlocked).toBe(true);
+
+    await clearCachedDossier(chartId);
+  });
+});
+

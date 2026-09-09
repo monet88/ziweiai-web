@@ -1,6 +1,17 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { browser } from '$app/environment';
-  import { Printer, X, ChevronLeft, ChevronRight, Award } from 'lucide-svelte';
+  import {
+    Printer,
+    X,
+    ChevronLeft,
+    ChevronRight,
+    Award,
+    BookOpen,
+    ScrollText,
+    Share2,
+    Check,
+  } from 'lucide-svelte';
   import type { ChartSnapshot } from '@ziweiai/contracts';
   import { buildDossierData, type DossierInterpretationPayload } from './dossier-interpretations';
   import { toast } from '$lib/stores/toast';
@@ -17,7 +28,34 @@
   const data: DossierInterpretationPayload = $derived(buildDossierData(snapshot, userName));
 
   let activePageIndex = $state(0);
+  let viewMode = $state<'book' | 'scroll'>('book');
+  let copied = $state(false);
   const totalPages = 19;
+
+  onMount(() => {
+    if (!browser) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (viewMode === 'book') {
+        if (e.key === 'ArrowLeft' && activePageIndex > 0) {
+          scrollToPage(activePageIndex - 1);
+        } else if (e.key === 'ArrowRight' && activePageIndex < totalPages - 1) {
+          scrollToPage(activePageIndex + 1);
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  });
 
   function handlePrint() {
     if (!browser) return;
@@ -28,11 +66,18 @@
   }
 
   function scrollToPage(index: number) {
-    activePageIndex = index;
+    activePageIndex = Math.max(0, Math.min(totalPages - 1, index));
     if (!browser) return;
-    const el = document.getElementById(`dossier-page-${index + 1}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (viewMode === 'scroll') {
+      const el = document.getElementById(`dossier-page-${activePageIndex + 1}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else {
+      const scrollContainer = document.querySelector('.dossier-document-scroll');
+      if (scrollContainer) {
+        scrollContainer.scrollTop = 0;
+      }
     }
   }
 
@@ -41,6 +86,35 @@
     if (!browser) return '';
     return `${window.location.origin}/charts/${chartId}`;
   });
+
+  async function handleShare() {
+    if (!browser) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Hồ Sơ Mệnh Lý Hoàng Gia - ${data.userName}`,
+          text: `Tra cứu Hồ Sơ Mệnh Lý Hoàng Gia Khâm Thiên Giám của ${data.userName} trên ViOS`,
+          url: qrVerificationUrl,
+        });
+        toast.show('✨ Đã mở chia sẻ thành công!', 'success');
+        return;
+      } catch {
+        // User dismissed
+      }
+    }
+
+    // Fallback to clipboard
+    try {
+      await navigator.clipboard.writeText(qrVerificationUrl);
+      copied = true;
+      toast.show('✨ Đã sao chép liên kết bảo chứng hồ sơ vào bộ nhớ tạm!', 'success');
+      setTimeout(() => {
+        copied = false;
+      }, 3000);
+    } catch {
+      toast.show('Không thể sao chép liên kết, vui lòng thử lại.', 'warning');
+    }
+  }
 </script>
 
 <div class="dossier-overlay" role="dialog" aria-modal="true" aria-labelledby="dossier-modal-title">
@@ -60,7 +134,7 @@
         type="button"
         class="nav-btn"
         disabled={activePageIndex === 0}
-        onclick={() => scrollToPage(Math.max(0, activePageIndex - 1))}
+        onclick={() => scrollToPage(activePageIndex - 1)}
         aria-label="Trang trước"
       >
         <ChevronLeft size={16} />
@@ -72,7 +146,7 @@
         type="button"
         class="nav-btn"
         disabled={activePageIndex === totalPages - 1}
-        onclick={() => scrollToPage(Math.min(totalPages - 1, activePageIndex + 1))}
+        onclick={() => scrollToPage(activePageIndex + 1)}
         aria-label="Trang tiếp"
       >
         <ChevronRight size={16} />
@@ -97,25 +171,96 @@
     </div>
 
     <div class="bar-right">
-      <button type="button" class="btn-print-dossier" onclick={handlePrint} title="In ấn hoặc Lưu PDF vector 300 DPI">
-        <Printer size={16} />
-        <span>In / Lưu PDF (A4)</span>
+      <!-- Toggle View Mode Button -->
+      <button
+        type="button"
+        class="btn-util-dossier"
+        onclick={() => (viewMode = viewMode === 'book' ? 'scroll' : 'book')}
+        title={viewMode === 'book' ? 'Chuyển sang chế độ cuộn liên tục' : 'Chuyển sang chế độ lật từng trang (Sách)'}
+      >
+        {#if viewMode === 'book'}
+          <ScrollText size={15} />
+          <span class="btn-text-desktop">Cuộn liên tục</span>
+        {:else}
+          <BookOpen size={15} />
+          <span class="btn-text-desktop">Lật từng trang</span>
+        {/if}
       </button>
 
-      <button type="button" class="btn-close-modal" onclick={onClose} aria-label="Đóng hồ sơ">
+      <!-- Share / Copy Link Button -->
+      <button
+        type="button"
+        class="btn-util-dossier"
+        onclick={handleShare}
+        title="Sao chép liên kết bảo chứng lá số trực tuyến"
+      >
+        {#if copied}
+          <Check size={15} class="text-emerald-400" />
+          <span class="btn-text-desktop text-emerald-400">Đã chép link</span>
+        {:else}
+          <Share2 size={15} />
+          <span class="btn-text-desktop">Chia sẻ</span>
+        {/if}
+      </button>
+
+      <!-- Print Button -->
+      <button type="button" class="btn-print-dossier" onclick={handlePrint} title="In ấn hoặc Lưu PDF vector 300 DPI">
+        <Printer size={16} />
+        <span class="btn-text-desktop">In / Lưu PDF</span>
+      </button>
+
+      <!-- Close Button -->
+      <button type="button" class="btn-close-modal" onclick={onClose} aria-label="Đóng hồ sơ (Esc)">
         <X size={20} />
       </button>
+    </div>
+
+    <!-- Golden Reading Progress Bar -->
+    <div class="reading-progress-track">
+      <div
+        class="reading-progress-fill"
+        style="width: {((activePageIndex + 1) / totalPages) * 100}%"
+      ></div>
     </div>
   </header>
 
   <!-- Scrollable Document Container -->
   <main class="dossier-document-scroll">
-    <div class="dossier-print-container">
+    {#if viewMode === 'book'}
+      {#if activePageIndex > 0}
+        <button
+          type="button"
+          class="floating-book-nav prev no-print"
+          onclick={() => scrollToPage(activePageIndex - 1)}
+          title="Trang trước (←)"
+          aria-label="Trang trước"
+        >
+          <ChevronLeft size={28} />
+        </button>
+      {/if}
+      {#if activePageIndex < totalPages - 1}
+        <button
+          type="button"
+          class="floating-book-nav next no-print"
+          onclick={() => scrollToPage(activePageIndex + 1)}
+          title="Trang tiếp (→)"
+          aria-label="Trang tiếp"
+        >
+          <ChevronRight size={28} />
+        </button>
+      {/if}
+    {/if}
+
+    <div
+      class="dossier-print-container"
+      class:mode-book={viewMode === 'book'}
+      class:mode-scroll={viewMode === 'scroll'}
+    >
 
       <!-- ================================================================= -->
       <!-- TRANG 1: BÌA MỘC SON HOÀNG GIA (COVER PAGE) -->
       <!-- ================================================================= -->
-      <section id="dossier-page-1" class="dossier-page page-cover">
+      <section id="dossier-page-1" class="dossier-page page-cover" class:is-active={activePageIndex === 0}>
         <div class="page-border-ornament">
           <div class="inner-frame">
             <!-- Imperial Seal Header -->
@@ -189,7 +334,7 @@
       <!-- ================================================================= -->
       <!-- TRANG 2: TỔNG QUAN BẢN MỆNH & TỨ TRỤ TIÊN THIÊN -->
       <!-- ================================================================= -->
-      <section id="dossier-page-2" class="dossier-page">
+      <section id="dossier-page-2" class="dossier-page" class:is-active={activePageIndex === 1}>
         <div class="page-border-ornament">
           <div class="inner-frame page-content">
             <header class="page-header">
@@ -270,7 +415,7 @@
       <!-- ================================================================= -->
       <!-- TRANG 3: TOÀN CẢNH TINH BÀN 12 CUNG (VECTOR 300 DPI) -->
       <!-- ================================================================= -->
-      <section id="dossier-page-3" class="dossier-page">
+      <section id="dossier-page-3" class="dossier-page" class:is-active={activePageIndex === 2}>
         <div class="page-border-ornament">
           <div class="inner-frame page-content">
             <header class="page-header">
@@ -333,7 +478,11 @@
       <!-- TRANG 4 -> 15: ĐẠI LUẬN CHI TIẾT 12 CUNG (MỖI TRANG 1 CUNG A4) -->
       <!-- ================================================================= -->
       {#each data.palaces as palace, pIdx (palace.name + pIdx)}
-        <section id="dossier-page-{pIdx + 4}" class="dossier-page page-palace">
+        <section
+          id="dossier-page-{pIdx + 4}"
+          class="dossier-page page-palace"
+          class:is-active={activePageIndex === pIdx + 3}
+        >
           <div class="page-border-ornament">
             <div class="inner-frame page-content">
               <header class="page-header">
@@ -422,7 +571,7 @@
       <!-- ================================================================= -->
       <!-- TRANG 16: THẬP NIÊN ĐẠI VẬN (PHẦN I: VẬN ĐỜI 1 - 6) -->
       <!-- ================================================================= -->
-      <section id="dossier-page-16" class="dossier-page">
+      <section id="dossier-page-16" class="dossier-page" class:is-active={activePageIndex === 15}>
         <div class="page-border-ornament">
           <div class="inner-frame page-content">
             <header class="page-header">
@@ -466,7 +615,7 @@
       <!-- ================================================================= -->
       <!-- TRANG 17: THẬP NIÊN ĐẠI VẬN (PHẦN II: VẬN ĐỜI 7 - 12) -->
       <!-- ================================================================= -->
-      <section id="dossier-page-17" class="dossier-page">
+      <section id="dossier-page-17" class="dossier-page" class:is-active={activePageIndex === 16}>
         <div class="page-border-ornament">
           <div class="inner-frame page-content">
             <header class="page-header">
@@ -505,7 +654,7 @@
       <!-- ================================================================= -->
       <!-- TRANG 18: VẬN HẠN LƯU NIÊN BÍNH NGỌ 2026 -->
       <!-- ================================================================= -->
-      <section id="dossier-page-18" class="dossier-page">
+      <section id="dossier-page-18" class="dossier-page" class:is-active={activePageIndex === 17}>
         <div class="page-border-ornament">
           <div class="inner-frame page-content">
             <header class="page-header">
@@ -562,7 +711,7 @@
       <!-- ================================================================= -->
       <!-- TRANG 19: KIM CHỈ NAM TU THÂN & XÁC THỰC SỐ HÓA -->
       <!-- ================================================================= -->
-      <section id="dossier-page-19" class="dossier-page page-seal">
+      <section id="dossier-page-19" class="dossier-page page-seal" class:is-active={activePageIndex === 18}>
         <div class="page-border-ornament">
           <div class="inner-frame page-content seal-layout">
             <header class="page-header">
@@ -657,6 +806,7 @@
   }
 
   .dossier-screen-bar {
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -666,6 +816,23 @@
     color: #faf6ed;
     flex-shrink: 0;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .reading-progress-track {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+  }
+
+  .reading-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #d4af37, #ffe082);
+    box-shadow: 0 0 8px #d4af37;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .bar-left {
@@ -745,14 +912,36 @@
   .bar-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+  }
+
+  .btn-util-dossier {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 6px;
+    color: #e2d9cc;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-util-dossier:hover {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: #d4af37;
+    color: #fff;
+    transform: translateY(-1px);
   }
 
   .btn-print-dossier {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 18px;
+    padding: 8px 16px;
     background: linear-gradient(135deg, #d4af37 0%, #aa821c 100%);
     border: 1px solid #ffe082;
     border-radius: 6px;
@@ -785,6 +974,7 @@
   }
 
   .dossier-document-scroll {
+    position: relative;
     flex: 1;
     overflow-y: auto;
     padding: 30px 20px;
@@ -792,10 +982,77 @@
     justify-content: center;
   }
 
+  .floating-book-nav {
+    position: fixed;
+    top: 52%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(20, 16, 12, 0.85);
+    border: 1px solid #d4af37;
+    color: #d4af37;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(8px);
+  }
+
+  .floating-book-nav:hover {
+    background: #d4af37;
+    color: #1a140a;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+  }
+
+  .floating-book-nav.prev {
+    left: 24px;
+  }
+
+  .floating-book-nav.next {
+    right: 24px;
+  }
+
   .dossier-print-container {
     display: flex;
     flex-direction: column;
     gap: 40px;
+  }
+
+  /* In Book View, hide inactive pages on screen */
+  .dossier-print-container.mode-book .dossier-page:not(.is-active) {
+    display: none !important;
+  }
+
+  .dossier-print-container.mode-book .dossier-page.is-active {
+    animation: pageFadeIn 0.22s ease-out;
+  }
+
+  @keyframes pageFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .floating-book-nav {
+      display: none;
+    }
+    .btn-text-desktop {
+      display: none;
+    }
+    .bar-subtitle {
+      display: none;
+    }
   }
 
   /* =========================================================================
@@ -1622,6 +1879,10 @@
 
     .dossier-print-container {
       gap: 0 !important;
+    }
+
+    .dossier-print-container.mode-book .dossier-page {
+      display: flex !important;
     }
 
     .dossier-page {

@@ -1,5 +1,6 @@
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
 import { getDossierStatus, unlockDossier } from '$lib/api-client/dossier';
+import { getCachedDossier, setCachedDossier } from './dossier-cache';
 import { authModalStore } from '$lib/stores/auth-modal.svelte';
 import { paywallStore } from '$lib/stores/paywall.svelte';
 import { toast } from '$lib/stores/toast';
@@ -18,20 +19,35 @@ export function createDossierModel(options: DossierModelOptions) {
 
   async function checkStatus(): Promise<boolean> {
     const chartId = options.getChartId();
+    if (!chartId) return false;
+
+    // 1. Check local client cache first (Instant 0ms retrieval)
+    try {
+      const cached = await getCachedDossier(chartId);
+      if (cached) {
+        isUnlocked = true;
+        return true;
+      }
+    } catch {
+      // Ignore cache read error
+    }
+
     const token = options.auth.getAccessToken();
     if (!token || options.auth.isAnonymous) {
-      isUnlocked = false;
-      return false;
+      // Do not clear isUnlocked if previously cached
+      return isUnlocked;
     }
 
     try {
       isChecking = true;
       const res = await getDossierStatus(token, chartId);
       isUnlocked = res.isUnlocked;
+      if (res.isUnlocked) {
+        await setCachedDossier(chartId);
+      }
       return res.isUnlocked;
     } catch {
-      isUnlocked = false;
-      return false;
+      return isUnlocked;
     } finally {
       isChecking = false;
     }
@@ -74,6 +90,7 @@ export function createDossierModel(options: DossierModelOptions) {
       if (res.success) {
         isUnlocked = true;
         isModalOpen = true;
+        await setCachedDossier(options.getChartId());
         if (res.alreadyUnlocked) {
           toast.show('✨ Hồ sơ hoàng gia đã được mở khóa từ trước.', 'info');
         } else {

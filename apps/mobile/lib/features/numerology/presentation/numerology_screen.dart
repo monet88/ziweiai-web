@@ -10,8 +10,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../../ui/animated_background.dart';
 import '../../../../ui/glass_panel.dart';
-
-
+import 'feng_shui_number_tab.dart';
 
 class NumerologyScreen extends ConsumerStatefulWidget {
   const NumerologyScreen({super.key});
@@ -20,12 +19,21 @@ class NumerologyScreen extends ConsumerStatefulWidget {
   ConsumerState<NumerologyScreen> createState() => _NumerologyScreenState();
 }
 
-class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
+class _NumerologyScreenState extends ConsumerState<NumerologyScreen>
+    with SingleTickerProviderStateMixin {
   final _nameController = TextEditingController();
   DateTime? _selectedDate;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
 
   @override
   void dispose() {
+    _tabController.dispose();
     _nameController.dispose();
     super.dispose();
   }
@@ -198,39 +206,112 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(
-          'Thần Số Học Pythagoras',
-          style: GoogleFonts.cinzel(
-            fontWeight: FontWeight.w700,
-            color: AppTheme.goldBright,
-            letterSpacing: 1.2,
+      bottomNavigationBar: const VoiceAudioPlayerBar(),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: AnimatedBackground(child: SizedBox.shrink()),
           ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppTheme.goldBright),
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              _nameController.clear();
-              setState(() {
-                _selectedDate = null;
-              });
-              ref.read(numerologyProvider.notifier).reset();
-            },
-            tooltip: 'Nhập lại',
+          SafeArea(
+            child: Column(
+              children: [
+                // Top Custom Header Bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.goldBright, size: 20),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'HUYỀN SỐ HỌC CUNG ĐÌNH',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.cinzel(
+                            color: AppTheme.goldBright,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh, color: AppTheme.goldBright),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          _nameController.clear();
+                          setState(() {
+                            _selectedDate = null;
+                          });
+                          ref.read(numerologyProvider.notifier).reset();
+                        },
+                        tooltip: 'Nhập lại',
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Modern Pill TabBar
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cosmosElevated.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.mysticalGold.withValues(alpha: 0.3), width: 1),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicator: BoxDecoration(
+                      gradient: CelestialGradients.imperialGold,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: CelestialShadows.goldGlow,
+                    ),
+                    labelColor: const Color(0xFF141026),
+                    unselectedLabelColor: AppTheme.mysticalTextSecondary,
+                    labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                    tabs: const [
+                      Tab(
+                        icon: Icon(Icons.calculate_outlined, size: 18),
+                        text: 'Thần Số Pythagoras',
+                      ),
+                      Tab(
+                        icon: Icon(Icons.dialpad, size: 18),
+                        text: 'Sim & Biển Số',
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Tab Views
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildPythagorasTab(calculatedResult, hasAIResult, state),
+                      const FengShuiNumberTab(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      body: AnimatedBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20.0, 16.0, 20.0, 40.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+    );
+  }
+
+  Widget _buildPythagorasTab(
+    dynamic calculatedResult,
+    bool hasAIResult,
+    dynamic state,
+  ) {
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20.0, 12.0, 20.0, 40.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
                 if (calculatedResult == null) ...[
                   GlassPanel(
                     padding: const EdgeInsets.all(20),
@@ -409,11 +490,7 @@ class _NumerologyScreenState extends ConsumerState<NumerologyScreen> {
                 ],
               ],
             ),
-          ),
-        ),
-      ),
-      bottomNavigationBar: const VoiceAudioPlayerBar(),
-    );
+          );
   }
 
 

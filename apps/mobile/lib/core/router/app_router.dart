@@ -16,6 +16,7 @@ import '../../features/iching/presentation/iching_screen.dart';
 import '../../features/stick/presentation/stick_screen.dart';
 import '../../features/bazi/presentation/bazi_screen.dart';
 import '../../features/dossier/presentation/royal_dossier_screen.dart';
+import '../../features/referral/presentation/referral_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -98,6 +99,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/dossier',
       builder: (context, state) => const RoyalDossierScreen(),
+    ),
+    GoRoute(
+      path: '/referral',
+      builder: (context, state) => const ReferralScreen(),
     ),
   ],
 );

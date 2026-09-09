@@ -9,12 +9,14 @@ class VoicePlayerState {
   final String currentText;
   final String title;
   final double speechRate;
+  final bool isZenMode;
 
   const VoicePlayerState({
     this.status = VoiceStatus.idle,
     this.currentText = '',
     this.title = '',
     this.speechRate = 1.0,
+    this.isZenMode = false,
   });
 
   bool get isPlaying => status == VoiceStatus.playing;
@@ -26,12 +28,14 @@ class VoicePlayerState {
     String? currentText,
     String? title,
     double? speechRate,
+    bool? isZenMode,
   }) {
     return VoicePlayerState(
       status: status ?? this.status,
       currentText: currentText ?? this.currentText,
       title: title ?? this.title,
       speechRate: speechRate ?? this.speechRate,
+      isZenMode: isZenMode ?? this.isZenMode,
     );
   }
 }
@@ -248,6 +252,11 @@ class VoiceSynthesisNotifier extends Notifier<VoicePlayerState> {
     } else {
       await setSpeechRate(1.0);
     }
+  }
+
+  /// Toggle Zen Soundscape Mode (Khí Âm Thiền Định)
+  void toggleZenMode() {
+    state = state.copyWith(isZenMode: !state.isZenMode);
   }
 }
 

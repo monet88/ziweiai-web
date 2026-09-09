@@ -539,13 +539,56 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                           width: 36,
                           child: CircularProgressIndicator(color: AppTheme.goldBright, strokeWidth: 2),
                         ),
-                        error: (error, stack) => const Text('0 XU', style: TextStyle(color: AppTheme.goldBright, fontSize: 32)),
+                        error: (err, stack) => const Text('0 XU', style: TextStyle(color: AppTheme.goldBright, fontSize: 24)),
                       ),
                     ],
                   ),
                 ),
 
-                // Tabs
+                // Nút Mời Bạn Bè Nhận XU
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        context.push('/referral');
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0x33B91C1C), Color(0x33D97706)],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppTheme.goldBright.withValues(alpha: 0.5)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.celebration_rounded, color: AppTheme.goldBright, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '✦ Mời Tri Kỷ Kết Duyên — Tặng Ngay +20 XU',
+                                style: GoogleFonts.cinzel(
+                                  color: AppTheme.goldBright,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right, color: AppTheme.goldBright, size: 18),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // Modern Pill TabBars
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
                   decoration: BoxDecoration(

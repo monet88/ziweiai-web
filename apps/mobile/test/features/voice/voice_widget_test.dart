@@ -52,6 +52,8 @@ void main() {
       expect(find.text('Khâm Thiên Giám Ngự Phê'), findsOneWidget);
       expect(find.text('Đang đọc truyền cảm...'), findsOneWidget);
       expect(find.text('1.0x'), findsOneWidget);
+      expect(find.text('ZEN'), findsOneWidget);
+      expect(find.byIcon(Icons.spa_rounded), findsOneWidget);
       expect(find.byType(AnimatedWaveformVisualizer), findsOneWidget);
       expect(find.byIcon(Icons.pause_circle_filled_rounded), findsOneWidget);
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);

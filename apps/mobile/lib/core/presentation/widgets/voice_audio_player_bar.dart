@@ -215,6 +215,59 @@ class VoiceAudioPlayerBar extends ConsumerWidget {
               ),
             ),
 
+            // Zen Mode Toggle Chip (Khí Âm Thiền Định)
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                notifier.toggleZenMode();
+                final isNowZen = !voiceState.isZenMode;
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    duration: const Duration(seconds: 2),
+                    backgroundColor: AppTheme.cosmosSurface,
+                    content: Text(
+                      isNowZen ? '✦ Đã kích hoạt Khí Âm Thiền Định (Zen Sound)' : 'Đã tắt âm hưởng thiền',
+                      style: const TextStyle(color: AppTheme.goldBright, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                margin: const EdgeInsets.only(right: 6),
+                decoration: BoxDecoration(
+                  gradient: voiceState.isZenMode ? CelestialGradients.imperialGold : null,
+                  color: voiceState.isZenMode ? null : AppTheme.cosmosElevated,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: voiceState.isZenMode ? AppTheme.goldBright : AppTheme.mysticalGold.withValues(alpha: 0.4),
+                    width: 0.8,
+                  ),
+                  boxShadow: voiceState.isZenMode ? CelestialShadows.goldGlow : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.spa_rounded,
+                      size: 13,
+                      color: voiceState.isZenMode ? const Color(0xFF141026) : AppTheme.goldBright,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      'ZEN',
+                      style: TextStyle(
+                        color: voiceState.isZenMode ? const Color(0xFF141026) : AppTheme.goldBright,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             // Speed multiplier chip (0.8x / 1.0x / 1.2x)
             GestureDetector(
               onTap: () {

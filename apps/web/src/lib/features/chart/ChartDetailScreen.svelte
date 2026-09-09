@@ -35,6 +35,7 @@
   import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
   import { createDossierModel } from '$lib/features/dossier/dossier-model.svelte';
   import DeluxePdfDossierModal from '$lib/features/dossier/DeluxePdfDossierModal.svelte';
+  import RoyalBaziDossierModal from '$lib/features/dossier/RoyalBaziDossierModal.svelte';
   import { appendReferralQuery, sanitizeReferralCode } from '$lib/features/referral/append-referral-query';
   import { revealElements, revealHexagramLines } from '$lib/motion/reveal';
   import { goto } from '$app/navigation';
@@ -235,16 +236,18 @@
 >
   {#snippet action()}
     <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-      {#if showBoard && detail.snapshot}
+      {#if (showBoard || detail.chartSystem === 'ba-zi') && detail.snapshot}
         <button
           type="button"
           class="btn-royal-dossier"
           disabled={dossier.isChecking || dossier.isUnlocking}
           onclick={() => dossier.openOrUnlock(wallet.balance)}
-          title="Xuất bản Hồ Sơ Mệnh Lý Hoàng Gia (19 Trang Chuẩn In A4 Vector)"
+          title={detail.chartSystem === 'ba-zi'
+            ? 'Xuất bản Hồ Sơ Mệnh Lý Bát Tự Hoàng Gia (17 Trang Chuẩn In A4 Vector)'
+            : 'Xuất bản Hồ Sơ Mệnh Lý Hoàng Gia (19 Trang Chuẩn In A4 Vector)'}
         >
           <span class="dossier-crown">👑</span>
-          <span class="dossier-text">Hồ Sơ Hoàng Gia</span>
+          <span class="dossier-text">{detail.chartSystem === 'ba-zi' ? 'Hồ Sơ Bát Tự' : 'Hồ Sơ Hoàng Gia'}</span>
           <span class="dossier-badge">{dossier.isUnlocked ? 'Đã Mở' : '50 XU'}</span>
         </button>
       {/if}
@@ -412,12 +415,21 @@
 </AppScaffold>
 
 {#if dossier.isModalOpen && detail.snapshot}
-  <DeluxePdfDossierModal
-    snapshot={detail.snapshot}
-    chartId={detail.chartId}
-    userName={auth.user?.email ? auth.user.email.split('@')[0] : 'Đương Số'}
-    onClose={dossier.closeModal}
-  />
+  {#if detail.chartSystem === 'ba-zi'}
+    <RoyalBaziDossierModal
+      snapshot={detail.snapshot}
+      chartId={detail.chartId}
+      userName={auth.user?.email ? auth.user.email.split('@')[0] : 'Đương Số'}
+      onClose={dossier.closeModal}
+    />
+  {:else}
+    <DeluxePdfDossierModal
+      snapshot={detail.snapshot}
+      chartId={detail.chartId}
+      userName={auth.user?.email ? auth.user.email.split('@')[0] : 'Đương Số'}
+      onClose={dossier.closeModal}
+    />
+  {/if}
 {/if}
 
 <style>

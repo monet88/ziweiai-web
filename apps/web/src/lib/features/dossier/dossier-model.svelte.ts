@@ -73,7 +73,7 @@ export function createDossierModel(options: DossierModelOptions) {
 
     if (walletBalance < 50) {
       paywallStore.open(
-        `Xuất Bản Hồ Sơ Mệnh Lý Hoàng Gia (19 Trang Chuẩn In A4 Vector) yêu cầu 50 XU. Số dư hiện tại của bạn là ${walletBalance} XU. Vui lòng nạp thêm XU để tiếp tục.`
+        `Xuất Bản Hồ Sơ Mệnh Lý Hoàng Gia (Chuẩn In A4 Vector) yêu cầu 50 XU. Số dư hiện tại của bạn là ${walletBalance} XU. Vui lòng nạp thêm XU để tiếp tục.`
       );
       return;
     }

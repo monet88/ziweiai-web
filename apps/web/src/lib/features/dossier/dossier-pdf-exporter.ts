@@ -52,6 +52,38 @@ export function formatDossierFileName(userName: string, chartId: string): string
 }
 
 /**
+ * Tạo tên tệp PDF chuẩn hóa cho Hồ Sơ Bát Tự Hoàng Gia.
+ */
+export function formatBaziDossierFileName(userName: string, chartId: string): string {
+  const safeName = slugifyVietnamese(userName) || 'Duong-So';
+  const secCode = formatRoyalSecurityCode(chartId);
+  return `Ho-So-Bat-Tu-Hoang-Gia-${safeName}-${secCode}.pdf`;
+}
+
+/**
+ * Danh sách tiêu đề mặc định cho 17 trang Hồ Sơ Bát Tự Hoàng Gia ViOS.
+ */
+export const DEFAULT_BAZI_DOSSIER_PAGE_TITLES: readonly string[] = [
+  'Bìa Mộc Son Tiên Thiên Bát Tự',
+  'Đồ Hình Tứ Trụ & Tứ Phụ Cung',
+  'Cân Bằng Ngũ Hành & Chân Dụng Thần',
+  'Trụ Năm (Tổ Tiên - Niên Thiếu)',
+  'Trụ Tháng (Phụ Mẫu - Lập Nghiệp)',
+  'Trụ Ngày (Bản Thân - Hôn Nhân)',
+  'Trụ Giờ (Hậu Vận - Con Cái)',
+  'Đại Luận Thập Thần (Ấn Tinh & Quan Sát)',
+  'Đại Luận Thập Thần (Tài Tinh, Thực Thương & Tỷ Kiếp)',
+  'Thần Sát Toàn Cảnh: Cát Tinh & Hung Sát',
+  'Bản Đồ Thập Niên Đại Vận (Phần I)',
+  'Bản Đồ Thập Niên Đại Vận (Phần II)',
+  'Vận Hạn Năm 2026 Bính Ngọ',
+  'Vận Trình 12 Tháng Năm 2026 (Nửa Đầu Năm)',
+  'Vận Trình 12 Tháng Năm 2026 (Nửa Cuối Năm)',
+  'Chiến Lược Cải Vận & Phong Thủy Dụng Thần',
+  'Sắc Chỉ Khâm Thiên Giám & Bảo Chứng Số Hóa',
+];
+
+/**
  * Danh sách tiêu đề mặc định cho 19 trang Hồ Sơ Hoàng Gia ViOS.
  */
 export const DEFAULT_DOSSIER_PAGE_TITLES: readonly string[] = [

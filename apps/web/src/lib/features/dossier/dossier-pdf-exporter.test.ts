@@ -3,7 +3,9 @@ import {
   slugifyVietnamese,
   formatRoyalSecurityCode,
   formatDossierFileName,
+  formatBaziDossierFileName,
   DEFAULT_DOSSIER_PAGE_TITLES,
+  DEFAULT_BAZI_DOSSIER_PAGE_TITLES,
   exportDossierToPdf,
 } from './dossier-pdf-exporter';
 
@@ -55,6 +57,18 @@ describe('dossier-pdf-exporter: Text helpers & security formatters', () => {
 
     const fallbackFileName = formatDossierFileName('', chartId);
     expect(fallbackFileName).toBe('Ho-So-Menh-Ly-Hoang-Gia-Duong-So-VIOS-ROYAL-2B496E92.pdf');
+  });
+
+  it('formatBaziDossierFileName constructs elegant Bazi PDF file name', () => {
+    const chartId = '2b496e92-ea1d-4d6f-a156-ce56ada6d5e5';
+    const fileName = formatBaziDossierFileName('Nguyễn Văn An', chartId);
+    expect(fileName).toBe('Ho-So-Bat-Tu-Hoang-Gia-Nguyen-Van-An-VIOS-ROYAL-2B496E92.pdf');
+  });
+
+  it('DEFAULT_BAZI_DOSSIER_PAGE_TITLES contains exactly 17 royal bazi page titles', () => {
+    expect(DEFAULT_BAZI_DOSSIER_PAGE_TITLES).toHaveLength(17);
+    expect(DEFAULT_BAZI_DOSSIER_PAGE_TITLES[0]).toContain('Bìa');
+    expect(DEFAULT_BAZI_DOSSIER_PAGE_TITLES[16]).toContain('Bảo Chứng');
   });
 
   it('DEFAULT_DOSSIER_PAGE_TITLES contains exactly 19 royal page titles', () => {

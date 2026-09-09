@@ -61,7 +61,16 @@
 
   function handlePrint() {
     if (!browser) return;
-    window.print();
+    document.body.classList.add('printing-explanation-scroll');
+    const onAfterPrint = () => {
+      document.body.classList.remove('printing-explanation-scroll');
+      window.removeEventListener('afterprint', onAfterPrint);
+    };
+    window.addEventListener('afterprint', onAfterPrint);
+    toast.show('🖨️ Đang chuẩn bị bản sớ in ấn A4 chuẩn mực...', 'info');
+    setTimeout(() => {
+      window.print();
+    }, 150);
   }
 </script>
 

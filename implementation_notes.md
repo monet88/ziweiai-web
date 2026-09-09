@@ -28,6 +28,25 @@
 - **Decision**: Tạo component `AuspiciousSummaryCard.svelte` phân tích từ khóa tâm linh và cấu trúc bài luận để tách 2 nhóm "Cát Lành & Vượng Khí" và "Cần Lưu Ý & Phòng Tránh", kèm huy hiệu Vận Khí Cốt Lõi (Đại Cát, Bình Hòa, Tiết Chế).
 - **Rationale**: Giúp người dùng nắm bắt thần tốc các điểm cốt tủy trong 5 giây đầu tiên trước khi đọc chi tiết bài sớ 2000 chữ.
 
+## Decisions Made During Sprint 42 (Deluxe Dossier & Print Engine Hardening)
+
+### 1. Root Cause & Solution: Print Blank Page Fix
+- **Problem**: 
+  - Nút "In sớ / Lưu PDF" tại khối Luận giải chỉ ra 1 trang bị trắng tinh, lấp ló dòng "2. Sự Nghiệp Và Tài Lộc" ở mép đáy trang 1.
+  - Nút "In / Lưu PDF" tại Hồ Sơ Hoàng Gia Deluxe bị trắng toàn bộ trang in.
+- **Root Cause**:
+  1. *Lá số 12 cung chiếm toàn bộ trang 1*: Khối `.board-section` cao 800px không bị ẩn khi in, khi không bật background graphics nó tạo mảng trắng khổng lồ đẩy bài sớ xuống đáy trang 1.
+  2. *Pagination Clip (Kẹt phân trang)*: Thẻ cha `.screen` có `overflow-x: hidden; min-height: 100dvh;`. Trình duyệt Chrome/WebKit coi đây là single-page viewport và cắt đứt phân trang, chỉ in duy nhất 1 trang đầu!
+  3. *Màu chữ tàng hình*: `MarkdownView.svelte` dùng màu `--color-text-secondary` (`#d1d5db` - xám nhạt mờ) và các tiêu đề dùng `-webkit-text-fill-color: transparent`. Trên nền giấy in trắng không có background graphics, chữ biến mất hoàn toàn.
+  4. *Cấu trúc selector sai trong Dossier*: Rule `:global(body > *:not(.dossier-overlay))` đã ẩn `div.app-content-wrapper` (thẻ cha của cả app SvelteKit), khiến toàn bộ modal hồ sơ bị ẩn theo. Ngoài ra trong Book Mode, specificity của `.mode-book .dossier-page:not(.is-active)` làm ẩn 18 trang còn lại.
+- **Solution Applied**:
+  - Mở khóa toàn bộ `overflow` và `height` trên các container tổ tiên (`html, body, .app-content-wrapper, .screen, .container, .detail-page`).
+  - Gắn class chuyên biệt `printing-explanation-scroll` và `printing-deluxe-dossier` vào `document.body` khi in.
+  - Ẩn hoàn toàn các khối không liên quan (`.board-section`, `.top-nav-bar`, `.hero`, `.mobile-bottom-nav`, nút bấm).
+  - Thêm header bản sớ trang trọng (`print-so-header`) cho bản sớ in ấn với đầy đủ thông tin đương số, ngày giờ sinh Âm Dương lịch, Mệnh, Cục.
+  - Định dạng màu chữ in: đen tuyền `#111827`, tiêu đề đồng son `#78350f`, trích dẫn và bảng biểu trang nhã, phân trang mượt mà không bị cắt chữ.
+  - Ép hiển thị trọn vẹn 19 trang A4 vector cho Hồ Sơ Hoàng Gia dù đang ở chế độ Sách hay Cuộn.
+
 ## Decisions Made During Phase 1: Money Flow & Auto-Refund Hardening
 
 ### 1. Reversible Money Flow & Automatic Refunds

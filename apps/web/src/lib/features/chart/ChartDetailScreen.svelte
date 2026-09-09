@@ -65,6 +65,24 @@
     }
   });
 
+  $effect(() => {
+    function handleBeforePrint() {
+      if (!dossier.isModalOpen) {
+        document.body.classList.add('printing-explanation-scroll');
+      }
+    }
+    function handleAfterPrint() {
+      document.body.classList.remove('printing-explanation-scroll');
+    }
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => {
+      document.body.classList.remove('printing-explanation-scroll');
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  });
+
   // getChartId là getter reactive (Svelte 5): model luôn đọc chartId mới nhất trong
   // queryKey/queryFn mà không cần snapshot lúc mount. +page.svelte vẫn bọc {#key chartId}
   // để reset selectedPalaceKey khi đổi lá số.
@@ -335,6 +353,25 @@
           <NoticeBanner tone="danger" message={explanation.errorMessage} />
         {:else if explanation.hasResult && explanation.renderedMarkdown}
           <div class="explanation-result-container">
+            <!-- Bản Sớ Header (Chỉ xuất hiện khi in ra giấy hoặc lưu PDF) -->
+            <header class="print-so-header">
+              <div class="so-emblem">✦ VIOS KHÂM THIÊN GIÁM ✦</div>
+              <h1 class="so-title">BẢN SỚ TỬ VI ĐẠI THÀNH LUẬN GIẢI</h1>
+              <div class="so-subtitle">{pageTitle}</div>
+              <div class="so-meta-grid">
+                {#each summaryItems as item (item.label)}
+                  <div class="so-meta-item">
+                    <span class="lbl">{item.label}:</span>
+                    <span class="val">{item.value}</span>
+                  </div>
+                {/each}
+              </div>
+              <div class="so-seal-row">
+                <span class="so-seal-text">BẢO CHỨNG BỞI HỆ THỐNG TỬ VI TOÀN TẬP — VIOS ENGINE</span>
+                <span class="so-date-text">XUẤT BẢN NGÀY: {new Date().toLocaleDateString('vi-VN')}</span>
+              </div>
+            </header>
+
             <AuspiciousSummaryCard markdown={explanation.renderedMarkdown} />
             <ExplanationToolbar
               markdown={explanation.renderedMarkdown}
@@ -559,35 +596,159 @@
     }
   }
 
+  .print-so-header {
+    display: none;
+  }
+
   /* Chế độ In Sớ / Xuất PDF (@media print) */
   @media print {
+    :global(html),
     :global(body) {
-      background: #ffffff !important;
-      color: #000000 !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
 
-    :global(nav),
-    :global(header),
-    :global(.mobile-bottom-nav),
-    :global(.explanation-toolbar),
-    :global(.assistant-section),
-    :global(.fortune-section),
-    :global(button) {
+    /* Mở khóa phân trang container cha khi KHÔNG IN DOSSIER */
+    :global(body:not(.printing-deluxe-dossier)) {
+      background: #ffffff !important;
+      color: #111827 !important;
+      overflow: visible !important;
+      height: auto !important;
+      min-height: 0 !important;
+    }
+
+    :global(body:not(.printing-deluxe-dossier) .app-content-wrapper),
+    :global(body:not(.printing-deluxe-dossier) .screen),
+    :global(body:not(.printing-deluxe-dossier) .container),
+    :global(body:not(.printing-deluxe-dossier) .body-layout),
+    :global(body:not(.printing-deluxe-dossier) .content),
+    :global(body:not(.printing-deluxe-dossier)) .detail-page {
+      overflow: visible !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      position: static !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      background: #ffffff !important;
+      color: #111827 !important;
+      transform: none !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    /* Ẩn các khối không cần in khi in Sớ */
+    :global(body:not(.printing-deluxe-dossier) nav),
+    :global(body:not(.printing-deluxe-dossier) header.hero),
+    :global(body:not(.printing-deluxe-dossier) .top-nav-bar),
+    :global(body:not(.printing-deluxe-dossier) .mobile-bottom-nav),
+    :global(body:not(.printing-deluxe-dossier) .explanation-toolbar),
+    :global(body:not(.printing-deluxe-dossier) .assistant-section),
+    :global(body:not(.printing-deluxe-dossier) .fortune-section),
+    :global(body:not(.printing-deluxe-dossier) .board-section),
+    :global(body:not(.printing-deluxe-dossier) .toast-container),
+    :global(body:not(.printing-deluxe-dossier) button) {
       display: none !important;
     }
 
-    .board-section,
-    .explanation-section {
+    :global(body:not(.printing-deluxe-dossier)) .explanation-section {
       border: none !important;
       padding: 0 !important;
+      margin: 0 !important;
+      overflow: visible !important;
+      height: auto !important;
     }
 
-    .result {
-      background: #ffffff !important;
-      border: 1px solid #d1d5db !important;
+    :global(body:not(.printing-deluxe-dossier)) .section-title,
+    :global(body:not(.printing-deluxe-dossier)) .hint {
+      display: none !important;
+    }
+
+    :global(body:not(.printing-deluxe-dossier)) .explanation-result-container {
+      overflow: visible !important;
+      height: auto !important;
+    }
+
+    /* Header Sớ In Trang Trọng */
+    :global(body:not(.printing-deluxe-dossier)) .print-so-header {
+      display: block !important;
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #b45309;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    .so-emblem {
+      font-size: 10.5pt;
+      letter-spacing: 3px;
+      font-weight: 700;
+      color: #92400e;
+      margin-bottom: 4px;
+    }
+
+    .so-title {
+      font-size: 19pt;
+      font-weight: 800;
+      color: #78350f;
+      margin: 0 0 6px 0;
+      letter-spacing: 0.5px;
+    }
+
+    .so-subtitle {
+      font-size: 12pt;
+      font-weight: 600;
+      color: #451a03;
+      margin-bottom: 12px;
+    }
+
+    .so-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px 12px;
+      background: #fdfaf3;
+      border: 1px solid #e7d8b8;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      text-align: left;
+      font-size: 9.5pt;
+    }
+
+    .so-meta-item .lbl {
+      color: #78350f;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .so-meta-item .val {
+      color: #111827;
+      font-weight: 700;
+    }
+
+    .so-seal-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 8pt;
+      color: #6b7280;
+      font-style: italic;
+      padding: 0 4px;
+    }
+
+    :global(body:not(.printing-deluxe-dossier)) .result {
+      background: transparent !important;
+      border: none !important;
       box-shadow: none !important;
       color: #111827 !important;
       padding: 0 !important;
+      overflow: visible !important;
+      height: auto !important;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 18mm 15mm 20mm 15mm;
     }
   }
 </style>

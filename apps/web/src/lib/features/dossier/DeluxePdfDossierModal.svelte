@@ -49,16 +49,30 @@
       }
     }
 
+    function handleBeforePrint() {
+      document.body.classList.add('printing-deluxe-dossier');
+    }
+
+    function handleAfterPrint() {
+      document.body.classList.remove('printing-deluxe-dossier');
+    }
+
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
 
     return () => {
       document.body.style.overflow = originalOverflow;
+      document.body.classList.remove('printing-deluxe-dossier');
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
     };
   });
 
   function handlePrint() {
     if (!browser) return;
+    document.body.classList.add('printing-deluxe-dossier');
     toast.show('🖨️ Đang mở giao diện in ấn chuẩn A4 Vector...', 'info');
     setTimeout(() => {
       window.print();
@@ -1846,16 +1860,59 @@
      PRINT STYLES (@media print)
      ========================================================================= */
   @media print {
-    :global(body),
-    :global(html) {
+    :global(html),
+    :global(body) {
       margin: 0 !important;
       padding: 0 !important;
-      background: #fff !important;
+      background: #faf6ed !important;
     }
 
-    /* Hide entire website UI, headers, modals, backgrounds */
-    :global(body > *:not(.dossier-overlay)) {
+    :global(body.printing-deluxe-dossier),
+    :global(body:has(.dossier-overlay)) {
+      overflow: visible !important;
+      height: auto !important;
+      min-height: 0 !important;
+      background: #faf6ed !important;
+    }
+
+    /* Ẩn các thành phần giao diện nền khi in Dossier */
+    :global(body.printing-deluxe-dossier .top-nav-bar),
+    :global(body.printing-deluxe-dossier .hero),
+    :global(body.printing-deluxe-dossier .board-section),
+    :global(body.printing-deluxe-dossier .explanation-section),
+    :global(body.printing-deluxe-dossier .assistant-section),
+    :global(body.printing-deluxe-dossier .fortune-section),
+    :global(body.printing-deluxe-dossier .mobile-bottom-nav),
+    :global(body.printing-deluxe-dossier .dossier-header-bar),
+    :global(body.printing-deluxe-dossier .reading-progress-track),
+    :global(body.printing-deluxe-dossier .floating-book-nav),
+    :global(body.printing-deluxe-dossier .no-print),
+    :global(body.printing-deluxe-dossier nav),
+    :global(body.printing-deluxe-dossier header),
+    :global(body.printing-deluxe-dossier footer),
+    :global(body.printing-deluxe-dossier button),
+    :global(body.printing-deluxe-dossier .toast-container) {
       display: none !important;
+    }
+
+    /* Mở khóa toàn bộ container cha để trình duyệt phân trang mượt mà */
+    :global(body.printing-deluxe-dossier .app-content-wrapper),
+    :global(body.printing-deluxe-dossier .screen),
+    :global(body.printing-deluxe-dossier .container),
+    :global(body.printing-deluxe-dossier .body-layout),
+    :global(body.printing-deluxe-dossier .content),
+    :global(body.printing-deluxe-dossier .detail-page) {
+      overflow: visible !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      position: static !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      background: #faf6ed !important;
+      transform: none !important;
+      border: none !important;
+      box-shadow: none !important;
     }
 
     .no-print {
@@ -1864,37 +1921,61 @@
 
     .dossier-overlay {
       position: static !important;
-      background: #fff !important;
+      inset: auto !important;
+      width: 100% !important;
+      height: auto !important;
+      background: #faf6ed !important;
       backdrop-filter: none !important;
       padding: 0 !important;
       margin: 0 !important;
       overflow: visible !important;
+      display: block !important;
+      z-index: auto !important;
     }
 
     .dossier-document-scroll {
+      position: static !important;
       padding: 0 !important;
       margin: 0 !important;
       overflow: visible !important;
+      height: auto !important;
+      display: block !important;
     }
 
     .dossier-print-container {
+      display: block !important;
       gap: 0 !important;
-    }
-
-    .dossier-print-container.mode-book .dossier-page {
-      display: flex !important;
-    }
-
-    .dossier-page {
-      box-shadow: none !important;
+      padding: 0 !important;
       margin: 0 !important;
+    }
+
+    /* Hiển thị toàn bộ 19 trang dù đang ở chế độ mode-book hay mode-scroll */
+    .dossier-print-container.mode-book .dossier-page,
+    .dossier-print-container.mode-book .dossier-page:not(.is-active),
+    .dossier-print-container.mode-scroll .dossier-page,
+    .dossier-print-container .dossier-page {
+      display: flex !important;
       page-break-after: always !important;
       break-after: page !important;
       page-break-inside: avoid !important;
       break-inside: avoid !important;
+      box-shadow: none !important;
+      margin: 0 auto !important;
+      width: 210mm !important;
+      min-height: 297mm !important;
+      height: 297mm !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      transform: none !important;
+      animation: none !important;
       background-color: #faf6ed !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 0;
     }
   }
 </style>

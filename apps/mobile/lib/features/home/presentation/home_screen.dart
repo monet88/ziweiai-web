@@ -1103,7 +1103,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  context.push('/wallet');
+                  context.push('/bazi');
                 },
               ),
             ),

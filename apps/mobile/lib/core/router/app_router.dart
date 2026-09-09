@@ -14,6 +14,7 @@ import '../../features/numerology/presentation/numerology_screen.dart';
 import '../../features/wallet/presentation/wallet_history_screen.dart';
 import '../../features/iching/presentation/iching_screen.dart';
 import '../../features/stick/presentation/stick_screen.dart';
+import '../../features/bazi/presentation/bazi_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -89,5 +90,10 @@ final appRouter = GoRouter(
       path: '/stick',
       builder: (context, state) => const StickScreen(),
     ),
+    GoRoute(
+      path: '/bazi',
+      builder: (context, state) => const BaziScreen(),
+    ),
   ],
 );
+

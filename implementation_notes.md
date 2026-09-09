@@ -183,3 +183,22 @@
 ### 4. Verification & Validation Gates
 - **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 3.5s)`.
 - **Flutter Test Suite**: 45/45 tests passed 100%, bao gồm toàn bộ test suite mới `stick_screen_test.dart` (2/2 passed) kiểm tra toàn vẹn luồng lắc xăm ➜ gieo keo ➜ hiển thị thơ quẻ ➜ mở khóa luận giải chi tiết.
+
+## Decisions Made During Sprint 44 — Phase 2.5: Bát Tự Tứ Trụ & Vận Khí 2026 (Stitch 041e4565)
+
+### 1. Bảng Tứ Trụ Tiên Thiên 4 Cột & Hào Quang Nhật Chủ
+- **Decision**: Thiết kế ma trận 4 cột đối xứng (Trụ Năm, Trụ Tháng, Trụ Ngày, Trụ Giờ). Cột Trụ Ngày (Nhật Chủ) được trang bị vầng sáng vàng hoàng kim `CelestialShadows.goldGlow` và viền `goldBright` 2.0px.
+- **Decision**: Mỗi cột hiển thị đầy đủ: Thập Thần, Can Chi theo màu sắc ngũ hành, Can ẩn (Tàng Can), và Vòng 12 Trường Sinh.
+
+### 2. Thước Đo Ngũ Hành & Bộ Ba Tam Thần Định Mệnh
+- **Decision**: Dùng thanh đa màu sắc hiển thị tỷ lệ 5 nguyên tố (Kim, Mộc, Thủy, Hỏa, Thổ) với trạng thái Vượng/Nhược (Cực Vượng, Vượng, Bình Hòa, Hưu Tù, Bất Cập).
+- **Decision**: Định danh rõ ràng Chân Dụng Thần (cứu rỗi), Hỷ Thần (sinh trợ) và Kỵ Thần (khắc chế) theo đúng Tử Bình cổ pháp.
+
+### 3. Vận Khí Lưu Niên 2026 Bính Ngọ & Khâm Thiên Giám Ngự Phê
+- **Decision**: Đánh giá 4 trụ cột vận trình: Sự nghiệp (88), Tài chính (82), Tình duyên (75), Sức khỏe (70) với lời giải chi tiết.
+- **Decision**: Mở khóa luận giải sâu AI (5 XU) có Confirmation Dialog và tự động cập nhật số dư ví `walletBalanceProvider`.
+
+### 4. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 3.1s)`.
+- **Flutter Test Suite**: 47/47 tests passed 100%, bao gồm toàn bộ test suite mới `bazi_screen_test.dart` (2/2 passed).
+

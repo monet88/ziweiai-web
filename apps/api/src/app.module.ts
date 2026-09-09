@@ -31,6 +31,7 @@ import { RewardsModule } from './modules/rewards/rewards.module';
 import { WalletModule } from './modules/wallet/wallet.module';
 
 import { TurnstileModule } from './common/turnstile/turnstile.module';
+import { DossierModule } from './modules/dossier/dossier.module';
 
 @Module({
   imports: [
@@ -39,7 +40,7 @@ import { TurnstileModule } from './common/turnstile/turnstile.module';
       limit: 10,
     }]),
     DatabaseModule,
-    WalletModule, AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsIchingModule, DrawsTarotModule, NumerologyModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule, ShareModule, AdminModule, RewardsModule, TurnstileModule
+    WalletModule, AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsIchingModule, DrawsTarotModule, NumerologyModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule, ShareModule, AdminModule, RewardsModule, TurnstileModule, DossierModule
   ],
   providers: [
     {

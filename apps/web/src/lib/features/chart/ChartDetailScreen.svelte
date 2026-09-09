@@ -33,6 +33,8 @@
   import MonthlyFortuneCard from '$lib/features/fortune/MonthlyFortuneCard.svelte';
   import AnnualReportButton from '$lib/features/fortune/AnnualReportButton.svelte';
   import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
+  import { createDossierModel } from '$lib/features/dossier/dossier-model.svelte';
+  import DeluxePdfDossierModal from '$lib/features/dossier/DeluxePdfDossierModal.svelte';
   import { appendReferralQuery, sanitizeReferralCode } from '$lib/features/referral/append-referral-query';
   import { revealElements, revealHexagramLines } from '$lib/motion/reveal';
   import { goto } from '$app/navigation';
@@ -49,6 +51,19 @@
   const auth = getAuthStore();
   const queryClient = useQueryClient();
   const wallet = createWalletModel(auth);
+  const dossier = createDossierModel({
+    auth,
+    getChartId: () => chartId,
+    onUnlocked: () => {
+      void wallet.refresh();
+    },
+  });
+
+  $effect(() => {
+    if (auth.user?.id && !auth.isAnonymous && chartId) {
+      void dossier.checkStatus();
+    }
+  });
 
   // getChartId là getter reactive (Svelte 5): model luôn đọc chartId mới nhất trong
   // queryKey/queryFn mà không cần snapshot lúc mount. +page.svelte vẫn bọc {#key chartId}
@@ -201,7 +216,20 @@
   tone="mystical"
 >
   {#snippet action()}
-    <div style="display: flex; gap: 8px;">
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+      {#if showBoard && detail.snapshot}
+        <button
+          type="button"
+          class="btn-royal-dossier"
+          disabled={dossier.isChecking || dossier.isUnlocking}
+          onclick={() => dossier.openOrUnlock(wallet.balance)}
+          title="Xuất bản Hồ Sơ Mệnh Lý Hoàng Gia (19 Trang Chuẩn In A4 Vector)"
+        >
+          <span class="dossier-crown">👑</span>
+          <span class="dossier-text">Hồ Sơ Hoàng Gia</span>
+          <span class="dossier-badge">{dossier.isUnlocked ? 'Đã Mở' : '50 XU'}</span>
+        </button>
+      {/if}
       <PrimaryButton
         label="Chia Sẻ"
         variant="primary"
@@ -346,7 +374,62 @@
   {/if}
 </AppScaffold>
 
+{#if dossier.isModalOpen && detail.snapshot}
+  <DeluxePdfDossierModal
+    snapshot={detail.snapshot}
+    chartId={detail.chartId}
+    userName={auth.user?.email ? auth.user.email.split('@')[0] : 'Đương Số'}
+    onClose={dossier.closeModal}
+  />
+{/if}
+
 <style>
+  .btn-royal-dossier {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    background: linear-gradient(135deg, #2b1f0c 0%, #171108 100%);
+    border: 1px solid #d4af37;
+    border-radius: var(--radius-md, 6px);
+    color: #faf6ed;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.25);
+    transition: all 0.2s ease;
+  }
+
+  .btn-royal-dossier:hover:not(:disabled) {
+    background: linear-gradient(135deg, #3d2c12 0%, #20170a 100%);
+    border-color: #ffe082;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.4);
+  }
+
+  .btn-royal-dossier:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .dossier-crown {
+    font-size: 14px;
+  }
+
+  .dossier-text {
+    letter-spacing: 0.3px;
+  }
+
+  .dossier-badge {
+    background: linear-gradient(135deg, #d4af37 0%, #aa821c 100%);
+    color: #1a140a;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 2px;
+  }
+
   .detail-page {
     display: flex;
     flex-direction: column;

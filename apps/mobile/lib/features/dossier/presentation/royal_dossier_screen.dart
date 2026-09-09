@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../ui/animated_background.dart';
 import '../data/models/dossier_models.dart';
 import '../providers/dossier_provider.dart';
+import '../services/royal_dossier_pdf_service.dart';
 
 class RoyalDossierScreen extends ConsumerStatefulWidget {
   const RoyalDossierScreen({super.key});
@@ -958,6 +959,10 @@ class _RoyalDossierScreenState extends ConsumerState<RoyalDossierScreen> {
                   ),
                 ),
               );
+              final currentDossier = ref.read(dossierProvider).dossier;
+              if (currentDossier != null) {
+                RoyalDossierPdfService.exportAndShare(context, currentDossier);
+              }
             },
             icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
             label: const Text('TẢI PDF'),

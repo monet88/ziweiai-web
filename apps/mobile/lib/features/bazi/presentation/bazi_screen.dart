@@ -1166,7 +1166,7 @@ class _BaziScreenState extends ConsumerState<BaziScreen> {
     );
   }
 
-  // 7. Nút Mở Hồ Sơ Bát Tự Hoàng Gia 17 Trang
+  // 7. Nút Mở Hồ Sơ Mệnh Lý Hoàng Gia 19 Trang
   Widget _buildOpenDossierButton(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -1176,15 +1176,7 @@ class _BaziScreenState extends ConsumerState<BaziScreen> {
       child: ElevatedButton.icon(
         onPressed: () {
           HapticFeedback.mediumImpact();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              backgroundColor: AppTheme.cosmosElevated,
-              content: Text(
-                '👑 Đang chuẩn bị Hồ Sơ Mệnh Lý Bát Tự 17 Trang A4...',
-                style: TextStyle(color: AppTheme.goldBright),
-              ),
-            ),
-          );
+          context.push('/dossier');
         },
         icon: const Text('👑', style: TextStyle(fontSize: 18)),
         label: const Text(

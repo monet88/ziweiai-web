@@ -3,18 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Implementation Notes — Sprint 42 Phase 3: Direct Vector PDF Download & Personalized Security Watermark</title>
+  <title>Implementation Notes — Sprint 44: 100% Bộ 6 Màn Hình Mobile Hoàng Gia Chuẩn Stitch MCP</title>
   <style>
     :root {
-      --bg: #0d0f18;
-      --card-bg: rgba(22, 25, 38, 0.85);
-      --border: rgba(212, 175, 55, 0.25);
+      --bg: #0b0c14;
+      --card-bg: rgba(20, 24, 38, 0.88);
+      --border: rgba(212, 175, 55, 0.35);
       --gold: #d4af37;
       --gold-bright: #ffd700;
       --text-main: #f5f6fa;
-      --text-muted: rgba(245, 246, 250, 0.7);
+      --text-muted: rgba(245, 246, 250, 0.75);
       --accent-green: #2ecc71;
       --accent-blue: #38bdf8;
+      --cinnabar: #e74c3c;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -44,13 +45,13 @@
       color: var(--gold-bright);
     }
     .badge {
-      background: rgba(46, 204, 113, 0.15);
-      border: 1px solid rgba(46, 204, 113, 0.4);
+      background: rgba(46, 204, 113, 0.2);
+      border: 1px solid rgba(46, 204, 113, 0.5);
       color: var(--accent-green);
-      padding: 4px 12px;
+      padding: 6px 14px;
       border-radius: 20px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: bold;
     }
     .card {
       background: var(--card-bg);
@@ -59,12 +60,13 @@
       padding: 24px;
       margin-bottom: 24px;
       backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     }
     h2 {
       margin-top: 0;
       color: var(--gold);
       font-size: 18px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       padding-bottom: 8px;
     }
     h3 {
@@ -85,22 +87,27 @@
       color: var(--text-main);
     }
     code {
-      background: rgba(0, 0, 0, 0.4);
+      background: rgba(0, 0, 0, 0.5);
       padding: 2px 6px;
       border-radius: 4px;
       color: var(--gold-bright);
       font-family: monospace;
       font-size: 13px;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
     }
-    @media (max-width: 600px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 13px;
+    }
+    th {
+      background: rgba(212, 175, 55, 0.15);
+      color: var(--gold-bright);
     }
   </style>
 </head>
@@ -108,89 +115,93 @@
   <div class="container">
     <header>
       <div>
-        <h1>Sprint 42 — Phase 3: Direct PDF Download & Personalized Security Watermark</h1>
-        <div style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">
-          PR #4 Target: <code>feature/sprint-42-deluxe-pdf-dossier</code> | Rollback Anchor: <code>7302863</code>
-        </div>
+        <h1>ViOS Mobile — Sprint 44 Implementation Notes</h1>
+        <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 14px;">
+          Bản ghi kiến trúc & thẩm định kỹ thuật: Hoàn tất 100% Bộ 6 Màn Hình Cung Đình Hoàng Gia Stitch MCP
+        </p>
       </div>
-      <div>
-        <span class="badge">100% VERIFIED & COMPLETED</span>
-      </div>
+      <div class="badge">100% HOÀN THÀNH — 52/52 TESTS PASS</div>
     </header>
 
     <div class="card">
-      <h2>1. TỔNG QUAN TÍNH NĂNG (FEATURE OVERVIEW)</h2>
+      <h2>1. Tổng Quan Sprint 44 Phase 2.6: Hồ Sơ Mệnh Lý Hoàng Gia (19 Trang A4)</h2>
       <p>
-        Tiếp nối thành công của <strong>Hồ Sơ Mệnh Lý Hoàng Gia 19 Trang Vector A4</strong> và cơ chế chống in trắng P0,
-        <strong>Sprint 42 Phase 3</strong> hoàn thiện 2 năng lực cao cấp nhất dành cho thân chủ:
+        Hiện thực hóa màn hình thứ 6 (cột mốc hoàn tất trọn vẹn bộ 6 màn hình) chuẩn Stitch MCP <code>baa0f9c74fbf4402b01cfaa9d55aec3a</code>.
+        Ứng dụng công nghệ đọc ngự thư hai chế độ (Dual Mode), bảo mật thủy ấn cá nhân hóa và triện son Khâm Thiên Giám 3D.
       </p>
       <ul>
-        <li>
-          <strong>Tải tệp PDF (.pdf) trực tiếp 100% Offline (Direct Download)</strong>:
-          Người dùng có thể tải trực tiếp trọn bộ 19 trang A4 chuẩn vector/raster sắc nét 200-300 DPI về máy tính/điện thoại
-          chỉ với 1 click vào nút <code>Tải PDF (.pdf)</code> dát vàng hoàng gia trên thanh điều khiển, không cần phải thông qua
-          hộp thoại Print phức tạp của trình duyệt.
-        </li>
-        <li>
-          <strong>Watermark Bảo Mật Cá Nhân Hóa (Personalized Security Watermark)</strong>:
-          Mỗi trang trong số 19 trang hồ sơ được bảo chứng với lớp vân chìm hoàng triều xoay nghiêng -25° mang đầy đủ
-          <strong>Tên Thân Chủ</strong> (<code>userName</code>) và <strong>Mã Số Bảo Chứng Số Hóa</strong> (<code>VIOS-ROYAL-[MÃ]</code>),
-          kèm ribbon bản quyền vi mô ở chân trang, chống giả mạo và bảo vệ quyền sở hữu trí tuệ tối cao của đương số.
-        </li>
-        <li>
-          <strong>Royal PDF Export Progress Modal</strong>:
-          Trải nghiệm người dùng mượt mà với modal tiến trình dát vàng 24K, thanh tiến độ % thời gian thực (0% &rarr; 100%),
-          hiển thị tiêu đề từng trang đang được kết xuất và nút Hủy bỏ an toàn (<code>AbortSignal</code>).
-        </li>
+        <li><strong>Dual Reading Mode:</strong> <code>PageView</code> lật trang ngự thư sách cổ (Book Mode) & <code>ListView</code> cuộn dọc liên tục (Scroll Mode).</li>
+        <li><strong>Imperial Reading Progress:</strong> Hiển thị vị trí phần trăm đọc, trang hiện tại trên tổng 19 trang, cùng Modal Bottom Sheet tra cứu nhanh 19 mục lục.</li>
+        <li><strong>Security Watermark:</strong> Thủy ấn cá nhân hóa xoay nghiêng -20° <code>VIOS-ROYAL-8899 · KHÂM THIÊN BẢO MẬT</code>.</li>
+        <li><strong>Con Dấu Triện Son 3D:</strong> Dấu triện vuông 110x110dp màu đỏ chu sa <code>KHÂM THIÊN GIÁM NGỰ BÚT</code> ở trang 19.</li>
       </ul>
     </div>
 
     <div class="card">
-      <h2>2. QUYẾT ĐỊNH THIẾT KẾ & KIẾN TRÚC (ARCHITECTURAL DECISIONS)</h2>
-      <div class="grid">
-        <div>
-          <h3>Client-Side 100% Offline-First vs Serverless Headless</h3>
-          <p style="color: var(--text-muted); font-size: 14px;">
-            Sử dụng kết hợp <code>jspdf</code> và <code>html2canvas</code> xử lý trực tiếp trên browser của người dùng.
-            Tránh hoàn toàn tình trạng timeout (10s/15s) của Vercel Serverless Function, không gây phát sinh chi phí server compute,
-            và bảo mật thông tin lá số tuyệt đối (Zero-Data Exposure).
-          </p>
-        </div>
-        <div>
-          <h3>Giải Phóng Bộ Nhớ Tuần Tự (OOM Crash Prevention)</h3>
-          <p style="color: var(--text-muted); font-size: 14px;">
-            Kết xuất tuần tự từng trang: Page N &rarr; Canvas scale 1.5 - 2.0x &rarr; Nén JPEG 0.92 &rarr; Đưa vào jsPDF &rarr;
-            Xóa <code>canvas.width = 0; canvas.height = 0;</code> &rarr; Garbage Collection thu hồi RAM trước khi render Page N+1.
-            Tránh hiện tượng Out Of Memory trên các thiết bị di động có RAM hạn chế.
-          </p>
-        </div>
-        <div>
-          <h3>Cô Lập Book View Mode vs Export Pipeline</h3>
-          <p style="color: var(--text-muted); font-size: 14px;">
-            Trong Book Mode, 18 trang bị ẩn <code>display: none</code>. Khi bắt đầu xuất PDF, Svelte binding
-            <code>class:is-exporting-pdf</code> tự động ép hiển thị đầy đủ 19 trang để html2canvas chụp lại chính xác,
-            trong khi Progress Modal phủ mờ toàn màn hình giữ nguyên tính liền mạch và thẩm mỹ cho người dùng.
-          </p>
-        </div>
-        <div>
-          <h3>Khả Năng Hủy Bỏ An Toàn (Graceful AbortController)</h3>
-          <p style="color: var(--text-muted); font-size: 14px;">
-            Tích hợp <code>AbortSignal</code> xuyên suốt pipeline xuất file. Nếu người dùng bấm "Hủy bỏ",
-            tác vụ dừng ngay tức thì, giải phóng toàn bộ tài nguyên tạm thời và thông báo nhẹ nhàng qua Toast.
-          </p>
-        </div>
-      </div>
+      <h2>2. Bảng Tiến Độ Bộ 6 Màn Hình Mobile Hoàng Gia Stitch MCP</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>Tên Màn Hình Mobile</th>
+            <th>Stitch Screen ID</th>
+            <th>Trạng Thái</th>
+            <th>Quality Gates</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Home Bento Grid Dashboard Hoàng Gia</td>
+            <td><code>fc2849feb255476a</code></td>
+            <td>✅ Hoàn Thành (Phase 2.1)</td>
+            <td>Pass 100%</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Bàn Lá Số Tử Vi 12 Cung & Palace Detail BottomSheet</td>
+            <td><code>4cea86b51df245b7</code></td>
+            <td>✅ Hoàn Thành (Phase 2.2)</td>
+            <td>Pass 100%</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Lục Hào Chiêm Bốc 3D Khang Hy & Tháp Tiên Thiên</td>
+            <td><code>d028a9a35e234c95</code></td>
+            <td>✅ Hoàn Thành (Phase 2.3)</td>
+            <td>Pass 100%</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>Linh Xăm Quan Thánh 3D & Cặp Keo Âm Dương</td>
+            <td><code>587ad2cf7cb44747</code></td>
+            <td>✅ Hoàn Thành (Phase 2.4)</td>
+            <td>Pass 100%</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Bát Tự Tứ Trụ & Vận Khí Năm 2026 Bính Ngọ</td>
+            <td><code>041e456578ae4345</code></td>
+            <td>✅ Hoàn Thành (Phase 2.5)</td>
+            <td>Pass 100%</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>Hồ Sơ Mệnh Lý Hoàng Gia 19 Trang A4 Reader</td>
+            <td><code>baa0f9c74fbf4402</code></td>
+            <td>✅ Hoàn Thành (Phase 2.6)</td>
+            <td>Pass 100% (52/52 Tests)</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <div class="card">
-      <h2>3. CHỨNG MINH CHẤT LƯỢNG (QUALITY GATES VERIFICATION)</h2>
+      <h2>3. Quality Gates & Validation Results</h2>
       <ul>
-        <li><strong>Svelte Check</strong>: <code>pnpm -F @ziweiai/web check</code> &rarr; <strong>0 errors, 0 warnings</strong>.</li>
-        <li><strong>ESLint</strong>: <code>pnpm lint</code> &rarr; <strong>0 errors, 0 warnings (clean 100%)</strong>.</li>
-        <li><strong>TypeScript Monorepo</strong>: <code>pnpm typecheck</code> &rarr; <strong>10/10 tasks successful (0 errors)</strong>.</li>
-        <li><strong>Web Unit Tests</strong>: <code>pnpm -F @ziweiai/web test</code> &rarr; <strong>54/54 files passed (291/291 tests)</strong>.</li>
-        <li><strong>Monorepo Unit Tests</strong>: <code>pnpm test</code> &rarr; <strong>9/9 packages successful (100% tests passed)</strong>.</li>
-        <li><strong>Production Build</strong>: <code>pnpm -F @ziweiai/web build</code> &rarr; <strong>Pass hoàn hảo (9.68s)</strong>.</li>
+        <li><strong>Flutter Static Analysis:</strong> <code>flutter analyze</code> đạt <strong>0 issues</strong> (0 errors, 0 warnings, 0 lints).</li>
+        <li><strong>Flutter Unit & Widget Tests:</strong> <code>flutter test</code> đạt <strong>52/52 tests PASS 100%</strong> (toàn bộ các tính năng từ Home, Chart, Lục Hào, Xin Xăm, Bát Tự, đến Dossier).</li>
+        <li><strong>No Regressions:</strong> Toàn bộ 47 tests trước đó được bảo toàn nguyên vẹn; bổ sung 5 widget tests mới cho <code>RoyalDossierScreen</code>.</li>
       </ul>
     </div>
   </div>

@@ -93,9 +93,10 @@ class VoiceSynthesisNotifier extends Notifier<VoicePlayerState> {
   @override
   VoicePlayerState build() {
     _flutterTts = FlutterTts();
-    _initTts();
     ref.onDispose(() {
-      _flutterTts.stop();
+      try {
+        _flutterTts.stop().catchError((_) {});
+      } catch (_) {}
     });
     return const VoicePlayerState();
   }

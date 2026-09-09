@@ -4,6 +4,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../ui/animated_background.dart';
 import '../../wallet/providers/wallet_provider.dart';
@@ -26,6 +27,7 @@ class _BaziScreenState extends ConsumerState<BaziScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.cosmosDark,
+      bottomNavigationBar: const VoiceAudioPlayerBar(),
       body: AnimatedBackground(
         child: SafeArea(
           child: Column(
@@ -877,6 +879,10 @@ class _BaziScreenState extends ConsumerState<BaziScreen> {
                   ],
                 ),
               ),
+              VoicePlayIconButton(
+                text: chart.annualAnalysis,
+                title: 'Vận Khí 2026 Bính Ngọ',
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -1007,6 +1013,10 @@ class _BaziScreenState extends ConsumerState<BaziScreen> {
                       letterSpacing: 1.0,
                     ),
                   ),
+                ),
+                VoicePlayIconButton(
+                  text: chart.aiExplanation!,
+                  title: 'Khâm Thiên Giám Ngự Phê Bát Tự',
                 ),
               ],
             ),

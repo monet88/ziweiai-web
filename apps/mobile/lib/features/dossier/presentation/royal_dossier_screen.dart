@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../ui/animated_background.dart';
 import '../data/models/dossier_models.dart';
@@ -39,6 +40,7 @@ class _RoyalDossierScreenState extends ConsumerState<RoyalDossierScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.cosmosDark,
+      bottomNavigationBar: const VoiceAudioPlayerBar(),
       body: AnimatedBackground(
         child: SafeArea(
           child: Column(
@@ -384,14 +386,25 @@ class _RoyalDossierScreenState extends ConsumerState<RoyalDossierScreen> {
                         ),
                       ),
                     ),
-                    Text(
-                      'TRANG ${page.pageNumber.toString().padLeft(2, '0')}',
-                      style: const TextStyle(
-                        color: AppTheme.goldDeep,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
+                    Row(
+                      children: [
+                        if (!page.isCover) ...[
+                          VoicePlayIconButton(
+                            text: '${page.title}. ${page.content}',
+                            title: 'Trang ${page.pageNumber}: ${page.title}',
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Text(
+                          'TRANG ${page.pageNumber.toString().padLeft(2, '0')}',
+                          style: const TextStyle(
+                            color: AppTheme.goldDeep,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

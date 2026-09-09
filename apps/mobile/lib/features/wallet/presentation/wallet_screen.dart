@@ -79,6 +79,36 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
     ),
   ];
 
+  static const List<WalletPackageItem> _royalIapPackages = [
+    WalletPackageItem(
+      xu: 20,
+      price: 29000,
+      label: 'Gói Khởi Điểm',
+      desc: '4 lượt luận giải AI hoặc gieo quẻ',
+    ),
+    WalletPackageItem(
+      xu: 50,
+      price: 69000,
+      label: 'Gói Phổ Biến',
+      badge: 'BÁN CHẠY',
+      desc: 'Mở khóa trọn vẹn 1 cuốn Hồ sơ 19 trang',
+    ),
+    WalletPackageItem(
+      xu: 120,
+      price: 149000,
+      label: 'Gói Nâng Cao',
+      badge: '+20% XU',
+      desc: 'Tặng thêm 20 XU thưởng hoàng cung',
+    ),
+    WalletPackageItem(
+      xu: 600,
+      price: 699000,
+      label: 'Gói Hoàng Cung VIP',
+      badge: '+20% XU',
+      desc: 'Tặng thêm 100 XU thưởng vương giả',
+    ),
+  ];
+
   late WalletPackageItem _selectedVietQrPackage;
   static const String _bankAccountNo = '0123456789';
   static const String _bankName = 'MBBank';
@@ -101,7 +131,21 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
 
   Future<void> _fetchOfferings() async {
     try {
-      final offerings = await Purchases.getOfferings();
+      final isConfigured = await Purchases.isConfigured.timeout(
+        const Duration(milliseconds: 600),
+        onTimeout: () => false,
+      );
+      if (!isConfigured) {
+        if (mounted) {
+          setState(() {
+            _isLoadingOfferings = false;
+          });
+        }
+        return;
+      }
+      final offerings = await Purchases.getOfferings().timeout(
+        const Duration(seconds: 2),
+      );
       if (mounted) {
         setState(() {
           _offerings = offerings;
@@ -399,8 +443,13 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
   @override
   Widget build(BuildContext context) {
     final balanceAsync = ref.watch(walletBalanceProvider);
-    final user = Supabase.instance.client.auth.currentUser;
-    final shortUuid = user != null ? user.id.substring(0, 8).toUpperCase() : 'GUEST';
+    String shortUuid = 'GUEST';
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        shortUuid = user.id.substring(0, 8).toUpperCase();
+      }
+    } catch (_) {}
     final transferContent = 'TVTT $shortUuid';
 
     return Scaffold(
@@ -1073,38 +1122,58 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
             )
           else if (_offerings == null ||
               _offerings!.current == null ||
-              _offerings!.current!.availablePackages.isEmpty)
-            GlassPanel(
-              padding: const EdgeInsets.all(20),
-              borderGradient: CelestialGradients.starlightBorder,
-              child: const Column(
+              _offerings!.current!.availablePackages.isEmpty) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.cosmosElevated.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.mysticalGold.withValues(alpha: 0.25)),
+              ),
+              child: const Row(
                 children: [
-                  Icon(Icons.storefront_outlined, color: AppTheme.mysticalGold, size: 36),
-                  SizedBox(height: 10),
-                  Text(
-                    'Gói In-App Store đang được cập nhật trên Google Play / App Store.\nBạn có thể nạp ngay qua tab VietQR Chuyển Khoản Ngân Hàng.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 13, height: 1.4),
+                  Icon(Icons.info_outline, color: AppTheme.goldBright, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Bảng giá niêm yết StoreKit / Google Play. Thân chủ cũng có thể nạp ngay qua tab VietQR.',
+                      style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 12),
+                    ),
                   ),
                 ],
               ),
-            )
-          else
+            ),
+            ..._royalIapPackages.map((item) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 14.0),
+                child: _buildFallbackPackageCard(item),
+              );
+            }),
+          ] else
             ..._offerings!.current!.availablePackages.map((package) {
               int xuDisplay = 0;
               final id = package.storeProduct.identifier.toLowerCase();
-              if (id.contains('100')) {
-                xuDisplay = 100;
+              if (id.contains('2000')) {
+                xuDisplay = 2000;
+              } else if (id.contains('600')) {
+                xuDisplay = 600;
               } else if (id.contains('500')) {
                 xuDisplay = 500;
-              } else if (id.contains('2000')) {
-                xuDisplay = 2000;
+              } else if (id.contains('120')) {
+                xuDisplay = 120;
+              } else if (id.contains('100')) {
+                xuDisplay = 100;
+              } else if (id.contains('50')) {
+                xuDisplay = 50;
+              } else if (id.contains('20')) {
+                xuDisplay = 20;
               } else {
                 final match = RegExp(r'\d+').firstMatch(id);
                 if (match != null) xuDisplay = int.parse(match.group(0)!);
               }
 
-              final isPopular = id.contains('popular') || id.contains('500');
+              final isPopular = id.contains('popular') || id.contains('50') || id.contains('500');
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 14.0),
@@ -1186,6 +1255,162 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
                   ),
                   child: Text(
                     package.storeProduct.priceString,
+                    style: TextStyle(
+                      color: isPopular ? const Color(0xFF141026) : AppTheme.goldBright,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFallbackPackageCard(WalletPackageItem item) {
+    final isPopular = item.badge != null;
+    final priceStr = '${item.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}đ';
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: isPopular ? CelestialShadows.goldGlow : null,
+      ),
+      child: Material(
+        color: isPopular ? AppTheme.cosmosElevated : AppTheme.cosmosSurface,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: AppTheme.cosmosSurface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  side: const BorderSide(color: AppTheme.goldBright, width: 1.5),
+                ),
+                title: Row(
+                  children: [
+                    const Icon(Icons.shopping_bag_outlined, color: AppTheme.goldBright),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        item.label,
+                        style: GoogleFonts.cinzel(
+                          color: AppTheme.goldBright,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                content: Text(
+                  'Gói ${item.xu} XU ($priceStr) có thể thanh toán tức thì qua VietQR tự động quét, hoặc qua Apple Pay / Google Play khi mở ứng dụng trên thiết bị di động có cấu hình Store.',
+                  style: const TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 13, height: 1.4),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('Đóng', style: TextStyle(color: AppTheme.mysticalTextSecondary)),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      _tabController.animateTo(0);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.goldBright,
+                      foregroundColor: const Color(0xFF141026),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Nạp VietQR Ngay', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: isPopular ? AppTheme.goldBright : AppTheme.mysticalGold.withValues(alpha: 0.25),
+                width: isPopular ? 1.8 : 1.0,
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: isPopular ? CelestialGradients.imperialGold : null,
+                    color: isPopular ? null : AppTheme.cosmosDark,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.goldBright, width: 1.2),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.stars,
+                      color: isPopular ? const Color(0xFF141026) : AppTheme.goldBright,
+                      size: 24,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            item.label,
+                            style: const TextStyle(
+                              color: AppTheme.mysticalText,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          if (item.badge != null) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppTheme.cinnabarCrimson,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                item.badge!,
+                                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Nhận ngay +${item.xu} XU · ${item.desc}',
+                        style: const TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: isPopular ? CelestialGradients.imperialGold : null,
+                    color: isPopular ? null : AppTheme.cosmosElevated,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    priceStr,
                     style: TextStyle(
                       color: isPopular ? const Color(0xFF141026) : AppTheme.goldBright,
                       fontWeight: FontWeight.w800,

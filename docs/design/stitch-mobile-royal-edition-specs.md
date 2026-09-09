@@ -45,7 +45,49 @@
 
 ---
 
-## 4. BẢNG MÃ MÀU VÀ DESIGN TOKENS CHUẨN HOÀNG GIA CHO FLUTTER
+## 4. MÀN HÌNH 4: HỒ SƠ MỆNH LÝ HOÀNG GIA MOBILE (DELUXE ROYAL DOSSIER READER)
+
+- **Screen ID**: `baa0f9c74fbf4402b01cfaa9d55aec3a`
+- **Resource Name**: `projects/1561298019822402065/screens/baa0f9c74fbf4402b01cfaa9d55aec3a`
+- **Screenshot URL**: [Xem hình ảnh thiết kế Hồ Sơ Hoàng Gia 19 Trang tại Google Cloud](https://lh3.googleusercontent.com/aida/AEtjO1UmzvpzuV94iDQG8PBiCA6nBwAm5g_dnEOAqLXXRTj1S14qg-n7FMiTFNEre7xjVNSL9fjFtEAX26rxkffjEjRp3snRnjvZC5dV3vSu2Gcivsniw9zgPpMa_I_hIzvmAs_i8Sz0-iPF97PpEuMik1jSh3CGmm9LnTgWL7QWtuUl5BHULAur7VvrYFF5z-ay2FTTbZG6QvldE-HhEvNJe7MZ4qu_aFZJDUjU0sRBozEo9ygRJxsOTFssMVs)
+- **Kích thước thiết kế**: `780 x 2294 px`
+- **Đặc điểm nổi bật**:
+  - **Thanh Tiến Độ Đọc Hoàng Kim**: "Trang 04 / 19 (21%) · Cung Mệnh & Thân Tự Bản" kèm menu nhảy trang nhanh.
+  - **Mô phỏng Trang Hồ Sơ Sách Cổ Triều Đình**: Viền son chu sa nẹp chỉ vàng 24K, 4 góc hoa văn đối xứng, chữ Noto Serif trang nhã có chữ cái mở đầu Drop Cap dát vàng vương giả.
+  - **Bảo Mật Thủy Ấn Cá Nhân Hóa**: Chữ chìm `VIOS-ROYAL-8899 · KHÂM THIÊN BẢO MẬT` chạy nghiêng nền.
+  - **Triện Son 3D**: Con dấu vuông ngự bút "KHÂM THIÊN GIÁM NGỰ BÚT" đỏ chu sa viền vàng nổi bật.
+  - **Thumb-Zone Đọc Sách**: Nút lật trang trước/sau 48dp, chế độ đọc đêm Cosmic Dark Mode và nút "Tải PDF" trực tiếp.
+
+---
+
+## 5. MÀN HÌNH 5: BÁT TỰ TỨ TRỤ & VẬN HẠN NĂM 2026 BÍNH NGỌ (ROYAL BAZI & 2026 FORECAST)
+
+- **Screen ID**: `041e4565c7124a10b969df277fd9e4b3`
+- **Resource Name**: `projects/1561298019822402065/screens/041e4565c7124a10b969df277fd9e4b3`
+- **Screenshot URL**: [Xem hình ảnh thiết kế Bát Tự & Vận Hạn 2026 tại Google Cloud](https://lh3.googleusercontent.com/aida/AEtjO1WQCM_g8OkK21Rwa3uziB6rF3N-XdtMWjl55RE_492H1r4t6IqjnPZfyUoyQf6oQybMA8kJihLVHc6ufKbpdo6dtOxmoeUMyz-ggAHWBj1ftrUOTH_QRkjZT2JfIuTLdX53nVlOKsFdX4B6qyQpJ0KVjnlb7u6ZdJl80iBwfzmeiQYBbjiyhxR0UgYow3wS0l1dj2S9L-hdnoyoykUKW6hlP_LBi8Y0yJdRCw8l4TYtOkIWo-PGE_UHG9g)
+- **Kích thước thiết kế**: `780 x 4226 px`
+- **Đặc điểm nổi bật**:
+  - **Bảng Tứ Trụ Tiên Thiên 4 Cột**: Trụ Năm, Trụ Tháng, Trụ Ngày (Nhật Chủ nổi bật hào quang vàng), Trụ Giờ với Can Chi, Thập Thần, Tàng Can và Vòng Trường Sinh.
+  - **Cân Bằng Ngũ Hành & Tam Thần**: Thanh đo tỷ lệ 5 hành (Thủy 35%, Kim 28%, Mộc 15%, Hỏa 12%, Thổ 10%), định Chân Dụng Thần: Thổ, Hỷ Thần: Kim, Kỵ Thần: Hỏa.
+  - **Vận Khí Lưu Niên 2026 Bính Ngọ**: Phân tích tương tác Bính Hỏa hợp Tân Kim hóa Thủy, 4 trụ cột vận trình: Sự nghiệp (85/100), Tài chính (78/100), Tình duyên (90/100), Sức khỏe (72/100).
+  - **Thumb-Zone**: Nút chính "👑 Mở Hồ Sơ Bát Tự Hoàng Gia 17 Trang".
+
+---
+
+## 6. MÀN HÌNH 6: LINH XĂM QUAN THÁNH ĐẾ QUÂN · 3D (KWAN TAI FORTUNE STICKS)
+
+- **Screen ID**: `587ad2cfb9a341feb293f6fd66921219`
+- **Resource Name**: `projects/1561298019822402065/screens/587ad2cfb9a341feb293f6fd66921219`
+- **Screenshot URL**: [Xem hình ảnh thiết kế Xăm Quan Thánh 3D tại Google Cloud](https://lh3.googleusercontent.com/aida/AEtjO1X_UdqfuG6R-anHkp6G41_zVVsfq1-mMjd_N1Ig9BY9kqGHYN_U-GPniy44WD3Jr3ms9Ek_h9JfpF9RBDkfsIs4mI5-3JjDJBx3SdglQTzK2C9A7SDgdzor9srJ3Fsupz-J2G9BEeqVKU2DOPvJJRwMtrTXwqLwGhMT1xcKGraBQS_2x5rGbMtVbbcCauvrQnQhIgiBEippBhJU0Xwo7LiPISZde4wg2QgLhVmDi4DcoDH9gJ8JTVtkKbM)
+- **Kích thước thiết kế**: `780 x 2540 px`
+- **Đặc điểm nổi bật**:
+  - **Đài Lắc Ống Xăm & Cặp Keo Âm Dương (Thoại Bôi)**: Ống xăm gỗ chạm rồng vàng, 100 thẻ xăm tre, Thẻ xăm số 28 "ĐẠI CÁT" (Đông Pha Đề Thi) rơi ra trên đệm nhung đỏ. Cặp keo 1 Ngửa 1 Sấp xác tín Thánh Đế đã chứng giám.
+  - **Thi Viết Luận Giải Cổ Phong**: Thơ tứ tuyệt Noto Serif dát vàng, đánh giá Cầu Quan, Cầu Tài, Gia Đạo.
+  - **Thumb-Zone**: Nút lớn "🎋 LẮC ĐIỆN THOẠI ĐỂ GIEO XĂM HOẶC CHẠM", tích hợp rung Haptic và tiếng chuông mõ linh ứng.
+
+---
+
+## 7. BẢNG MÃ MÀU VÀ DESIGN TOKENS CHUẨN HOÀNG GIA CHO FLUTTER
 
 ```dart
 class RoyalColors {

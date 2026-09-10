@@ -530,13 +530,14 @@ class _RoyalSharePreviewDialogState extends ConsumerState<RoyalSharePreviewDialo
       );
 
       // Tối ưu hóa dung lượng: Nén sang WebP (Sprint 60)
-      final compressedBytes = await RoyalImageCompressor.compressToWebp(imageBytes);
+      final compressedResult = await RoyalImageCompressor.compress(imageBytes);
 
       final directory = await getTemporaryDirectory();
+      final ext = compressedResult.fileExtension;
       final imageFile = File(
-        '${directory.path}/thiep_luc_hao_${DateTime.now().millisecondsSinceEpoch}.webp',
+        '${directory.path}/thiep_luc_hao_${DateTime.now().millisecondsSinceEpoch}.$ext',
       );
-      await imageFile.writeAsBytes(compressedBytes);
+      await imageFile.writeAsBytes(compressedResult.bytes);
 
       // Auto-save to Royal Gallery
       try {

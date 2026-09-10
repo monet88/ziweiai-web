@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import {
   type RoyalGalleryListResponse,
@@ -8,7 +8,43 @@ import {
 } from '@ziweiai/contracts';
 import { SUPABASE_CLIENT } from '../../database/supabase-client';
 
-const GALLERY_BUCKET = 'vision-uploads'; // Tận dụng bucket private có sẵn từ migration 000002
+export const GALLERY_BUCKET = 'royal-gallery';
+
+/**
+ * Kiểm tra Magic Bytes nhị phân của ảnh (PNG hoặc WebP)
+ */
+export function validateImageMagicBytes(buffer: Buffer): { format: 'png' | 'webp'; mimeType: string } {
+  if (!buffer || buffer.length < 12) {
+    throw new BadRequestException('Dữ liệu tệp ảnh không hợp lệ hoặc quá ngắn');
+  }
+
+  // PNG: 89 50 4E 47
+  const isPng =
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47;
+
+  // WebP: RIFF .... WEBP
+  const isWebp =
+    buffer[0] === 0x52 &&
+    buffer[1] === 0x49 &&
+    buffer[2] === 0x46 &&
+    buffer[3] === 0x46 &&
+    buffer[8] === 0x57 &&
+    buffer[9] === 0x45 &&
+    buffer[10] === 0x42 &&
+    buffer[11] === 0x50;
+
+  if (isWebp) {
+    return { format: 'webp', mimeType: 'image/webp' };
+  }
+  if (isPng) {
+    return { format: 'png', mimeType: 'image/png' };
+  }
+
+  throw new BadRequestException('Định dạng ảnh không được hỗ trợ. Chỉ chấp nhận ảnh WebP hoặc PNG chuẩn.');
+}
 
 @Injectable()
 export class RoyalGalleryService {
@@ -61,7 +97,7 @@ export class RoyalGalleryService {
 
   /**
    * Đồng bộ hai chiều Delta Sync:
-   * 1. Áp dụng các thay đổi từ client (bao gồm cả đánh dấu deleted_at cho các item bị xóa).
+   * 1. Áp dụng các thay đổi từ client (tombstone mới hơn luôn thắng).
    * 2. Truy vấn các thay đổi mới hơn lastSyncedAt từ server.
    * 3. Trả về serverItems (được ký Signed URL), deletedIds, và mốc syncedAt.
    */
@@ -72,18 +108,58 @@ export class RoyalGalleryService {
     const now = new Date().toISOString();
     const clientItems = request.items || [];
 
-    // 1. Ghi nhận các item từ client
+    // 1. Đọc trước trạng thái hiện có của các item trên server để giải quyết xung đột (conflict resolution)
+    const itemIds = clientItems.map((i) => i.id).filter(Boolean);
+    const existingMap = new Map<string, any>();
+    if (itemIds.length > 0) {
+      const { data: existingRows, error: fetchErr } = await this.supabase
+        .from('royal_gallery_shares')
+        .select('id, updated_at, deleted_at')
+        .eq('owner_user_id', userId)
+        .in('id', itemIds);
+
+      if (fetchErr) {
+        this.logger.error(`[gallery] syncGallery fetch existing rows error: ${fetchErr.message}`);
+        throw new Error(`Database error: ${fetchErr.message}`);
+      }
+
+      for (const row of existingRows || []) {
+        existingMap.set(row.id, row);
+      }
+    }
+
+    // 2. Ghi nhận các item từ client
     for (const item of clientItems) {
+      const existing = existingMap.get(item.id);
+
       if (item.isDeleted) {
         // Đánh dấu soft-delete (tombstone)
-        await this.supabase
+        const { error: delErr } = await this.supabase
           .from('royal_gallery_shares')
           .update({ deleted_at: now, updated_at: now })
           .eq('id', item.id)
           .eq('owner_user_id', userId);
+
+        if (delErr) {
+          this.logger.error(`[gallery] syncGallery soft-delete error (id=${item.id}): ${delErr.message}`);
+          throw new Error(`Database error: ${delErr.message}`);
+        }
       } else {
+        // KIỂM TRA CHỐNG HỒI SINH THẺ (Anti-Tombstone Resurrection):
+        // Nếu trên server thẻ này đã bị xóa (deleted_at != null):
+        if (existing && existing.deleted_at != null) {
+          const clientTime = item.updatedAt ? new Date(item.updatedAt).getTime() : 0;
+          const tombstoneTime = new Date(existing.deleted_at).getTime();
+
+          // Nếu client không có updatedAt hoặc updatedAt cũ hơn hoặc bằng tombstone: Tombstone WINS!
+          if (clientTime <= tombstoneTime) {
+            this.logger.log(`[gallery] Bỏ qua client active update vì server đã có tombstone mới hơn (id=${item.id})`);
+            continue; // Bỏ qua, không hồi sinh thẻ!
+          }
+        }
+
         // Upsert bản ghi thiệp
-        await this.supabase
+        const { error: upsertErr } = await this.supabase
           .from('royal_gallery_shares')
           .upsert(
             {
@@ -103,10 +179,15 @@ export class RoyalGalleryService {
             },
             { onConflict: 'id' },
           );
+
+        if (upsertErr) {
+          this.logger.error(`[gallery] syncGallery upsert error (id=${item.id}): ${upsertErr.message}`);
+          throw new Error(`Database error: ${upsertErr.message}`);
+        }
       }
     }
 
-    // 2. Lấy dữ liệu từ server
+    // 3. Lấy dữ liệu thay đổi từ server
     let query = this.supabase
       .from('royal_gallery_shares')
       .select('*')
@@ -119,8 +200,8 @@ export class RoyalGalleryService {
     const { data, error } = await query.order('updated_at', { ascending: false });
 
     if (error) {
-      this.logger.error(`[gallery] syncGallery query lỗi: ${error.message}`);
-      throw new Error(error.message);
+      this.logger.error(`[gallery] syncGallery query server items error: ${error.message}`);
+      throw new Error(`Database error: ${error.message}`);
     }
 
     const activeRows: any[] = [];
@@ -145,26 +226,43 @@ export class RoyalGalleryService {
 
   /**
    * Upload file ảnh binary thiệp hoàng triều lên Supabase Storage
+   * Kiểm tra Magic Bytes nhị phân thực tế để chống giả mạo định dạng
    */
   async uploadCardImage(
     userId: string,
     cardId: string,
     fileBuffer: Buffer,
-    contentType: string,
+    _declaredContentType: string,
   ): Promise<{ storagePath: string; signedUrl: string | null }> {
-    const ext = contentType.includes('png') ? 'png' : 'webp';
-    const storagePath = `royal-gallery/${userId}/${cardId}.${ext}`;
+    // 1. Kiểm tra Magic Bytes nhị phân thực tế của tệp
+    const { format, mimeType } = validateImageMagicBytes(fileBuffer);
+    const storagePath = `${userId}/${cardId}.${format}`;
 
-    const { error } = await this.supabase.storage
+    // 2. Upload file nhị phân lên bucket royal-gallery
+    const { error: uploadError } = await this.supabase.storage
       .from(GALLERY_BUCKET)
       .upload(storagePath, fileBuffer, {
-        contentType,
+        contentType: mimeType,
         upsert: true,
       });
 
-    if (error) {
-      this.logger.error(`[gallery] Upload card image thất bại (cardId=${cardId}): ${error.message}`);
-      throw new Error(`Storage upload error: ${error.message}`);
+    if (uploadError) {
+      this.logger.error(`[gallery] Upload card image thất bại (cardId=${cardId}): ${uploadError.message}`);
+      throw new Error(`Storage upload error: ${uploadError.message}`);
+    }
+
+    // 3. Cập nhật storage_path vào bản ghi nếu thẻ đã có sẵn
+    const { error: updateError } = await this.supabase
+      .from('royal_gallery_shares')
+      .update({
+        storage_path: storagePath,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', cardId)
+      .eq('owner_user_id', userId);
+
+    if (updateError) {
+      this.logger.warn(`[gallery] Cập nhật storage_path trong DB thẻ ${cardId}: ${updateError.message}`);
     }
 
     const signedUrl = await this.signSinglePath(storagePath);
@@ -224,11 +322,14 @@ export class RoyalGalleryService {
 
   private async signSinglePath(storagePath: string): Promise<string | null> {
     try {
+      // Hỗ trợ backwards compatibility: nếu path cũ lưu từ vision-uploads (royal-gallery/...)
+      const bucket = storagePath.startsWith('royal-gallery/') ? 'vision-uploads' : GALLERY_BUCKET;
       const { data, error } = await this.supabase.storage
-        .from(GALLERY_BUCKET)
+        .from(bucket)
         .createSignedUrl(storagePath, 3600); // 1 giờ
 
-      if (error || !data?.signedUrl) {
+      if (error) {
+        this.logger.warn(`[gallery] Tạo signed URL thất bại (path=${storagePath}): ${error.message}`);
         return null;
       }
       return data.signedUrl;

@@ -2,7 +2,7 @@
   import { browser } from '$app/environment';
   import { generateQrMatrix } from './qr-matrix';
   import { toast } from '$lib/stores/toast';
-  import { canvasToWebpBlob, canvasToWebpDataUrl, triggerFileDownload } from '$lib/utils/image-compress';
+  import { canvasToWebpBlob, canvasToWebpDataUrl, getDataUrlExtension, triggerFileDownload } from '$lib/utils/image-compress';
   import {
     X,
     Download,
@@ -238,9 +238,10 @@
         triggerFileDownload(blob, `ViOS_Thiep_Moi_${referralCode || 'VIP'}.${ext}`);
       } catch {
         const dataUrl = canvasToWebpDataUrl(offscreenCanvas, 0.88);
+        const ext = getDataUrlExtension(dataUrl);
         const a = document.createElement('a');
         a.href = dataUrl;
-        a.download = `ViOS_Thiep_Moi_${referralCode || 'VIP'}.webp`;
+        a.download = `ViOS_Thiep_Moi_${referralCode || 'VIP'}.${ext}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

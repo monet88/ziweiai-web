@@ -43,4 +43,11 @@ describe('image-compress utility (Sprint 60)', () => {
     const blob = await canvasToWebpBlob(mockCanvas, { quality: 0.85 });
     expect(blob).toBe(mockBlob);
   });
+
+  it('getDataUrlExtension correctly detects webp and png data URLs', async () => {
+    const { getDataUrlExtension } = await import('./image-compress');
+    expect(getDataUrlExtension('data:image/webp;base64,12345')).toBe('webp');
+    expect(getDataUrlExtension('data:image/png;base64,12345')).toBe('png');
+    expect(getDataUrlExtension('data:image/jpeg;base64,12345')).toBe('png');
+  });
 });

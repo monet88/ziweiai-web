@@ -527,15 +527,16 @@ class _RoyalSacredStickPreviewDialogState
       );
 
       // Tối ưu hóa dung lượng: Nén sang WebP (Sprint 60)
-      final compressedBytes = await RoyalImageCompressor.compressToWebp(imageBytes);
+      final compressedResult = await RoyalImageCompressor.compress(imageBytes);
 
       final directory = await getTemporaryDirectory();
       final prefix =
           _aspectRatio == RoyalAspectRatio.story9_16 ? 'story_9_16' : 'card_3_4';
+      final ext = compressedResult.fileExtension;
       final imageFile = File(
-        '${directory.path}/thiep_linh_xam_${prefix}_${widget.data.stick.id}_${DateTime.now().millisecondsSinceEpoch}.webp',
+        '${directory.path}/thiep_linh_xam_${prefix}_${widget.data.stick.id}_${DateTime.now().millisecondsSinceEpoch}.$ext',
       );
-      await imageFile.writeAsBytes(compressedBytes);
+      await imageFile.writeAsBytes(compressedResult.bytes);
 
       // Lưu vào Thư Viện Hoàng Triều
       final stick = widget.data.stick;

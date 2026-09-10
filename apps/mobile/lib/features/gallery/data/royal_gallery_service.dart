@@ -80,14 +80,19 @@ class RoyalGalleryNotifier extends AsyncNotifier<List<RoyalShareItem>> {
 
 class RoyalGalleryService {
   static const String _kStorageKey = 'vios_royal_share_gallery_items_v1';
-  static const String _kBucketName = 'vision-uploads';
-  final SupabaseClient? _customClient;
+  static const String _kBucketName = 'royal-gallery';
 
-  RoyalGalleryService({SupabaseClient? supabaseClient})
-      : _customClient = supabaseClient;
+  final SharedPreferences? _prefsOverride;
+  final SupabaseClient? _supabaseOverride;
+
+  RoyalGalleryService({
+    SharedPreferences? prefs,
+    SupabaseClient? supabase,
+  })  : _prefsOverride = prefs,
+        _supabaseOverride = supabase;
 
   SupabaseClient? get _client {
-    if (_customClient != null) return _customClient;
+    if (_supabaseOverride != null) return _supabaseOverride;
     try {
       return Supabase.instance.client;
     } catch (_) {
@@ -97,7 +102,7 @@ class RoyalGalleryService {
 
   Future<List<RoyalShareItem>> getItems({RoyalCardType? filterType}) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefsOverride ?? await SharedPreferences.getInstance();
       final rawList = prefs.getStringList(_kStorageKey) ?? [];
       final items = rawList
           .map((jsonStr) {
@@ -112,7 +117,6 @@ class RoyalGalleryService {
           .whereType<RoyalShareItem>()
           .toList();
 
-      // Sắp xếp mới nhất lên đầu
       items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       if (filterType != null) {
@@ -126,12 +130,11 @@ class RoyalGalleryService {
 
   Future<void> saveItem(RoyalShareItem item, {bool isPro = false}) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = _prefsOverride ?? await SharedPreferences.getInstance();
       final current = await getItems();
 
       var itemToSave = item;
 
-      // Nếu là tài khoản VIP PRO, upload ảnh lên Supabase Storage và đồng bộ Metadata
       if (isPro) {
         final client = _client;
         final user = client?.auth.currentUser;
@@ -143,7 +146,7 @@ class RoyalGalleryService {
           if (localFile.existsSync() && (storagePath == null || storagePath.isEmpty)) {
             try {
               final ext = item.imagePath.split('.').last;
-              final path = 'royal-gallery/${user.id}/${item.id}.$ext';
+              final path = '${user.id}/${item.id}.$ext';
               final fileBytes = await localFile.readAsBytes();
               await client.storage.from(_kBucketName).uploadBinary(
                     path,
@@ -156,9 +159,8 @@ class RoyalGalleryService {
               storagePath = path;
               signedUrl = await client.storage
                   .from(_kBucketName)
-                  .createSignedUrl(path, 3600 * 24 * 7); // 7 ngày
+                  .createSignedUrl(path, 3600 * 24 * 7);
             } catch (_) {
-              // Bỏ qua lỗi upload storage nếu mạng yếu
             }
           }
 
@@ -314,7 +316,7 @@ class RoyalGalleryService {
           if (localFile.existsSync() && (storagePath == null || storagePath.isEmpty)) {
             try {
               final ext = local.imagePath.split('.').last;
-              final path = 'royal-gallery/${user.id}/${local.id}.$ext';
+              final path = '${user.id}/${local.id}.$ext';
               final fileBytes = await localFile.readAsBytes();
               await client.storage.from(_kBucketName).uploadBinary(
                     path,

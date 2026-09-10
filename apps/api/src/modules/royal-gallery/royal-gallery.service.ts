@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import {
   type RoyalGalleryListResponse,
@@ -145,17 +145,12 @@ export class RoyalGalleryService {
           throw new Error(`Database error: ${delErr.message}`);
         }
       } else {
-        // KIỂM TRA CHỐNG HỒI SINH THẺ (Anti-Tombstone Resurrection):
-        // Nếu trên server thẻ này đã bị xóa (deleted_at != null):
+        // KIỂM TRA CHỐNG HỒI SINH THẺ (Strict Tombstone Precedence):
+        // Nếu trên server thẻ này đã có tombstone (deleted_at != null):
+        // Server Tombstone WINS tuyệt đối trong bulk sync. Không tin tưởng client clock/timestamp!
         if (existing && existing.deleted_at != null) {
-          const clientTime = item.updatedAt ? new Date(item.updatedAt).getTime() : 0;
-          const tombstoneTime = new Date(existing.deleted_at).getTime();
-
-          // Nếu client không có updatedAt hoặc updatedAt cũ hơn hoặc bằng tombstone: Tombstone WINS!
-          if (clientTime <= tombstoneTime) {
-            this.logger.log(`[gallery] Bỏ qua client active update vì server đã có tombstone mới hơn (id=${item.id})`);
-            continue; // Bỏ qua, không hồi sinh thẻ!
-          }
+          this.logger.log(`[gallery] Bỏ qua client active update vì server đã có tombstone (id=${item.id})`);
+          continue; // Không bao giờ cho phép sync thông thường hồi sinh thẻ đã xóa
         }
 
         // Upsert bản ghi thiệp
@@ -238,7 +233,24 @@ export class RoyalGalleryService {
     const { format, mimeType } = validateImageMagicBytes(fileBuffer);
     const storagePath = `${userId}/${cardId}.${format}`;
 
-    // 2. Upload file nhị phân lên bucket royal-gallery
+    // 2. Xác minh thẻ tồn tại, thuộc về user và chưa bị xóa trước khi upload
+    const { data: existingCard, error: findError } = await this.supabase
+      .from('royal_gallery_shares')
+      .select('id, deleted_at')
+      .eq('id', cardId)
+      .eq('owner_user_id', userId)
+      .maybeSingle();
+
+    if (findError) {
+      this.logger.error(`[gallery] Kiểm tra thẻ thất bại (cardId=${cardId}): ${findError.message}`);
+      throw new Error(`Database error: ${findError.message}`);
+    }
+
+    if (!existingCard || existingCard.deleted_at != null) {
+      throw new NotFoundException('Không tìm thấy thiệp hoàng triều hoặc thiệp đã bị xóa');
+    }
+
+    // 3. Upload file nhị phân lên bucket royal-gallery
     const { error: uploadError } = await this.supabase.storage
       .from(GALLERY_BUCKET)
       .upload(storagePath, fileBuffer, {
@@ -251,7 +263,7 @@ export class RoyalGalleryService {
       throw new Error(`Storage upload error: ${uploadError.message}`);
     }
 
-    // 3. Cập nhật storage_path vào bản ghi nếu thẻ đã có sẵn
+    // 4. Cập nhật storage_path vào bản ghi thiệp
     const { error: updateError } = await this.supabase
       .from('royal_gallery_shares')
       .update({
@@ -262,7 +274,10 @@ export class RoyalGalleryService {
       .eq('owner_user_id', userId);
 
     if (updateError) {
-      this.logger.warn(`[gallery] Cập nhật storage_path trong DB thẻ ${cardId}: ${updateError.message}`);
+      this.logger.error(`[gallery] Cập nhật storage_path DB thất bại, tiến hành hoàn tác xóa file storage (cardId=${cardId}): ${updateError.message}`);
+      // Compensation: Xóa object vừa upload khỏi storage để tránh tạo object mồ côi
+      await this.supabase.storage.from(GALLERY_BUCKET).remove([storagePath]);
+      throw new Error(`Cập nhật thông tin thiệp thất bại: ${updateError.message}`);
     }
 
     const signedUrl = await this.signSinglePath(storagePath);

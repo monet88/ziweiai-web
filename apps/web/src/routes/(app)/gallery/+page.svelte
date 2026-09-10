@@ -232,12 +232,12 @@
 >
   <div class="gallery-container">
 
-    <!-- VIP PRO Cloud Sync Banner -->
+    <!-- Cloud Sync Banner (Identified User) -->
     <div class="sync-banner">
       <div class="sync-banner-info">
         <span class="sync-icon">☁️</span>
         <div>
-          <h2 class="sync-title">Đồng Bộ Đám Mây Đa Thiết Bị (VIP PRO)</h2>
+          <h2 class="sync-title">Đồng Bộ Đám Mây Hoàng Triều (Tài Khoản Đăng Nhập)</h2>
           <p class="sync-desc">
             {#if auth.user}
               Tài khoản của bạn đã được kết nối với Máy Chủ Khâm Thiên Giám. Thiệp tạo trên ứng dụng di động sẽ tự động đồng bộ về đây.

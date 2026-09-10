@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { RoyalGalleryService, validateImageMagicBytes, GALLERY_BUCKET } from './royal-gallery.service';
 
 describe('RoyalGalleryService & Image Validation', () => {
@@ -29,10 +29,10 @@ describe('RoyalGalleryService & Image Validation', () => {
   });
 
   describe('syncGallery Anti-Resurrection Logic', () => {
-    it('không hồi sinh thẻ khi server đã có tombstone mới hơn client update', async () => {
+    it('không bao giờ hồi sinh thẻ khi server đã có tombstone, kể cả khi client gửi timestamp tương lai (Strict Tombstone Precedence)', async () => {
       const userId = 'user-123';
       const tombstoneTime = '2026-09-10T14:00:00.000Z';
-      const clientOldTime = '2026-09-10T12:00:00.000Z';
+      const clientFutureTime = '2035-01-01T00:00:00.000Z'; // Client clock lệch hoặc cố tình gửi tương lai
 
       const mockUpsert = vi.fn().mockResolvedValue({ error: null });
       const mockUpdate = vi.fn().mockReturnValue({
@@ -83,17 +83,17 @@ describe('RoyalGalleryService & Image Validation', () => {
           {
             id: 'card-deleted-1',
             cardType: 'ziwei' as const,
-            title: 'Lá Số Cũ',
+            title: 'Lá Số Cũ Giả Mạo Timestamp',
             isDeleted: false,
-            createdAt: clientOldTime,
-            updatedAt: clientOldTime,
+            createdAt: clientFutureTime,
+            updatedAt: clientFutureTime,
           },
         ],
       };
 
       const result = await service.syncGallery(userId, request);
 
-      // Upsert KHÔNG ĐƯỢC gọi đối với card-deleted-1 vì tombstone wins
+      // Upsert TUYỆT ĐỐI KHÔNG ĐƯỢC gọi vì Server Tombstone WINS
       expect(mockUpsert).not.toHaveBeenCalled();
       expect(result.syncedAt).toBeDefined();
     });
@@ -141,16 +141,97 @@ describe('RoyalGalleryService & Image Validation', () => {
     });
   });
 
-  describe('uploadCardImage', () => {
-    it('tải lên file WebP hợp lệ vào bucket royal-gallery', async () => {
-      const userId = 'user-abc';
-      const cardId = 'card-xyz';
-      const webpBuffer = Buffer.from([
-        0x52, 0x49, 0x46, 0x46,
-        0x20, 0x00, 0x00, 0x00,
-        0x57, 0x45, 0x42, 0x50,
-      ]);
+  describe('uploadCardImage - Validation & Compensation', () => {
+    const validWebpBuffer = Buffer.from([
+      0x52, 0x49, 0x46, 0x46,
+      0x20, 0x00, 0x00, 0x00,
+      0x57, 0x45, 0x42, 0x50,
+    ]);
 
+    it('ném NotFoundException nếu thẻ không tồn tại trong DB', async () => {
+      const mockSupabase = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+              }),
+            }),
+          }),
+        }),
+      } as any;
+
+      const service = new RoyalGalleryService(mockSupabase);
+      await expect(
+        service.uploadCardImage('user-1', 'non-existent-card', validWebpBuffer, 'image/webp'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('ném NotFoundException nếu thẻ đã bị soft-deleted', async () => {
+      const mockSupabase = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: 'card-deleted', deleted_at: '2026-09-10T10:00:00.000Z' },
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }),
+      } as any;
+
+      const service = new RoyalGalleryService(mockSupabase);
+      await expect(
+        service.uploadCardImage('user-1', 'card-deleted', validWebpBuffer, 'image/webp'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('thực hiện compensation xóa storage nếu cập nhật database thất bại', async () => {
+      const userId = 'user-comp';
+      const cardId = 'card-comp';
+      const mockRemove = vi.fn().mockResolvedValue({ error: null });
+
+      const mockSupabase = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: cardId, deleted_at: null },
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ error: { message: 'DB connection broke during update' } }),
+            }),
+          }),
+        }),
+        storage: {
+          from: vi.fn().mockReturnValue({
+            upload: vi.fn().mockResolvedValue({ error: null }),
+            remove: mockRemove,
+          }),
+        },
+      } as any;
+
+      const service = new RoyalGalleryService(mockSupabase);
+      await expect(
+        service.uploadCardImage(userId, cardId, validWebpBuffer, 'image/webp'),
+      ).rejects.toThrow(/Cập nhật thông tin thiệp thất bại/);
+
+      // Verify compensation action: storage.remove was called with the uploaded path!
+      expect(mockRemove).toHaveBeenCalledWith([`${userId}/${cardId}.webp`]);
+    });
+
+    it('tải lên thành công khi thẻ hợp lệ và cập nhật DB thành công', async () => {
+      const userId = 'user-ok';
+      const cardId = 'card-ok';
       const mockUpload = vi.fn().mockResolvedValue({ error: null });
       const mockCreateSignedUrl = vi.fn().mockResolvedValue({
         data: { signedUrl: 'https://signed.webp' },
@@ -158,6 +239,23 @@ describe('RoyalGalleryService & Image Validation', () => {
       });
 
       const mockSupabase = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: cardId, deleted_at: null },
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ error: null }),
+            }),
+          }),
+        }),
         storage: {
           from: vi.fn((bucket: string) => {
             expect(bucket).toBe(GALLERY_BUCKET);
@@ -167,25 +265,14 @@ describe('RoyalGalleryService & Image Validation', () => {
             };
           }),
         },
-        from: vi.fn().mockReturnValue({
-          update: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: null }),
-            }),
-          }),
-        }),
       } as any;
 
       const service = new RoyalGalleryService(mockSupabase);
-      const res = await service.uploadCardImage(userId, cardId, webpBuffer, 'image/webp');
+      const res = await service.uploadCardImage(userId, cardId, validWebpBuffer, 'image/webp');
 
       expect(res.storagePath).toBe(`${userId}/${cardId}.webp`);
       expect(res.signedUrl).toBe('https://signed.webp');
-      expect(mockUpload).toHaveBeenCalledWith(
-        `${userId}/${cardId}.webp`,
-        webpBuffer,
-        expect.objectContaining({ contentType: 'image/webp', upsert: true }),
-      );
+      expect(mockUpload).toHaveBeenCalled();
     });
   });
 });

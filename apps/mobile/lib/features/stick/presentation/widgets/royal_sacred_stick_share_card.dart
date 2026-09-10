@@ -13,7 +13,6 @@ import '../../../../core/utils/royal_image_compressor.dart';
 import '../../../gallery/data/royal_gallery_service.dart';
 import '../../../gallery/models/royal_share_item.dart';
 import '../../../gallery/presentation/widgets/royal_seal_widget.dart';
-import '../../../subscription/providers/subscription_provider.dart';
 import '../../data/models/stick_models.dart';
 
 /// Royal Sacred Stick Share Card (Thẻ Quẻ Linh Xăm Sơn Son Thếp Vàng)
@@ -554,7 +553,7 @@ class _RoyalSacredStickPreviewDialogState
       );
       await RoyalGalleryService().saveItem(
         galleryItem,
-        isPro: ref.read(isProUserProvider),
+        isPro: true,
       );
 
       await SharePlus.instance.share(

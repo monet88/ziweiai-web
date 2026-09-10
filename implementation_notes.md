@@ -85,6 +85,21 @@
   - Hiệu quả giảm tải của WebP so với PNG phụ thuộc vào độ phức tạp của họa tiết thiệp (dao động tùy thuộc vào nội dung ảnh).
   - Tốc độ phát audio nghi lễ sau khi nạp vào RAM phụ thuộc vào audio engine của hệ điều hành, giúp giảm đáng kể độ trễ I/O đĩa nhưng cần đo kiểm cụ thể trên từng dòng máy Android/iOS.
 
+### H. Codex Deep Audit Hardening (P0, P1-1, P1-2 Resolution)
+- **RLS Policy Thắt Chặt (Migration 000027):**
+  - Khóa vĩnh viễn bảng `royal_gallery_shares` và bucket `storage.objects` (`royal-gallery`) trước anonymous token bằng điều kiện `auth.jwt() ->> 'email' IS NOT NULL AND auth.jwt() ->> 'email' != '' AND coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) is false`.
+  - Đảm bảo cơ chế Defense-in-depth: ngay cả khi client bỏ qua API guard và gọi Supabase trực tiếp, database layer vẫn kiên quyết từ chối ghi dữ liệu đối với người dùng ẩn danh.
+- **Strict Server Tombstone Invariant:**
+  - Trong quá trình delta sync, tombstone trên server luôn là nguồn chân lý tuyệt đối (`deleted_at != null` WINS).
+  - Không cho phép client update ghi đè dựa trên `client.updatedAt` để phòng tránh client clock drift hoặc malicious future timestamps (ví dụ: client gửi timestamp 2035).
+- **Transactional Upload Pre-Check & Compensation:**
+  - `uploadCardImage` thực hiện pre-check: card phải tồn tại trong DB, thuộc về user và chưa bị xóa trước khi gửi bytes lên Storage.
+  - Áp dụng mẫu bù trừ (Compensation Pattern): nếu Storage upload thành công nhưng câu lệnh DB update `storage_path` bị lỗi (mất kết nối, lỗi query), service sẽ tự động kích hoạt `storage.remove([storagePath])` để dọn sạch orphan object và trả về 500 error.
+- **Audio Service Guard:**
+  - Toàn bộ luồng khởi tạo `initialize()` trong `RitualAudioService` được wrap qua `_initFuture ??= _doInternalInitialize()`, triệt tiêu triệt để race condition khi có nhiều notifier cùng build đồng thời.
+- **MIME & Toast Clarity:**
+  - Modal Web và share cards phản ánh đúng đuôi định dạng ảnh thực tế (`PNG` hoặc `WEBP`), không còn hardcode toast "WebP thành công" khi file thực tế là PNG fallback.
+
 ## 2. Deviations from Specification
 - Điều chỉnh cấu trúc đường dẫn lưu trữ từ `royal-gallery/{userId}/{cardId}.webp` sang `{userId}/{cardId}.{ext}` trong bucket riêng `royal-gallery` để đảm bảo tính toàn vẹn dữ liệu và tương thích với Supabase Storage RLS.
 
@@ -92,11 +107,14 @@
 - **Bucket chung vs. Bucket riêng cho Gallery:**
   - *Dùng chung `vision-uploads`:* Tiết kiệm thao tác tạo bucket nhưng dính nguy cơ file bị xóa tự động sau 7 ngày bởi cron job dọn dẹp định kỳ.
   - *Tạo bucket riêng `royal-gallery`:* Thêm một migration SQL nhưng đảm bảo an toàn dữ liệu người dùng vĩnh viễn và cấu hình RLS sạch sẽ, độc lập.
+- **Client Clock Trust vs. Strict Server Tombstone:**
+  - *Tin tưởng client timestamp:* Có thể hỗ trợ offline undo/restore đơn giản, nhưng để lộ lỗ hổng khổng lồ về clock drift và rủi ro hồi sinh card đã xóa.
+  - *Strict Server Tombstone:* Bảo vệ tính nhất quán dữ liệu ở cấp độ cao nhất. Khôi phục phải là thao tác explicit mutation riêng.
 
 ## 4. Maintenance Notes
-- Migration `000026_create_royal_gallery_bucket.sql` đã được kiểm tra tính nhất quán với `pnpm check:supabase-migrations`.
+- Migration `000026_create_royal_gallery_bucket.sql` và `000027_enforce_identified_user_on_gallery.sql` đã được kiểm tra tính nhất quán với `pnpm check:supabase-migrations` (26 versions).
 - Bộ test tự động bao phủ toàn diện:
-  - Mobile: 147 tests pass.
-  - API: 83 test files (509 tests) pass.
-  - Web: 59 test files (316 tests) pass.
-  - Astro-engine: 5 test files (35 tests) pass.
+  - Mobile: 147 tests pass; 0 lint/analyze issues.
+  - API: 83 test files (512 tests) pass 100%.
+  - Web: 59 test files (316 tests) pass 100%.
+  - Astro-engine: 5 test files (35 tests) pass 100%.

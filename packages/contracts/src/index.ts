@@ -59,3 +59,4 @@ export * from './wallet/transactions';
 export * from './auth/disposable-email';
 export * from './auth/turnstile';
 export * from './dossier/pdf-dossier';
+export * from './chart/divination-chat';

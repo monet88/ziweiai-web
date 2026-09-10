@@ -19,9 +19,13 @@ class ApiClient {
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final session = Supabase.instance.client.auth.currentSession;
-        if (session != null) {
-          options.headers['Authorization'] = 'Bearer ${session.accessToken}';
+        try {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            options.headers['Authorization'] = 'Bearer ${session.accessToken}';
+          }
+        } catch (_) {
+          // Bỏ qua nếu chạy trong unit test chưa init Supabase
         }
         return handler.next(options);
       },
@@ -159,6 +163,36 @@ class ApiClient {
   Future<Map<String, dynamic>> createChart(Map<String, dynamic> chartInput) async {
     try {
       final response = await _dio.post('/charts', data: chartInput);
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // --- Divination Chat & Compatibility AI Endpoints ---
+  Future<Map<String, dynamic>> sendDivinationChat({
+    required String question,
+    String? topic,
+  }) async {
+    try {
+      final response = await _dio.post('/divinations/chat', data: {
+        'question': question,
+        'topic': ?topic,
+      });
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> explainCompatibility(
+    Map<String, dynamic> compatibilityPayload,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/divinations/compatibility/explain',
+        data: compatibilityPayload,
+      );
       return response.data as Map<String, dynamic>;
     } catch (e) {
       rethrow;

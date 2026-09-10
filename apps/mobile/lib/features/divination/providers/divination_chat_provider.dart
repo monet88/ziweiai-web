@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/api/api_provider.dart';
 import '../../wallet/providers/wallet_provider.dart';
 import '../models/divination_message.dart';
 
@@ -100,22 +101,27 @@ class DivinationChatNotifier extends Notifier<DivinationChatState> {
       messages: [...state.messages, userMsg, placeholderAssistantMsg],
     );
 
-    // Refresh ví XU để đồng bộ
-    ref.read(walletControllerProvider).refresh();
+    // Lấy phản hồi: Gọi backend nếu online, fallback sang rule-based nếu offline
+    String fullResponse;
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final res = await apiClient.sendDivinationChat(question: trimmed, topic: topic);
+      fullResponse = (res['answer'] as String?) ?? _generateRoyalAnswer(trimmed, topic: topic);
+      ref.read(walletControllerProvider).refresh();
+    } catch (_) {
+      fullResponse = _generateRoyalAnswer(trimmed, topic: topic);
+    }
 
     // Stream phản hồi hoàng gia uyên bác
-    await _streamRoyalDivinationResponse(assistantMsgId, trimmed, topic: topic);
+    await _streamRoyalDivinationResponse(assistantMsgId, fullResponse);
     return true;
   }
 
   /// Stream mô phỏng phản hồi uyên bác từ Khâm Thiên Giám
   Future<void> _streamRoyalDivinationResponse(
     String messageId,
-    String query, {
-    String? topic,
-  }) async {
-    final fullResponse = _generateRoyalAnswer(query, topic: topic);
-
+    String fullResponse,
+  ) async {
     // Cắt theo từng cụm hoặc ký tự để tạo hiệu ứng viết ngự bút
     final buffer = StringBuffer();
     final words = fullResponse.split(' ');

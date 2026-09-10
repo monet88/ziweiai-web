@@ -8,6 +8,7 @@ import 'package:ziweiai_mobile/ui/animated_background.dart';
 import 'package:ziweiai_mobile/ui/glass_panel.dart';
 import 'package:ziweiai_mobile/ui/premium_button.dart';
 import 'package:ziweiai_mobile/features/wallet/providers/wallet_provider.dart';
+import 'package:ziweiai_mobile/core/api/api_provider.dart';
 import '../../domain/models/compatibility_models.dart';
 import '../../domain/services/compatibility_calculator.dart';
 import '../widgets/royal_compatibility_card.dart';
@@ -31,6 +32,8 @@ class _CompatibilityScreenState extends ConsumerState<CompatibilityScreen> {
   CompatibilityCategory _category = CompatibilityCategory.love;
   CompatibilityResult? _result;
   bool _isUnlockedAI = false;
+  bool _isLoadingAI = false;
+  String? _aiCustomExplanation;
   final GlobalKey _cardKey = GlobalKey();
 
   @override
@@ -144,12 +147,43 @@ class _CompatibilityScreenState extends ConsumerState<CompatibilityScreen> {
       ),
     );
 
-    if (confirm == true) {
-      ref.invalidate(walletBalanceProvider);
-      if (mounted) {
-        setState(() {
-          _isUnlockedAI = true;
+    if (confirm == true && _result != null) {
+      final res = _result!;
+      setState(() {
+        _isUnlockedAI = true;
+        _isLoadingAI = true;
+      });
+
+      try {
+        final apiClient = ref.read(apiClientProvider);
+        final apiRes = await apiClient.explainCompatibility({
+          'person1': {
+            'name': res.person1.name,
+            'birthYear': res.person1.year,
+            'gender': res.person1.gender,
+          },
+          'person2': {
+            'name': res.person2.name,
+            'birthYear': res.person2.year,
+            'gender': res.person2.gender,
+          },
+          'overallScore': res.totalScore,
+          'verdictTitle': res.verdictTitle,
         });
+
+        if (mounted) {
+          setState(() {
+            _aiCustomExplanation = apiRes['explanation'] as String?;
+            _isLoadingAI = false;
+          });
+        }
+        ref.invalidate(walletBalanceProvider);
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            _isLoadingAI = false;
+          });
+        }
       }
     }
   }
@@ -708,9 +742,12 @@ class _CompatibilityScreenState extends ConsumerState<CompatibilityScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Phối hôn giữa ${res.person1.name} (${res.person1.year}) và ${res.person2.name} (${res.person2.year}) tạo nên cục diện "${res.verdictTitle}".\n\n'
-                        '${res.advice}\n\n'
-                        'Về phương diện phong thủy: Nên chọn hướng phòng ngủ hoặc phòng làm việc theo cung Sinh Khí hoặc Thiên Y để gia tăng vượng khí. Năm 2026 Bính Ngọ là thời điểm đắc lợi để củng cố mối liên kết và thực hiện các dự định lớn.',
+                        _isLoadingAI
+                            ? '⏳ Đang thỉnh ý Khâm Thiên Giám xuất ngự bút...'
+                            : (_aiCustomExplanation ??
+                                'Phối hôn giữa ${res.person1.name} (${res.person1.year}) và ${res.person2.name} (${res.person2.year}) tạo nên cục diện "${res.verdictTitle}".\n\n'
+                                '${res.advice}\n\n'
+                                'Về phương diện phong thủy: Nên chọn hướng phòng ngủ hoặc phòng làm việc theo cung Sinh Khí hoặc Thiên Y để gia tăng vượng khí. Năm 2026 Bính Ngọ là thời điểm đắc lợi để củng cố mối liên kết và thực hiện các dự định lớn.'),
                         style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.5),
                       ),
                     ],

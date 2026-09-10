@@ -158,6 +158,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final currentThemeMode = ref.watch(themeModeProvider);
     final isAudioMuted = ref.watch(ritualAudioNotifierProvider);
     final audioVolume = ref.watch(ritualAudioVolumeProvider);
+    final isOfflineRitual = ref.watch(offlineRitualModeProvider);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -506,6 +507,49 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                       if (!isAudioMuted) ...[
                         const SizedBox(height: 16),
+                        const Divider(color: Colors.white10, height: 1),
+                        const SizedBox(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.offline_bolt_rounded, color: Color(0xFF4ADE80), size: 20),
+                                const SizedBox(width: 10),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: const [
+                                    Text(
+                                      'Nghi Lễ Ngoại Tuyến (Zero Latency)',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Nạp sẵn âm thanh vào RAM, không cần Internet',
+                                      style: TextStyle(
+                                        color: AppTheme.mysticalTextSecondary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Switch.adaptive(
+                              value: isOfflineRitual,
+                              activeThumbColor: const Color(0xFF4ADE80),
+                              activeTrackColor: const Color(0xFF4ADE80).withValues(alpha: 0.4),
+                              onChanged: (val) {
+                                HapticFeedback.lightImpact();
+                                ref.read(offlineRitualModeProvider.notifier).setMode(val);
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
                         const Divider(color: Colors.white10, height: 1),
                         const SizedBox(height: 14),
                         Row(

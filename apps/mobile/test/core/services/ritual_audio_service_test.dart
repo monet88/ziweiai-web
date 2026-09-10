@@ -72,5 +72,28 @@ void main() {
       await expectLater(service.playStickShake(), completes);
       await expectLater(service.playTarotFlip(), completes);
     });
+
+    test('offline ritual mode toggles and persists correctly (Sprint 60)', () async {
+      final service = RitualAudioService();
+      await service.initialize();
+      expect(service.isOfflineRitualMode, false);
+
+      await service.setOfflineRitualMode(true);
+      expect(service.isOfflineRitualMode, true);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('vios_mobile_offline_ritual_mode'), true);
+
+      final toggled = await service.toggleOfflineRitualMode();
+      expect(toggled, false);
+      expect(service.isOfflineRitualMode, false);
+    });
+
+    test('preloadRitualSounds executes and initializes sound cache without throwing (Sprint 60)', () async {
+      final service = RitualAudioService();
+      await service.initialize();
+
+      await expectLater(service.preloadRitualSounds(), completes);
+    });
   });
 }

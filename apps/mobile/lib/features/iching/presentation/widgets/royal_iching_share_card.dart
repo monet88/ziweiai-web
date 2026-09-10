@@ -9,6 +9,7 @@ import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/royal_image_compressor.dart';
 import '../../data/models/iching_models.dart';
 import '../../../gallery/data/royal_gallery_service.dart';
 import '../../../gallery/models/royal_share_item.dart';
@@ -528,11 +529,14 @@ class _RoyalSharePreviewDialogState extends ConsumerState<RoyalSharePreviewDialo
         pixelRatio: 3.0,
       );
 
+      // Tối ưu hóa dung lượng: Nén sang WebP (Sprint 60)
+      final compressedBytes = await RoyalImageCompressor.compressToWebp(imageBytes);
+
       final directory = await getTemporaryDirectory();
       final imageFile = File(
-        '${directory.path}/thiep_luc_hao_${DateTime.now().millisecondsSinceEpoch}.png',
+        '${directory.path}/thiep_luc_hao_${DateTime.now().millisecondsSinceEpoch}.webp',
       );
-      await imageFile.writeAsBytes(imageBytes);
+      await imageFile.writeAsBytes(compressedBytes);
 
       // Auto-save to Royal Gallery
       try {

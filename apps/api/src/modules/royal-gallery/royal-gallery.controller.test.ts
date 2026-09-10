@@ -29,11 +29,28 @@ describe('RoyalGalleryController & Guard', () => {
 
   const controller = new RoyalGalleryController(mockService as any);
 
-  it('listGallery trả về danh sách thiệp đã ký URL', async () => {
+  it('listGallery trả về danh sách thiệp đã ký URL và hỗ trợ phân trang offset', async () => {
     const user = { userId: '11111111-1111-4111-8111-111111111111', email: 'vip@user.com' };
-    const res = await controller.listGallery(user, 50);
+    mockService.listShares.mockResolvedValueOnce({
+      items: [
+        {
+          id: 'test-card-1',
+          ownerUserId: '11111111-1111-4111-8111-111111111111',
+          cardType: 'ziwei',
+          title: 'Lá Số Hoàng Triều',
+          aspectRatio: 'standard',
+          createdAt: '2026-09-10T12:00:00.000Z',
+          imageUrl: 'https://example.com/signed-url',
+        },
+      ],
+      total: 1,
+      hasMore: false,
+    });
+    const res = await controller.listGallery(user, 50, 0);
     expect(res.items).toHaveLength(1);
-    expect(mockService.listShares).toHaveBeenCalledWith(user.userId, 50);
+    expect(res.total).toBe(1);
+    expect(res.hasMore).toBe(false);
+    expect(mockService.listShares).toHaveBeenCalledWith(user.userId, 50, 0);
   });
 
   it('syncGallery gọi đúng service với body', async () => {

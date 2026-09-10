@@ -148,7 +148,10 @@ class RoyalGalleryService {
               await client.storage.from(_kBucketName).uploadBinary(
                     path,
                     fileBytes,
-                    fileOptions: const FileOptions(upsert: true),
+                    fileOptions: FileOptions(
+                      upsert: true,
+                      contentType: ext == 'webp' ? 'image/webp' : 'image/png',
+                    ),
                   );
               storagePath = path;
               signedUrl = await client.storage
@@ -316,7 +319,10 @@ class RoyalGalleryService {
               await client.storage.from(_kBucketName).uploadBinary(
                     path,
                     fileBytes,
-                    fileOptions: const FileOptions(upsert: true),
+                    fileOptions: FileOptions(
+                      upsert: true,
+                      contentType: ext == 'webp' ? 'image/webp' : 'image/png',
+                    ),
                   );
               storagePath = path;
               signedUrl = await client.storage

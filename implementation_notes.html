@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Implementation Notes — Sprint 49: Production Hardening, PWA & Store Readiness</title>
+  <title>Implementation Notes — Sprint 50: Khánh Tiết Hoàng Triều & Tối Ưu Hóa Phát Hành</title>
   <style>
     :root {
       --bg: #0b0c14;
@@ -115,78 +115,71 @@
   <div class="container">
     <header>
       <div>
-        <h1>ViOS — Sprint 49 Implementation Notes</h1>
+        <h1>ViOS — Sprint 50 Implementation Notes</h1>
         <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 14px;">
-          Bản ghi kiến trúc & thẩm định kỹ thuật: 100% Hoàn Thành 4 Hạng Mục Production Hardening, PWA & Store Readiness
+          Khánh Tiết Hoàng Triều & Tối Ưu Hóa Phát Hành — Nghiệm Thu Thực Tế Thiết Bị & Live Cloud
         </p>
       </div>
-      <div class="badge">100% HOÀN THÀNH — 1.066+ MONOREPO TESTS PASS</div>
+      <div class="badge">100% HOÀN THÀNH & VERIFIED ON HARDWARE</div>
     </header>
 
     <div class="card">
-      <h2>1. Tổng Quan Triển Khai 4 Hạng Mục Theo Thứ Tự (1 ➜ 3 ➜ 4 ➜ 2)</h2>
+      <h2>1. Các Hạng Mục Kỹ Thuật Đã Triển Khai</h2>
       <table>
         <thead>
           <tr>
-            <th>Hạng Mục</th>
-            <th>Mô Tả Kỹ Thuật</th>
-            <th>Phạm Vi Tác Động</th>
-            <th>Commit</th>
-            <th>Quality Gates</th>
+            <th>Phân Hệ</th>
+            <th>Mô Tả Triển Khai</th>
+            <th>Tác Động Kiến Trúc</th>
+            <th>Xác Thực Thực Tế</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>Hạng mục 1</strong></td>
-            <td>Gia cố Ngự Phán Phòng & Hợp Hôn AI (Backend endpoints <code>@RequireXU</code>, trừ XU DB, auto-refund, LLM fallback an toàn).</td>
-            <td><code>contracts</code>, <code>apps/api</code>, <code>apps/mobile</code></td>
-            <td><code>c6eb37d</code></td>
-            <td>Pass 100%</td>
+            <td><strong>Git Management</strong></td>
+            <td>Tách nhánh an toàn <code>feature/sprint-50-royal-release-and-optimization</code> theo chuẩn <code>/vibe-git-manager</code>.</td>
+            <td>Branching Policy, Rollback Anchor an toàn.</td>
+            <td>Branch sạch, zero secrets leaked.</td>
           </tr>
           <tr>
-            <td><strong>Hạng mục 3</strong></td>
-            <td>Triển khai PWA Manifest, Service Worker caching an toàn, Icon Âm Dương thếp vàng, mobile viewport metadata cho Web SvelteKit.</td>
-            <td><code>apps/web</code></td>
-            <td><code>73e2658</code></td>
-            <td>Pass 100%</td>
+            <td><strong>FCM 07:00 Cron</strong></td>
+            <td>Xây dựng <code>NotificationsModule</code>, <code>NotificationsService</code>, và endpoint Vercel Cron <code>GET /notifications/cron/daily-morning</code> bảo vệ bởi <code>CRON_SECRET</code>.</td>
+            <td>Cấu hình <code>vercel.json</code> crons <code>0 0 * * *</code> (07:00 AM VN), graceful fallback dry-run khi thiếu key.</td>
+            <td>493/493 tests API pass; HTTP 401 khi thiếu token, 200 khi xác thực hợp lệ.</td>
           </tr>
           <tr>
-            <td><strong>Hạng mục 4</strong></td>
-            <td>Endpoint lưu FCM Token (<code>POST /users/me/fcm-token</code>), PushNotificationService auto-sync, và API Cấu hình động Admin (<code>GET/POST /admin/configs</code>).</td>
-            <td><code>contracts</code>, <code>apps/api</code>, <code>apps/mobile</code></td>
-            <td><code>c6cbef6</code></td>
-            <td>Pass 100%</td>
+            <td><strong>Mobile On-Device</strong></td>
+            <td>Đóng gói <code>app-debug.apk</code>, nạp không dây qua ADB vào Samsung Galaxy A53 (<code>192.168.1.17:35347</code>) và kích hoạt trực tiếp.</td>
+            <td>Cấu hình Android build, Proguard, permissions, Full HD+ 1080x2400.</td>
+            <td>PID 23755 running mượt mà, sync balance API thật, không crash màn hình trắng.</td>
           </tr>
           <tr>
-            <td><strong>Hạng mục 2</strong></td>
-            <td>Cấu hình môi trường phát hành Store (AdMob Rewarded Unit IDs & RevenueCat Production Keys, fallback graceful không crash khi build Release).</td>
-            <td><code>.gitignore</code>, <code>.env.example</code>, <code>apps/mobile/.env.example</code></td>
-            <td><code>117efcd</code></td>
-            <td>Pass 100%</td>
+            <td><strong>Vercel Production</strong></td>
+            <td>Khắc phục lỗi 100MB upload (bỏ qua <code>apps/mobile/</code>) và fix dependency <code>WalletModule</code> trong <code>DivinationsModule</code>.</td>
+            <td>Tối ưu <code>.vercelignore</code>, hoàn thiện AppModule dependency graph.</td>
+            <td>Deploy production thành công: <code>https://tuvitoantap.vercel.app</code>, health check <code>status: ok</code>.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <div class="card">
-      <h2>2. Quyết Định Thiết Kế Ngầm & Bất Biến (Implicit Decisions & Invariants)</h2>
+      <h2>2. Quyết Định Kiến Trúc & Sửa Lỗi Gốc (/behavior-model-debugger)</h2>
       <ul>
-        <li><strong>Atomic Wallet Deduction & Auto-Refund:</strong> Tại <code>DivinationChatService</code>, XU được trừ trước qua <code>WalletEngineService</code> khi nhận request. Nếu AI Provider timeout hoặc gặp sự cố, hệ thống tự động hoàn XU (refund) cho người dùng kèm log chi tiết.</li>
-        <li><strong>Graceful PWA Cache Bypass:</strong> Service Worker (<code>apps/web/static/sw.js</code>) chỉ cache các static assets (CSS, JS, Fonts, Images), tuyệt đối bỏ qua (bypass) toàn bộ requests đến <code>/api/*</code> và <code>/auth/*</code> để bảo đảm tính real-time của dữ liệu luận giải và tài khoản.</li>
-        <li><strong>FCM Token Resilient Fallback:</strong> Endpoint <code>POST /users/me/fcm-token</code> cập nhật trực tiếp vào <code>profiles</code>. Nếu database đang trong quá trình migrate, service bắt lỗi và ghi log cảnh báo thay vì ném 500 ra client.</li>
-        <li><strong>Release Mode RevenueCat Safety:</strong> Ứng dụng mobile không gọi <code>Purchases.configure()</code> nếu đang build Release mà key vẫn là test key (<code>test_*</code>), tránh crash đột ngột khi mở app trong môi trường production.</li>
+        <li><strong>Dependency Graph NestJS:</strong> Trong Sprint 49, <code>DivinationChatService</code> được bổ sung <code>WalletEngineService</code> nhưng chưa được import <code>WalletModule</code> vào <code>DivinationsModule</code>. Do đó ở local unit tests (mock độc lập) thì pass nhưng runtime trên Vercel ném <code>UnknownDependenciesException</code>. Đã fix tận gốc bằng cách import <code>WalletModule</code> vào <code>DivinationsModule</code>, kiểm chứng thành công bằng script bootstrap thực tế.</li>
+        <li><strong>Vercel Upload Quota:</strong> Thư mục <code>apps/mobile/build</code> nặng tới 2.6 GB khiến lệnh deploy vượt ngưỡng 100 MB của Vercel CLI. Đã bổ sung <code>apps/mobile/</code>, <code>**/build/</code>, <code>**/.gradle/</code> vào <code>.vercelignore</code> giúp gói upload nén xuống dưới 1KB delta.</li>
+        <li><strong>07:00 AM Push Notification Invariant:</strong> Sử dụng Vercel Cron tiêu chuẩn kích hoạt tại <code>00:00 UTC</code> (tức 07:00 sáng Indochina Time). Service luôn có cơ chế fallback không bao giờ làm gián đoạn API nếu chưa cấu hình Google Service Account credentials.</li>
       </ul>
     </div>
 
     <div class="card">
-      <h2>3. Quality Gates & Validation Results (Thẩm Định Độc Lập)</h2>
+      <h2>3. Quality Gates & Bằng Chứng Nghiệm Thu</h2>
       <ul>
-        <li><strong>Mobile Apps:</strong> <code>flutter analyze</code> đạt <strong>0 issues</strong>; <code>flutter test</code> đạt <strong>112/112 tests PASS 100%</strong>.</li>
-        <li><strong>Web SvelteKit:</strong> <code>svelte-check</code> đạt <strong>0 errors, 0 warnings</strong>; <code>vitest</code> đạt <strong>303/303 tests PASS 100%</strong>.</li>
-        <li><strong>NestJS API:</strong> <code>typecheck</code> đạt 0 errors; <code>vitest</code> đạt <strong>485/485 tests PASS 100%</strong>; <code>build</code> hoàn tất sạch sẽ.</li>
-        <li><strong>Contracts & Astro Engine:</strong> Contracts 143/143 tests pass; Engine 35/35 tests pass; build ESM/CJS hoàn hảo.</li>
-        <li><strong>Toàn bộ Workspace Monorepo:</strong> <code>pnpm test</code> chạy 9/9 turbo tasks đều <strong>thành công 100%</strong> (1.066+ tests).</li>
-        <li><strong>Bảo Mật Secrets:</strong> Kiểm tra nghiêm ngặt với <code>git check-ignore</code> xác nhận <code>.env</code>, <code>.env.local</code>, private keys được che chắn 100%.</li>
+        <li><strong>Samsung Galaxy A53 (SM A536E):</strong> Cài đặt thành công qua <code>adb install -r</code>, ứng dụng khởi động đạt kích thước màn hình <code>1080x2400</code>, tự động gọi <code>https://tuvitoantap.vercel.app/api/users/me/balance</code> và nạp cache RevenueCat.</li>
+        <li><strong>Backend Tests:</strong> 81 test files, <strong>493/493 unit tests PASS 100%</strong>.</li>
+        <li><strong>Production API Health:</strong>
+          <code>{"service":"ziweiai-api","status":"ok","timestamp":"...","version":"0.1.0"}</code>
+        </li>
       </ul>
     </div>
   </div>

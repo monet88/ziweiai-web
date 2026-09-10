@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Reflector } from '@nestjs/core';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
 import { UnauthorizedException } from '@nestjs/common';
 import { apiEnv } from '../../config/env';
+import { isPublicRouteKey } from '../auth/decorators/public.decorator';
 
 describe('NotificationsController', () => {
   let controller: NotificationsController;
@@ -17,6 +19,12 @@ describe('NotificationsController', () => {
       broadcastPushNotification: vi.fn(),
     };
     controller = new NotificationsController(service as unknown as NotificationsService);
+  });
+
+  it('should be decorated with @Public() so it is not blocked by global SupabaseAuthGuard', () => {
+    const reflector = new Reflector();
+    const isPublic = reflector.get<boolean>(isPublicRouteKey, NotificationsController);
+    expect(isPublic).toBe(true);
   });
 
   describe('triggerDailyMorningCron', () => {
@@ -107,6 +115,42 @@ describe('NotificationsController', () => {
         }),
         true,
       );
+    });
+
+    it('should reject unauthorized admin broadcast when CRON_SECRET is configured and secret is missing/wrong', async () => {
+      const originalSecret = apiEnv.CRON_SECRET;
+      (apiEnv as any).CRON_SECRET = 'configured-admin-secret';
+
+      try {
+        await expect(controller.adminBroadcastDaily({ force: true, secret: 'wrong-secret' })).rejects.toThrow(
+          UnauthorizedException,
+        );
+      } finally {
+        (apiEnv as any).CRON_SECRET = originalSecret;
+      }
+    });
+
+    it('should accept admin broadcast when valid secret is provided in body or header', async () => {
+      const originalSecret = apiEnv.CRON_SECRET;
+      (apiEnv as any).CRON_SECRET = 'configured-admin-secret';
+      service.sendDailyMorningPushNotifications.mockResolvedValue({
+        dispatchedCount: 1,
+        successCount: 1,
+        failureCount: 0,
+        dryRun: true,
+        message: 'Dispatched',
+      });
+
+      try {
+        const res = await controller.adminBroadcastDaily(
+          { force: true },
+          undefined,
+          'configured-admin-secret',
+        );
+        expect(res.success).toBe(true);
+      } finally {
+        (apiEnv as any).CRON_SECRET = originalSecret;
+      }
     });
   });
 });

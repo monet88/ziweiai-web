@@ -1,7 +1,9 @@
 import { Controller, Get, Post, Headers, UnauthorizedException, HttpCode, HttpStatus, Logger, Body } from '@nestjs/common';
 import { NotificationsService, PushNotificationResult } from './notifications.service';
 import { apiEnv } from '../../config/env';
+import { Public } from '../auth/decorators/public.decorator';
 
+@Public()
 @Controller()
 export class NotificationsController {
   private readonly logger = new Logger(NotificationsController.name);
@@ -46,8 +48,20 @@ export class NotificationsController {
   @Post('admin/notifications/broadcast-daily')
   @HttpCode(HttpStatus.OK)
   async adminBroadcastDaily(
-    @Body() body?: { force?: boolean; customTitle?: string; customBody?: string },
+    @Body() body?: { force?: boolean; customTitle?: string; customBody?: string; secret?: string },
+    @Headers('authorization') authHeader?: string,
+    @Headers('x-admin-secret') xAdminSecret?: string,
   ): Promise<{ success: boolean; result: PushNotificationResult }> {
+    const configuredSecret = apiEnv.CRON_SECRET;
+    if (configuredSecret) {
+      const bearerToken = authHeader?.replace(/^Bearer\s+/i, '');
+      const providedSecret = xAdminSecret || bearerToken || body?.secret;
+      if (providedSecret !== configuredSecret) {
+        this.logger.warn('Truy cập admin broadcast-daily bị từ chối: Secret không hợp lệ');
+        throw new UnauthorizedException('Invalid admin authorization secret');
+      }
+    }
+
     this.logger.log('Admin phát lệnh broadcast daily notification thử nghiệm');
 
     if (body?.customTitle && body?.customBody) {

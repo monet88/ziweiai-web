@@ -40,11 +40,16 @@ GoogleService-Info.plist
 mcps/
 
 # Build/output/media artifacts.
+apps/mobile/
 node_modules/
 .turbo/
 .svelte-kit/
 dist/
 build/
+**/dist/
+**/build/
+**/.dart_tool/
+**/.gradle/
 coverage/
 test-results/
 playwright-report/

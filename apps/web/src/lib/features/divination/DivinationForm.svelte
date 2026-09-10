@@ -7,6 +7,7 @@
   import type { DivinationCastMethod, DivinationPurposeKey, LiuyaoLineStateKey } from '@ziweiai/contracts';
   import type { DivinationModel } from './divination-model.svelte';
   import { tossThreeCoins, type CoinFace } from './liuyao-coin-toss';
+  import { playCoinClink, playSingingBowl } from '$lib/audio/ritual-audio';
   import { Sparkles, Compass, ShieldCheck } from 'lucide-svelte';
 
   interface Props {
@@ -25,6 +26,7 @@
   let tossingAll = $state(false);
 
   function tossLine(index: number): void {
+    playCoinClink();
     const { coins, state } = tossThreeCoins();
     const nextFaces = [...coinFaces];
     nextFaces[index] = coins;
@@ -33,17 +35,27 @@
     nextSeq[index] += 1;
     tossSeq = nextSeq;
     model.setLiuyaoLine(index, state);
+
+    const filledCount = nextFaces.filter(Boolean).length;
+    if (filledCount === 6) {
+      setTimeout(() => {
+        playSingingBowl();
+      }, 300);
+    }
   }
 
   function tossAll(): void {
     if (tossingAll) return;
     tossingAll = true;
     for (let i = 0; i < 6; i += 1) {
-      tossLine(i);
+      setTimeout(() => {
+        tossLine(i);
+      }, i * 90);
     }
     // Nha co tossingAll sau khi animation hao cuoi chay xong (6 hao * 90ms so le + 360ms reveal).
     setTimeout(() => {
       tossingAll = false;
+      playSingingBowl();
     }, 6 * 90 + 360);
   }
   // chartSystem là prop hằng theo route; derive để khỏi cảnh báo state_referenced_locally.
@@ -88,6 +100,7 @@
 
   function handleSubmit(event: Event): void {
     event.preventDefault();
+    playSingingBowl();
     model.submit();
   }
 </script>

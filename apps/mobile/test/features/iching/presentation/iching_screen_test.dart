@@ -201,6 +201,20 @@ void main() {
       expect(paywallState.isVisible, isTrue);
       expect(paywallState.cost, 5);
       expect(paywallState.featureName, 'Gieo Quẻ Lục Hào');
+      expect(paywallState.onSuccess, isNotNull);
+
+      // Verify retry button is shown when error occurs after 6 lines
+      expect(find.textContaining('GỬI LẠI QUẺ (CHẠM ĐỂ GỬI)'), findsOneWidget);
+
+      // Trigger onSuccess callback (simulating coin reward or top-up)
+      paywallState.onSuccess!.call();
+      await tester.pump();
+
+      // Verify draw was called twice (initial + retry)
+      verify(() => mockRepository.drawIChing(
+        question: any(named: 'question'),
+        castArray: any(named: 'castArray'),
+      )).called(2);
     });
   });
 }

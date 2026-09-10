@@ -19,3 +19,4 @@ export { default as ViOSLogo } from './ViOSLogo.svelte';
 export { default as BottomNavigation } from './BottomNavigation.svelte';
 export { default as BottomSheet } from './BottomSheet.svelte';
 export { default as GlobalBottomSheet } from './GlobalBottomSheet.svelte';
+export { default as AnonymousPreservationBanner } from './AnonymousPreservationBanner.svelte';

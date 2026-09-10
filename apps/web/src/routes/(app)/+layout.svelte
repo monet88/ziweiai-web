@@ -1,7 +1,13 @@
 <script lang="ts">
   import { getAuthStore } from '$lib/auth/auth-context';
   import { setWalletStore } from '$lib/features/payment/wallet-context';
-  import { GlobalPaywallModal, GlobalAuthModal, MobileBottomNav, GlobalBottomSheet } from '$lib/components/ui';
+  import {
+    GlobalPaywallModal,
+    GlobalAuthModal,
+    MobileBottomNav,
+    GlobalBottomSheet,
+    AnonymousPreservationBanner,
+  } from '$lib/components/ui';
   import type { Snippet } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -49,6 +55,7 @@
     <p>Đang chuẩn bị không gian tử vi của bạn…</p>
   </main>
 {:else}
+  <AnonymousPreservationBanner />
   <div class="app-content-wrapper">
     {@render children()}
   </div>

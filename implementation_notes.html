@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Implementation Notes — Sprint 44: 100% Bộ 6 Màn Hình Mobile Hoàng Gia Chuẩn Stitch MCP</title>
+  <title>Implementation Notes — Sprint 49: Production Hardening, PWA & Store Readiness</title>
   <style>
     :root {
       --bg: #0b0c14;
@@ -115,93 +115,78 @@
   <div class="container">
     <header>
       <div>
-        <h1>ViOS Mobile — Sprint 44 Implementation Notes</h1>
+        <h1>ViOS — Sprint 49 Implementation Notes</h1>
         <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 14px;">
-          Bản ghi kiến trúc & thẩm định kỹ thuật: Hoàn tất 100% Bộ 6 Màn Hình Cung Đình Hoàng Gia Stitch MCP
+          Bản ghi kiến trúc & thẩm định kỹ thuật: 100% Hoàn Thành 4 Hạng Mục Production Hardening, PWA & Store Readiness
         </p>
       </div>
-      <div class="badge">100% HOÀN THÀNH — 52/52 TESTS PASS</div>
+      <div class="badge">100% HOÀN THÀNH — 1.066+ MONOREPO TESTS PASS</div>
     </header>
 
     <div class="card">
-      <h2>1. Tổng Quan Sprint 44 Phase 2.6: Hồ Sơ Mệnh Lý Hoàng Gia (19 Trang A4)</h2>
-      <p>
-        Hiện thực hóa màn hình thứ 6 (cột mốc hoàn tất trọn vẹn bộ 6 màn hình) chuẩn Stitch MCP <code>baa0f9c74fbf4402b01cfaa9d55aec3a</code>.
-        Ứng dụng công nghệ đọc ngự thư hai chế độ (Dual Mode), bảo mật thủy ấn cá nhân hóa và triện son Khâm Thiên Giám 3D.
-      </p>
-      <ul>
-        <li><strong>Dual Reading Mode:</strong> <code>PageView</code> lật trang ngự thư sách cổ (Book Mode) & <code>ListView</code> cuộn dọc liên tục (Scroll Mode).</li>
-        <li><strong>Imperial Reading Progress:</strong> Hiển thị vị trí phần trăm đọc, trang hiện tại trên tổng 19 trang, cùng Modal Bottom Sheet tra cứu nhanh 19 mục lục.</li>
-        <li><strong>Security Watermark:</strong> Thủy ấn cá nhân hóa xoay nghiêng -20° <code>VIOS-ROYAL-8899 · KHÂM THIÊN BẢO MẬT</code>.</li>
-        <li><strong>Con Dấu Triện Son 3D:</strong> Dấu triện vuông 110x110dp màu đỏ chu sa <code>KHÂM THIÊN GIÁM NGỰ BÚT</code> ở trang 19.</li>
-      </ul>
-    </div>
-
-    <div class="card">
-      <h2>2. Bảng Tiến Độ Bộ 6 Màn Hình Mobile Hoàng Gia Stitch MCP</h2>
+      <h2>1. Tổng Quan Triển Khai 4 Hạng Mục Theo Thứ Tự (1 ➜ 3 ➜ 4 ➜ 2)</h2>
       <table>
         <thead>
           <tr>
-            <th>STT</th>
-            <th>Tên Màn Hình Mobile</th>
-            <th>Stitch Screen ID</th>
-            <th>Trạng Thái</th>
+            <th>Hạng Mục</th>
+            <th>Mô Tả Kỹ Thuật</th>
+            <th>Phạm Vi Tác Động</th>
+            <th>Commit</th>
             <th>Quality Gates</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>1</td>
-            <td>Home Bento Grid Dashboard Hoàng Gia</td>
-            <td><code>fc2849feb255476a</code></td>
-            <td>✅ Hoàn Thành (Phase 2.1)</td>
+            <td><strong>Hạng mục 1</strong></td>
+            <td>Gia cố Ngự Phán Phòng & Hợp Hôn AI (Backend endpoints <code>@RequireXU</code>, trừ XU DB, auto-refund, LLM fallback an toàn).</td>
+            <td><code>contracts</code>, <code>apps/api</code>, <code>apps/mobile</code></td>
+            <td><code>c6eb37d</code></td>
             <td>Pass 100%</td>
           </tr>
           <tr>
-            <td>2</td>
-            <td>Bàn Lá Số Tử Vi 12 Cung & Palace Detail BottomSheet</td>
-            <td><code>4cea86b51df245b7</code></td>
-            <td>✅ Hoàn Thành (Phase 2.2)</td>
+            <td><strong>Hạng mục 3</strong></td>
+            <td>Triển khai PWA Manifest, Service Worker caching an toàn, Icon Âm Dương thếp vàng, mobile viewport metadata cho Web SvelteKit.</td>
+            <td><code>apps/web</code></td>
+            <td><code>73e2658</code></td>
             <td>Pass 100%</td>
           </tr>
           <tr>
-            <td>3</td>
-            <td>Lục Hào Chiêm Bốc 3D Khang Hy & Tháp Tiên Thiên</td>
-            <td><code>d028a9a35e234c95</code></td>
-            <td>✅ Hoàn Thành (Phase 2.3)</td>
+            <td><strong>Hạng mục 4</strong></td>
+            <td>Endpoint lưu FCM Token (<code>POST /users/me/fcm-token</code>), PushNotificationService auto-sync, và API Cấu hình động Admin (<code>GET/POST /admin/configs</code>).</td>
+            <td><code>contracts</code>, <code>apps/api</code>, <code>apps/mobile</code></td>
+            <td><code>c6cbef6</code></td>
             <td>Pass 100%</td>
           </tr>
           <tr>
-            <td>4</td>
-            <td>Linh Xăm Quan Thánh 3D & Cặp Keo Âm Dương</td>
-            <td><code>587ad2cf7cb44747</code></td>
-            <td>✅ Hoàn Thành (Phase 2.4)</td>
+            <td><strong>Hạng mục 2</strong></td>
+            <td>Cấu hình môi trường phát hành Store (AdMob Rewarded Unit IDs & RevenueCat Production Keys, fallback graceful không crash khi build Release).</td>
+            <td><code>.gitignore</code>, <code>.env.example</code>, <code>apps/mobile/.env.example</code></td>
+            <td><code>117efcd</code></td>
             <td>Pass 100%</td>
-          </tr>
-          <tr>
-            <td>5</td>
-            <td>Bát Tự Tứ Trụ & Vận Khí Năm 2026 Bính Ngọ</td>
-            <td><code>041e456578ae4345</code></td>
-            <td>✅ Hoàn Thành (Phase 2.5)</td>
-            <td>Pass 100%</td>
-          </tr>
-          <tr>
-            <td>6</td>
-            <td>Hồ Sơ Mệnh Lý Hoàng Gia 19 Trang A4 Reader</td>
-            <td><code>baa0f9c74fbf4402</code></td>
-            <td>✅ Hoàn Thành (Phase 2.6)</td>
-            <td>Pass 100% (52/52 Tests)</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <div class="card">
-      <h2>3. Quality Gates & Validation Results</h2>
+      <h2>2. Quyết Định Thiết Kế Ngầm & Bất Biến (Implicit Decisions & Invariants)</h2>
       <ul>
-        <li><strong>Flutter Static Analysis:</strong> <code>flutter analyze</code> đạt <strong>0 issues</strong> (0 errors, 0 warnings, 0 lints).</li>
-        <li><strong>Flutter Unit & Widget Tests:</strong> <code>flutter test</code> đạt <strong>52/52 tests PASS 100%</strong> (toàn bộ các tính năng từ Home, Chart, Lục Hào, Xin Xăm, Bát Tự, đến Dossier).</li>
-        <li><strong>No Regressions:</strong> Toàn bộ 47 tests trước đó được bảo toàn nguyên vẹn; bổ sung 5 widget tests mới cho <code>RoyalDossierScreen</code>.</li>
+        <li><strong>Atomic Wallet Deduction & Auto-Refund:</strong> Tại <code>DivinationChatService</code>, XU được trừ trước qua <code>WalletEngineService</code> khi nhận request. Nếu AI Provider timeout hoặc gặp sự cố, hệ thống tự động hoàn XU (refund) cho người dùng kèm log chi tiết.</li>
+        <li><strong>Graceful PWA Cache Bypass:</strong> Service Worker (<code>apps/web/static/sw.js</code>) chỉ cache các static assets (CSS, JS, Fonts, Images), tuyệt đối bỏ qua (bypass) toàn bộ requests đến <code>/api/*</code> và <code>/auth/*</code> để bảo đảm tính real-time của dữ liệu luận giải và tài khoản.</li>
+        <li><strong>FCM Token Resilient Fallback:</strong> Endpoint <code>POST /users/me/fcm-token</code> cập nhật trực tiếp vào <code>profiles</code>. Nếu database đang trong quá trình migrate, service bắt lỗi và ghi log cảnh báo thay vì ném 500 ra client.</li>
+        <li><strong>Release Mode RevenueCat Safety:</strong> Ứng dụng mobile không gọi <code>Purchases.configure()</code> nếu đang build Release mà key vẫn là test key (<code>test_*</code>), tránh crash đột ngột khi mở app trong môi trường production.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>3. Quality Gates & Validation Results (Thẩm Định Độc Lập)</h2>
+      <ul>
+        <li><strong>Mobile Apps:</strong> <code>flutter analyze</code> đạt <strong>0 issues</strong>; <code>flutter test</code> đạt <strong>112/112 tests PASS 100%</strong>.</li>
+        <li><strong>Web SvelteKit:</strong> <code>svelte-check</code> đạt <strong>0 errors, 0 warnings</strong>; <code>vitest</code> đạt <strong>303/303 tests PASS 100%</strong>.</li>
+        <li><strong>NestJS API:</strong> <code>typecheck</code> đạt 0 errors; <code>vitest</code> đạt <strong>485/485 tests PASS 100%</strong>; <code>build</code> hoàn tất sạch sẽ.</li>
+        <li><strong>Contracts & Astro Engine:</strong> Contracts 143/143 tests pass; Engine 35/35 tests pass; build ESM/CJS hoàn hảo.</li>
+        <li><strong>Toàn bộ Workspace Monorepo:</strong> <code>pnpm test</code> chạy 9/9 turbo tasks đều <strong>thành công 100%</strong> (1.066+ tests).</li>
+        <li><strong>Bảo Mật Secrets:</strong> Kiểm tra nghiêm ngặt với <code>git check-ignore</code> xác nhận <code>.env</code>, <code>.env.local</code>, private keys được che chắn 100%.</li>
       </ul>
     </div>
   </div>

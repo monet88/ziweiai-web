@@ -86,9 +86,9 @@ plans/reports/
 # ---------------------------------------------------------------------------
 .env
 .env.*
-!.env.example
 *.env
 *.env.*
+!**/.env.example
 *.local
 *.secret
 *.secrets

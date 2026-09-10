@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ziweiai_mobile/core/theme/app_theme.dart';
 import 'package:ziweiai_mobile/core/providers/paywall_provider.dart';
 import 'package:ziweiai_mobile/features/iching/data/models/iching_models.dart';
@@ -18,6 +19,7 @@ void main() {
   late MockIChingRepository mockRepository;
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     mockRepository = MockIChingRepository();
   });
 
@@ -141,6 +143,30 @@ void main() {
       // Verify Imperial Commentary & TTS
       expect(find.text('KHÂM THIÊN GIÁM LUẬN QUẺ'), findsOneWidget);
       expect(find.textContaining('Thiên hành kiện'), findsOneWidget);
+
+      // Verify Royal Share Card button and open dialog
+      final shareButton = find.text('XUẤT THIỆP HOÀNG TRIỀU (CHIA SẺ)');
+      expect(shareButton, findsOneWidget);
+      await tester.tap(shareButton);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('CHIA SẺ HOÀNG TRIỀU'), findsOneWidget);
+      await tester.tap(find.text('Đóng'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+
+    testWidgets('renders acoustic ritual audio mute button in AppBar and toggles state', (WidgetTester tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final volumeButton = find.byIcon(Icons.volume_up_rounded);
+      expect(volumeButton, findsOneWidget);
+
+      await tester.tap(volumeButton);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byIcon(Icons.volume_off_rounded), findsOneWidget);
     });
 
     testWidgets('gracefully intercepts 402 HTTP error and triggers Royal Paywall without crude snackbar', (WidgetTester tester) async {

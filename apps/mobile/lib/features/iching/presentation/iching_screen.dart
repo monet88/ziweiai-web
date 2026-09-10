@@ -1,18 +1,22 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 
 import 'package:dio/dio.dart';
 import '../providers/iching_provider.dart';
 import '../data/models/iching_models.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/paywall_provider.dart';
+import '../../../../core/services/ritual_audio_service.dart';
 import '../../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../../ui/animated_background.dart';
 import '../../../../ui/glass_panel.dart';
+import 'widgets/royal_iching_share_card.dart';
 
 /// Royal Celestial I Ching 3D Screen (Lục Hào Chiêm Bốc Hoàng Gia)
 /// Meets Stitch MCP Screen ID: d028a9a3 specification
@@ -38,6 +42,9 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
 
   List<int> _currentCoins = [3, 3, 2]; // Default display coins
 
+  StreamSubscription<UserAccelerometerEvent>? _accelerometerSub;
+  DateTime _lastShakeTime = DateTime.now();
+
   @override
   void initState() {
     super.initState();
@@ -49,10 +56,25 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
+
+    // Shake sensor detection for mobile sensory casting
+    _accelerometerSub = userAccelerometerEventStream().listen((event) {
+      final magnitude =
+          sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
+      final now = DateTime.now();
+      if (magnitude > 14.0 &&
+          now.difference(_lastShakeTime).inMilliseconds > 1200) {
+        _lastShakeTime = now;
+        if (mounted && _castArray.length < 6 && !_isTossing) {
+          _tossCoins();
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
+    _accelerometerSub?.cancel();
     _questionController.dispose();
     _shakeController.dispose();
     _flipController.dispose();
@@ -68,6 +90,9 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
 
     FocusScope.of(context).unfocus();
     HapticFeedback.heavyImpact();
+
+    // Play coin clink acoustic ritual sound effect
+    ref.read(ritualAudioNotifierProvider.notifier).playCoinClink();
 
     setState(() {
       _isTossing = true;
@@ -98,6 +123,8 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
     });
 
     if (_castArray.length == 6) {
+      // Play Tibetan singing bowl upon completing 6 lines
+      ref.read(ritualAudioNotifierProvider.notifier).playSingingBowl();
       // 6 Lines complete, dispatch to backend
       ref.read(ichingNotifierProvider.notifier).draw(_questionController.text, _castArray);
     }
@@ -161,6 +188,11 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
     final state = ref.watch(ichingNotifierProvider);
 
     ref.listen(ichingNotifierProvider, (previous, next) {
+      if (next.hasValue && next.value != null && (previous == null || !previous.hasValue)) {
+        // Play Tibetan singing bowl when divination reading arrives successfully
+        ref.read(ritualAudioNotifierProvider.notifier).playSingingBowl();
+      }
+
       if (next.hasError) {
         final error = next.error;
         if (error != null) {
@@ -223,6 +255,21 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          Consumer(
+            builder: (context, ref, _) {
+              final isMuted = ref.watch(ritualAudioNotifierProvider);
+              return IconButton(
+                icon: Icon(
+                  isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                  color: AppTheme.goldBright,
+                ),
+                onPressed: () =>
+                    ref.read(ritualAudioNotifierProvider.notifier).toggleMute(),
+                tooltip:
+                    isMuted ? 'Bật âm thanh nghi thức' : 'Tắt âm thanh nghi thức',
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: AppTheme.goldBright),
             onPressed: _reset,
@@ -264,6 +311,8 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
                   _buildHexagramResult(state.value!),
                   const SizedBox(height: 22),
                   _buildResultNarrative(state.value!.narrative),
+                  const SizedBox(height: 18),
+                  _buildRoyalShareButton(state.value!),
                 ],
               ],
             ),
@@ -271,6 +320,44 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
         ),
       ),
       bottomNavigationBar: const VoiceAudioPlayerBar(),
+    );
+  }
+
+  Widget _buildRoyalShareButton(IChingDraw resultData) {
+    return Center(
+      child: ElevatedButton.icon(
+        onPressed: () {
+          HapticFeedback.mediumImpact();
+          final question = _questionController.text.trim().isEmpty
+              ? 'Công việc / kinh doanh tháng này có hanh thông, đại cát không?'
+              : _questionController.text;
+          RoyalSharePreviewDialog.show(
+            context,
+            data: resultData,
+            question: question,
+          );
+        },
+        icon: const Icon(Icons.auto_awesome, color: Color(0xFF140D26), size: 18),
+        label: Text(
+          'XUẤT THIỆP HOÀNG TRIỀU (CHIA SẺ)',
+          style: GoogleFonts.cinzel(
+            color: const Color(0xFF140D26),
+            fontWeight: FontWeight.w800,
+            fontSize: 13,
+            letterSpacing: 1.0,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.goldBright,
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(color: Color(0xFFFFF1A8), width: 1.2),
+          ),
+          elevation: 8,
+          shadowColor: AppTheme.goldBright.withValues(alpha: 0.5),
+        ),
+      ),
     );
   }
 
@@ -692,7 +779,7 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
                           ? (hasError
                               ? 'GỬI LẠI QUẺ (CHẠM ĐỂ GỬI)'
                               : 'ĐÃ HOÀN THÀNH 6 HÀO')
-                          : 'GIEO HÀO ${tossCount + 1}/6 (CHẠM ĐỂ GIEO)',
+                          : 'GIEO HÀO ${tossCount + 1}/6 (CHẠM HOẶC LẮC)',
                       style: GoogleFonts.cinzel(
                         color: isDone && hasError ? Colors.white : const Color(0xFF141026),
                         fontSize: 15,
@@ -706,6 +793,25 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
             ),
           ),
         ),
+        if (!isDone) ...[
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.vibration_rounded,
+                  color: AppTheme.mysticalTextSecondary, size: 14),
+              const SizedBox(width: 6),
+              Text(
+                'Lắc nhẹ điện thoại hoặc chạm nút để gieo quẻ (kèm âm thanh & haptic)',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: AppTheme.mysticalTextSecondary.withValues(alpha: 0.8),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

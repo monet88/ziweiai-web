@@ -11,6 +11,7 @@ import 'core/theme/theme_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'core/services/push_notification_service.dart';
+import 'core/services/daily_notification_service.dart';
 import 'core/presentation/widgets/global_paywall_wrapper.dart';
 
 void main() async {
@@ -18,6 +19,15 @@ void main() async {
   
   // Initialize Environment variables
   await Env.init();
+
+  // Initialize Daily Ritual Notifications (Hoàng Đạo & Quẻ Ngày)
+  try {
+    final dailyNotificationService = DailyNotificationService();
+    await dailyNotificationService.initialize();
+    await dailyNotificationService.scheduleDailyRitualNotification();
+  } catch (e) {
+    debugPrint('DailyNotificationService initialization failed: $e');
+  }
 
   // Initialize Google AdMob
   try {

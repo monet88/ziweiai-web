@@ -1,5 +1,9 @@
 import 'dart:developer';
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../env/env.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -10,6 +14,32 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 class PushNotificationService {
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+
+  Future<void> registerTokenWithBackend(String token) async {
+    try {
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null) {
+        log('User not logged in, skipping FCM token sync');
+        return;
+      }
+
+      final dio = Dio(BaseOptions(
+        baseUrl: Env.apiUrl,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${session.accessToken}',
+        },
+      ));
+
+      final response = await dio.post('/users/me/fcm-token', data: {
+        'token': token,
+        'platform': Platform.isIOS ? 'ios' : 'android',
+      });
+      log('FCM Token synced to backend successfully: ${response.statusCode}');
+    } catch (e) {
+      log('Failed to sync FCM token to backend: $e');
+    }
+  }
 
   Future<void> initialize() async {
     try {
@@ -29,6 +59,14 @@ class PushNotificationService {
       // Get the token
       final String? token = await _fcm.getToken();
       log('FCM Token: $token');
+      if (token != null) {
+        await registerTokenWithBackend(token);
+      }
+
+      // Listen for token refreshes
+      _fcm.onTokenRefresh.listen((newToken) {
+        registerTokenWithBackend(newToken);
+      });
 
       // Set up background message handler
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);

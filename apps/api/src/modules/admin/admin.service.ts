@@ -1,7 +1,8 @@
-import { Injectable, Logger, BadRequestException, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException, Inject, Optional } from '@nestjs/common';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../database/supabase-client';
 import { WalletEngineService } from '../wallet/wallet-engine.service';
+import { AdminRepository } from '../../database/repositories/admin.repository';
 
 @Injectable()
 export class AdminService {
@@ -10,6 +11,7 @@ export class AdminService {
   constructor(
     @Inject(SUPABASE_CLIENT) private readonly client: SupabaseClient,
     private readonly walletEngine: WalletEngineService,
+    @Optional() private readonly adminRepo?: AdminRepository,
   ) {}
 
   async getRecentTransactions() {
@@ -193,5 +195,58 @@ export class AdminService {
 
     this.logger.log(`Successfully reconciled transaction ${transactionId} -> User ${targetUserId} (+${xuToAdd} XU)`);
     return { success: true, transactionId, targetUserId, xuAdded: xuToAdd };
+  }
+
+  async getConfigs(): Promise<Record<string, any>> {
+    const defaultConfigs: Record<string, any> = {
+      dailyCheckinXu: 5,
+      rateVndToXu: 1000,
+      features: {
+        face: true,
+        palm: true,
+        annualReport: true,
+        hepan: true,
+        mangpai: true,
+        tarot: true,
+        sticks: true,
+        almanac: true,
+      },
+    };
+
+    try {
+      if (this.adminRepo) {
+        const stored = await this.adminRepo.getSystemConfigs();
+        return {
+          ...defaultConfigs,
+          ...stored,
+          features: {
+            ...defaultConfigs.features,
+            ...(stored.features || {}),
+          },
+        };
+      }
+    } catch (err: any) {
+      this.logger.warn(`Could not read system_configs from DB: ${err.message}. Returning default configs.`);
+    }
+
+    return defaultConfigs;
+  }
+
+  async updateConfig(key: string, value: any, adminEmail: string = 'admin@system.local') {
+    if (!key || typeof key !== 'string') {
+      throw new BadRequestException('Config key must be a non-empty string');
+    }
+
+    try {
+      if (this.adminRepo) {
+        await this.adminRepo.updateSystemConfig(key, value, adminEmail);
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to update system config [${key}]: ${err.message}`);
+      throw new BadRequestException(`Could not update config: ${err.message}`);
+    }
+
+    this.logger.log(`Updated config [${key}] by ${adminEmail}`);
+    return { success: true, key, value };
   }
 }

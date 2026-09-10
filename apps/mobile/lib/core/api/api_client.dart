@@ -198,5 +198,17 @@ class ApiClient {
       rethrow;
     }
   }
+
+  Future<bool> registerFcmToken(String token, {String? platform}) async {
+    try {
+      final response = await _dio.post('/users/me/fcm-token', data: {
+        'token': token,
+        'platform': ?platform,
+      });
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
 }
 

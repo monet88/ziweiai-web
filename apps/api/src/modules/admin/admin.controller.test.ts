@@ -42,4 +42,16 @@ describe('AdminController', () => {
     const res = await controller.reconcile({ transactionId: 'tx_1', targetUserId: 'u_1' });
     expect(res).toEqual({ success: true, transactionId: 'tx_1', targetUserId: 'u_1', xuAdded: 10 });
   });
+
+  it('should get configs', async () => {
+    (service as any).getConfigs = vi.fn().mockResolvedValue({ dailyCheckinXu: 5 });
+    const res = await controller.getConfigs();
+    expect(res).toEqual({ dailyCheckinXu: 5 });
+  });
+
+  it('should update config', async () => {
+    (service as any).updateConfig = vi.fn().mockResolvedValue({ success: true, key: 'testKey', value: 123 });
+    const res = await controller.updateConfig({ key: 'testKey', value: 123 });
+    expect(res).toEqual({ success: true, key: 'testKey', value: 123 });
+  });
 });

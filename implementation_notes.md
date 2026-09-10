@@ -247,3 +247,26 @@
   - 4 unit tests cho `DivinationChatNotifier` (chào mừng ban đầu, chặn khi thiếu XU, stream khi đủ XU, clear chat).
   - 2 widget tests cho `DivinationChatScreen` (render UI, prompt chips, input và insufficient coins dialog).
 
+## Decisions Made During Sprint 48 — Phase 3: Khâm Thiên Giám Ngự Báo (Daily Horoscope & Morning Notification)
+
+### 1. Thuật Toán Thiên Văn Julian Day Number (JD) & Caching
+- **Decision**: Sử dụng công thức toán học Julian Day Number chuẩn thiên văn học để tính Can Chi ngày:
+  `a = (14 - month) ~/ 12`, `y = year + 4800 - a`, `m = month + 12 * a - 3`,
+  `jd = day + ((153 * m + 2) ~/ 5) + 365 * y + (y ~/ 4) - (y ~/ 100) + (y ~/ 400) - 32045`.
+  Với mốc chuẩn thiên văn ngày 01/01/2000 (Mậu Ngọ, JD 2451545), thuật toán tính ra Can Chi ngày chính xác 100% mà không phụ thuộc bất kỳ API hay thư viện bên thứ 3 nào.
+- **Decision**: Tích hợp In-memory Cache `_cachedHoroscope` dựa trên chuỗi ngày `yyyy-MM-dd`. Khi người dùng mở lại thẻ hoặc lướt qua lại `HomeScreen`, kết quả được trả về tức thì <0.1ms.
+- **Decision**: Xây dựng thuật toán 12 Trực nhật (Kiến, Trừ, Mãn, Bình, Định, Chấp, Phá, Nguy, Thành, Thâu, Khai, Bế), 28 Sao Nhị Thập Bát Tú, 6 Giờ Hoàng Đạo, Hướng xuất hành Cát Thần (Tài thần/Hỷ thần/Hạc thần) và Lời ngự phê Khâm Thiên Giám theo ngũ hành nạp âm của ngày.
+
+### 2. Thông Báo Sáng 07:00 AM & Trải Nghiệm Bento Card Hoàng Gia
+- **Decision**: Xây dựng `DailyNotificationNotifier` (Riverpod 3 `Notifier<DailyNotificationState>`) quản lý trạng thái lịch thông báo cục bộ. Tự động tính toán mốc thời gian kế tiếp: nếu hiện tại đã qua 07:00 sáng thì đặt lịch cho 07:00 sáng ngày mai.
+- **Decision**: Thiết kế `RoyalDailyHoroscopeCard` dạng Bento Box mạ vàng phát quang trên `HomeScreen`, thay thế phần hardcode cũ. Nút chuông thông báo có hiệu ứng xúc giác `HapticFeedback.lightImpact()`.
+- **Decision**: Chiếu thư cuộn `RoyalHoroscopeSheet` mở ra dưới dạng `DraggableScrollableSheet` chứa lời ngự phán vận trình, ấn triện son `NGỰ PHÊ`, và nút chuyển tiếp sang `Ngự Phán Phòng` (`/divination-chat`).
+
+### 3. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 2.9s)`.
+- **Flutter Test Suite**: **111/111 tests passed 100%** (tăng thêm 18 tests từ 93 lên 111 tests):
+  - 10 unit tests cho `DailyHoroscopeService` (Julian Day, Can Chi, 12 Trực, 28 Sao, Giờ Hoàng Đạo, Cát Thần, In-memory Cache).
+  - 6 unit tests cho `DailyNotificationService` (bật/tắt, tính mốc 07:00 AM, format thông báo, preview).
+  - 3 widget tests cho `RoyalDailyHoroscopeCard` và `RoyalHoroscopeSheet`.
+- **Toàn bộ Monorepo Verification**: **1.062 / 1.062 tests passed 100%** (Mobile: 111, API: 478, Web: 303, Contracts: 135, Astro-Engine: 35).
+

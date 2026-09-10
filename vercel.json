@@ -9,6 +9,12 @@
       "maxDuration": 60
     }
   },
+  "crons": [
+    {
+      "path": "/api/notifications/cron/daily-morning",
+      "schedule": "0 0 * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/share/:path*",

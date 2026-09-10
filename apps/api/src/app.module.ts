@@ -32,6 +32,7 @@ import { WalletModule } from './modules/wallet/wallet.module';
 
 import { TurnstileModule } from './common/turnstile/turnstile.module';
 import { DossierModule } from './modules/dossier/dossier.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -40,7 +41,7 @@ import { DossierModule } from './modules/dossier/dossier.module';
       limit: 10,
     }]),
     DatabaseModule,
-    WalletModule, AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsIchingModule, DrawsTarotModule, NumerologyModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule, ShareModule, AdminModule, RewardsModule, TurnstileModule, DossierModule
+    WalletModule, AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsIchingModule, DrawsTarotModule, NumerologyModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule, ShareModule, AdminModule, RewardsModule, TurnstileModule, DossierModule, NotificationsModule
   ],
   providers: [
     {

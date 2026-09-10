@@ -61,4 +61,19 @@ export class ProfilesRepository extends SupabaseBaseRepository {
       .eq('user_id', userId);
     this.throwIfError(error);
   }
+
+  async listActiveFcmTokens(): Promise<Array<{ userId: string; token: string; platform?: string }>> {
+    const { data, error } = await this.client
+      .from('profiles')
+      .select('user_id, fcm_token, device_platform')
+      .not('fcm_token', 'is', null)
+      .neq('fcm_token', '');
+    this.throwIfError(error);
+    if (!data) return [];
+    return data.map((row: any) => ({
+      userId: row.user_id,
+      token: row.fcm_token,
+      platform: row.device_platform,
+    }));
+  }
 }

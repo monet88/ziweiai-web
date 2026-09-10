@@ -14,11 +14,13 @@ import '../../../ui/glass_panel.dart';
 class PremiumPaywallSheet extends ConsumerStatefulWidget {
   final int cost;
   final String featureName;
+  final VoidCallback? onSuccess;
 
   const PremiumPaywallSheet({
     super.key,
     required this.cost,
     required this.featureName,
+    this.onSuccess,
   });
 
   @override
@@ -52,6 +54,7 @@ class _PremiumPaywallSheetState extends ConsumerState<PremiumPaywallSheet> {
                 ),
               );
               Navigator.of(context).pop();
+              widget.onSuccess?.call();
             }
           } catch (e) {
             debugPrint('[PremiumPaywallSheet] Failed to claim reward: $e');

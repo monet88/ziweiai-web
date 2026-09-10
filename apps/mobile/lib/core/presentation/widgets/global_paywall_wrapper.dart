@@ -27,6 +27,7 @@ class _GlobalPaywallWrapperState extends ConsumerState<GlobalPaywallWrapper> {
           builder: (context) => PremiumPaywallSheet(
             cost: next.cost,
             featureName: next.featureName,
+            onSuccess: next.onSuccess,
           ),
         ).then((_) {
           _isShowing = false;

@@ -10,6 +10,7 @@
   import { PrimaryButton, NoticeBanner } from '$lib/components/ui';
   import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
   import TarotCardBack from './TarotCardBack.svelte';
+  import { playCardFlip, playSingingBowl } from '$lib/audio/ritual-audio';
   import { createTarotModel, type TarotCopy } from './tarot-model.svelte';
 
   interface Props {
@@ -22,6 +23,12 @@
   // copy là prop tĩnh do route truyền literal (copy={viCopy.tarot}); model tạo một lần lúc mount nên
   // dùng giá trị hiện tại là đúng — bọc untrack để Svelte 5 không cảnh báo state_referenced_locally.
   const model = untrack(() => createTarotModel({ auth, copy }));
+
+  $effect(() => {
+    if (model.result) {
+      playSingingBowl();
+    }
+  });
 
   // copy là prop tĩnh (route truyền literal) nên nhãn không đổi sau mount → bọc untrack để Svelte 5
   // không cảnh báo state_referenced_locally.
@@ -157,7 +164,10 @@
               aria-label={copy.submitButton}
               aria-busy={model.isSubmitting}
               disabled={model.isSubmitting}
-              onclick={() => model.submit()}
+              onclick={() => {
+                playCardFlip();
+                model.submit();
+              }}
             >
               <TarotCardBack>
                 {#if model.isSubmitting}

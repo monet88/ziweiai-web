@@ -103,6 +103,13 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
     }
   }
 
+  void _retrySubmit() {
+    if (_castArray.length == 6) {
+      HapticFeedback.mediumImpact();
+      ref.read(ichingNotifierProvider.notifier).draw(_questionController.text, _castArray);
+    }
+  }
+
   void _reset() {
     HapticFeedback.mediumImpact();
     _questionController.clear();
@@ -170,10 +177,13 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
           }
 
           if (isPaymentOrQuota) {
-            // Mở Royal Paywall Sheet nạp XU lịch thiệp
+            // Mở Royal Paywall Sheet nạp XU lịch thiệp kèm callback tự động gửi lại quẻ
             ref.read(paywallProvider.notifier).show(
               cost: 5,
               featureName: 'Gieo Quẻ Lục Hào',
+              onSuccess: () {
+                _retrySubmit();
+              },
             );
           } else {
             String msg = 'Có lỗi xảy ra khi gieo quẻ. Vui lòng thử lại sau.';
@@ -245,7 +255,7 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
 
                 // Section 3: 3D Royal Coin Plate & Casting Interaction
                 if (!hasResult) ...[
-                  _buildCoinCastingPlate(state.isLoading),
+                  _buildCoinCastingPlate(state.isLoading, state.hasError),
                   const SizedBox(height: 20),
                 ],
 
@@ -535,7 +545,7 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
     );
   }
 
-  Widget _buildCoinCastingPlate(bool isLoading) {
+  Widget _buildCoinCastingPlate(bool isLoading, bool hasError) {
     final tossCount = _castArray.length;
     final isDone = tossCount >= 6;
 
@@ -653,24 +663,38 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
               elevation: 6,
               shadowColor: AppTheme.goldBright.withValues(alpha: 0.5),
             ),
-            onPressed: (!_isTossing && !isLoading && !isDone) ? _tossCoins : null,
+            onPressed: (!_isTossing && !isLoading)
+                ? (isDone ? (hasError ? _retrySubmit : null) : _tossCoins)
+                : null,
             child: Ink(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                gradient: CelestialGradients.imperialGold,
+                gradient: isDone && hasError
+                    ? const LinearGradient(
+                        colors: [Color(0xFFE57373), Color(0xFFD32F2F)],
+                      )
+                    : CelestialGradients.imperialGold,
               ),
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.monetization_on_outlined, color: Color(0xFF141026), size: 22),
+                    Icon(
+                      isDone && hasError
+                          ? Icons.refresh_rounded
+                          : Icons.monetization_on_outlined,
+                      color: isDone && hasError ? Colors.white : const Color(0xFF141026),
+                      size: 22,
+                    ),
                     const SizedBox(width: 10),
                     Text(
                       isDone
-                          ? 'ĐÃ HOÀN THÀNH 6 HÀO'
+                          ? (hasError
+                              ? 'GỬI LẠI QUẺ (CHẠM ĐỂ GỬI)'
+                              : 'ĐÃ HOÀN THÀNH 6 HÀO')
                           : 'GIEO HÀO ${tossCount + 1}/6 (CHẠM ĐỂ GIEO)',
                       style: GoogleFonts.cinzel(
-                        color: const Color(0xFF141026),
+                        color: isDone && hasError ? Colors.white : const Color(0xFF141026),
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.2,

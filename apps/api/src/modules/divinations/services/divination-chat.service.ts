@@ -98,7 +98,7 @@ Yêu cầu định dạng:
     });
   }
 
-  private generateFallbackAnswer(query: string, topic?: string): string {
+  private generateFallbackAnswer(_query: string, _topic?: string): string {
     return `📜 **KHÂM THIÊN GIÁM NGỰ PHÁN — TỬ VI CHIÊM BÁI**\n\n` +
       `✦ **1. Huyền Cơ Chiếu Rọi:**\n` +
       `Bản mệnh tương ứng với biến chuyển Càn Khôn. Câu hỏi của Đại Hiệp cho thấy thời vận đang bước vào giai đoạn chuyển giao năng lượng quan trọng.\n\n` +

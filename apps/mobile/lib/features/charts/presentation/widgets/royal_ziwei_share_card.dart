@@ -8,16 +8,27 @@ import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../gallery/data/royal_gallery_service.dart';
+import '../../../gallery/models/royal_share_item.dart';
+import '../../../gallery/presentation/widgets/royal_seal_widget.dart';
 import '../../data/models/chart_snapshot.dart';
 
 /// Royal Ziwei Certificate Share Card (Chiếu Chỉ Hoàng Triều Mệnh Số)
-/// Designed with Imperial Gold borders, Cinnabar Red Seal and High-Res QR code
+/// Designed with Imperial Gold borders, Cinnabar Red Seal, Watermark and 9:16 Social Story format
 class RoyalZiweiCertificateCard extends StatelessWidget {
   final ChartDetailResponse chartData;
+  final bool isStory9_16;
+  final RoyalSealType sealType;
+  final String? customSealText;
+  final bool showWatermark;
 
   const RoyalZiweiCertificateCard({
     super.key,
     required this.chartData,
+    this.isStory9_16 = false,
+    this.sealType = RoyalSealType.khamThien,
+    this.customSealText,
+    this.showWatermark = true,
   });
 
   String _formatPillar(dynamic pillar) {
@@ -134,7 +145,8 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
 
     return Container(
       width: 360,
-      padding: const EdgeInsets.all(20),
+      height: isStory9_16 ? 640 : null,
+      padding: EdgeInsets.symmetric(horizontal: 18, vertical: isStory9_16 ? 24 : 18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -163,10 +175,30 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Stack(
         children: [
+          if (showWatermark) const RoyalWatermarkWidget(),
+          Column(
+            mainAxisSize: isStory9_16 ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisAlignment:
+                isStory9_16 ? MainAxisAlignment.spaceBetween : MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (isStory9_16)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Center(
+                    child: Text(
+                      '✦ ✦ ✦   KHÂM THIÊN GIÁM NGỰ PHÁN   ✦ ✦ ✦',
+                      style: GoogleFonts.cinzel(
+                        color: const Color(0xFFFFD700).withValues(alpha: 0.75),
+                        fontSize: 8,
+                        letterSpacing: 2.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
           // Inner Imperial Border
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -478,41 +510,9 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Imperial Cinnabar Seal (Ấn triện đỏ son)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF8B0000).withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFFF3333), width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFCC0000).withValues(alpha: 0.35),
-                              blurRadius: 8,
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'KHÂM THIÊN',
-                              style: GoogleFonts.cinzel(
-                                color: const Color(0xFFFFD700),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                            Text(
-                              'NGỰ BÚT',
-                              style: GoogleFonts.cinzel(
-                                color: const Color(0xFFFFD700),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ],
-                        ),
+                      RoyalSealWidget(
+                        sealType: sealType,
+                        customSealText: customSealText,
                       ),
                       const SizedBox(width: 20),
 
@@ -564,7 +564,9 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ], // Đóng Stack children
+  ), // Đóng Stack
+);
   }
 
   ChartSnapshot get widgetSnapshot => chartData.chartRecord.snapshot;
@@ -698,6 +700,36 @@ class _RoyalZiweiPreviewDialogState extends State<RoyalZiweiPreviewDialog> {
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _isSharing = false;
 
+  RoyalAspectRatio _aspectRatio = RoyalAspectRatio.standard;
+  RoyalSealType _sealType = RoyalSealType.khamThien;
+  bool _showWatermark = true;
+  late final TextEditingController _customSealController;
+
+  @override
+  void initState() {
+    super.initState();
+    final name = widget.chartData.chartRecord.snapshot.birth?['name']?.toString() ??
+        widget.chartData.chartRecord.snapshot.summary?['name']?.toString() ??
+        'Bản Mệnh';
+    _customSealController = TextEditingController(text: name);
+  }
+
+  @override
+  void dispose() {
+    _customSealController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildCardWidget() {
+    return RoyalZiweiCertificateCard(
+      chartData: widget.chartData,
+      isStory9_16: _aspectRatio == RoyalAspectRatio.story9_16,
+      sealType: _sealType,
+      customSealText: _sealType == RoyalSealType.custom ? _customSealController.text : null,
+      showWatermark: _showWatermark,
+    );
+  }
+
   Future<void> _shareCard(BuildContext context) async {
     setState(() => _isSharing = true);
     HapticFeedback.mediumImpact();
@@ -706,16 +738,35 @@ class _RoyalZiweiPreviewDialogState extends State<RoyalZiweiPreviewDialog> {
       final imageBytes = await _screenshotController.captureFromWidget(
         Material(
           color: Colors.transparent,
-          child: RoyalZiweiCertificateCard(chartData: widget.chartData),
+          child: _buildCardWidget(),
         ),
         pixelRatio: 3.0,
       );
 
       final directory = await getTemporaryDirectory();
+      final prefix = _aspectRatio == RoyalAspectRatio.story9_16 ? 'story_9_16' : 'card_3_4';
       final imageFile = File(
-        '${directory.path}/chieu_chi_tu_vi_${widget.chartData.chartRecord.id}.png',
+        '${directory.path}/chieu_chi_tu_vi_${prefix}_${widget.chartData.chartRecord.id}.png',
       );
       await imageFile.writeAsBytes(imageBytes);
+
+      // Tự động lưu vào Thư Viện Hoàng Triều
+      final name = widget.chartData.chartRecord.snapshot.birth?['name']?.toString() ??
+          widget.chartData.chartRecord.snapshot.summary?['name']?.toString() ??
+          'Quý Khách';
+
+      final galleryItem = RoyalShareItem(
+        id: 'ziwei_${widget.chartData.chartRecord.id}_${DateTime.now().millisecondsSinceEpoch}',
+        title: 'Chiếu Chỉ Tử Vi — $name',
+        type: RoyalCardType.ziwei,
+        createdAt: DateTime.now(),
+        imagePath: imageFile.path,
+        subtitle: 'Bản Mệnh • ${widget.chartData.chartRecord.id.substring(0, 8)}',
+        aspectRatio: _aspectRatio,
+        customSealName: _sealType == RoyalSealType.custom ? _customSealController.text : _sealType.label,
+      );
+
+      await RoyalGalleryService().saveItem(galleryItem);
 
       await SharePlus.instance.share(
         ShareParams(
@@ -738,56 +789,229 @@ class _RoyalZiweiPreviewDialogState extends State<RoyalZiweiPreviewDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Preview Card
-          RoyalZiweiCertificateCard(chartData: widget.chartData),
-          const SizedBox(height: 18),
-
-          // Action Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextButton.icon(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close, color: AppTheme.mysticalTextSecondary),
-                label: const Text('Đóng', style: TextStyle(color: AppTheme.mysticalTextSecondary)),
-              ),
-              const SizedBox(width: 14),
-              ElevatedButton.icon(
-                onPressed: _isSharing ? null : () => _shareCard(context),
-                icon: _isSharing
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Color(0xFF140D26),
-                        ),
-                      )
-                    : const Icon(Icons.share, color: Color(0xFF140D26), size: 18),
-                label: Text(
-                  _isSharing ? 'Đang xuất ảnh...' : 'CHIA SẺ CHIẾU CHỈ',
-                  style: GoogleFonts.cinzel(
-                    color: const Color(0xFF140D26),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFD700),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 6,
-                ),
-              ),
-            ],
+      insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
+      child: Container(
+        constraints: const BoxConstraints(maxHeight: 720),
+        decoration: BoxDecoration(
+          color: const Color(0xFF140D26),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFFFD700).withValues(alpha: 0.5),
+            width: 1.5,
           ),
-        ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.8),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header Dialog
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'XUẤT THIỆP HOÀNG TRIỀU',
+                    style: GoogleFonts.cinzel(
+                      color: const Color(0xFFFFD700),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: AppTheme.mysticalTextSecondary, size: 20),
+                  ),
+                ],
+              ),
+            ),
+
+            // Controls Bar: Aspect Ratio & Seal Selector
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  // 1. Aspect Ratio Selector
+                  Row(
+                    children: [
+                      const Text(
+                        'Định dạng: ',
+                        style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 11.5),
+                      ),
+                      const SizedBox(width: 8),
+                      ChoiceChip(
+                        label: const Text('3:4 Chuẩn 📜', style: TextStyle(fontSize: 11)),
+                        selected: _aspectRatio == RoyalAspectRatio.standard,
+                        selectedColor: const Color(0xFFFFD700),
+                        labelStyle: TextStyle(
+                          color: _aspectRatio == RoyalAspectRatio.standard
+                              ? const Color(0xFF140D26)
+                              : Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        backgroundColor: const Color(0xFF22163D),
+                        onSelected: (_) => setState(() => _aspectRatio = RoyalAspectRatio.standard),
+                      ),
+                      const SizedBox(width: 8),
+                      ChoiceChip(
+                        label: const Text('9:16 Story 📱', style: TextStyle(fontSize: 11)),
+                        selected: _aspectRatio == RoyalAspectRatio.story9_16,
+                        selectedColor: const Color(0xFFFFD700),
+                        labelStyle: TextStyle(
+                          color: _aspectRatio == RoyalAspectRatio.story9_16
+                              ? const Color(0xFF140D26)
+                              : Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        backgroundColor: const Color(0xFF22163D),
+                        onSelected: (_) => setState(() => _aspectRatio = RoyalAspectRatio.story9_16),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+
+                  // 2. Seal & Watermark Options
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      DropdownButton<RoyalSealType>(
+                        value: _sealType,
+                        dropdownColor: const Color(0xFF1E1238),
+                        underline: const SizedBox(),
+                        style: const TextStyle(color: Color(0xFFFFD700), fontSize: 11.5),
+                        items: [
+                          DropdownMenuItem(
+                            value: RoyalSealType.khamThien,
+                            child: Text(RoyalSealType.khamThien.label),
+                          ),
+                          DropdownMenuItem(
+                            value: RoyalSealType.menhChu,
+                            child: Text(RoyalSealType.menhChu.label),
+                          ),
+                          DropdownMenuItem(
+                            value: RoyalSealType.custom,
+                            child: Text(RoyalSealType.custom.label),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) setState(() => _sealType = val);
+                        },
+                      ),
+                      Row(
+                        children: [
+                          const Text(
+                            'Thủy ấn',
+                            style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 11),
+                          ),
+                          Switch(
+                            value: _showWatermark,
+                            activeThumbColor: const Color(0xFFFFD700),
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            onChanged: (v) => setState(() => _showWatermark = v),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  // 3. Custom Seal Name TextField (if custom)
+                  if (_sealType == RoyalSealType.custom)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: SizedBox(
+                        height: 32,
+                        child: TextField(
+                          controller: _customSealController,
+                          style: const TextStyle(color: Colors.white, fontSize: 11),
+                          decoration: InputDecoration(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            hintText: 'Nhập họ tên ấn triện (vd: Hoàng Kim)',
+                            hintStyle: const TextStyle(color: Colors.white38, fontSize: 10),
+                            filled: true,
+                            fillColor: const Color(0xFF22163D),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            const Divider(color: Colors.white12, height: 12),
+
+            // Scrollable Preview Card
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: _buildCardWidget(),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Bottom Action Bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: AppTheme.mysticalTextSecondary),
+                    label: const Text('Đóng', style: TextStyle(color: AppTheme.mysticalTextSecondary)),
+                  ),
+                  const SizedBox(width: 14),
+                  ElevatedButton.icon(
+                    onPressed: _isSharing ? null : () => _shareCard(context),
+                    icon: _isSharing
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF140D26),
+                            ),
+                          )
+                        : const Icon(Icons.share, color: Color(0xFF140D26), size: 18),
+                    label: Text(
+                      _isSharing ? 'Đang xuất ảnh...' : 'CHIA SẺ CHIẾU CHỈ',
+                      style: GoogleFonts.cinzel(
+                        color: const Color(0xFF140D26),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFD700),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 6,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

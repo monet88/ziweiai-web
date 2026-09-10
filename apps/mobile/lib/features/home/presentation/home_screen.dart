@@ -288,6 +288,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
 
+          // Royal Gallery Button (Thư Viện Hoàng Triều)
+          IconButton(
+            tooltip: 'Thư Viện Hoàng Triều',
+            icon: Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppTheme.mysticalGold.withValues(alpha: 0.5),
+                  width: 1.2,
+                ),
+              ),
+              child: const Icon(
+                Icons.photo_library_outlined,
+                color: AppTheme.goldBright,
+                size: 18,
+              ),
+            ),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              context.push('/gallery');
+            },
+          ),
+
           // Profile Button with 48dp Touch Target
           IconButton(
             tooltip: 'Hồ sơ cá nhân',
@@ -1032,6 +1056,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           icon: Icons.account_balance_wallet,
           iconGradient: CelestialGradients.imperialGold,
           onTap: () => context.push('/wallet/history'),
+          isHorizontal: true,
+        ),
+
+        const SizedBox(height: 12),
+
+        // Row 6: Imperial Share Gallery (Thư Viện Hoàng Triều)
+        _buildBentoCard(
+          context: context,
+          title: 'Thư Viện Hoàng Triều',
+          badge: 'GALLERY 9:16 & 3:4',
+          badgeColor: AppTheme.mysticalGold,
+          description: 'Lưu trữ & chia sẻ lại Chiếu Chỉ, Thẻ Quẻ Thánh, Tarot và Kinh Dịch',
+          icon: Icons.photo_library,
+          iconGradient: CelestialGradients.imperialGold,
+          onTap: () => context.push('/gallery'),
           isHorizontal: true,
         ),
       ],

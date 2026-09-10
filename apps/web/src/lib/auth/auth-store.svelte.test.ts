@@ -14,6 +14,7 @@ const mockAuth = vi.hoisted(() => ({
   signInAnonymously: vi.fn(),
   signUp: vi.fn(),
   signOut: vi.fn(),
+  updateUser: vi.fn(),
 }));
 
 vi.mock('$lib/supabase/supabase-client', () => ({
@@ -161,5 +162,31 @@ describe('AuthStore', () => {
     mockAuth.signOut.mockResolvedValue({ error: { message: 'Lỗi đăng xuất' } });
     const store = new AuthStore();
     await expect(store.signOut()).rejects.toThrow('Lỗi đăng xuất');
+  });
+
+  it('upgradeAnonymousToPermanentAccount gọi updateUser({ email, password })', async () => {
+    mockAuth.updateUser.mockResolvedValue({ data: { user: { id: 'u1', email: 'real@gmail.com' } }, error: null });
+    const store = new AuthStore();
+    await store.upgradeAnonymousToPermanentAccount('real@gmail.com', 'strongPassword123');
+    expect(mockAuth.updateUser).toHaveBeenCalledWith({
+      email: 'real@gmail.com',
+      password: 'strongPassword123',
+    });
+  });
+
+  it('upgradeAnonymousToPermanentAccount từ chối disposable email', async () => {
+    const store = new AuthStore();
+    await expect(
+      store.upgradeAnonymousToPermanentAccount('fake@tempmail.com', 'strongPassword123'),
+    ).rejects.toThrow('Hệ thống không chấp nhận email tạm thời.');
+    expect(mockAuth.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('upgradeAnonymousToPermanentAccount ném lỗi khi Supabase trả error', async () => {
+    mockAuth.updateUser.mockResolvedValue({ error: { message: 'Email đã tồn tại' } });
+    const store = new AuthStore();
+    await expect(
+      store.upgradeAnonymousToPermanentAccount('existing@gmail.com', 'pwd'),
+    ).rejects.toThrow('Email đã tồn tại');
   });
 });

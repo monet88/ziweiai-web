@@ -155,6 +155,22 @@ export class AuthStore {
     return { needsEmailConfirmation: data.session === null };
   }
 
+  /** Nâng cấp tài khoản anonymous lên tài khoản chính thức với email/password, bảo toàn nguyên vẹn user.id, lá số và XU */
+  async upgradeAnonymousToPermanentAccount(
+    email: string,
+    password: string,
+  ): Promise<void> {
+    if (isDisposableEmail(email)) {
+      throw new Error(
+        'Hệ thống không chấp nhận email tạm thời. Vui lòng sử dụng email thật để bảo vệ lá số và số dư XU của bạn.',
+      );
+    }
+    const { error } = await supabase.auth.updateUser({ email, password });
+    if (error) {
+      throw new Error(error.message || 'Nâng cấp tài khoản thất bại. Vui lòng thử lại.');
+    }
+  }
+
   async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut();
     if (error) {

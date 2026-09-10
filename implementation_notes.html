@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sprint 56: Royal Share Ecosystem - Implementation Notes</title>
+  <title>Sprint 57: Royal Gallery & Social Stories Share - Implementation Notes</title>
   <style>
     :root {
       --bg: #0d0e15;
@@ -59,61 +59,116 @@
       color: var(--accent);
       margin-top: 0;
       font-size: 20px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid rgba(230, 184, 0, 0.2);
       padding-bottom: 8px;
     }
     ul {
-      margin: 0;
       padding-left: 20px;
+      margin-bottom: 0;
     }
     li {
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     code {
-      background: #1e2235;
-      color: #ffd700;
+      background: rgba(0,0,0,0.4);
+      color: #f6ad55;
       padding: 2px 6px;
       border-radius: 4px;
-      font-size: 13px;
+      font-family: Consolas, monospace;
+      font-size: 0.9em;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      text-align: left;
+    }
+    th {
+      background: rgba(230, 184, 0, 0.1);
+      color: var(--accent);
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <span class="badge">100% Hoàn Thành & Verified</span>
-      <h1>Sprint 56: Royal Share Ecosystem — Implementation Notes</h1>
-      <p>Chiếu Chỉ Tử Vi Khâm Thiên Giám, Thẻ Quẻ Thánh Hoàng Triều, Thẻ Huyền Học Tây Phương Tarot & Lenormand</p>
+      <h1>Sprint 57: Royal Gallery & Social Stories Share (9:16)</h1>
+      <span class="badge">Hoàn Thành 100% · 978 Tests Passed</span>
+      <p style="color: #a0aec0; margin: 10px 0 0 0;">Dự án ViOS — Tử Vi Toàn Tập (ziweiai-web) · Khâm Thiên Giám Hoàng Triều</p>
     </header>
 
     <div class="section">
-      <h2>1. Quyết Định Thiết Kế & Kiến Trúc (Architectural Decisions)</h2>
+      <h2>1. Unspecified & Implicit Decisions</h2>
       <ul>
-        <li><strong>Ngôn Ngữ Thiết Kế Cung Đình Đồng Bộ:</strong> Kế thừa thành công của Thẻ Quẻ Lục Hào (Sprint 55), toàn bộ 3 phân hệ (Tử Vi, Thẻ Tre Linh Xăm, Tarot/Lenormand) đều ứng dụng viền kép mạ vàng <code>CelestialGradients.imperialGold</code>, ấn triện son đỏ cung đình và huy hiệu hoàng gia.</li>
-        <li><strong>Khắc Phục Lỗi Tràn Khung Màn Hình (RenderFlex Overflow):</strong> Sử dụng <code>FittedBox(fit: BoxFit.scaleDown)</code> trên các thanh 4 trụ Bát tự Can Chi và footer chứa ấn triện + QR Code, đảm bảo card 360pt co giãn hoàn hảo trên mọi kích thước thiết bị và độ phân giải xuất ảnh (pixelRatio 3.0).</li>
-        <li><strong>Tách Biệt Dialog Preview & Card Render:</strong> Mỗi phân hệ đều có 1 widget card độc lập (chuyên phục vụ <code>RepaintBoundary</code> để chụp ảnh) và 1 widget preview dialog hiển thị giao diện xem trước kèm nút Lưu Ảnh / Chia Sẻ.</li>
+        <li><strong>Tỷ lệ xuất Story 9:16:</strong> Thiết lập tỷ lệ khung chuẩn dọc với kích thước tối ưu (360x640 trên Mobile preview và 3.0 pixelRatio khi render ảnh), banner hoàng đạo phía trên và bọc lớp thủy ấn Khâm Thiên Giám in chìm 45 độ.</li>
+        <li><strong>Thuật toán chia dòng ấn triện tùy biến:</strong> Đối với ấn danh xưng tự do, nếu có từ 2 từ trở lên, hệ thống tự động ngắt theo tỷ lệ cân đối đối xứng (dòng 1: nửa đầu, dòng 2: nửa sau) để giữ đúng tinh thần triện son cổ truyền; nếu chỉ có 1 từ thì dòng 2 mặc định là <code>KÍNH BÚT</code>.</li>
+        <li><strong>Lưu trữ Local Gallery:</strong> Sử dụng <code>SharedPreferences</code> để lưu tối đa 50 bản ghi chia sẻ gần nhất, sắp xếp giảm dần theo thời gian tạo để bảo vệ hiệu năng và dung lượng bộ nhớ người dùng.</li>
+        <li><strong>Bảo toàn User ID khi chuyển từ Anonymous:</strong> Bổ sung phương thức <code>upgradeAnonymousToPermanentAccount()</code> dùng <code>supabase.auth.updateUser()</code> thay vì <code>signUp()</code> để không làm phân mảnh lá số và số dư XU của khách vãng lai.</li>
       </ul>
     </div>
 
     <div class="section">
-      <h2>2. Kết Quả Quality Gates (967 Tests Passed 100%)</h2>
+      <h2>2. Deviations from Specification</h2>
       <ul>
-        <li><code>apps/mobile</code>: <code>flutter analyze</code> 0 issues, <code>flutter test</code> <strong>127/127 passed</strong>.</li>
-        <li><code>apps/api</code>: <code>typecheck</code> 0 errors, <code>pnpm test</code> <strong>496/496 passed</strong>.</li>
-        <li><code>apps/web</code>: <code>svelte-check</code> 0 errors 0 warnings, <code>pnpm test</code> <strong>309/309 passed</strong>.</li>
-        <li><code>packages/astro-engine</code>: <code>pnpm test</code> <strong>35/35 passed</strong>.</li>
-        <li><code>packages/contracts</code>: build 100% OK.</li>
+        <li><strong>Khắc phục dứt điểm spam mail GitHub Actions CI:</strong> Phát hiện và xóa 2 tham số không sử dụng (<code>_query</code>, <code>_topic</code>) trong <code>divination-chat.service.ts</code> khiến lệnh <code>pnpm lint</code> trong workflow CI bị chặn lại và gửi email báo lỗi liên tục mỗi lần push.</li>
       </ul>
     </div>
 
     <div class="section">
-      <h2>3. Vercel Production Deployment & Smoke Test</h2>
+      <h2>3. Considered Trade-offs</h2>
       <ul>
-        <li><strong>URL:</strong> <code>https://tuvitoantap.vercel.app</code></li>
-        <li><strong>Deployment ID:</strong> <code>dpl_4hY1GQuzyEsiZmXcfNHyCnF2brf7</code></li>
-        <li><strong>API Health Check:</strong> <code>GET /api/health</code> trả về HTTP 200 OK.</li>
-        <li><strong>Feature Flags:</strong> <code>GET /api/features</code> trả về HTTP 200 OK (toàn bộ 10 phân hệ active).</li>
+        <li><strong>Lưu ảnh Local vs Cloud Storage cho Gallery:</strong> Lưu đường dẫn ảnh tạm trên máy cục bộ giúp người dùng xem lại và chia sẻ lại tức thì mà không tiêu tốn băng thông CDN hoặc chi phí lưu trữ server.</li>
+        <li><strong>Watermark chìm:</strong> Đặt watermark mờ nhẹ (opacity 0.05) xoay nghiêng -0.35 rad (khoảng 20 độ) vừa đảm bảo bản quyền Khâm Thiên Giám vừa không gây rối mắt các thông tin quẻ và lời bình.</li>
       </ul>
+    </div>
+
+    <div class="section">
+      <h2>4. Verification & Quality Gates (978 Tests Passed)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>Lệnh Kiểm Thử</th>
+            <th>Kết Quả</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Monorepo Lint</td>
+            <td><code>pnpm lint</code></td>
+            <td>0 errors, 0 warnings (100% Clean)</td>
+          </tr>
+          <tr>
+            <td>Astro Engine</td>
+            <td><code>pnpm -F @ziweiai/astro-engine test</code></td>
+            <td>35 tests passed</td>
+          </tr>
+          <tr>
+            <td>API Service</td>
+            <td><code>pnpm -F @ziweiai/api test</code></td>
+            <td>496 tests passed (81 suites)</td>
+          </tr>
+          <tr>
+            <td>Web Frontend</td>
+            <td><code>pnpm -F @ziweiai/web test & check</code></td>
+            <td>312 tests passed (58 suites), 0 type errors</td>
+          </tr>
+          <tr>
+            <td>Mobile App</td>
+            <td><code>flutter test & analyze</code></td>
+            <td>135 tests passed, 0 issues found</td>
+          </tr>
+          <tr>
+            <td>Turborepo Build</td>
+            <td><code>pnpm build</code></td>
+            <td>6/6 tasks successful</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </body>

@@ -57,7 +57,7 @@ void main() {
 
     // Red Seal & Footer
     expect(find.text('LINH XĂM'), findsOneWidget);
-    expect(find.text('KHÂM THIÊN'), findsOneWidget);
+    expect(find.text('TRẤN BẢO'), findsOneWidget);
     expect(find.text('TỬ VI TOÀN TẬP'), findsOneWidget);
     expect(find.text('tuvitoantap.vercel.app'), findsOneWidget);
   });

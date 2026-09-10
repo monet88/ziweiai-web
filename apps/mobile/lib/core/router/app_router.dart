@@ -19,6 +19,7 @@ import '../../features/dossier/presentation/royal_dossier_screen.dart';
 import '../../features/referral/presentation/referral_screen.dart';
 import '../../features/compatibility/presentation/screens/compatibility_screen.dart';
 import '../../features/divination/presentation/screens/divination_chat_screen.dart';
+import '../../features/gallery/presentation/royal_gallery_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -113,6 +114,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/referral',
       builder: (context, state) => const ReferralScreen(),
+    ),
+    GoRoute(
+      path: '/gallery',
+      builder: (context, state) => const RoyalGalleryScreen(),
     ),
   ],
 );

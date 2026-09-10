@@ -1,9 +1,31 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/royal_share_item.dart';
 import '../../subscription/providers/subscription_provider.dart';
+
+enum SyncStatus {
+  success,
+  notPro,
+  unauthenticated,
+  error,
+}
+
+class SyncResult {
+  final SyncStatus status;
+  final int count;
+  final String? errorMessage;
+
+  const SyncResult({
+    required this.status,
+    this.count = 0,
+    this.errorMessage,
+  });
+
+  bool get isSuccess => status == SyncStatus.success;
+}
 
 final royalGalleryServiceProvider = Provider<RoyalGalleryService>((ref) {
   return RoyalGalleryService();
@@ -35,12 +57,19 @@ class RoyalGalleryNotifier extends AsyncNotifier<List<RoyalShareItem>> {
     state = AsyncData(await service.getItems());
   }
 
-  Future<int> syncCloud() async {
+  Future<SyncResult> syncCloud() async {
     final service = ref.read(royalGalleryServiceProvider);
     final isProUser = ref.read(isProUserProvider);
-    final count = await service.syncCloudGallery(isPro: isProUser);
+    final result = await service.syncCloudGallery(isPro: isProUser);
     state = AsyncData(await service.getItems());
-    return count;
+    return result;
+  }
+
+  Future<void> clearAll({bool? isPro}) async {
+    final service = ref.read(royalGalleryServiceProvider);
+    final bool isProUser = isPro ?? ref.read(isProUserProvider);
+    await service.clearAll(isPro: isProUser);
+    state = AsyncData(await service.getItems());
   }
 
   Future<void> refresh() async {
@@ -51,6 +80,7 @@ class RoyalGalleryNotifier extends AsyncNotifier<List<RoyalShareItem>> {
 
 class RoyalGalleryService {
   static const String _kStorageKey = 'vios_royal_share_gallery_items_v1';
+  static const String _kBucketName = 'vision-uploads';
   final SupabaseClient? _customClient;
 
   RoyalGalleryService({SupabaseClient? supabaseClient})
@@ -72,7 +102,9 @@ class RoyalGalleryService {
       final items = rawList
           .map((jsonStr) {
             try {
-              return RoyalShareItem.fromJson(jsonStr);
+              final item = RoyalShareItem.fromJson(jsonStr);
+              if (item.isDeleted) return null;
+              return item;
             } catch (_) {
               return null;
             }
@@ -97,10 +129,64 @@ class RoyalGalleryService {
       final prefs = await SharedPreferences.getInstance();
       final current = await getItems();
 
-      // Tránh trùng lặp ID
+      var itemToSave = item;
+
+      // Nếu là tài khoản VIP PRO, upload ảnh lên Supabase Storage và đồng bộ Metadata
+      if (isPro) {
+        final client = _client;
+        final user = client?.auth.currentUser;
+        if (client != null && user != null) {
+          String? storagePath = item.storagePath;
+          String? signedUrl = item.imageUrl;
+
+          final localFile = File(item.imagePath);
+          if (localFile.existsSync() && (storagePath == null || storagePath.isEmpty)) {
+            try {
+              final ext = item.imagePath.split('.').last;
+              final path = 'royal-gallery/${user.id}/${item.id}.$ext';
+              final fileBytes = await localFile.readAsBytes();
+              await client.storage.from(_kBucketName).uploadBinary(
+                    path,
+                    fileBytes,
+                    fileOptions: const FileOptions(upsert: true),
+                  );
+              storagePath = path;
+              signedUrl = await client.storage
+                  .from(_kBucketName)
+                  .createSignedUrl(path, 3600 * 24 * 7); // 7 ngày
+            } catch (_) {
+              // Bỏ qua lỗi upload storage nếu mạng yếu
+            }
+          }
+
+          itemToSave = item.copyWith(
+            storagePath: storagePath,
+            imageUrl: signedUrl,
+            updatedAt: DateTime.now(),
+          );
+
+          await client.from('royal_gallery_shares').upsert({
+            'id': itemToSave.id,
+            'owner_user_id': user.id,
+            'card_type': itemToSave.type.name,
+            'title': itemToSave.title,
+            'subtitle': itemToSave.subtitle,
+            'aspect_ratio': itemToSave.aspectRatio.name,
+            'custom_seal_name': itemToSave.customSealName,
+            'image_path': itemToSave.imagePath,
+            'storage_path': itemToSave.storagePath,
+            'image_url': itemToSave.imageUrl,
+            'created_at': itemToSave.createdAt.toIso8601String(),
+            'updated_at': (itemToSave.updatedAt ?? DateTime.now()).toIso8601String(),
+            'deleted_at': null,
+          });
+        }
+      }
+
+      // Tránh trùng lặp ID ở local
       final updated = [
-        item,
-        ...current.where((i) => i.id != item.id),
+        itemToSave,
+        ...current.where((i) => i.id != itemToSave.id),
       ];
 
       // Giữ tối đa 50 item gần nhất để tối ưu dung lượng
@@ -108,25 +194,6 @@ class RoyalGalleryService {
       final stringList = trimmed.map((i) => json.encode(i.toMap())).toList();
 
       await prefs.setStringList(_kStorageKey, stringList);
-
-      // Nếu là tài khoản VIP PRO, đồng bộ lên Supabase Cloud
-      if (isPro) {
-        final client = _client;
-        final user = client?.auth.currentUser;
-        if (client != null && user != null) {
-          await client.from('royal_gallery_shares').upsert({
-            'id': item.id,
-            'owner_user_id': user.id,
-            'card_type': item.type.name,
-            'title': item.title,
-            'subtitle': item.subtitle,
-            'aspect_ratio': item.aspectRatio.name,
-            'custom_seal_name': item.customSealName,
-            'image_path': item.imagePath,
-            'created_at': item.createdAt.toIso8601String(),
-          });
-        }
-      }
     } catch (_) {
       // Bỏ qua lỗi lưu trữ âm thầm
     }
@@ -144,11 +211,11 @@ class RoyalGalleryService {
         final client = _client;
         final user = client?.auth.currentUser;
         if (client != null && user != null) {
-          await client
-              .from('royal_gallery_shares')
-              .delete()
-              .eq('id', id)
-              .eq('owner_user_id', user.id);
+          // Soft delete bằng tombstone để các thiết bị khác đồng bộ nhận biết
+          await client.from('royal_gallery_shares').update({
+            'deleted_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          }).eq('id', id).eq('owner_user_id', user.id);
         }
       }
     } catch (_) {
@@ -157,23 +224,55 @@ class RoyalGalleryService {
   }
 
   /// Đồng bộ hai chiều Thư Viện Hoàng Triều với Supabase Cloud (Đặc quyền VIP PRO)
-  Future<int> syncCloudGallery({required bool isPro}) async {
-    if (!isPro) return 0;
+  Future<SyncResult> syncCloudGallery({required bool isPro}) async {
+    if (!isPro) {
+      return const SyncResult(
+        status: SyncStatus.notPro,
+        errorMessage: 'Tính năng chỉ dành cho thành viên VIP PRO.',
+      );
+    }
+
     final client = _client;
     final user = client?.auth.currentUser;
-    if (client == null || user == null) return 0;
+    if (client == null || user == null) {
+      return const SyncResult(
+        status: SyncStatus.unauthenticated,
+        errorMessage: 'Vui lòng đăng nhập để đồng bộ Đám Mây.',
+      );
+    }
 
     try {
-      // 1. Kéo toàn bộ danh sách thiệp từ Cloud của user
+      // 1. Kéo toàn bộ danh sách thiệp từ Cloud của user (bao gồm cả tombstone deleted_at)
       final response = await client
           .from('royal_gallery_shares')
           .select()
           .eq('owner_user_id', user.id)
-          .order('created_at', ascending: false);
+          .order('updated_at', ascending: false);
 
       final remoteRows = (response as List).cast<Map<String, dynamic>>();
-      final remoteItems = remoteRows.map((row) {
-        return RoyalShareItem(
+      final remoteItems = <RoyalShareItem>[];
+      final remoteDeletedIds = <String>{};
+
+      for (final row in remoteRows) {
+        final deletedAtStr = row['deleted_at'] as String?;
+        if (deletedAtStr != null) {
+          remoteDeletedIds.add(row['id'] as String);
+          continue;
+        }
+
+        String? signedUrl = row['image_url'] as String?;
+        final storagePath = row['storage_path'] as String?;
+
+        // Nếu có storage_path mà signedUrl trống, tạo signed URL mới
+        if ((signedUrl == null || signedUrl.isEmpty) && storagePath != null && storagePath.isNotEmpty) {
+          try {
+            signedUrl = await client.storage
+                .from(_kBucketName)
+                .createSignedUrl(storagePath, 3600 * 24 * 7);
+          } catch (_) {}
+        }
+
+        remoteItems.add(RoyalShareItem(
           id: row['id'] as String,
           title: row['title'] as String,
           type: RoyalCardType.values.firstWhere(
@@ -181,21 +280,51 @@ class RoyalGalleryService {
             orElse: () => RoyalCardType.ziwei,
           ),
           createdAt: DateTime.tryParse(row['created_at'] as String? ?? '') ?? DateTime.now(),
-          imagePath: (row['image_path'] as String?) ?? (row['image_url'] as String?) ?? '',
+          imagePath: (row['image_path'] as String?) ?? '',
+          storagePath: storagePath,
+          imageUrl: signedUrl,
+          updatedAt: DateTime.tryParse(row['updated_at'] as String? ?? ''),
+          deletedAt: null,
           subtitle: row['subtitle'] as String?,
           aspectRatio: (row['aspect_ratio'] == 'story9_16')
               ? RoyalAspectRatio.story9_16
               : RoyalAspectRatio.standard,
           customSealName: row['custom_seal_name'] as String?,
-        );
-      }).toList();
+        ));
+      }
 
       final localItems = await getItems();
       final remoteIds = remoteItems.map((e) => e.id).toSet();
 
-      // 2. Đẩy các bản ghi local chưa có trên remote lên Cloud
+      // 2. Đẩy các bản ghi local chưa có trên remote lên Cloud (nếu không nằm trong danh sách đã xóa)
       for (final local in localItems) {
+        if (remoteDeletedIds.contains(local.id)) {
+          // Đã bị xóa trên remote từ thiết bị khác -> không đẩy lại
+          continue;
+        }
+
         if (!remoteIds.contains(local.id)) {
+          String? storagePath = local.storagePath;
+          String? signedUrl = local.imageUrl;
+
+          final localFile = File(local.imagePath);
+          if (localFile.existsSync() && (storagePath == null || storagePath.isEmpty)) {
+            try {
+              final ext = local.imagePath.split('.').last;
+              final path = 'royal-gallery/${user.id}/${local.id}.$ext';
+              final fileBytes = await localFile.readAsBytes();
+              await client.storage.from(_kBucketName).uploadBinary(
+                    path,
+                    fileBytes,
+                    fileOptions: const FileOptions(upsert: true),
+                  );
+              storagePath = path;
+              signedUrl = await client.storage
+                  .from(_kBucketName)
+                  .createSignedUrl(path, 3600 * 24 * 7);
+            } catch (_) {}
+          }
+
           await client.from('royal_gallery_shares').upsert({
             'id': local.id,
             'owner_user_id': user.id,
@@ -205,18 +334,33 @@ class RoyalGalleryService {
             'aspect_ratio': local.aspectRatio.name,
             'custom_seal_name': local.customSealName,
             'image_path': local.imagePath,
+            'storage_path': storagePath,
+            'image_url': signedUrl,
             'created_at': local.createdAt.toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+            'deleted_at': null,
           });
         }
       }
 
-      // 3. Hợp nhất hai nguồn dữ liệu, sắp xếp mới nhất và lưu lại local
+      // 3. Hợp nhất hai nguồn dữ liệu (loại bỏ các ID bị xóa trên remote)
       final mergedMap = <String, RoyalShareItem>{};
       for (final item in remoteItems) {
         mergedMap[item.id] = item;
       }
       for (final item in localItems) {
-        mergedMap[item.id] = item;
+        if (!remoteDeletedIds.contains(item.id)) {
+          // Ưu tiên bản ghi có ảnh local hoặc signedUrl mới
+          final existing = mergedMap[item.id];
+          if (existing != null) {
+            mergedMap[item.id] = existing.copyWith(
+              imagePath: item.imagePath.isNotEmpty ? item.imagePath : existing.imagePath,
+              imageUrl: existing.imageUrl ?? item.imageUrl,
+            );
+          } else {
+            mergedMap[item.id] = item;
+          }
+        }
       }
 
       final mergedList = mergedMap.values.toList()
@@ -227,19 +371,39 @@ class RoyalGalleryService {
       final stringList = trimmed.map((i) => json.encode(i.toMap())).toList();
       await prefs.setStringList(_kStorageKey, stringList);
 
-      return trimmed.length;
-    } catch (_) {
-      return 0;
+      return SyncResult(
+        status: SyncStatus.success,
+        count: trimmed.length,
+      );
+    } catch (e) {
+      return SyncResult(
+        status: SyncStatus.error,
+        errorMessage: e.toString(),
+      );
     }
   }
 
-  Future<void> clearAll() async {
+  Future<void> clearAll({bool isPro = false}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final current = await getItems();
       await prefs.remove(_kStorageKey);
+
+      if (isPro) {
+        final client = _client;
+        final user = client?.auth.currentUser;
+        if (client != null && user != null) {
+          // Đánh dấu tombstone toàn bộ
+          for (final item in current) {
+            await client.from('royal_gallery_shares').update({
+              'deleted_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            }).eq('id', item.id).eq('owner_user_id', user.id);
+          }
+        }
+      }
     } catch (_) {
       // Bỏ qua lỗi
     }
   }
 }
-

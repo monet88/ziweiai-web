@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -11,6 +12,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../gallery/data/royal_gallery_service.dart';
 import '../../../gallery/models/royal_share_item.dart';
 import '../../../gallery/presentation/widgets/royal_seal_widget.dart';
+import '../../../subscription/providers/subscription_provider.dart';
 import '../../data/models/chart_snapshot.dart';
 
 /// Royal Ziwei Certificate Share Card (Chiếu Chỉ Hoàng Triều Mệnh Số)
@@ -673,7 +675,7 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
 }
 
 /// Preview & Share Modal Dialog for Royal Ziwei Decree
-class RoyalZiweiPreviewDialog extends StatefulWidget {
+class RoyalZiweiPreviewDialog extends ConsumerStatefulWidget {
   final ChartDetailResponse chartData;
 
   const RoyalZiweiPreviewDialog({
@@ -693,10 +695,10 @@ class RoyalZiweiPreviewDialog extends StatefulWidget {
   }
 
   @override
-  State<RoyalZiweiPreviewDialog> createState() => _RoyalZiweiPreviewDialogState();
+  ConsumerState<RoyalZiweiPreviewDialog> createState() => _RoyalZiweiPreviewDialogState();
 }
 
-class _RoyalZiweiPreviewDialogState extends State<RoyalZiweiPreviewDialog> {
+class _RoyalZiweiPreviewDialogState extends ConsumerState<RoyalZiweiPreviewDialog> {
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _isSharing = false;
 
@@ -766,7 +768,10 @@ class _RoyalZiweiPreviewDialogState extends State<RoyalZiweiPreviewDialog> {
         customSealName: _sealType == RoyalSealType.custom ? _customSealController.text : _sealType.label,
       );
 
-      await RoyalGalleryService().saveItem(galleryItem);
+      await RoyalGalleryService().saveItem(
+        galleryItem,
+        isPro: ref.read(isProUserProvider),
+      );
 
       await SharePlus.instance.share(
         ShareParams(

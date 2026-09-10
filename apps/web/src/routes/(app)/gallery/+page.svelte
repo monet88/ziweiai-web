@@ -1,29 +1,18 @@
 <script lang="ts">
-  // Trang Thư Viện Hoàng Triều (Sprint 58 - Royal Gallery & Cloud Sync VIP PRO)
-  // Cho phép xem, lọc, và tải các thiệp hoàng triều đã tạo và đồng bộ từ Mobile & Web
+  // Trang Thư Viện Hoàng Triều (Sprint 59 - Royal Gallery API & Multi-device Cloud Sync)
+  // Kết nối qua API client, hỗ trợ Signed URL hiển thị ảnh thật, Zod validation
   import { onMount } from 'svelte';
   import { AppScaffold, EmptyStateCard, Spinner } from '$lib/components/ui';
   import { getAuthStore } from '$lib/auth/auth-context';
-  import { supabase } from '$lib/supabase/supabase-client';
-
-  interface RoyalGalleryItem {
-    id: string;
-    card_type: 'ziwei' | 'sacredStick' | 'tarot' | 'iching';
-    title: string;
-    subtitle?: string | null;
-    aspect_ratio: 'standard' | 'story9_16';
-    custom_seal_name?: string | null;
-    image_path?: string | null;
-    image_url?: string | null;
-    created_at: string;
-  }
+  import { fetchGalleryShares } from '$lib/api-client/gallery';
+  import type { RoyalGalleryShareRecord } from '@ziweiai/contracts';
 
   const auth = getAuthStore();
 
   let loading = $state(true);
-  let items = $state<RoyalGalleryItem[]>([]);
+  let items = $state<RoyalGalleryShareRecord[]>([]);
   let selectedFilter = $state<string>('all');
-  let previewItem = $state<RoyalGalleryItem | null>(null);
+  let previewItem = $state<RoyalGalleryShareRecord | null>(null);
 
   const filterOptions = [
     { key: 'all', label: 'Tất Cả', icon: '👑' },
@@ -36,23 +25,21 @@
   async function loadGallery() {
     loading = true;
     try {
-      const user = auth.user;
-      let cloudItems: RoyalGalleryItem[] = [];
+      let cloudItems: RoyalGalleryShareRecord[] = [];
 
-      // 1. Tải từ Supabase nếu đã đăng nhập
-      if (user) {
-        const { data, error } = await supabase
-          .from('royal_gallery_shares')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (!error && data) {
-          cloudItems = data as RoyalGalleryItem[];
+      // 1. Tải từ API Backend nếu người dùng đã đăng nhập
+      const token = auth.getAccessToken();
+      if (token) {
+        try {
+          const res = await fetchGalleryShares(token);
+          cloudItems = res.items || [];
+        } catch (apiErr) {
+          void apiErr;
         }
       }
 
-      // 2. Tải từ LocalStorage (fallback hoặc các item offline)
-      let localItems: RoyalGalleryItem[] = [];
+      // 2. Tải từ LocalStorage (dành cho client offline hoặc fallback)
+      let localItems: RoyalGalleryShareRecord[] = [];
       try {
         const raw = localStorage.getItem('vios_royal_share_gallery_items_v1');
         if (raw) {
@@ -60,13 +47,17 @@
           if (Array.isArray(parsed)) {
             localItems = parsed.map((p: any) => ({
               id: p.id || String(Math.random()),
-              card_type: p.type || 'ziwei',
+              ownerUserId: auth.user?.id || '00000000-0000-0000-0000-000000000000',
+              cardType: p.cardType || p.type || 'ziwei',
               title: p.title || 'Thiệp Hoàng Triều',
-              subtitle: p.subtitle,
-              aspect_ratio: p.aspectRatio || 'standard',
-              custom_seal_name: p.customSealName,
-              image_path: p.imagePath,
-              created_at: p.createdAt || new Date().toISOString(),
+              subtitle: p.subtitle ?? null,
+              aspectRatio: p.aspectRatio || 'standard',
+              customSealName: p.customSealName ?? null,
+              storagePath: p.storagePath ?? null,
+              imagePath: p.imagePath ?? null,
+              imageUrl: p.imageUrl ?? null,
+              payload: p.payload || {},
+              createdAt: p.createdAt || new Date().toISOString(),
             }));
           }
         }
@@ -74,8 +65,8 @@
         void storageErr;
       }
 
-      // Hợp nhất dữ liệu
-      const mergedRecords: Record<string, RoyalGalleryItem> = {};
+      // 3. Hợp nhất dữ liệu (Cloud ưu tiên nếu có Signed URL)
+      const mergedRecords: Record<string, RoyalGalleryShareRecord> = {};
       for (const item of cloudItems) {
         mergedRecords[item.id] = item;
       }
@@ -86,7 +77,7 @@
       }
 
       items = Object.values(mergedRecords).sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
     } catch (loadErr) {
       void loadErr;
@@ -103,7 +94,7 @@
   const filteredItems = $derived(
     selectedFilter === 'all'
       ? items
-      : items.filter((i) => i.card_type === selectedFilter)
+      : items.filter((i) => i.cardType === selectedFilter),
   );
 
   function getCardTypeLabel(type: string): string {
@@ -121,42 +112,40 @@
     }
   }
 
-  function formatDate(isoStr: string): string {
+  function formatDate(isoString: string): string {
     try {
-      const d = new Date(isoStr);
-      return d.toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
+      const d = new Date(isoString);
+      return `${d.toLocaleDateString('vi-VN')} • ${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
     } catch {
-      return isoStr;
+      return isoString;
     }
   }
 </script>
 
 <svelte:head>
-  <title>Thư Viện Hoàng Triều - Tử Vi Toàn Tập ViOS</title>
+  <title>Thư Viện Hoàng Triều • ViOS Tử Vi Toàn Tập</title>
 </svelte:head>
 
 <AppScaffold
-  eyebrow="THƯ VIỆN HOÀNG TRIỀU · CLOUD SYNC"
-  title="Thư Viện Thiệp Cung Đình"
-  subtitle="Lưu trữ và xem lại các ấn phẩm Chiếu Chỉ Tử Vi, Thẻ Quẻ Thánh, Tarot Cung Đình và Lục Hào Chiêm Bốc đồng bộ đa nền tảng"
+  eyebrow="KHÂM THIÊN GIÁM NGỰ BÚT"
+  title="Thư Viện Hoàng Triều"
+  subtitle="Kho lưu trữ toàn bộ thiệp xuất bản cung đình, thẻ quẻ xăm linh ứng, bài Tarot mạ vàng và quẻ dịch cát hung."
+  tone="mystical"
 >
   <div class="gallery-container">
-    <!-- VIP Cloud Sync Badge Bar -->
-    <div class="sync-status-bar">
-      <div class="sync-info">
+
+    <!-- VIP PRO Cloud Sync Banner -->
+    <div class="sync-banner">
+      <div class="sync-banner-info">
         <span class="sync-icon">☁️</span>
         <div>
-          <strong class="sync-title">Đồng Bộ Đám Mây Hoàng Triều</strong>
-          <p class="sync-subtitle">
-            {auth.user
-              ? 'Tài khoản đã liên kết: Dữ liệu thiệp tự động đồng bộ hai chiều với thiết bị Mobile.'
-              : 'Đăng nhập tài khoản để lưu trữ vĩnh viễn và đồng bộ thiệp lên mọi thiết bị.'}
+          <h2 class="sync-title">Đồng Bộ Đám Mây Đa Thiết Bị (VIP PRO)</h2>
+          <p class="sync-desc">
+            {#if auth.user}
+              Tài khoản của bạn đã được kết nối với Máy Chủ Khâm Thiên Giám. Thiệp tạo trên ứng dụng di động sẽ tự động đồng bộ về đây.
+            {:else}
+              Đăng nhập tài khoản để đồng bộ toàn bộ thiệp hoàng triều giữa điện thoại và máy tính.
+            {/if}
           </p>
         </div>
       </div>
@@ -179,7 +168,7 @@
             <span class="chip-count">({items.length})</span>
           {:else}
             <span class="chip-count">
-              ({items.filter((i) => i.card_type === opt.key).length})
+              ({items.filter((i) => i.cardType === opt.key).length})
             </span>
           {/if}
         </button>
@@ -203,22 +192,31 @@
           <div class="gallery-card">
             <!-- Header Tags -->
             <div class="card-header">
-              <span class="category-badge {item.card_type}">
-                {getCardTypeLabel(item.card_type)}
+              <span class="category-badge {item.cardType}">
+                {getCardTypeLabel(item.cardType)}
               </span>
               <span class="ratio-badge">
-                {item.aspect_ratio === 'story9_16' ? 'Story 9:16' : 'Chuẩn 3:4'}
+                {item.aspectRatio === 'story9_16' ? 'Story 9:16' : 'Chuẩn 3:4'}
               </span>
             </div>
 
             <!-- Card Thumbnail / Visual Box -->
             <div class="card-visual">
-              <div class="card-emblem">
-                {#if item.card_type === 'ziwei'}📜
-                {:else if item.card_type === 'sacredStick'}🎋
-                {:else if item.card_type === 'tarot'}🔮
-                {:else}🪙{/if}
-              </div>
+              {#if item.imageUrl}
+                <img
+                  src={item.imageUrl}
+                  alt={item.title}
+                  class="card-preview-image"
+                  loading="lazy"
+                />
+              {:else}
+                <div class="card-emblem">
+                  {#if item.cardType === 'ziwei'}📜
+                  {:else if item.cardType === 'sacredStick'}🎋
+                  {:else if item.cardType === 'tarot'}🔮
+                  {:else}🪙{/if}
+                </div>
+              {/if}
               <div class="card-title-box">
                 <h4 class="card-title">{item.title}</h4>
                 {#if item.subtitle}
@@ -228,16 +226,16 @@
             </div>
 
             <!-- Seal Badge if exists -->
-            {#if item.custom_seal_name}
+            {#if item.customSealName}
               <div class="seal-badge">
                 <span class="seal-mark">ẤN</span>
-                <span>{item.custom_seal_name}</span>
+                <span>{item.customSealName}</span>
               </div>
             {/if}
 
             <!-- Card Footer -->
             <div class="card-footer">
-              <span class="card-time">{formatDate(item.created_at)}</span>
+              <span class="card-time">{formatDate(item.createdAt)}</span>
               <button
                 class="view-btn"
                 onclick={() => (previewItem = item)}
@@ -268,22 +266,32 @@
         tabindex="-1"
       >
         <div class="modal-header">
-          <span class="modal-category">{getCardTypeLabel(previewItem.card_type)}</span>
+          <span class="modal-category">{getCardTypeLabel(previewItem.cardType)}</span>
           <button class="close-btn" onclick={() => (previewItem = null)}>✕</button>
         </div>
 
         <div class="modal-body">
+          {#if previewItem.imageUrl}
+            <div class="modal-image-container">
+              <img
+                src={previewItem.imageUrl}
+                alt={previewItem.title}
+                class="modal-real-img"
+              />
+            </div>
+          {/if}
+
           <h3 class="modal-title">{previewItem.title}</h3>
           {#if previewItem.subtitle}
             <p class="modal-sub">{previewItem.subtitle}</p>
           {/if}
 
           <div class="modal-meta">
-            <p><strong>Định dạng:</strong> {previewItem.aspect_ratio === 'story9_16' ? 'Story Hoàng Triều (9:16)' : 'Chuẩn Văn Bản (3:4)'}</p>
-            {#if previewItem.custom_seal_name}
-              <p><strong>Ấn danh xưng:</strong> {previewItem.custom_seal_name}</p>
+            <p><strong>Định dạng:</strong> {previewItem.aspectRatio === 'story9_16' ? 'Story Hoàng Triều (9:16)' : 'Chuẩn Văn Bản (3:4)'}</p>
+            {#if previewItem.customSealName}
+              <p><strong>Ấn danh xưng:</strong> {previewItem.customSealName}</p>
             {/if}
-            <p><strong>Thời gian tạo:</strong> {formatDate(previewItem.created_at)}</p>
+            <p><strong>Thời gian tạo:</strong> {formatDate(previewItem.createdAt)}</p>
           </div>
 
           <div class="modal-seal-display">
@@ -295,6 +303,16 @@
         </div>
 
         <div class="modal-footer">
+          {#if previewItem.imageUrl}
+            <a
+              href={previewItem.imageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="download-btn"
+            >
+              📥 Tải Ảnh Gốc
+            </a>
+          {/if}
           <button class="action-btn" onclick={() => (previewItem = null)}>
             Đóng Lại
           </button>
@@ -306,130 +324,141 @@
 
 <style>
   .gallery-container {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
-    max-width: 1100px;
-    margin: 0 auto;
+    gap: 1.75rem;
   }
 
-  .sync-status-bar {
+  /* Sync Banner */
+  .sync-banner {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(26, 17, 48, 0.65);
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
-    backdrop-filter: blur(8px);
+    background: linear-gradient(135deg, rgba(30, 20, 50, 0.85) 0%, rgba(20, 15, 35, 0.95) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 14px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   }
 
-  .sync-info {
+  .sync-banner-info {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
+    gap: 1rem;
   }
 
   .sync-icon {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
   }
 
   .sync-title {
+    margin: 0 0 0.25rem 0;
     color: #ffd700;
-    font-size: 0.95rem;
-    letter-spacing: 0.5px;
+    font-size: 1rem;
+    font-weight: 700;
   }
 
-  .sync-subtitle {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.82rem;
-    margin: 0.2rem 0 0 0;
+  .sync-desc {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.85rem;
+    max-width: 600px;
   }
 
   .refresh-btn {
     background: rgba(212, 175, 55, 0.15);
     color: #ffd700;
     border: 1px solid rgba(212, 175, 55, 0.4);
-    padding: 0.45rem 0.9rem;
+    padding: 0.5rem 1rem;
     border-radius: 8px;
-    cursor: pointer;
     font-size: 0.85rem;
     font-weight: 600;
+    cursor: pointer;
     transition: all 0.2s ease;
+    white-space: nowrap;
   }
 
   .refresh-btn:hover {
     background: rgba(212, 175, 55, 0.3);
+    border-color: #ffd700;
   }
 
+  /* Filter Bar */
   .filter-bar {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
   }
 
   .filter-chip {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    background: rgba(20, 13, 38, 0.7);
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    color: rgba(255, 255, 255, 0.75);
     padding: 0.5rem 0.9rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
+    color: rgba(255, 255, 255, 0.7);
     font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s ease;
+    white-space: nowrap;
   }
 
   .filter-chip:hover {
-    border-color: rgba(212, 175, 55, 0.6);
+    background: rgba(255, 255, 255, 0.1);
     color: #fff;
   }
 
   .filter-chip.active {
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(184, 134, 11, 0.15));
+    background: rgba(212, 175, 55, 0.2);
     border-color: #ffd700;
     color: #ffd700;
     font-weight: 600;
-    box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
   }
 
   .chip-count {
+    opacity: 0.6;
     font-size: 0.75rem;
-    opacity: 0.7;
   }
 
+  /* Loading State */
   .loading-state {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 1rem;
-    padding: 3rem;
-    color: #ffd700;
+    padding: 4rem 0;
+    color: rgba(255, 255, 255, 0.6);
   }
 
+  /* Gallery Grid */
   .gallery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 1.25rem;
   }
 
   .gallery-card {
-    background: linear-gradient(145deg, rgba(24, 16, 44, 0.85), rgba(16, 10, 30, 0.95));
+    background: #151124;
     border: 1px solid rgba(212, 175, 55, 0.25);
-    border-radius: 14px;
-    padding: 1.1rem;
+    border-radius: 12px;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: 0.75rem;
     transition: transform 0.2s ease, border-color 0.2s ease;
   }
 
   .gallery-card:hover {
-    transform: translateY(-3px);
-    border-color: rgba(212, 175, 55, 0.5);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+    border-color: #ffd700;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   }
 
   .card-header {
@@ -439,38 +468,74 @@
   }
 
   .category-badge {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    padding: 0.2rem 0.6rem;
-    border-radius: 6px;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
     background: rgba(212, 175, 55, 0.15);
     color: #ffd700;
-    border: 1px solid rgba(212, 175, 55, 0.3);
+  }
+
+  .category-badge.ziwei {
+    color: #ffd700;
+    background: rgba(255, 215, 0, 0.15);
+  }
+
+  .category-badge.sacredStick {
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.15);
+  }
+
+  .category-badge.tarot {
+    color: #c084fc;
+    background: rgba(192, 132, 252, 0.15);
+  }
+
+  .category-badge.iching {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.15);
   }
 
   .ratio-badge {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
   }
 
   .card-visual {
+    background: #0f0a1c;
+    border: 1px dashed rgba(212, 175, 55, 0.2);
+    border-radius: 8px;
+    padding: 1.25rem 0.75rem;
     display: flex;
-    gap: 0.85rem;
+    flex-direction: column;
     align-items: center;
-    background: rgba(0, 0, 0, 0.25);
-    padding: 0.75rem;
-    border-radius: 10px;
+    text-align: center;
+    gap: 0.75rem;
+    min-height: 140px;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .card-preview-image {
+    max-width: 100%;
+    max-height: 120px;
+    object-fit: cover;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   }
 
   .card-emblem {
-    font-size: 2rem;
+    font-size: 2.2rem;
   }
 
   .card-title-box {
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
   }
 
   .card-title {
@@ -478,63 +543,55 @@
     color: #fff;
     font-size: 0.95rem;
     font-weight: 700;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .card-subtitle {
-    margin: 0.2rem 0 0 0;
+    margin: 0;
     color: rgba(255, 255, 255, 0.6);
-    font-size: 0.78rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 0.75rem;
   }
 
   .seal-badge {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 0.4rem;
-    font-size: 0.72rem;
-    color: #ff6b6b;
-    background: rgba(255, 82, 82, 0.12);
-    border: 1px solid rgba(255, 82, 82, 0.3);
+    background: rgba(185, 28, 28, 0.2);
+    border: 1px solid rgba(220, 38, 38, 0.4);
     padding: 0.2rem 0.5rem;
-    border-radius: 6px;
-    width: fit-content;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    color: #f87171;
   }
 
   .seal-mark {
-    background: #ff5252;
+    font-weight: bold;
+    background: #dc2626;
     color: #fff;
-    font-size: 0.6rem;
-    font-weight: 900;
     padding: 0.1rem 0.25rem;
-    border-radius: 3px;
+    border-radius: 2px;
+    font-size: 0.6rem;
   }
 
   .card-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
     padding-top: 0.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .card-time {
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.7rem;
   }
 
   .view-btn {
     background: rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(212, 175, 55, 0.3);
     color: #ffd700;
-    border: 1px solid rgba(212, 175, 55, 0.35);
-    padding: 0.3rem 0.7rem;
-    border-radius: 6px;
-    font-size: 0.78rem;
+    border-radius: 4px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -572,6 +629,8 @@
     border-radius: 16px;
     max-width: 480px;
     width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
@@ -600,6 +659,24 @@
     cursor: pointer;
   }
 
+  .modal-image-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    background: #0d091a;
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .modal-real-img {
+    max-width: 100%;
+    max-height: 280px;
+    object-fit: contain;
+    border-radius: 6px;
+  }
+
   .modal-title {
     margin: 0;
     color: #fff;
@@ -607,58 +684,96 @@
   }
 
   .modal-sub {
-    margin: 0.25rem 0 0 0;
-    color: rgba(255, 255, 255, 0.7);
+    margin: 0.25rem 0 0;
+    color: #ffd700;
     font-size: 0.9rem;
   }
 
   .modal-meta {
     background: rgba(0, 0, 0, 0.3);
     border-radius: 8px;
-    padding: 0.85rem;
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.8);
+    padding: 0.75rem 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.75);
+    margin: 0.75rem 0;
   }
 
   .modal-meta p {
     margin: 0;
   }
 
+  .modal-meta strong {
+    color: #ffd700;
+  }
+
   .modal-seal-display {
     display: flex;
     justify-content: center;
-    padding: 1rem 0;
+    padding: 0.5rem 0;
   }
 
   .royal-square-seal {
-    border: 3px solid #d32f2f;
-    padding: 0.6rem 0.85rem;
-    color: #d32f2f;
-    font-weight: 900;
-    font-size: 0.85rem;
+    width: 76px;
+    height: 76px;
+    border: 3px solid #b91c1c;
+    background: #7f1d1d;
     display: flex;
     flex-direction: column;
     align-items: center;
-    letter-spacing: 2px;
-    background: rgba(211, 47, 47, 0.06);
+    justify-content: center;
+    color: #fef08a;
+    font-size: 0.7rem;
+    font-weight: 900;
+    box-shadow: 0 0 16px rgba(185, 28, 28, 0.5);
     border-radius: 4px;
+    letter-spacing: 1px;
+    line-height: 1.3;
   }
 
   .modal-footer {
     display: flex;
     justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  .download-btn {
+    background: rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    color: #ffd700;
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
   }
 
   .action-btn {
-    background: #ffd700;
-    color: #140d26;
+    background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);
     border: none;
-    font-weight: bold;
-    padding: 0.6rem 1.4rem;
+    color: #18112e;
+    padding: 0.6rem 1.25rem;
     border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 700;
     cursor: pointer;
+  }
+
+  @media (max-width: 640px) {
+    .sync-banner {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .refresh-btn {
+      width: 100%;
+      text-align: center;
+    }
   }
 </style>

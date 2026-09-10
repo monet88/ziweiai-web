@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -11,6 +12,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../gallery/data/royal_gallery_service.dart';
 import '../../../gallery/models/royal_share_item.dart';
 import '../../../gallery/presentation/widgets/royal_seal_widget.dart';
+import '../../../subscription/providers/subscription_provider.dart';
 import '../../data/models/tarot_models.dart';
 
 /// Royal Tarot & Lenormand Imperial Share Card (Thiệp Chiêm Tinh Hoàng Gia)
@@ -400,7 +402,7 @@ class RoyalTarotShareCard extends StatelessWidget {
 }
 
 /// Preview & Share Modal Dialog for Royal Tarot & Lenormand Card
-class RoyalTarotPreviewDialog extends StatefulWidget {
+class RoyalTarotPreviewDialog extends ConsumerStatefulWidget {
   final TarotDraw data;
   final String systemTitle;
 
@@ -424,10 +426,10 @@ class RoyalTarotPreviewDialog extends StatefulWidget {
   }
 
   @override
-  State<RoyalTarotPreviewDialog> createState() => _RoyalTarotPreviewDialogState();
+  ConsumerState<RoyalTarotPreviewDialog> createState() => _RoyalTarotPreviewDialogState();
 }
 
-class _RoyalTarotPreviewDialogState extends State<RoyalTarotPreviewDialog> {
+class _RoyalTarotPreviewDialogState extends ConsumerState<RoyalTarotPreviewDialog> {
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _isSharing = false;
 
@@ -497,7 +499,10 @@ class _RoyalTarotPreviewDialogState extends State<RoyalTarotPreviewDialog> {
             ? _customSealController.text
             : _sealType.label,
       );
-      await RoyalGalleryService().saveItem(galleryItem);
+      await RoyalGalleryService().saveItem(
+        galleryItem,
+        isPro: ref.read(isProUserProvider),
+      );
 
       await SharePlus.instance.share(
         ShareParams(

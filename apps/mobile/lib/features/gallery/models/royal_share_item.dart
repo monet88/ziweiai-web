@@ -101,6 +101,10 @@ class RoyalShareItem {
   final RoyalCardType type;
   final DateTime createdAt;
   final String imagePath;
+  final String? storagePath;
+  final String? imageUrl;
+  final DateTime? updatedAt;
+  final DateTime? deletedAt;
   final String? subtitle;
   final RoyalAspectRatio aspectRatio;
   final String? customSealName;
@@ -111,10 +115,46 @@ class RoyalShareItem {
     required this.type,
     required this.createdAt,
     required this.imagePath,
+    this.storagePath,
+    this.imageUrl,
+    this.updatedAt,
+    this.deletedAt,
     this.subtitle,
     this.aspectRatio = RoyalAspectRatio.standard,
     this.customSealName,
   });
+
+  bool get isDeleted => deletedAt != null;
+
+  RoyalShareItem copyWith({
+    String? id,
+    String? title,
+    RoyalCardType? type,
+    DateTime? createdAt,
+    String? imagePath,
+    String? storagePath,
+    String? imageUrl,
+    DateTime? updatedAt,
+    DateTime? deletedAt,
+    String? subtitle,
+    RoyalAspectRatio? aspectRatio,
+    String? customSealName,
+  }) {
+    return RoyalShareItem(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      type: type ?? this.type,
+      createdAt: createdAt ?? this.createdAt,
+      imagePath: imagePath ?? this.imagePath,
+      storagePath: storagePath ?? this.storagePath,
+      imageUrl: imageUrl ?? this.imageUrl,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      subtitle: subtitle ?? this.subtitle,
+      aspectRatio: aspectRatio ?? this.aspectRatio,
+      customSealName: customSealName ?? this.customSealName,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -123,6 +163,10 @@ class RoyalShareItem {
       'type': type.name,
       'createdAt': createdAt.toIso8601String(),
       'imagePath': imagePath,
+      'storagePath': storagePath,
+      'imageUrl': imageUrl,
+      'updatedAt': updatedAt?.toIso8601String(),
+      'deletedAt': deletedAt?.toIso8601String(),
       'subtitle': subtitle,
       'aspectRatio': aspectRatio.name,
       'customSealName': customSealName,
@@ -138,7 +182,11 @@ class RoyalShareItem {
         orElse: () => RoyalCardType.ziwei,
       ),
       createdAt: DateTime.tryParse(map['createdAt'] as String? ?? '') ?? DateTime.now(),
-      imagePath: map['imagePath'] as String,
+      imagePath: (map['imagePath'] as String?) ?? '',
+      storagePath: map['storagePath'] as String?,
+      imageUrl: map['imageUrl'] as String?,
+      updatedAt: map['updatedAt'] != null ? DateTime.tryParse(map['updatedAt'] as String) : null,
+      deletedAt: map['deletedAt'] != null ? DateTime.tryParse(map['deletedAt'] as String) : null,
       subtitle: map['subtitle'] as String?,
       aspectRatio: RoyalAspectRatio.values.firstWhere(
         (e) => e.name == map['aspectRatio'],

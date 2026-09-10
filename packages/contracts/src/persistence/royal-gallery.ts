@@ -24,29 +24,46 @@ export const royalGalleryShareRecordSchema = z.object({
   subtitle: z.string().nullable().optional(),
   aspectRatio: royalAspectRatioSchema.default('standard'),
   customSealName: z.string().nullable().optional(),
+  storagePath: z.string().nullable().optional(),
   imagePath: z.string().nullable().optional(),
   imageUrl: z.string().nullable().optional(),
   payload: z.record(z.string(), z.unknown()).default({}),
   createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime().optional(),
+  deletedAt: z.string().datetime().nullable().optional(),
 });
 
 export type RoyalGalleryShareRecord = z.infer<typeof royalGalleryShareRecordSchema>;
 
+export const syncRoyalGalleryItemInputSchema = z.object({
+  id: z.string().min(1),
+  cardType: royalCardTypeSchema,
+  title: z.string().min(1),
+  subtitle: z.string().nullable().optional(),
+  aspectRatio: royalAspectRatioSchema.default('standard'),
+  customSealName: z.string().nullable().optional(),
+  storagePath: z.string().nullable().optional(),
+  imagePath: z.string().nullable().optional(),
+  imageUrl: z.string().nullable().optional(),
+  payload: z.record(z.string(), z.unknown()).default({}),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime().optional(),
+  isDeleted: z.boolean().default(false).optional(),
+});
+
+export type SyncRoyalGalleryItemInput = z.infer<typeof syncRoyalGalleryItemInputSchema>;
+
 export const syncRoyalGalleryRequestSchema = z.object({
-  items: z.array(
-    z.object({
-      id: z.string().min(1),
-      cardType: royalCardTypeSchema,
-      title: z.string().min(1),
-      subtitle: z.string().nullable().optional(),
-      aspectRatio: royalAspectRatioSchema.default('standard'),
-      customSealName: z.string().nullable().optional(),
-      imagePath: z.string().nullable().optional(),
-      imageUrl: z.string().nullable().optional(),
-      payload: z.record(z.string(), z.unknown()).default({}),
-      createdAt: z.string().datetime(),
-    }),
-  ),
+  lastSyncedAt: z.string().datetime().nullable().optional(),
+  items: z.array(syncRoyalGalleryItemInputSchema).default([]),
 });
 
 export type SyncRoyalGalleryRequest = z.infer<typeof syncRoyalGalleryRequestSchema>;
+
+export const syncRoyalGalleryResponseSchema = z.object({
+  serverItems: z.array(royalGalleryShareRecordSchema),
+  deletedIds: z.array(z.string()),
+  syncedAt: z.string().datetime(),
+});
+
+export type SyncRoyalGalleryResponse = z.infer<typeof syncRoyalGalleryResponseSchema>;

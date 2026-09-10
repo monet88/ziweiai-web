@@ -21,6 +21,7 @@ import '../../../ui/premium_text_field.dart';
 import '../../../ui/premium_dropdown.dart';
 import '../../../ui/premium_button.dart';
 import '../../../ui/floating_pill_nav_bar.dart';
+import '../../horoscope/presentation/widgets/royal_daily_horoscope_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -350,8 +351,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               const SizedBox(height: 20),
 
-              // 4. Widget Lịch Vạn Niên Hoàng Đạo (Daily Almanac & Tiết Khí)
-              _buildDailyAlmanacCard(context)
+              // 4. Widget Khâm Thiên Giám Ngự Báo (Lịch Vạn Niên Hoàng Đạo & Cát Khí)
+              const RoyalDailyHoroscopeCard()
                   .animate()
                   .fade(duration: 500.ms, delay: 180.ms),
 
@@ -690,212 +691,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildDailyAlmanacCard(BuildContext context) {
-    return GlassPanel(
-      padding: const EdgeInsets.all(16),
-      borderRadius: BorderRadius.circular(20),
-      borderGradient: CelestialGradients.goldBorder,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.cosmosElevated,
-                      border: Border.all(color: AppTheme.mysticalGold, width: 1),
-                    ),
-                    child: const Icon(
-                      Icons.calendar_month,
-                      size: 14,
-                      color: AppTheme.goldBright,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'LỊCH VẠN NIÊN HOÀNG ĐẠO',
-                    style: GoogleFonts.cinzel(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.goldBright,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  color: AppTheme.nephriteJade.withValues(alpha: 0.25),
-                  border: Border.all(color: AppTheme.etherealJade, width: 0.8),
-                ),
-                child: const Text(
-                  'TRỰC THÀNH (ĐẠI CÁT)',
-                  style: TextStyle(
-                    color: AppTheme.goldBright,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Can Chi & Lunar Date Info
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: AppTheme.cosmosElevated.withValues(alpha: 0.5),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildAlmanacCol('DƯƠNG LỊCH', '09/09/2026'),
-                Container(width: 1, height: 28, color: AppTheme.glassBorder),
-                _buildAlmanacCol('ÂM LỊCH', '29/07 BÍNH NGỌ'),
-                Container(width: 1, height: 28, color: AppTheme.glassBorder),
-                _buildAlmanacCol('HOÀNG ĐẠO', 'GIÁP TÝ NHẬT'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Auspicious (Nên làm) vs Taboo (Kiêng cữ)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: AppTheme.nephriteJade.withValues(alpha: 0.12),
-                    border: Border.all(
-                      color: AppTheme.nephriteJade.withValues(alpha: 0.35),
-                      width: 0.8,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: const [
-                          Icon(Icons.check_circle_outline, size: 14, color: AppTheme.etherealJade),
-                          SizedBox(width: 5),
-                          Text(
-                            'VIỆC NÊN LÀM',
-                            style: TextStyle(
-                              color: AppTheme.etherealJade,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        '• Cầu tài lộc, giao dịch\n• Khai trương, xuất hành\n• Tế tự, cầu an gia đạo',
-                        style: TextStyle(
-                          color: AppTheme.mysticalText,
-                          fontSize: 11,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: AppTheme.cinnabarCrimson.withValues(alpha: 0.12),
-                    border: Border.all(
-                      color: AppTheme.cinnabarCrimson.withValues(alpha: 0.35),
-                      width: 0.8,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: const [
-                          Icon(Icons.highlight_off, size: 14, color: AppTheme.cinnabarLight),
-                          SizedBox(width: 5),
-                          Text(
-                            'VIỆC KIÊNG CỮ',
-                            style: TextStyle(
-                              color: AppTheme.cinnabarLight,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        '• Động thổ, khởi công\n• Kiện tụng, tranh chấp\n• An táng, di dời mồ mả',
-                        style: TextStyle(
-                          color: AppTheme.mysticalText,
-                          fontSize: 11,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          // Giờ Hoàng Đạo row
-          Text(
-            'Giờ Hoàng Đạo: Tý (23-1), Dần (3-5), Mão (5-7), Ngọ (11-13), Mùi (13-15), Dậu (17-19)',
-            style: TextStyle(
-              color: AppTheme.mysticalTextSecondary.withValues(alpha: 0.85),
-              fontSize: 10,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAlmanacCol(String title, String value) {
-    return Column(
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: AppTheme.mysticalTextSecondary,
-            fontSize: 9,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          style: const TextStyle(
-            color: AppTheme.goldBright,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildZiweiHeroCard(BuildContext context, AsyncValue<ChartDetailResponse?> chartState) {
     return GlassPanel(

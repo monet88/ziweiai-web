@@ -74,7 +74,7 @@ describe('ExplanationsService (with palaceScope)', () => {
   let billingService: ExplanationBillingService;
   let raceController: ExplanationRaceControllerService;
   let persistence: Partial<any>;
-  let walletEngine: Pick<WalletEngineService, 'deductXU'>;
+  let walletEngine: Pick<WalletEngineService, 'deductXU' | 'addXU'>;
   let quotas: Partial<QuotasService>;
   let providerRouter: Partial<ExplanationProviderRouter>;
 
@@ -93,7 +93,7 @@ describe('ExplanationsService (with palaceScope)', () => {
     quotas = {
       assertCanExecute: vi.fn().mockResolvedValue(undefined),
     };
-    walletEngine = { deductXU: vi.fn().mockResolvedValue(true) };
+    walletEngine = { deductXU: vi.fn().mockResolvedValue(true), addXU: vi.fn().mockResolvedValue(true) };
 
     providerRouter = {
       resolveProviderName: vi.fn().mockReturnValue('deepseek'),
@@ -661,7 +661,7 @@ describe('US-010 AI explanation gate', () => {
   let billingService: ExplanationBillingService;
   let raceController: ExplanationRaceControllerService;
   let persistence: Partial<any>;
-  let walletEngine: Pick<WalletEngineService, 'deductXU'>;
+  let walletEngine: Pick<WalletEngineService, 'deductXU' | 'addXU'>;
   let quotas: Partial<QuotasService>;
   let providerRouter: Partial<ExplanationProviderRouter>;
 
@@ -680,7 +680,7 @@ describe('US-010 AI explanation gate', () => {
     quotas = {
       assertCanExecute: vi.fn().mockResolvedValue(undefined),
     };
-    walletEngine = { deductXU: vi.fn().mockResolvedValue(true) };
+    walletEngine = { deductXU: vi.fn().mockResolvedValue(true), addXU: vi.fn().mockResolvedValue(true) };
 
     providerRouter = {
       resolveProviderName: vi.fn().mockReturnValue('deepseek'),
@@ -832,5 +832,77 @@ describe('US-010 AI explanation gate', () => {
     } finally {
       (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = prev;
     }
+  });
+
+  it('streams explanation chunks live and persists completed result upon finish', async () => {
+    const user = { userId: '11111111-1111-4111-8111-111111111111', email: 'test@example.com' };
+    const chartId = '22222222-2222-4222-8222-222222222222';
+    const chartRecord = createChartRecord();
+    chartRecord.id = chartId;
+    chartRecord.snapshot.snapshotId = chartId;
+    chartRecord.ownerUserId = user.userId;
+
+    const input: CreateExplanationRequest = {
+      chartSnapshotId: chartId,
+      palaceScope: 'soulPalace',
+      explanationKind: 'overview',
+      providerPreference: 'auto',
+      userConsentedToStorePrompt: false,
+    };
+
+    const completedRequest = {
+      id: '33333333-3333-4333-8333-333333333333',
+      ownerUserId: user.userId,
+      chartSnapshotId: chartId,
+      idempotencyKey: 'valid-idempotency-key-for-test-32',
+      requestState: 'completed' as const,
+      providerName: 'openai-compat',
+      promptStorageMode: 'not_stored' as const,
+      failureRetainsUntil: null,
+      createdAt: '2026-06-18T00:00:00.000Z',
+      updatedAt: '2026-06-18T00:00:01.000Z',
+    };
+
+    const createdResult = {
+      id: '44444444-4444-4444-8444-444444444444',
+      ownerUserId: user.userId,
+      explanationRequestId: '33333333-3333-4333-8333-333333333333',
+      chartSnapshotId: chartId,
+      cacheScope: 'user_snapshot' as const,
+      renderedMarkdown: 'Bản cung Mệnh sáng lạn.',
+      providerMetadata: { provider: 'openai-compat' },
+      createdAt: '2026-06-18T00:00:01.000Z',
+    };
+
+    (persistence.findChartSnapshotById as any).mockResolvedValue(chartRecord);
+    (persistence.findExplanationRequestByIdempotencyKey as any).mockResolvedValue(null);
+    (persistence.createExplanationRequest as any).mockResolvedValue(completedRequest);
+    (persistence.updateExplanationRequest as any).mockResolvedValue(completedRequest);
+    (persistence.createExplanationResult as any).mockResolvedValue(createdResult);
+    (persistence.createHistoryView as any).mockResolvedValue({});
+
+    (providerRouter.resolveStreamingProvider as any) = vi.fn().mockReturnValue({
+      generateExplanationStream: async function* () {
+        yield 'Bản cung ';
+        yield 'Mệnh sáng lạn.';
+        return {
+          renderedMarkdown: 'Bản cung Mệnh sáng lạn.',
+          providerMetadata: { provider: 'openai-compat' },
+        };
+      },
+    });
+
+    const deltas: string[] = [];
+    const generator = service.createExplanationStream(user, '127.0.0.1', input);
+    let next = await generator.next();
+    while (!next.done) {
+      deltas.push(next.value as string);
+      next = await generator.next();
+    }
+
+    expect(deltas).toEqual(['Bản cung ', 'Mệnh sáng lạn.']);
+    expect(next.value.result.renderedMarkdown).toBe('Bản cung Mệnh sáng lạn.');
+    expect(persistence.createExplanationResult).toHaveBeenCalled();
+    expect(persistence.createHistoryView).toHaveBeenCalled();
   });
 });

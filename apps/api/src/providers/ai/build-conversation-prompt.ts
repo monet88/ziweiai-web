@@ -1,5 +1,6 @@
-import type { ConversationMessageRecord } from '@ziweiai/contracts';
+import type { ConversationMessageRecord, ZiweiChartSnapshot } from '@ziweiai/contracts';
 import { buildExplanationPrompt, type ConversationPromptPayload } from './ai-explanation-provider';
+import { buildPalaceExplanationPrompt } from './build-palace-explanation-prompt';
 
 export const CONVERSATION_LANGUAGE_INVARIANT = [
   'Bạn là Khâm Thiên Giám Đại Sư — Trợ lý AI Cố Vấn Tối Cao của ViOS (Tử Vi Toàn Tập).',
@@ -51,10 +52,21 @@ export function buildConversationPrompt(payload: ConversationPromptPayload, hist
     divinationInquiry: payload.divinationInquiry,
   });
 
+  const palaceContextLines: string[] = [];
+  if (payload.palaceScope && payload.chartSnapshot.chartSystem === 'zi-wei-dou-shu') {
+    const palacePrompt = buildPalaceExplanationPrompt(
+      payload.chartSnapshot as ZiweiChartSnapshot,
+      payload.palaceScope,
+    );
+    palaceContextLines.push('Cung vị trọng điểm đương số đang quan tâm/đàm luận:');
+    palaceContextLines.push(palacePrompt);
+  }
+
   return [
     CONVERSATION_LANGUAGE_INVARIANT,
     'Ngữ cảnh tinh bàn và lá số dùng để giải đoán:',
     chartPrompt,
+    ...(palaceContextLines.length > 0 ? palaceContextLines : []),
     'Lịch sử đàm đạo gần nhất:',
     recentMessages.map(formatMessageForPrompt).join('\n') || 'Chưa có lịch sử.',
     'Câu hỏi của đương số:',

@@ -552,7 +552,6 @@ class _RoyalSharePreviewDialogState extends ConsumerState<RoyalSharePreviewDialo
             aspectRatio: _isStory9_16 ? RoyalAspectRatio.story9_16 : RoyalAspectRatio.standard,
             customSealName: _customSealController.text.trim().isNotEmpty ? _customSealController.text.trim() : null,
           ),
-          isPro: true,
         );
       } catch (e) {
         debugPrint('Lỗi lưu vào Hoàng Triều Thư Viện: $e');

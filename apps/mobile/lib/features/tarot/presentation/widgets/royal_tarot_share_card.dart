@@ -505,7 +505,6 @@ class _RoyalTarotPreviewDialogState extends ConsumerState<RoyalTarotPreviewDialo
       );
       await RoyalGalleryService().saveItem(
         galleryItem,
-        isPro: true,
       );
 
       await SharePlus.instance.share(

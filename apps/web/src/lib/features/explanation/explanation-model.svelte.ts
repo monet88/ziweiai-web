@@ -22,7 +22,7 @@ import {
 } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
 import { ApiError } from '$lib/api-client/core';
-import { createExplanation } from '$lib/api-client/conversations';;
+import { streamExplanation } from '$lib/api-client/conversations';
 import { buildPalaceExplanationRequest, CHART_DETAIL_EXPLANATION_KIND } from '$lib/features/chart/chart-explanation-intent';
 import { buildHydrationResultByScope, OVERVIEW_SCOPE_KEY } from '$lib/features/explanation/explanation-sections';
 import { viCopy } from '$lib/i18n/vi';
@@ -97,7 +97,34 @@ export function createExplanationModel(options: ExplanationModelOptions) {
         throw new ApiError('not-found', viCopy.chart.chartNotAvailableFallback);
       }
       const scope = resolvePalaceScope(options.getSelectedPalaceKey());
-      return createExplanation(token, buildPalaceExplanationRequest(chartSnapshotId, scope));
+      const targetScopeKey = scope ?? OVERVIEW_SCOPE_KEY;
+      const request = buildPalaceExplanationRequest(chartSnapshotId, scope);
+
+      sessionMarkdownByScope = { ...sessionMarkdownByScope, [targetScopeKey]: '' };
+
+      let finalResponse: CreateExplanationResponse | undefined;
+      for await (const evt of streamExplanation(token, request)) {
+        if (evt.type === 'chunk') {
+          sessionMarkdownByScope = {
+            ...sessionMarkdownByScope,
+            [targetScopeKey]: (sessionMarkdownByScope[targetScopeKey] ?? '') + evt.delta,
+          };
+        } else if (evt.type === 'done') {
+          finalResponse = {
+            request: evt.request,
+            result: evt.result,
+            explanationContext: evt.explanationContext,
+          };
+        } else if (evt.type === 'error') {
+          throw new ApiError('server', evt.error.message);
+        }
+      }
+
+      if (!finalResponse) {
+        throw new ApiError('server', viCopy.explanation.statusFailed);
+      }
+
+      return finalResponse;
     },
     onSuccess: async (data: CreateExplanationResponse): Promise<void> => {
       // Key theo scope của chính kết quả (providerMetadata.palaceScope; overview khi vắng) để

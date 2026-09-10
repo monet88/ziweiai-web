@@ -231,12 +231,13 @@ export class RoyalGalleryService {
   ): Promise<{ storagePath: string; signedUrl: string | null }> {
     // 1. Kiểm tra Magic Bytes nhị phân thực tế của tệp
     const { format, mimeType } = validateImageMagicBytes(fileBuffer);
-    const storagePath = `${userId}/${cardId}.${format}`;
+    const version = Date.now();
+    const storagePath = `${userId}/${cardId}_${version}.${format}`;
 
     // 2. Xác minh thẻ tồn tại, thuộc về user và chưa bị xóa trước khi upload
     const { data: existingCard, error: findError } = await this.supabase
       .from('royal_gallery_shares')
-      .select('id, deleted_at')
+      .select('id, storage_path, deleted_at')
       .eq('id', cardId)
       .eq('owner_user_id', userId)
       .maybeSingle();
@@ -249,6 +250,8 @@ export class RoyalGalleryService {
     if (!existingCard || existingCard.deleted_at != null) {
       throw new NotFoundException('Không tìm thấy thiệp hoàng triều hoặc thiệp đã bị xóa');
     }
+
+    const oldStoragePath = existingCard.storage_path;
 
     // 3. Upload file nhị phân lên bucket royal-gallery
     const { error: uploadError } = await this.supabase.storage
@@ -263,21 +266,38 @@ export class RoyalGalleryService {
       throw new Error(`Storage upload error: ${uploadError.message}`);
     }
 
-    // 4. Cập nhật storage_path vào bản ghi thiệp
-    const { error: updateError } = await this.supabase
+    // 4. Cập nhật storage_path vào bản ghi thiệp với xác minh affected row
+    const { data: updatedCard, error: updateError } = await this.supabase
       .from('royal_gallery_shares')
       .update({
         storage_path: storagePath,
         updated_at: new Date().toISOString(),
       })
       .eq('id', cardId)
-      .eq('owner_user_id', userId);
+      .eq('owner_user_id', userId)
+      .is('deleted_at', null)
+      .select('id, storage_path')
+      .maybeSingle();
 
-    if (updateError) {
-      this.logger.error(`[gallery] Cập nhật storage_path DB thất bại, tiến hành hoàn tác xóa file storage (cardId=${cardId}): ${updateError.message}`);
-      // Compensation: Xóa object vừa upload khỏi storage để tránh tạo object mồ côi
+    if (updateError || !updatedCard) {
+      this.logger.error(
+        `[gallery] Cập nhật storage_path DB thất bại, tiến hành hoàn tác xóa file storage mới (cardId=${cardId}): ${updateError?.message ?? 'Không tìm thấy thẻ hợp lệ hoặc thẻ đã bị xóa'}`,
+      );
+      // Compensation: Chỉ xóa object mới vừa upload, tuyệt đối không làm mất ảnh cũ nếu đây là thao tác overwrite
       await this.supabase.storage.from(GALLERY_BUCKET).remove([storagePath]);
-      throw new Error(`Cập nhật thông tin thiệp thất bại: ${updateError.message}`);
+      if (updateError) {
+        throw new Error(`Cập nhật thông tin thiệp thất bại: ${updateError.message}`);
+      }
+      throw new NotFoundException('Không tìm thấy thiệp hoàng triều hoặc thiệp đã bị xóa');
+    }
+
+    // Nếu cập nhật thành công và trước đó đã có ảnh cũ (khác path mới), dọn dẹp an toàn
+    if (oldStoragePath && oldStoragePath !== storagePath) {
+      try {
+        await this.supabase.storage.from(GALLERY_BUCKET).remove([oldStoragePath]);
+      } catch (cleanOldErr) {
+        this.logger.warn(`[gallery] Dọn dẹp ảnh cũ thất bại (oldStoragePath=${oldStoragePath}): ${cleanOldErr}`);
+      }
     }
 
     const signedUrl = await this.signSinglePath(storagePath);

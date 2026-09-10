@@ -101,6 +101,17 @@ export const conversationStreamEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('error'), error: apiErrorSchema }),
 ]);
 
+export const explanationStreamEventSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('chunk'), delta: z.string().min(1) }),
+  z.object({
+    type: z.literal('done'),
+    request: explanationRequestRecordSchema,
+    result: explanationResultRecordSchema,
+    explanationContext: explanationContextSchema,
+  }),
+  z.object({ type: z.literal('error'), error: apiErrorSchema }),
+]);
+
 export const createChartRequestSchema = z.object({
   birthInput: birthInputSchema,
   chartSystem: createChartSystemSchema,
@@ -288,6 +299,7 @@ export type CreateConversationRequest = z.infer<typeof createConversationRequest
 export type CreateConversationResponse = z.infer<typeof createConversationResponseSchema>;
 export type CreateConversationMessageRequest = z.infer<typeof createConversationMessageRequestSchema>;
 export type ConversationStreamEvent = z.infer<typeof conversationStreamEventSchema>;
+export type ExplanationStreamEvent = z.infer<typeof explanationStreamEventSchema>;
 export type ConversationDetailResponse = z.infer<typeof conversationDetailResponseSchema>;
 export type ConversationListResponse = z.infer<typeof conversationListResponseSchema>;
 export type ChartDetailResponse = z.infer<typeof chartDetailResponseSchema>;

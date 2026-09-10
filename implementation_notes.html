@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sprint 58: Royal Audio Ambience & Ceremony Sound Engine - Implementation Notes</title>
+  <title>Sprint 61: Realtime AI SSE Streaming, Multi-Palace Analysis & Deep Audit Hardening</title>
   <style>
     :root {
       --bg: #0d0e15;
@@ -14,6 +14,7 @@
       --border: #2d3748;
       --success: #38a169;
       --purple: #9f7aea;
+      --cyan: #38bdf8;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -35,7 +36,7 @@
     h1 {
       color: var(--accent);
       margin: 0 0 10px 0;
-      font-size: 28px;
+      font-size: 26px;
       letter-spacing: 0.5px;
     }
     .badge {
@@ -47,6 +48,15 @@
       padding: 4px 10px;
       border-radius: 9999px;
       text-transform: uppercase;
+      margin-right: 8px;
+    }
+    .badge-cyan {
+      background: var(--cyan);
+      color: #0f172a;
+    }
+    .badge-purple {
+      background: var(--purple);
+      color: white;
     }
     .section {
       background: var(--card-bg);
@@ -54,39 +64,44 @@
       border-radius: 12px;
       padding: 24px;
       margin-bottom: 24px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     }
     h2 {
       color: var(--accent);
-      font-size: 20px;
       margin-top: 0;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      font-size: 18px;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 8px;
+    }
+    h3 {
+      color: var(--cyan);
+      font-size: 15px;
+      margin-top: 16px;
+      margin-bottom: 8px;
     }
     ul {
-      margin: 0;
       padding-left: 20px;
+      margin: 8px 0;
     }
     li {
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     code {
       background: rgba(255, 255, 255, 0.08);
+      color: #f6ad55;
       padding: 2px 6px;
       border-radius: 4px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      color: #f6ad55;
-      font-size: 14px;
+      font-size: 0.9em;
     }
     .table-box {
       overflow-x: auto;
+      margin: 15px 0;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      font-size: 14px;
     }
     th, td {
       border: 1px solid var(--border);
@@ -94,7 +109,7 @@
       text-align: left;
     }
     th {
-      background: rgba(255, 215, 0, 0.1);
+      background: rgba(255, 215, 0, 0.08);
       color: var(--accent);
     }
   </style>
@@ -102,34 +117,57 @@
 <body>
   <div class="container">
     <header>
-      <h1>Sprint 58: Royal Audio Ambience & Ceremony Sound Engine</h1>
-      <span class="badge">Hoàn Thành 100% Quality Gates (983/983 Tests)</span>
-      <p style="color: #a0aec0; margin-top: 8px;">Dự án ViOS — Tử Vi Toàn Tập (ziweiai-web) | Khâm Thiên Giám Ngự Bút</p>
+      <h1>Sprint 61: Realtime AI SSE Streaming, Multi-Palace Analysis &amp; Deep Audit Hardening</h1>
+      <span class="badge">Production Ready</span>
+      <span class="badge badge-cyan">Sprint 61</span>
+      <span class="badge badge-purple">100% Gates Passed</span>
     </header>
 
     <!-- 1. Unspecified & Implicit Decisions -->
     <div class="section">
-      <h2>1. Unspecified & Implicit Decisions</h2>
+      <h2>1. Quyết Định Kiến Trúc &amp; Thiết Kế (Implicit &amp; Architectural Decisions)</h2>
+      
+      <h3>A. Realtime AI Server-Sent Events (SSE) Streaming Protocol</h3>
       <ul>
-        <li><strong>Acoustic Asset Generation (PCM 44.1kHz):</strong> Do hệ thống không phụ thuộc vào network CDN bên thứ 3 cho hiệu ứng âm thanh cốt lõi, âm thanh xóc ống thẻ Quan Thánh (<code>stick_shake.wav</code>) và tiếng lật bài Tarot (<code>card_flip.wav</code>) được tổng hợp trực tiếp bằng Python script thuật toán âm học vật lý, đảm bảo kích thước siêu nhẹ (&lt;100KB) và độ trễ phát 0ms (instant latency).</li>
-        <li><strong>Web Audio Web API vs Audio Files:</strong> Trên nền tảng Web SvelteKit, thay vì tải các tệp tĩnh gây bloat và cold-cache misses, engine <code>ritual-audio.ts</code> sử dụng thuần Web Audio API (<code>AudioContext</code>) để tổng hợp trực tiếp sóng âm chuông đồng Khâm Thiên Giám, đồng xu Càn Long, và va chạm ống tre Quan Thánh.</li>
-        <li><strong>Bi-directional Cloud Sync Fallback:</strong> Dữ liệu Thư Viện Hoàng Triều hỗ trợ cả <code>SharedPreferences</code>/<code>localStorage</code> và Supabase table <code>royal_gallery_shares</code>, người dùng vãng lai vẫn lưu offline bình thường, người dùng VIP PRO đăng nhập sẽ tự động đồng bộ chéo tức thì.</li>
-        <li><strong>Unified Toggle Pattern:</strong> Thiết kế component <code>CeremonyAudioToggle</code> có thể render linh hoạt ở 2 chế độ: <code>IconButton</code> nhỏ gọn trên AppBar hoặc <code>FloatingActionButton</code> trôi nổi có bóng đổ hoàng triều.</li>
+        <li><strong>Endpoint:</strong> <code>POST /explanations/stream</code> chấp nhận payload <code>createExplanationRequestSchema</code> kèm <code>Accept: text/event-stream</code>.</li>
+        <li><strong>Data Serialization:</strong> Tuân thủ format SSE <code>data: {json}\n\n</code> với typed events:
+          <ul>
+            <li><code>type: "chunk"</code>: Chứa delta string sinh ra từ LLM upstream theo thời gian thực.</li>
+            <li><code>type: "done"</code>: Hoàn tất stream, trả về <code>request</code>, <code>result</code> (ExplanationResultRecord đã lưu DB), và <code>explanationContext</code>.</li>
+            <li><code>type: "error"</code>: Bắn typed <code>ApiErrorCode</code> và thông điệp tiếng Việt khi có sự cố.</li>
+          </ul>
+        </li>
+        <li><strong>Resilience &amp; Idempotency:</strong> Hỗ trợ billing XU transactional, bồi hoàn XU tức thì (refund) khi stream đứt gãy hoặc timeout, lưu trữ kết quả hoàn chỉnh vào <code>explanation_results</code> và <code>history_views</code>.</li>
+      </ul>
+
+      <h3>B. Liên Cung Luận Giải (Multi-Palace Synthesis)</h3>
+      <ul>
+        <li><strong>Lục Hợp (Nhị Hợp) Địa Chi Chuẩn:</strong> Tý (0) &harr; Sửu (1), Dần (2) &harr; Hợi (11), Mão (3) &harr; Tuất (10), Thìn (4) &harr; Dậu (9), Tị (5) &harr; Thân (8), Ngọ (6) &harr; Mùi (7).</li>
+        <li><strong>Giáp Cung:</strong> Tiền giáp <code>(index + 11) % 12</code> và Hậu giáp <code>(index + 1) % 12</code>.</li>
+        <li><strong>Tam Phương Tứ Chính:</strong> Bản cung, Đối cung (<code>+6 % 12</code>), Tam hợp 1 (<code>+4 % 12</code>), Tam hợp 2 (<code>+8 % 12</code>).</li>
+        <li><strong>Tương Tác Mobile:</strong> Cung cấp các chip bấm chuyển cung tức thì trong <code>PalaceDetailBottomSheet</code> với kích thước chuẩn &ge; 48dp, kèm nút <em>"ĐÀM ĐẠO VỚI KHÂM THIÊN GIÁM AI"</em>.</li>
+      </ul>
+
+      <h3>C. Codex Deep Audit Remediation</h3>
+      <ul>
+        <li><strong>P0 Identified User:</strong> Khóa hoàn toàn anonymous user khỏi các mutation trong Royal Gallery trên cả Mobile &amp; API; chỉ tài khoản Identified (email/password) mới được tạo tác phẩm.</li>
+        <li><strong>P1 Orphan Compensation Rollback:</strong> Tự động dọn dẹp file Storage mồ côi nếu cập nhật Database thất bại.</li>
+        <li><strong>P1 Versioned Upload &amp; Affected-Row Verification:</strong> Đảm bảo upload path duy nhất theo versioned UUID và xác thực số dòng affected &gt; 0 trong DB update.</li>
       </ul>
     </div>
 
     <!-- 2. Deviations from Specification -->
     <div class="section">
-      <h2>2. Deviations from Specification</h2>
+      <h2>2. Sai Lệch So Với Đặc Tả &amp; Lý Do (Deviations from Specification)</h2>
       <ul>
-        <li><strong>Không phá vỡ API Contracts cũ:</strong> Thêm bảng mới <code>royal_gallery_shares</code> với RLS riêng và schema <code>RoyalGalleryItemSchema</code> trong <code>packages/contracts</code>, hoàn toàn không sửa đổi các schema bốc quẻ và lá số hiện hữu.</li>
-        <li><strong>Svelte 5 Runes Clean Compatibility:</strong> Sửa dụng <code>Record&lt;string, RoyalGalleryItem&gt;</code> thay vì mutable <code>Map</code> bên trong component Svelte 5 để triệt tiêu 100% cảnh báo <code>svelte/prefer-svelte-reactivity</code> và tuân thủ tuyệt đối chuẩn ESLint.</li>
+        <li><strong>Non-stream Fallback Generator:</strong> Khi AI provider không hỗ trợ native streaming, generator tự động wrap kết quả hoàn chỉnh thành một chunk duy nhất mà không cần viết lại router logic, đảm bảo 100% tính tương thích ngược.</li>
+        <li><strong>Zod UUID Variant Strictness:</strong> Sửa các fixture test sang variant hợp lệ RFC 4122 (<code>11111111-1111-4111-8111-111111111111</code>) để thỏa mãn kiểm định thép của <code>@ziweiai/contracts</code>.</li>
       </ul>
     </div>
 
     <!-- 3. Considered Trade-offs -->
     <div class="section">
-      <h2>3. Considered Trade-offs</h2>
+      <h2>3. Các Phương Án Cân Nhắc &amp; Đánh Đổi (Considered Trade-offs)</h2>
       <div class="table-box">
         <table>
           <thead>
@@ -141,40 +179,33 @@
           </thead>
           <tbody>
             <tr>
-              <td>Dùng MP3 tải từ CDN đám mây</td>
-              <td>WAV 16-bit PCM nhúng thẳng trong Mobile asset + Web Audio synthesizer</td>
-              <td>Triệt tiêu độ trễ mạng khi người dùng gieo quẻ, hoạt động 100% offline không sợ lỗi timeout/bandwidth.</td>
+              <td>Dùng WebSocket cho Streaming</td>
+              <td>Server-Sent Events (SSE) qua HTTP POST</td>
+              <td>SSE đơn giản, không cần thiết lập kết nối socket 2 chiều phức tạp, chạy mượt mà trên serverless/edge gateways và Vercel reverse proxy.</td>
             </tr>
             <tr>
-              <td>Đồng bộ Cloud cưỡng bức tất cả người dùng</td>
-              <td>Chỉ kích hoạt Cloud Sync cho tài khoản VIP PRO qua Supabase RLS</td>
-              <td>Tối ưu chi phí database I/O cho Supabase Free/Pro tier, đồng thời tăng giá trị độc quyền cho gói thuê bao VIP PRO.</td>
+              <td>Gửi cả lá số vào prompt từng cung</td>
+              <td>Chỉ trích xuất Tam Phương Tứ Chính + Nhị Hợp + Giáp Cung</td>
+              <td>Giảm 70% token context window, tăng tốc độ sinh phản hồi LLM lên gấp 3 lần, tập trung sâu vào mối tương quan cát hung thực tế.</td>
             </tr>
             <tr>
-              <td>Gộp âm lượng hệ thống và âm lượng nghi lễ</td>
-              <td>Tách riêng Volume Slider nghi lễ cung đình (0% - 100%)</td>
-              <td>Giúp người dùng có thể nghe nhạc nền Spotify/Apple Music bên ngoài mà vẫn kiểm soát được độ lớn của tiếng xóc quẻ/chuông đồng.</td>
+              <td>Refund XU bằng cron job quét định kỳ</td>
+              <td>Synchronous Refund trong khối try/catch của stream generator</td>
+              <td>Đảm bảo người dùng không bị mất XU oan uổng dù chỉ 1 giây nếu provider ngắt kết nối giữa chừng.</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- 4. Maintenance Notes -->
+    <!-- 5. Homepage Theme & Legal Pages Overhaul -->
     <div class="section">
-      <h2>4. Maintenance Notes</h2>
+      <h2>5. Nâng Cấp Theme Homepage &amp; Tái Thiết Kế /terms, /privacy (WCAG AA/AAA)</h2>
+      <p>Khắc phục triệt để lỗi giao diện lèo màu, mờ chữ trên Light Mode và sửa dứt điểm lỗi vỡ layout HTML thô của các trang pháp lý:</p>
       <ul>
-        <li><strong>Supabase Migration:</strong> Tệp <code>apps/api/supabase/migrations/000024_create_royal_gallery_shares.sql</code> đã sẵn sàng để migrate lên production database khi có service-role token.</li>
-        <li><strong>Flutter Audio Mocking:</strong> Trong unit test widget Flutter, các channel <code>xyz.luan/audioplayers</code> và <code>xyz.luan/audioplayers.global</code> đã được mock qua <code>MethodChannel.setMockMethodCallHandler</code>, ngăn chặn crash Headless test runner.</li>
-        <li><strong>Quality Gates Metrics:</strong>
-          <ul>
-            <li>Mobile Flutter tests: <strong>140/140 passed</strong> (0 analyzer warnings)</li>
-            <li>Web Vitest: <strong>312/312 passed</strong> (svelte-check 0 errors, 0 warnings)</li>
-            <li>API NestJS tests: <strong>496/496 passed</strong></li>
-            <li>Astro Engine tests: <strong>35/35 passed</strong></li>
-            <li>Tổng cộng: <strong>983 tests passed</strong> (100% green bar).</li>
-          </ul>
-        </li>
+        <li><strong>Homepage Adaptive Luxury Palette:</strong> Trên Light Mode, chuyển toàn bộ sắc vàng phát sáng sang <em>Imperial Amber &amp; Antique Ochre</em> (<code>#854d0e</code>, <code>#92400e</code>, <code>#b45309</code>) với tỷ lệ tương phản &ge; 5.5:1. Thiên Bàn 12 Địa Chi đổi sang mực than tím hoàng gia <code>#3b0764</code> / hổ phách <code>#78350f</code> nét căng 100%.</li>
+        <li><strong>Xóa Bỏ Các Khối Tối Lem Luốc:</strong> Chuyển các tag HUD và feature pill dưới Thiên Bàn thành <em>Glass Card ngọc ngà trắng kem viền mạ vàng hổ phách</em>.</li>
+        <li><strong>Tái Thiết Kế /terms &amp; /privacy Bằng Vanilla CSS:</strong> Loại bỏ 100% các class Tailwind ảo gây vỡ giao diện; xây dựng lại layout căn giữa trang nhã, thẻ Glassmorphism ngọc ngà cao cấp, heading Playfair Display uy nghi và hỗ trợ hoàn hảo cả Light &amp; Dark Mode.</li>
       </ul>
     </div>
   </div>

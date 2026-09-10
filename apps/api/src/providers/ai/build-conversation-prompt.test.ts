@@ -152,4 +152,39 @@ describe('buildConversationPrompt', () => {
 
     expect(prompt).not.toContain('NGƯỜI GIEO ĐÃ NÊU MỘT CÂU HỎI CỤ THỂ');
   });
+
+  it('threads palaceScope and multi-palace context into prompt when provided', () => {
+    const ziweiSnapshot: ChartSnapshot = {
+      ...chartSnapshot,
+      chartSystem: 'zi-wei-dou-shu',
+      palaces: [
+        {
+          nameKey: 'soulPalace',
+          index: 0,
+          heavenlyStemKey: 'jiaHeavenly',
+          earthlyBranchKey: 'ziEarthly',
+          isBodyPalace: false,
+          isOriginalPalace: false,
+          majorStars: [{ nameKey: 'ziweiMaj', group: 'major', brightnessKey: 'miao' }],
+          minorStars: [],
+          adjectiveStars: [],
+          ages: [],
+        },
+      ],
+    };
+
+    const prompt = buildConversationPrompt({
+      chartSnapshot: ziweiSnapshot,
+      explanationContext: { ...explanationContext, chartSystem: 'zi-wei-dou-shu' },
+      messages: [],
+      userMessage: 'Cung Mệnh của tôi thế nào?',
+      palaceScope: 'soulPalace',
+    });
+
+    expect(prompt).toContain('Cung vị trọng điểm đương số đang quan tâm/đàm luận:');
+    expect(prompt).toContain('Bản cung');
+    expect(prompt).toContain('Tam phương tứ chính & Liên cung');
+    expect(prompt).toContain('Nhị hợp');
+    expect(prompt).toContain('Giáp cung');
+  });
 });

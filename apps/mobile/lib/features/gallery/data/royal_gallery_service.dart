@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/royal_share_item.dart';
-import '../../subscription/providers/subscription_provider.dart';
 
 enum SyncStatus {
   success,
@@ -46,30 +45,26 @@ class RoyalGalleryNotifier extends AsyncNotifier<List<RoyalShareItem>> {
 
   Future<void> addItem(RoyalShareItem item, {bool? isPro}) async {
     final service = ref.read(royalGalleryServiceProvider);
-    final bool isProUser = isPro ?? ref.read(isProUserProvider);
-    await service.saveItem(item, isPro: isProUser);
+    await service.saveItem(item);
     state = AsyncData(await service.getItems());
   }
 
   Future<void> removeItem(String id, {bool? isPro}) async {
     final service = ref.read(royalGalleryServiceProvider);
-    final bool isProUser = isPro ?? ref.read(isProUserProvider);
-    await service.deleteItem(id, isPro: isProUser);
+    await service.deleteItem(id);
     state = AsyncData(await service.getItems());
   }
 
   Future<SyncResult> syncCloud() async {
     final service = ref.read(royalGalleryServiceProvider);
-    final isProUser = ref.read(isProUserProvider);
-    final result = await service.syncCloudGallery(isPro: isProUser);
+    final result = await service.syncCloudGallery();
     state = AsyncData(await service.getItems());
     return result;
   }
 
   Future<void> clearAll({bool? isPro}) async {
     final service = ref.read(royalGalleryServiceProvider);
-    final bool isProUser = isPro ?? ref.read(isProUserProvider);
-    await service.clearAll(isPro: isProUser);
+    await service.clearAll();
     state = AsyncData(await service.getItems());
   }
 
@@ -129,68 +124,77 @@ class RoyalGalleryService {
     }
   }
 
-  Future<void> saveItem(RoyalShareItem item, {bool isPro = false}) async {
+  Future<void> saveItem(RoyalShareItem item) async {
     try {
       final prefs = _prefsOverride ?? await SharedPreferences.getInstance();
       final current = await getItems();
 
       var itemToSave = item;
 
-      if (isPro) {
-        final client = _client;
-        final user = client?.auth.currentUser;
-        final bool isIdentified = user != null && user.email != null && user.email!.isNotEmpty && !(user.isAnonymous);
-        if (client != null && isIdentified) {
-          String? storagePath = item.storagePath;
-          String? signedUrl = item.imageUrl;
+      final client = _client;
+      final user = client?.auth.currentUser;
+      final bool isIdentified = user != null && user.email != null && user.email!.isNotEmpty && !(user.isAnonymous);
+      if (client != null && isIdentified) {
+        String? storagePath = item.storagePath;
+        String? signedUrl = item.imageUrl;
 
-          final localFile = File(item.imagePath);
-          if (localFile.existsSync() && (storagePath == null || storagePath.isEmpty)) {
-            try {
-              final ext = item.imagePath.split('.').last;
-              final path = '${user.id}/${item.id}.$ext';
-              final fileBytes = await localFile.readAsBytes();
-              await client.storage.from(_kBucketName).uploadBinary(
-                    path,
-                    fileBytes,
-                    fileOptions: FileOptions(
-                      upsert: true,
-                      contentType: ext == 'webp' ? 'image/webp' : 'image/png',
-                    ),
-                  );
-              storagePath = path;
-              signedUrl = await client.storage
-                  .from(_kBucketName)
-                  .createSignedUrl(path, 3600 * 24 * 7);
-            } catch (storageErr) {
-              debugPrint('[RoyalGalleryService] Upload binary to storage failed: $storageErr');
-            }
-          }
-
-          itemToSave = item.copyWith(
-            storagePath: storagePath,
-            imageUrl: signedUrl,
-            updatedAt: DateTime.now(),
-          );
-
+        final localFile = File(item.imagePath);
+        bool uploadedInThisSession = false;
+        if (localFile.existsSync() && (storagePath == null || storagePath.isEmpty)) {
           try {
-            await client.from('royal_gallery_shares').upsert({
-              'id': itemToSave.id,
-              'owner_user_id': user.id,
-              'card_type': itemToSave.type.name,
-              'title': itemToSave.title,
-              'subtitle': itemToSave.subtitle,
-              'aspect_ratio': itemToSave.aspectRatio.name,
-              'custom_seal_name': itemToSave.customSealName,
-              'image_path': itemToSave.imagePath,
-              'storage_path': itemToSave.storagePath,
-              'image_url': itemToSave.imageUrl,
-              'created_at': itemToSave.createdAt.toIso8601String(),
-              'updated_at': (itemToSave.updatedAt ?? DateTime.now()).toIso8601String(),
-              'deleted_at': null,
-            });
-          } catch (upsertErr) {
-            debugPrint('[RoyalGalleryService] Upsert share record failed: $upsertErr');
+            final ext = item.imagePath.split('.').last;
+            final path = '${user.id}/${item.id}_${DateTime.now().millisecondsSinceEpoch}.$ext';
+            final fileBytes = await localFile.readAsBytes();
+            await client.storage.from(_kBucketName).uploadBinary(
+                  path,
+                  fileBytes,
+                  fileOptions: FileOptions(
+                    upsert: true,
+                    contentType: ext == 'webp' ? 'image/webp' : 'image/png',
+                  ),
+                );
+            storagePath = path;
+            uploadedInThisSession = true;
+            signedUrl = await client.storage
+                .from(_kBucketName)
+                .createSignedUrl(path, 3600 * 24 * 7);
+          } catch (storageErr) {
+            debugPrint('[RoyalGalleryService] Upload binary to storage failed: $storageErr');
+          }
+        }
+
+        itemToSave = item.copyWith(
+          storagePath: storagePath,
+          imageUrl: signedUrl,
+          updatedAt: DateTime.now(),
+        );
+
+        try {
+          await client.from('royal_gallery_shares').upsert({
+            'id': itemToSave.id,
+            'owner_user_id': user.id,
+            'card_type': itemToSave.type.name,
+            'title': itemToSave.title,
+            'subtitle': itemToSave.subtitle,
+            'aspect_ratio': itemToSave.aspectRatio.name,
+            'custom_seal_name': itemToSave.customSealName,
+            'image_path': itemToSave.imagePath,
+            'storage_path': itemToSave.storagePath,
+            'image_url': itemToSave.imageUrl,
+            'created_at': itemToSave.createdAt.toIso8601String(),
+            'updated_at': (itemToSave.updatedAt ?? DateTime.now()).toIso8601String(),
+            'deleted_at': null,
+          });
+        } catch (upsertErr) {
+          debugPrint('[RoyalGalleryService] Upsert share record failed: $upsertErr');
+          // Compensation Rollback: Xóa file storage vừa upload nếu DB upsert thất bại
+          if (uploadedInThisSession && storagePath != null && storagePath.isNotEmpty) {
+            try {
+              await client.storage.from(_kBucketName).remove([storagePath]);
+              debugPrint('[RoyalGalleryService] Compensation rollback: removed orphan storage file $storagePath');
+            } catch (remErr) {
+              debugPrint('[RoyalGalleryService] Compensation rollback failed: $remErr');
+            }
           }
         }
       }
@@ -211,7 +215,7 @@ class RoyalGalleryService {
     }
   }
 
-  Future<void> deleteItem(String id, {bool isPro = false}) async {
+  Future<void> deleteItem(String id) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final current = await getItems();
@@ -220,19 +224,17 @@ class RoyalGalleryService {
       final stringList = updated.map((i) => json.encode(i.toMap())).toList();
       await prefs.setStringList(_kStorageKey, stringList);
 
-      if (isPro) {
-        final client = _client;
-        final user = client?.auth.currentUser;
-        final bool isIdentified = user != null && user.email != null && user.email!.isNotEmpty && !(user.isAnonymous);
-        if (client != null && isIdentified) {
-          try {
-            await client.from('royal_gallery_shares').update({
-              'deleted_at': DateTime.now().toIso8601String(),
-              'updated_at': DateTime.now().toIso8601String(),
-            }).eq('id', id).eq('owner_user_id', user.id);
-          } catch (delErr) {
-            debugPrint('[RoyalGalleryService] Remote soft-delete failed: $delErr');
-          }
+      final client = _client;
+      final user = client?.auth.currentUser;
+      final bool isIdentified = user != null && user.email != null && user.email!.isNotEmpty && !(user.isAnonymous);
+      if (client != null && isIdentified) {
+        try {
+          await client.from('royal_gallery_shares').update({
+            'deleted_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          }).eq('id', id).eq('owner_user_id', user.id);
+        } catch (delErr) {
+          debugPrint('[RoyalGalleryService] Remote soft-delete failed: $delErr');
         }
       }
     } catch (err) {
@@ -240,15 +242,8 @@ class RoyalGalleryService {
     }
   }
 
-  /// Đồng bộ hai chiều Thư Viện Hoàng Triều với Supabase Cloud (Đặc quyền VIP PRO)
-  Future<SyncResult> syncCloudGallery({required bool isPro}) async {
-    if (!isPro) {
-      return const SyncResult(
-        status: SyncStatus.notPro,
-        errorMessage: 'Tính năng chỉ dành cho thành viên VIP PRO.',
-      );
-    }
-
+  /// Đồng bộ hai chiều Thư Viện Hoàng Triều với Supabase Cloud (Dành cho tài khoản Đăng Nhập Email)
+  Future<SyncResult> syncCloudGallery() async {
     final client = _client;
     final user = client?.auth.currentUser;
     if (client == null || user == null) {
@@ -263,7 +258,7 @@ class RoyalGalleryService {
     final bool isIdentified = user.email != null && user.email!.isNotEmpty && !(user.isAnonymous);
     if (!isIdentified) {
       return const SyncResult(
-        status: SyncStatus.notPro,
+        status: SyncStatus.unauthenticated,
         errorMessage: 'Tính năng đồng bộ đám mây yêu cầu tài khoản đã đăng nhập Email.',
       );
     }
@@ -337,10 +332,11 @@ class RoyalGalleryService {
           String? signedUrl = local.imageUrl;
 
           final localFile = File(local.imagePath);
+          bool uploadedInThisSession = false;
           if (localFile.existsSync() && (storagePath == null || storagePath.isEmpty)) {
             try {
               final ext = local.imagePath.split('.').last;
-              final path = '${user.id}/${local.id}.$ext';
+              final path = '${user.id}/${local.id}_${DateTime.now().millisecondsSinceEpoch}.$ext';
               final fileBytes = await localFile.readAsBytes();
               await nonNullClient.storage.from(_kBucketName).uploadBinary(
                     path,
@@ -351,6 +347,7 @@ class RoyalGalleryService {
                     ),
                   );
               storagePath = path;
+              uploadedInThisSession = true;
               signedUrl = await nonNullClient.storage
                   .from(_kBucketName)
                   .createSignedUrl(path, 3600 * 24 * 7);
@@ -377,6 +374,15 @@ class RoyalGalleryService {
             });
           } catch (upsertErr) {
             debugPrint('[RoyalGalleryService] Upsert local item to remote failed: $upsertErr');
+            // Compensation Rollback: Xóa file storage vừa upload nếu DB upsert thất bại
+            if (uploadedInThisSession && storagePath != null && storagePath.isNotEmpty) {
+              try {
+                await nonNullClient.storage.from(_kBucketName).remove([storagePath]);
+                debugPrint('[RoyalGalleryService] Compensation rollback (sync): removed orphan storage file $storagePath');
+              } catch (remErr) {
+                debugPrint('[RoyalGalleryService] Compensation rollback failed: $remErr');
+              }
+            }
           }
         }
       }
@@ -421,23 +427,22 @@ class RoyalGalleryService {
     }
   }
 
-  Future<void> clearAll({bool isPro = false}) async {
+  Future<void> clearAll() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final current = await getItems();
       await prefs.remove(_kStorageKey);
 
-      if (isPro) {
-        final client = _client;
-        final user = client?.auth.currentUser;
-        if (client != null && user != null) {
-          // Đánh dấu tombstone toàn bộ
-          for (final item in current) {
-            await client.from('royal_gallery_shares').update({
-              'deleted_at': DateTime.now().toIso8601String(),
-              'updated_at': DateTime.now().toIso8601String(),
-            }).eq('id', item.id).eq('owner_user_id', user.id);
-          }
+      final client = _client;
+      final user = client?.auth.currentUser;
+      final bool isIdentified = user != null && user.email != null && user.email!.isNotEmpty && !(user.isAnonymous);
+      if (client != null && isIdentified) {
+        // Đánh dấu tombstone toàn bộ
+        for (final item in current) {
+          await client.from('royal_gallery_shares').update({
+            'deleted_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          }).eq('id', item.id).eq('owner_user_id', user.id);
         }
       }
     } catch (_) {

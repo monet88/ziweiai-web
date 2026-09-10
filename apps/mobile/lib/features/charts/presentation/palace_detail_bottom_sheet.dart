@@ -12,12 +12,14 @@ class PalaceDetailBottomSheet extends StatefulWidget {
   final List<Palace> palaces;
   final int initialIndex;
   final ValueChanged<int>? onPalaceChanged;
+  final void Function(Palace palace)? onConsultAi;
 
   const PalaceDetailBottomSheet({
     super.key,
     required this.palaces,
     required this.initialIndex,
     this.onPalaceChanged,
+    this.onConsultAi,
   });
 
   static Future<void> show(
@@ -25,6 +27,7 @@ class PalaceDetailBottomSheet extends StatefulWidget {
     required List<Palace> palaces,
     required int initialIndex,
     ValueChanged<int>? onPalaceChanged,
+    void Function(Palace palace)? onConsultAi,
   }) {
     HapticFeedback.mediumImpact();
     return showModalBottomSheet<void>(
@@ -35,6 +38,7 @@ class PalaceDetailBottomSheet extends StatefulWidget {
         palaces: palaces,
         initialIndex: initialIndex,
         onPalaceChanged: onPalaceChanged,
+        onConsultAi: onConsultAi,
       ),
     );
   }
@@ -394,7 +398,59 @@ class _PalaceDetailBottomSheetState extends State<PalaceDetailBottomSheet> {
                       // Section 5: KHÂM THIÊN GIÁM NGỰ PHÊ
                       _buildImperialCommentary(palaceName, majorStars, maleficStars),
 
+                      const SizedBox(height: 14),
+
+                      // Section 6: LIÊN CUNG TAM PHƯƠNG TỨ CHÍNH
+                      _buildRelatedPalacesSection(palace),
+
                       const SizedBox(height: 16),
+
+                      // Action: ĐÀM ĐẠO VỚI KHÂM THIÊN GIÁM AI
+                      if (widget.onConsultAi != null) ...[
+                        SizedBox(
+                          height: AppTheme.touchTargetMin,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              widget.onConsultAi!(palace);
+                            },
+                            child: Ink(
+                              decoration: BoxDecoration(
+                                gradient: CelestialGradients.imperialGold,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: CelestialShadows.goldGlow,
+                              ),
+                              child: Container(
+                                constraints: const BoxConstraints(minHeight: AppTheme.touchTargetMin),
+                                alignment: Alignment.center,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.auto_awesome, color: Color(0xFF141026), size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'ĐÀM ĐẠO VỚI KHÂM THIÊN GIÁM AI',
+                                      style: GoogleFonts.cinzel(
+                                        color: const Color(0xFF141026),
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
 
                       // Close Button (48dp Touch Target)
                       SizedBox(
@@ -739,6 +795,132 @@ class _PalaceDetailBottomSheetState extends State<PalaceDetailBottomSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  static const Map<int, int> _liuHeMap = {
+    0: 1, // Tý - Sửu
+    1: 0,
+    2: 11, // Dần - Hợi
+    3: 10, // Mão - Tuất
+    4: 9, // Thìn - Dậu
+    5: 8, // Tị - Thân
+    6: 7, // Ngọ - Mùi
+    7: 6,
+    8: 5,
+    9: 4,
+    10: 3,
+    11: 2,
+  };
+
+  Palace? _getPalaceByIndex(int index) {
+    try {
+      return widget.palaces.firstWhere((p) => p.index == index);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Widget _buildRelatedPalacesSection(Palace current) {
+    final oppositeIndex = (current.index + 6) % 12;
+    final triad1Index = (current.index + 4) % 12;
+    final triad2Index = (current.index + 8) % 12;
+    final liuHeIndex = _liuHeMap[current.index] ?? ((current.index + 6) % 12);
+    final prevIndex = (current.index + 11) % 12;
+    final nextIndex = (current.index + 1) % 12;
+
+    final oppositePalace = _getPalaceByIndex(oppositeIndex);
+    final triad1Palace = _getPalaceByIndex(triad1Index);
+    final triad2Palace = _getPalaceByIndex(triad2Index);
+    final liuHePalace = _getPalaceByIndex(liuHeIndex);
+    final prevPalace = _getPalaceByIndex(prevIndex);
+    final nextPalace = _getPalaceByIndex(nextIndex);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: AppTheme.cosmosElevated.withValues(alpha: 0.6),
+        border: Border.all(color: AppTheme.glassBorderGold, width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.hub_outlined, size: 16, color: AppTheme.goldBright),
+              const SizedBox(width: 8),
+              Text(
+                'LIÊN CUNG TAM PHƯƠNG TỨ CHÍNH',
+                style: GoogleFonts.cinzel(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.goldBright,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (oppositePalace != null)
+                _buildPalaceChip('Đối cung', oppositePalace, AppTheme.cinnabarLight),
+              if (triad1Palace != null)
+                _buildPalaceChip('Tam hợp 1', triad1Palace, AppTheme.etherealJade),
+              if (triad2Palace != null)
+                _buildPalaceChip('Tam hợp 2', triad2Palace, AppTheme.etherealJade),
+              if (liuHePalace != null)
+                _buildPalaceChip('Nhị hợp', liuHePalace, AppTheme.goldBright),
+              if (prevPalace != null)
+                _buildPalaceChip('Giáp trước', prevPalace, AppTheme.nebulaCyan),
+              if (nextPalace != null)
+                _buildPalaceChip('Giáp sau', nextPalace, AppTheme.nebulaCyan),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPalaceChip(String relationship, Palace target, Color accent) {
+    final name = target.displayName ?? target.nameKey;
+    return InkWell(
+      onTap: () => _goToPalace(target.index),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: accent.withValues(alpha: 0.12),
+          border: Border.all(color: accent.withValues(alpha: 0.4), width: 0.8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$relationship: ',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: accent,
+              ),
+            ),
+            Text(
+              name,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.mysticalText,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, size: 12, color: accent),
+          ],
+        ),
       ),
     );
   }

@@ -687,9 +687,9 @@
     letter-spacing: 0.08em;
     padding: 2px 7px;
     border-radius: var(--radius-pill);
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(212, 175, 55, 0.1));
-    color: #ffd700;
-    border: 1px solid rgba(255, 215, 0, 0.35);
+    background: var(--celestial-badge-bg);
+    color: var(--celestial-badge-text);
+    border: 1px solid var(--celestial-badge-border);
   }
 
   .top-links {
@@ -715,8 +715,8 @@
   }
 
   .nav-btn:hover {
-    background: rgba(212, 175, 55, 0.1);
-    color: #ffd700;
+    background: var(--celestial-badge-bg);
+    color: var(--celestial-gold-text);
   }
 
   .session-actions {
@@ -731,25 +731,25 @@
     gap: 6px;
     padding: 6px 14px;
     border-radius: var(--radius-pill);
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(212, 175, 55, 0.12) 100%);
-    border: 1px solid rgba(255, 215, 0, 0.45);
-    color: #ffd700;
+    background: var(--celestial-badge-bg);
+    border: 1px solid var(--celestial-border-gold-strong);
+    color: var(--celestial-gold-text);
     font-size: 13px;
-    font-weight: 750;
+    font-weight: 800;
     text-decoration: none;
-    box-shadow: 0 0 12px rgba(212, 175, 55, 0.2);
+    box-shadow: 0 0 12px var(--celestial-gold-glow);
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .wallet-pill-luxury:hover {
     transform: translateY(-1px);
-    border-color: #ffd700;
-    box-shadow: 0 0 18px rgba(212, 175, 55, 0.4);
+    border-color: var(--celestial-gold);
+    box-shadow: 0 0 18px var(--celestial-gold-glow);
   }
 
   .coin-icon {
-    color: #ffd700;
-    filter: drop-shadow(0 0 4px #ffd700);
+    color: var(--celestial-gold-icon);
+    filter: drop-shadow(0 0 4px var(--celestial-gold-glow));
   }
 
   .gift-indicator {
@@ -846,12 +846,12 @@
     gap: 6px;
     padding: 4px 12px;
     border-radius: var(--radius-pill);
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(212, 175, 55, 0.08));
-    border: 1px solid rgba(255, 215, 0, 0.3);
+    background: var(--celestial-badge-bg);
+    border: 1px solid var(--celestial-badge-border);
     font-size: 11px;
     font-weight: 850;
     letter-spacing: 0.06em;
-    color: #ffd700;
+    color: var(--celestial-badge-text);
   }
 
   .hero-title {
@@ -868,7 +868,7 @@
   }
 
   :global([data-theme="light"]) .hero-title {
-    background: linear-gradient(135deg, #110d22 30%, #996515 80%, #7a4f0b 100%);
+    background: linear-gradient(135deg, #110d22 25%, #92400e 75%, #78350f 100%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -909,9 +909,20 @@
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
+  :global([data-theme="light"]) .btn-cta-gold-luxury {
+    background: linear-gradient(135deg, #fef08a 0%, #f59e0b 40%, #d97706 75%, #b45309 100%);
+    color: #1c1204;
+    border: 1px solid rgba(180, 83, 9, 0.3);
+    box-shadow: 0 10px 28px rgba(180, 83, 9, 0.35);
+  }
+
   .btn-cta-gold-luxury:hover {
     transform: translateY(-2px);
     box-shadow: 0 14px 36px rgba(212, 175, 55, 0.6);
+  }
+
+  :global([data-theme="light"]) .btn-cta-gold-luxury:hover {
+    box-shadow: 0 14px 36px rgba(180, 83, 9, 0.5);
   }
 
   .cta-shimmer {
@@ -938,20 +949,22 @@
     min-height: 50px;
     padding: 0 22px;
     border-radius: var(--radius-pill);
-    background: rgba(26, 20, 48, 0.65);
-    border: 1px solid rgba(212, 175, 55, 0.25);
-    color: var(--color-text-primary);
+    background: var(--celestial-hud-bg);
+    border: 1px solid var(--celestial-hud-border);
+    color: var(--celestial-hud-text);
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 750;
     text-decoration: none;
     backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
     transition: all 0.2s ease;
   }
 
   .btn-cta-secondary:hover {
-    background: rgba(212, 175, 55, 0.15);
-    border-color: rgba(212, 175, 55, 0.5);
-    color: #ffd700;
+    background: var(--celestial-badge-bg);
+    border-color: var(--celestial-border-gold-strong);
+    color: var(--celestial-gold-text);
     transform: translateY(-1px);
   }
 
@@ -961,7 +974,7 @@
     gap: 18px;
     margin-top: 8px;
     padding-top: 18px;
-    border-top: 1px solid rgba(212, 175, 55, 0.18);
+    border-top: 1px solid var(--celestial-border-gold);
   }
 
   .trust-item {
@@ -971,6 +984,11 @@
     font-size: 13px;
     font-weight: 650;
     color: var(--color-text-secondary);
+  }
+
+  :global([data-theme="light"]) .trust-item {
+    color: #1e1b4b;
+    font-weight: 700;
   }
 
   /* ---------------------------------------------------------------------------
@@ -992,7 +1010,13 @@
     border-radius: 50%;
     background:
       radial-gradient(circle at center, rgba(212, 175, 55, 0.18) 0%, rgba(168, 85, 247, 0.1) 45%, transparent 72%);
-    box-shadow: 0 0 60px rgba(212, 175, 55, 0.18);
+    box-shadow: 0 0 60px var(--celestial-gold-glow);
+  }
+
+  :global([data-theme="light"]) .celestial-astro-dial {
+    background:
+      radial-gradient(circle at center, rgba(254, 243, 199, 0.8) 0%, rgba(243, 232, 255, 0.5) 45%, transparent 72%);
+    box-shadow: 0 8px 36px rgba(180, 83, 9, 0.15);
   }
 
   .dial-outer-orbit {
@@ -1003,6 +1027,10 @@
     animation: rotateAstro 75s linear infinite;
   }
 
+  :global([data-theme="light"]) .dial-outer-orbit {
+    border-color: rgba(180, 83, 9, 0.45);
+  }
+
   .dial-zodiac-ring {
     position: absolute;
     inset: 12%;
@@ -1011,12 +1039,23 @@
     animation: rotateAstroReverse 55s linear infinite;
   }
 
+  :global([data-theme="light"]) .dial-zodiac-ring {
+    border-color: rgba(124, 58, 237, 0.35);
+  }
+
   .zodiac-node {
     position: absolute;
     font-size: 11px;
     font-weight: 850;
-    color: #ffd700;
-    text-shadow: 0 0 8px rgba(212, 175, 55, 0.7);
+    color: var(--celestial-gold-bright);
+    text-shadow: 0 0 8px var(--celestial-gold-glow);
+  }
+
+  :global([data-theme="light"]) .zodiac-node {
+    color: #3b0764;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.9);
+    font-size: 11.5px;
+    font-weight: 900;
   }
 
   .pos-0 { top: 4px; left: calc(50% - 8px); }
@@ -1043,6 +1082,10 @@
     box-shadow: inset 0 0 24px rgba(212, 175, 55, 0.45), 0 0 35px rgba(168, 85, 247, 0.35);
   }
 
+  :global([data-theme="light"]) .dial-inner-core {
+    border-color: rgba(180, 83, 9, 0.6);
+  }
+
   .taiji-symbol {
     position: relative;
     width: 54px;
@@ -1052,6 +1095,11 @@
     border: 1.5px solid rgba(212, 175, 55, 0.8);
     box-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
     animation: rotateAstro 25s linear infinite;
+  }
+
+  :global([data-theme="light"]) .taiji-symbol {
+    border-color: rgba(180, 83, 9, 0.8);
+    box-shadow: 0 0 16px rgba(180, 83, 9, 0.35);
   }
 
   .taiji-dot {
@@ -1090,26 +1138,33 @@
     gap: 6px;
     padding: 4px 10px;
     border-radius: var(--radius-pill);
-    background: rgba(26, 20, 48, 0.85);
+    background: var(--celestial-hud-bg);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--celestial-hud-border);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
     font-size: 11px;
+    font-weight: 750;
+    color: var(--celestial-hud-text);
   }
 
   .hud-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #ffd700;
-    box-shadow: 0 0 8px #ffd700;
+    background: var(--celestial-gold-bright);
+    box-shadow: 0 0 8px var(--celestial-gold-bright);
   }
 
   .tag-menh { top: 6%; left: 8%; color: #ffd700; }
   .tag-quan { top: 10%; right: 4%; color: #c084fc; }
   .tag-tai { bottom: 8%; left: 10%; color: #38bdf8; }
   .tag-di { bottom: 12%; right: 6%; color: #10b981; }
+
+  :global([data-theme="light"]) .tag-menh { color: #92400e; }
+  :global([data-theme="light"]) .tag-quan { color: #6d28d9; }
+  :global([data-theme="light"]) .tag-tai { color: #0284c7; }
+  :global([data-theme="light"]) .tag-di { color: #059669; }
 
   .dial-features-bar {
     display: grid;
@@ -1124,10 +1179,11 @@
     gap: 8px;
     padding: 10px 12px;
     border-radius: var(--radius-md);
-    background: rgba(26, 20, 48, 0.65);
-    border: 1px solid rgba(212, 175, 55, 0.2);
+    background: var(--celestial-hud-bg);
+    border: 1px solid var(--celestial-hud-border);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
   }
 
   .feat-info {
@@ -1141,9 +1197,19 @@
     color: var(--color-text-primary);
   }
 
+  :global([data-theme="light"]) .feat-info strong {
+    color: #1e1b4b;
+    font-weight: 800;
+  }
+
   .feat-info small {
     font-size: 10px;
     color: var(--color-text-muted);
+  }
+
+  :global([data-theme="light"]) .feat-info small {
+    color: #4b5563;
+    font-weight: 500;
   }
 
   /* ---------------------------------------------------------------------------
@@ -1173,7 +1239,7 @@
     font-size: 12px;
     font-weight: 850;
     letter-spacing: 0.06em;
-    color: #ffd700;
+    color: var(--celestial-gold-text);
     text-transform: uppercase;
   }
 
@@ -1222,20 +1288,29 @@
   }
 
   :global([data-theme="light"]) .bento-card-celestial {
-    background: rgba(255, 255, 255, 0.85);
-    border-color: rgba(212, 175, 55, 0.3);
-    box-shadow: 0 12px 32px rgba(212, 175, 55, 0.08);
+    background: #ffffff;
+    border-color: var(--celestial-border-gold);
+    box-shadow: 0 10px 28px rgba(180, 83, 9, 0.08);
   }
 
   .bento-card-celestial:hover {
     transform: translateY(-4px);
-    border-color: rgba(255, 215, 0, 0.55);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba(212, 175, 55, 0.25);
+    border-color: var(--celestial-border-gold-strong);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 0 0 25px var(--celestial-gold-glow);
+  }
+
+  :global([data-theme="light"]) .bento-card-celestial:hover {
+    box-shadow: 0 16px 36px rgba(180, 83, 9, 0.16);
   }
 
   .bento-highlight {
     border-color: rgba(255, 215, 0, 0.35);
     background: radial-gradient(circle at 100% 0%, rgba(255, 215, 0, 0.12), transparent 50%), rgba(24, 18, 44, 0.8);
+  }
+
+  :global([data-theme="light"]) .bento-highlight {
+    background: radial-gradient(circle at 100% 0%, rgba(254, 243, 199, 0.6), transparent 50%), #ffffff;
+    border-color: rgba(180, 83, 9, 0.35);
   }
 
   .bento-card-top {
@@ -1253,9 +1328,9 @@
   }
 
   .badge-gold {
-    background: rgba(255, 215, 0, 0.15);
-    color: #ffd700;
-    border: 1px solid rgba(255, 215, 0, 0.35);
+    background: var(--celestial-badge-bg);
+    color: var(--celestial-badge-text);
+    border: 1px solid var(--celestial-badge-border);
   }
 
   .badge-purple {
@@ -1264,10 +1339,22 @@
     border: 1px solid rgba(168, 85, 247, 0.35);
   }
 
+  :global([data-theme="light"]) .badge-purple {
+    background: rgba(243, 232, 255, 0.9);
+    color: #6d28d9;
+    border-color: rgba(124, 58, 237, 0.35);
+  }
+
   .badge-blue {
     background: rgba(56, 189, 248, 0.15);
     color: #38bdf8;
     border: 1px solid rgba(56, 189, 248, 0.35);
+  }
+
+  :global([data-theme="light"]) .badge-blue {
+    background: rgba(224, 242, 254, 0.9);
+    color: #0369a1;
+    border-color: rgba(2, 132, 199, 0.35);
   }
 
   .bento-icon-box {
@@ -1279,7 +1366,13 @@
     border-radius: 12px;
     background: rgba(212, 175, 55, 0.12);
     border: 1px solid rgba(212, 175, 55, 0.25);
-    color: #ffd700;
+    color: var(--celestial-gold-icon);
+  }
+
+  :global([data-theme="light"]) .bento-icon-box {
+    background: rgba(254, 243, 199, 0.7);
+    border-color: rgba(180, 83, 9, 0.25);
+    color: #b45309;
   }
 
   .bento-card-body {
@@ -1295,11 +1388,19 @@
     font-weight: 850;
   }
 
+  :global([data-theme="light"]) .bento-title {
+    color: #111827;
+  }
+
   .bento-desc {
     margin: 0;
     font-size: 13px;
     color: var(--color-text-secondary);
     line-height: 1.5;
+  }
+
+  :global([data-theme="light"]) .bento-desc {
+    color: #374151;
   }
 
   .bento-card-footer {
@@ -1308,7 +1409,12 @@
     gap: 6px;
     font-size: 13px;
     font-weight: 750;
-    color: #ffd700;
+    color: var(--celestial-gold-text);
+  }
+
+  :global([data-theme="light"]) .bento-card-footer {
+    color: #b45309;
+    font-weight: 800;
   }
 
   .arrow-icon {
@@ -1342,8 +1448,8 @@
 
   :global([data-theme="light"]) .royal-card {
     background: linear-gradient(135deg, #fffdfa 0%, #f7f3e8 100%);
-    border-color: rgba(212, 175, 55, 0.5);
-    box-shadow: 0 16px 48px rgba(212, 175, 55, 0.15);
+    border-color: rgba(180, 83, 9, 0.38);
+    box-shadow: 0 16px 48px rgba(180, 83, 9, 0.12);
   }
 
   .royal-badge-wrap {
@@ -1352,12 +1458,12 @@
     gap: 8px;
     padding: 4px 14px;
     border-radius: var(--radius-pill);
-    background: rgba(255, 215, 0, 0.15);
-    border: 1px solid rgba(255, 215, 0, 0.4);
+    background: var(--celestial-badge-bg);
+    border: 1px solid var(--celestial-badge-border);
     font-size: 11px;
     font-weight: 850;
     letter-spacing: 0.06em;
-    color: #ffd700;
+    color: var(--celestial-badge-text);
     width: fit-content;
   }
 
@@ -1386,7 +1492,7 @@
   }
 
   :global([data-theme="light"]) .royal-title {
-    background: linear-gradient(135deg, #110d22 0%, #996515 80%);
+    background: linear-gradient(135deg, #110d22 0%, #92400e 80%);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -1400,7 +1506,11 @@
   }
 
   .royal-sub strong {
-    color: #ffd700;
+    color: var(--celestial-gold-text);
+  }
+
+  :global([data-theme="light"]) .royal-sub strong {
+    color: #92400e;
   }
 
   .royal-perks-list {
@@ -1431,7 +1541,8 @@
 
   :global([data-theme="light"]) .royal-action-card {
     background: #ffffff;
-    border-color: rgba(212, 175, 55, 0.35);
+    border-color: rgba(180, 83, 9, 0.28);
+    box-shadow: 0 8px 24px rgba(180, 83, 9, 0.08);
   }
 
   .action-card-header {
@@ -1466,18 +1577,18 @@
     gap: 8px;
     min-height: 44px;
     border-radius: var(--radius-pill);
-    background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%);
+    background: var(--celestial-gradient-gold);
     color: #100c22;
     font-size: 14px;
     font-weight: 850;
     text-decoration: none;
-    box-shadow: 0 6px 18px rgba(212, 175, 55, 0.4);
+    box-shadow: 0 6px 18px var(--celestial-gold-glow);
     transition: all 0.2s ease;
   }
 
   .btn-royal-deposit:hover {
     transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.55);
+    box-shadow: 0 8px 24px var(--celestial-gold-glow);
   }
 
   .btn-royal-checkin {
@@ -1487,9 +1598,9 @@
     gap: 8px;
     min-height: 42px;
     border-radius: var(--radius-pill);
-    background: rgba(212, 175, 55, 0.12);
-    border: 1px solid rgba(212, 175, 55, 0.35);
-    color: #ffd700;
+    background: var(--celestial-badge-bg);
+    border: 1px solid var(--celestial-badge-border);
+    color: var(--celestial-gold-text);
     font-size: 13px;
     font-weight: 750;
     text-decoration: none;
@@ -1497,8 +1608,8 @@
   }
 
   .btn-royal-checkin:hover {
-    background: rgba(212, 175, 55, 0.22);
-    border-color: #ffd700;
+    background: var(--celestial-border-gold);
+    border-color: var(--celestial-gold);
   }
 
   .secure-note {
@@ -1650,6 +1761,7 @@
 
   :global([data-theme="light"]) .group-accordion-card {
     background: rgba(250, 248, 244, 0.8);
+    border-color: rgba(180, 83, 9, 0.18);
   }
 
   .group-card-header {
@@ -1686,6 +1798,10 @@
     background: rgba(255, 255, 255, 0.04);
   }
 
+  :global([data-theme="light"]) .group-badge {
+    background: rgba(255, 255, 255, 0.9);
+  }
+
   .group-items-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1707,12 +1823,18 @@
 
   :global([data-theme="light"]) .system-item-pill {
     background: #ffffff;
+    border-color: rgba(180, 83, 9, 0.18);
   }
 
   .system-item-pill:hover {
     background: rgba(212, 175, 55, 0.15);
     border-color: rgba(255, 215, 0, 0.45);
     transform: translateX(2px);
+  }
+
+  :global([data-theme="light"]) .system-item-pill:hover {
+    background: rgba(254, 243, 199, 0.6);
+    border-color: rgba(180, 83, 9, 0.45);
   }
 
   .item-text-group {
@@ -1736,8 +1858,9 @@
     font-weight: 700;
     padding: 2px 6px;
     border-radius: var(--radius-pill);
-    background: rgba(255, 215, 0, 0.1);
-    color: #ffd700;
+    background: var(--celestial-badge-bg);
+    color: var(--celestial-badge-text);
+    border: 1px solid var(--celestial-badge-border);
   }
 
   .sidebar-history-wrap {
@@ -1776,12 +1899,18 @@
   }
 
   :global([data-theme="light"]) .promise-glass-card {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(180, 83, 9, 0.2);
+    box-shadow: 0 8px 24px rgba(180, 83, 9, 0.08);
   }
 
   .promise-glass-card:hover {
     transform: translateY(-2px);
     border-color: rgba(255, 215, 0, 0.4);
+  }
+
+  :global([data-theme="light"]) .promise-glass-card:hover {
+    border-color: rgba(180, 83, 9, 0.4);
   }
 
   .promise-icon-wrap {
@@ -1793,6 +1922,11 @@
     border-radius: 12px;
     background: rgba(212, 175, 55, 0.14);
     border: 1px solid rgba(212, 175, 55, 0.25);
+  }
+
+  :global([data-theme="light"]) .promise-icon-wrap {
+    background: rgba(254, 243, 199, 0.7);
+    border-color: rgba(180, 83, 9, 0.25);
   }
 
   .promise-card-title {
@@ -1853,15 +1987,15 @@
   }
 
   .footer-links a:hover {
-    color: #ffd700;
+    color: var(--celestial-gold-text);
   }
 
   .sep {
     color: rgba(212, 175, 55, 0.3);
   }
 
-  .text-celestial-gold { color: #ffd700; }
-  .text-celestial-purple { color: #c084fc; }
+  .text-celestial-gold { color: var(--celestial-gold-icon); }
+  .text-celestial-purple { color: var(--celestial-purple-accent); }
 
   @media (max-width: 640px) {
     .shell {

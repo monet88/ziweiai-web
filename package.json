@@ -32,5 +32,22 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.4",
     "vitest": "^4.0.14"
+  },
+  "pnpm": {
+    "overrides": {
+      "body-parser": "^2.3.0",
+      "multer": "^2.3.0",
+      "qs": "^6.16.0",
+      "esbuild": "^0.28.1",
+      "cookie": "^0.7.2",
+      "fast-uri": "^3.1.6",
+      "nanoid": "^3.3.18",
+      "brace-expansion": "^2.0.2",
+      "fflate": "^0.7.5",
+      "baseline-browser-mapping": "^2.11.0",
+      "browserslist": "^4.28.7",
+      "postcss": "^8.5.23",
+      "@sveltejs/kit": "^2.70.2"
+    }
   }
 }

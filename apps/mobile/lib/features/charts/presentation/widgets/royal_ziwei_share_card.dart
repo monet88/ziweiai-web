@@ -774,7 +774,6 @@ class _RoyalZiweiPreviewDialogState extends ConsumerState<RoyalZiweiPreviewDialo
 
       await RoyalGalleryService().saveItem(
         galleryItem,
-        isPro: true,
       );
 
       await SharePlus.instance.share(

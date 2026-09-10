@@ -131,12 +131,8 @@ void main() {
       expect((await service.getItems()), isEmpty);
     });
 
-    test('syncCloudGallery returns notPro when isPro is false and unauthenticated when no user', () async {
-      final syncedNonPro = await service.syncCloudGallery(isPro: false);
-      expect(syncedNonPro.status, SyncStatus.notPro);
-      expect(syncedNonPro.isSuccess, isFalse);
-
-      final syncedNoClient = await service.syncCloudGallery(isPro: true);
+    test('syncCloudGallery returns unauthenticated when no client/user or not identified', () async {
+      final syncedNoClient = await service.syncCloudGallery();
       expect(syncedNoClient.status, SyncStatus.unauthenticated);
       expect(syncedNoClient.isSuccess, isFalse);
     });

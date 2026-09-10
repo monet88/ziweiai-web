@@ -84,6 +84,8 @@ describe('RoyalGalleryService & Image Validation', () => {
             id: 'card-deleted-1',
             cardType: 'ziwei' as const,
             title: 'Lá Số Cũ Giả Mạo Timestamp',
+            aspectRatio: 'standard' as const,
+            payload: {},
             isDeleted: false,
             createdAt: clientFutureTime,
             updatedAt: clientFutureTime,
@@ -130,6 +132,8 @@ describe('RoyalGalleryService & Image Validation', () => {
             id: 'card-to-delete',
             cardType: 'tarot' as const,
             title: 'Thẻ Cần Xóa',
+            aspectRatio: 'standard' as const,
+            payload: {},
             isDeleted: true,
             createdAt: '2026-09-10T12:00:00.000Z',
           },
@@ -200,7 +204,7 @@ describe('RoyalGalleryService & Image Validation', () => {
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 maybeSingle: vi.fn().mockResolvedValue({
-                  data: { id: cardId, deleted_at: null },
+                  data: { id: cardId, storage_path: null, deleted_at: null },
                   error: null,
                 }),
               }),
@@ -208,7 +212,16 @@ describe('RoyalGalleryService & Image Validation', () => {
           }),
           update: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: { message: 'DB connection broke during update' } }),
+              eq: vi.fn().mockReturnValue({
+                is: vi.fn().mockReturnValue({
+                  select: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: null,
+                      error: { message: 'DB connection broke during update' },
+                    }),
+                  }),
+                }),
+              }),
             }),
           }),
         }),
@@ -225,14 +238,67 @@ describe('RoyalGalleryService & Image Validation', () => {
         service.uploadCardImage(userId, cardId, validWebpBuffer, 'image/webp'),
       ).rejects.toThrow(/Cập nhật thông tin thiệp thất bại/);
 
-      // Verify compensation action: storage.remove was called with the uploaded path!
-      expect(mockRemove).toHaveBeenCalledWith([`${userId}/${cardId}.webp`]);
+      // Verify compensation action: storage.remove was called with the newly uploaded versioned path
+      expect(mockRemove).toHaveBeenCalledWith([expect.stringMatching(new RegExp(`^${userId}/${cardId}_\\d+\\.webp$`))]);
     });
 
-    it('tải lên thành công khi thẻ hợp lệ và cập nhật DB thành công', async () => {
+    it('không làm mất ảnh cũ nếu cập nhật ảnh mới bị lỗi DB (safe overwrite compensation)', async () => {
+      const userId = 'user-safe';
+      const cardId = 'card-safe';
+      const oldPath = `${userId}/${cardId}_old.webp`;
+      const mockRemove = vi.fn().mockResolvedValue({ error: null });
+
+      const mockSupabase = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: cardId, storage_path: oldPath, deleted_at: null },
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                is: vi.fn().mockReturnValue({
+                  select: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: null,
+                      error: { message: 'Simulated DB failure on overwrite' },
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+        storage: {
+          from: vi.fn().mockReturnValue({
+            upload: vi.fn().mockResolvedValue({ error: null }),
+            remove: mockRemove,
+          }),
+        },
+      } as any;
+
+      const service = new RoyalGalleryService(mockSupabase);
+      await expect(
+        service.uploadCardImage(userId, cardId, validWebpBuffer, 'image/webp'),
+      ).rejects.toThrow(/Cập nhật thông tin thiệp thất bại/);
+
+      // Verify: remove() was called ONLY for the newly uploaded file, NOT the old path!
+      expect(mockRemove).toHaveBeenCalledTimes(1);
+      expect(mockRemove).not.toHaveBeenCalledWith([oldPath]);
+    });
+
+    it('tải lên thành công khi thẻ hợp lệ và cập nhật DB thành công, dọn dẹp ảnh cũ nếu có', async () => {
       const userId = 'user-ok';
       const cardId = 'card-ok';
+      const oldPath = `${userId}/${cardId}_legacy.webp`;
       const mockUpload = vi.fn().mockResolvedValue({ error: null });
+      const mockRemove = vi.fn().mockResolvedValue({ error: null });
       const mockCreateSignedUrl = vi.fn().mockResolvedValue({
         data: { signedUrl: 'https://signed.webp' },
         error: null,
@@ -244,7 +310,7 @@ describe('RoyalGalleryService & Image Validation', () => {
             eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 maybeSingle: vi.fn().mockResolvedValue({
-                  data: { id: cardId, deleted_at: null },
+                  data: { id: cardId, storage_path: oldPath, deleted_at: null },
                   error: null,
                 }),
               }),
@@ -252,7 +318,16 @@ describe('RoyalGalleryService & Image Validation', () => {
           }),
           update: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: null }),
+              eq: vi.fn().mockReturnValue({
+                is: vi.fn().mockReturnValue({
+                  select: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: { id: cardId, storage_path: 'new-path' },
+                      error: null,
+                    }),
+                  }),
+                }),
+              }),
             }),
           }),
         }),
@@ -261,6 +336,7 @@ describe('RoyalGalleryService & Image Validation', () => {
             expect(bucket).toBe(GALLERY_BUCKET);
             return {
               upload: mockUpload,
+              remove: mockRemove,
               createSignedUrl: mockCreateSignedUrl,
             };
           }),
@@ -270,9 +346,11 @@ describe('RoyalGalleryService & Image Validation', () => {
       const service = new RoyalGalleryService(mockSupabase);
       const res = await service.uploadCardImage(userId, cardId, validWebpBuffer, 'image/webp');
 
-      expect(res.storagePath).toBe(`${userId}/${cardId}.webp`);
+      expect(res.storagePath).toMatch(new RegExp(`^${userId}/${cardId}_\\d+\\.webp$`));
       expect(res.signedUrl).toBe('https://signed.webp');
       expect(mockUpload).toHaveBeenCalled();
+      // Old path was cleaned up on success!
+      expect(mockRemove).toHaveBeenCalledWith([oldPath]);
     });
   });
 });

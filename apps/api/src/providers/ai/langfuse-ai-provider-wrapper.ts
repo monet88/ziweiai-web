@@ -17,6 +17,11 @@ export class LangfuseAiProviderWrapper implements AiConversationProvider {
     signal?: AbortSignal,
   ) => AsyncGenerator<string, ConversationProviderResult, void>;
 
+  generateExplanationStream?: (
+    payload: ExplanationPromptPayload,
+    signal?: AbortSignal,
+  ) => AsyncGenerator<string, ExplanationProviderResult, void>;
+
   constructor(private readonly delegate: AiConversationProvider) {
     // Only initialize Langfuse if keys are present
     if (process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY) {
@@ -33,6 +38,9 @@ export class LangfuseAiProviderWrapper implements AiConversationProvider {
 
     if (typeof delegate.generateConversationStream === 'function') {
       this.generateConversationStream = this._generateConversationStream.bind(this);
+    }
+    if (typeof delegate.generateExplanationStream === 'function') {
+      this.generateExplanationStream = this._generateExplanationStream.bind(this);
     }
   }
 
@@ -192,6 +200,59 @@ export class LangfuseAiProviderWrapper implements AiConversationProvider {
         generation.end({
           level: 'ERROR',
           statusMessage: error instanceof Error ? error.message : String(error)
+        });
+      }
+      throw error;
+    } finally {
+      if (trace) {
+        void this.langfuse?.flushAsync();
+      }
+    }
+  }
+
+  private async *_generateExplanationStream(
+    payload: ExplanationPromptPayload,
+    signal?: AbortSignal,
+  ): AsyncGenerator<string, ExplanationProviderResult, void> {
+    if (!this.delegate.generateExplanationStream) {
+      throw new Error(`Provider ${this.providerName} does not support explanation streaming`);
+    }
+
+    const trace = this.startTrace('generateExplanationStream', payload);
+    const generation = trace?.generation({
+      name: 'generateExplanationStream',
+      model: payload.modelOverride || 'default',
+      startTime: new Date(),
+    });
+
+    try {
+      const generator = this.delegate.generateExplanationStream(payload, signal);
+      let next = await generator.next();
+      while (!next.done) {
+        yield next.value;
+        next = await generator.next();
+      }
+
+      const result = next.value;
+
+      if (generation) {
+        const promptTokens = this.estimateTokens(JSON.stringify(payload));
+        generation.end({
+          output: result.renderedMarkdown,
+          usage: {
+            promptTokens,
+            completionTokens: this.estimateTokens(result.renderedMarkdown),
+            totalTokens: promptTokens + this.estimateTokens(result.renderedMarkdown),
+          },
+        });
+      }
+
+      return result;
+    } catch (error) {
+      if (generation) {
+        generation.end({
+          level: 'ERROR',
+          statusMessage: error instanceof Error ? error.message : String(error),
         });
       }
       throw error;

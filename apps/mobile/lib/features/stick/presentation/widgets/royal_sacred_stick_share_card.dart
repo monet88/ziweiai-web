@@ -553,7 +553,6 @@ class _RoyalSacredStickPreviewDialogState
       );
       await RoyalGalleryService().saveItem(
         galleryItem,
-        isPro: true,
       );
 
       await SharePlus.instance.share(

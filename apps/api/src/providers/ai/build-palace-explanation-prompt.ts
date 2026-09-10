@@ -45,11 +45,26 @@ const LANGUAGE_INVARIANT_LINES = [
   'Trả về Markdown khoảng 320-550 từ, giải thích kỹ và dễ hiểu cho người mới, giọng luận giải tử vi.',
 ];
 
+// Bảng Lục Hợp (Nhị Hợp) chuẩn Địa Chi Tử Vi Đẩu Số (index 0-11)
+const LIU_HE_MAP: Record<number, number> = {
+  0: 1, // Tý - Sửu
+  1: 0,
+  2: 11, // Dần - Hợi
+  3: 10, // Mão - Tuất
+  4: 9, // Thìn - Dậu
+  5: 8, // Tị - Thân
+  6: 7, // Ngọ - Mùi
+  7: 6,
+  8: 5,
+  9: 4,
+  10: 3,
+  11: 2,
+};
+
 // Trình tự suy luận chuẩn cho mọi mục luận giải Tử Vi: chính tinh trước, rồi độ sáng,
-// rồi Tứ Hóa, sau đó mới mở rộng ra tam phương tứ chính. Đặt thành chỉ dẫn rõ ràng để
-// model không nhảy thẳng vào kết luận mà bỏ qua các tầng dữ liệu trung gian.
+// rồi Tứ Hóa, sau đó mới mở rộng ra tam phương tứ chính, nhị hợp và giáp cung.
 const REASONING_ORDER_LINE =
-  'Trình tự suy luận BẮT BUỘC: (1) đọc chính tinh tại bản cung; (2) xét độ sáng (Miếu/Vượng/Đắc/Lợi/Bình/Bất/Hãm) để định mức mạnh yếu; (3) xét Tứ Hóa (Lộc/Quyền/Khoa/Kỵ) tác động lên sao; (4) đối chiếu tam phương tứ chính để lấy bối cảnh; (5) tổng hợp thành luận giải, mỗi nhận định gắn với sao hoặc dữ kiện cụ thể bên trên.';
+  'Trình tự suy luận BẮT BUỘC: (1) đọc chính tinh tại bản cung; (2) xét độ sáng (Miếu/Vượng/Đắc/Lợi/Bình/Bất/Hãm) để định mức mạnh yếu; (3) xét Tứ Hóa (Lộc/Quyền/Khoa/Kỵ) tác động lên sao; (4) đối chiếu tam phương tứ chính, nhị hợp và giáp cung để lấy bối cảnh đa chiều; (5) tổng hợp thành luận giải, mỗi nhận định gắn với sao hoặc dữ kiện cụ thể bên trên.';
 
 function translateToken(value: string): string {
   return ziweiCore.formatZiweiTokenVi(value);
@@ -79,23 +94,30 @@ function describePalace(palace: ZiweiPalace, roleLabel: string): string {
   return `${roleLabel} — ${name} [${formatStemBranch(palace)}]: ${formatPalaceStars(palace)}`;
 }
 
-// Tam phương tứ chính: đối cung + nhị hợp tam hợp theo vị trí địa chi (index 0-11).
+// Tam phương tứ chính & Liên cung: đối cung + tam hợp + nhị hợp + giáp cung theo vị trí địa chi (index 0-11).
 function findPalaceByIndex(palaces: ZiweiPalace[], index: number): ZiweiPalace | undefined {
   return palaces.find((palace) => palace.index === index);
 }
 
-function buildPalaceScopeLines(snapshot: ZiweiChartSnapshot, target: ZiweiPalace): string[] {
+export function buildPalaceScopeLines(snapshot: ZiweiChartSnapshot, target: ZiweiPalace): string[] {
   const opposite = findPalaceByIndex(snapshot.palaces, (target.index + 6) % 12);
   const trineForward = findPalaceByIndex(snapshot.palaces, (target.index + 4) % 12);
   const trineBackward = findPalaceByIndex(snapshot.palaces, (target.index + 8) % 12);
+  const liuHeIndex = LIU_HE_MAP[target.index];
+  const liuHe = typeof liuHeIndex === 'number' ? findPalaceByIndex(snapshot.palaces, liuHeIndex) : undefined;
+  const adjacentPrev = findPalaceByIndex(snapshot.palaces, (target.index + 11) % 12);
+  const adjacentNext = findPalaceByIndex(snapshot.palaces, (target.index + 1) % 12);
 
   return [
     'Cung cần luận giải:',
     describePalace(target, 'Bản cung'),
-    'Tam phương tứ chính (bối cảnh hỗ trợ luận giải):',
+    'Tam phương tứ chính & Liên cung (bối cảnh hỗ trợ luận giải):',
     opposite ? describePalace(opposite, 'Đối cung') : 'Đối cung: không có dữ liệu',
     trineForward ? describePalace(trineForward, 'Tam hợp') : 'Tam hợp: không có dữ liệu',
     trineBackward ? describePalace(trineBackward, 'Tam hợp') : 'Tam hợp: không có dữ liệu',
+    liuHe ? describePalace(liuHe, 'Nhị hợp') : 'Nhị hợp: không có dữ liệu',
+    adjacentPrev ? describePalace(adjacentPrev, 'Giáp cung (trước)') : 'Giáp cung (trước): không có dữ liệu',
+    adjacentNext ? describePalace(adjacentNext, 'Giáp cung (sau)') : 'Giáp cung (sau): không có dữ liệu',
   ];
 }
 

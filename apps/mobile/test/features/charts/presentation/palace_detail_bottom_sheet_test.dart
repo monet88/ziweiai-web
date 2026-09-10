@@ -210,5 +210,69 @@ void main() {
       // Verify sheet is closed
       expect(find.textContaining('CUNG MỆNH'), findsNothing);
     });
+
+    testWidgets('renders multi-palace liên cung section and triggers onConsultAi callback', (WidgetTester tester) async {
+      Palace? consultedPalace;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.mystical,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      PalaceDetailBottomSheet.show(
+                        context,
+                        palaces: mockPalaces,
+                        initialIndex: 0,
+                        onConsultAi: (p) => consultedPalace = p,
+                      );
+                    },
+                    child: const Text('Open Sheet'),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Sheet'));
+      await tester.pumpAndSettle();
+
+      // Verify Multi-palace section is rendered
+      expect(find.textContaining('LIÊN CUNG TAM PHƯƠNG TỨ CHÍNH'), findsOneWidget);
+
+      // Verify Nhị hợp chip for index 0 (0 maps to 1: PHỤ MẪU)
+      expect(find.textContaining('Nhị hợp:'), findsOneWidget);
+      expect(find.textContaining('PHỤ MẪU'), findsWidgets);
+
+      // Tap Nhị hợp chip to navigate to PHỤ MẪU
+      final nhiHopChip = find.ancestor(
+        of: find.textContaining('Nhị hợp:'),
+        matching: find.byType(InkWell),
+      );
+      expect(nhiHopChip, findsOneWidget);
+      await tester.tap(nhiHopChip);
+      await tester.pumpAndSettle();
+
+      // Should now be on PHỤ MẪU
+      expect(find.textContaining('CUNG PHỤ MẪU'), findsOneWidget);
+
+      // Verify AI consultation button exists
+      final aiButton = find.text('ĐÀM ĐẠO VỚI KHÂM THIÊN GIÁM AI');
+      expect(aiButton, findsOneWidget);
+      await tester.ensureVisible(aiButton);
+      await tester.tap(aiButton);
+      await tester.pumpAndSettle();
+
+      // Verify sheet closed and callback fired with PHỤ MẪU
+      expect(find.textContaining('CUNG PHỤ MẪU'), findsNothing);
+      expect(consultedPalace, isNotNull);
+      expect(consultedPalace?.index, equals(1));
+      expect(consultedPalace?.displayName, equals('PHỤ MẪU'));
+    });
   });
 }

@@ -10,6 +10,7 @@ import {
   createConversationRequestSchema,
   conversationDetailResponseSchema,
   conversationStreamEventSchema,
+  explanationStreamEventSchema,
   historyListResponseSchema,
 } from './backend-api';
 
@@ -240,6 +241,54 @@ describe('backend API contracts', () => {
     expect(conversationStreamEventSchema.parse({ type: 'chunk', delta: ' ' }).type).toBe('chunk');
     expect(conversationStreamEventSchema.parse({ type: 'chunk', delta: '\n' }).type).toBe('chunk');
     expect(() => conversationStreamEventSchema.parse({ type: 'chunk', delta: '' })).toThrow();
+  });
+
+  it('accepts typed explanation stream events', () => {
+    expect(explanationStreamEventSchema.parse({ type: 'chunk', delta: 'Cung Mệnh có Tử Vi' }).type).toBe('chunk');
+    const done = explanationStreamEventSchema.parse({
+      type: 'done',
+      request: {
+        id: '2f8fad5b-d9cb-469f-a165-70867728950e',
+        ownerUserId: 'dff0da0d-f89c-4485-8d11-4e58fc00b8cb',
+        chartSnapshotId: 'a9ac741c-7423-4767-90d7-f8b6781ccf0a',
+        idempotencyKey: 'idem-key-1234567890abcdef',
+        providerName: 'deepseek',
+        requestState: 'completed',
+        promptStorageMode: 'consented_redacted',
+        failureRetainsUntil: null,
+        createdAt: '2026-06-18T00:00:00.000Z',
+        updatedAt: '2026-06-18T00:01:00.000Z',
+      },
+      result: {
+        id: '3f8fad5b-d9cb-469f-a165-70867728950e',
+        ownerUserId: 'dff0da0d-f89c-4485-8d11-4e58fc00b8cb',
+        explanationRequestId: '2f8fad5b-d9cb-469f-a165-70867728950e',
+        chartSnapshotId: 'a9ac741c-7423-4767-90d7-f8b6781ccf0a',
+        cacheScope: 'user_snapshot',
+        renderedMarkdown: '# Luận giải Cung Mệnh\nTử Vi miếu địa...',
+        providerMetadata: { provider: 'deepseek' },
+        createdAt: '2026-06-18T00:01:00.000Z',
+      },
+      explanationContext: {
+        chartSystem: 'zi-wei-dou-shu',
+        visibleMessageKeys: ['chart.overview'],
+        confidence: {
+          level: 'high',
+          blocksExactReading: false,
+          reasons: [],
+          visibleMessageKey: 'confidence.exact',
+        },
+        sourceLabel: 'Khâm Thiên Giám',
+      },
+    });
+
+    expect(done.type).toBe('done');
+    expect(
+      explanationStreamEventSchema.parse({
+        type: 'error',
+        error: { code: 'PROVIDER_TIMEOUT', message: 'Timeout', requestId: null },
+      }).type,
+    ).toBe('error');
   });
 
   it('accepts conversation detail envelopes', () => {

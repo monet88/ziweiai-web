@@ -4,6 +4,7 @@ import {
   explanationContextSchema,
   type AuthenticatedUser,
   type CreateExplanationRequest,
+  type CreateExplanationResponse,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { buildExplanationRequestIdempotencyKey } from '../../../database/idempotency';
@@ -13,6 +14,7 @@ import { ChartsRepository } from '../../../database/repositories/charts.reposito
 import { DivinationsRepository } from '../../../database/repositories/divinations.repository';
 import { HistoryRepository } from '../../../database/repositories/history.repository';
 import { ExplanationProviderRouter } from '../../../providers/ai/explanation-provider-router';
+import type { ExplanationPromptPayload } from '../../../providers/ai/ai-explanation-provider';
 import { resolveDivinationInquiry } from '../../../providers/ai/divination-inquiry';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../../providers/ai/provider-errors';
 import { ExplanationValidatorService } from './explanation-validator.service';
@@ -200,6 +202,173 @@ export class ExplanationsService {
           userId: user.userId,
           requestId: request.id,
         });
+      }
+
+      if (error instanceof ProviderTimeoutError) {
+        throw new ApiErrorHttpException(HttpStatus.GATEWAY_TIMEOUT, 'PROVIDER_TIMEOUT', error.message);
+      }
+
+      if (error instanceof ProviderUnavailableError) {
+        throw new ApiErrorHttpException(HttpStatus.BAD_GATEWAY, 'PROVIDER_UNAVAILABLE', error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  async *createExplanationStream(
+    user: AuthenticatedUser,
+    ipAddress: string,
+    input: CreateExplanationRequest,
+    signal?: AbortSignal,
+  ): AsyncGenerator<string, CreateExplanationResponse, void> {
+    const isAnonymous = user.email === null;
+    const { requiresXu } = await this.billingService.checkInitialQuota(user.userId, ipAddress, isAnonymous);
+
+    const chartRecord = await this.chartsRepository.findChartSnapshotById(user.userId, input.chartSnapshotId);
+    this.validatorService.validateSnapshot(chartRecord, input);
+
+    const providerName = this.providerRouter.resolveProviderName(input.providerPreference);
+    const idempotencyKey = buildExplanationRequestIdempotencyKey({
+      ownerUserId: user.userId,
+      chartSnapshotId: input.chartSnapshotId,
+      providerName,
+      explanationKind: input.explanationKind,
+      palaceScope: input.palaceScope ?? undefined,
+    });
+
+    const existingRequest = await this.explanationsRepository.findExplanationRequestByIdempotencyKey(user.userId, idempotencyKey);
+    let request;
+    let xuDeducted = 0;
+
+    if (existingRequest) {
+      const resolution = await this.raceController.resolveExistingRequest(
+        user.userId,
+        idempotencyKey,
+        existingRequest,
+        input.palaceScope ?? undefined,
+      );
+
+      if (resolution.isCompleted) {
+        return createExplanationResponseSchema.parse({
+          request: { ...resolution.request, requestState: 'completed' },
+          result: resolution.result,
+          explanationContext: this.buildExplanationContext(chartRecord!.snapshot),
+        });
+      }
+
+      xuDeducted = await this.billingService.consumeXuIfNeeded(user.userId, input, requiresXu);
+      request = resolution.claimedRequest;
+    } else {
+      xuDeducted = await this.billingService.consumeXuIfNeeded(user.userId, input, requiresXu);
+      const failureRetainsUntil = buildFailedExplanationRetentionTimestamp(new Date());
+      request = await this.explanationsRepository.createExplanationRequest({
+        ownerUserId: user.userId,
+        chartSnapshotId: input.chartSnapshotId,
+        idempotencyKey,
+        providerName,
+        promptStorageMode: shouldStorePrompt(input.userConsentedToStorePrompt) ? 'consented_redacted' : DEFAULT_PROMPT_STORAGE_MODE,
+        failureRetainsUntil,
+      });
+    }
+
+    const explanationContext = this.buildExplanationContext(chartRecord!.snapshot);
+
+    try {
+      const divinationInquiry = await resolveDivinationInquiry(
+        this.divinationsRepository,
+        user.userId,
+        input.chartSnapshotId,
+        chartRecord!.snapshot.chartSystem,
+      );
+
+      await this.explanationsRepository.updateExplanationRequest({
+        ownerUserId: user.userId,
+        requestId: request.id,
+        requestState: 'running',
+      });
+
+      const promptPayload: ExplanationPromptPayload = {
+        chartSnapshot: chartRecord!.snapshot,
+        explanationKind: input.explanationKind,
+        explanationContext,
+        palaceScope: input.palaceScope ?? undefined,
+        divinationInquiry,
+      };
+
+      let accumulatedMarkdown = '';
+      let finalProviderMetadata: Record<string, string> = {};
+
+      const streamingProvider = this.providerRouter.resolveStreamingProvider(input.providerPreference, promptPayload);
+      if (streamingProvider) {
+        const generator = streamingProvider.generateExplanationStream(promptPayload, signal);
+        let next = await generator.next();
+        while (!next.done) {
+          accumulatedMarkdown += next.value;
+          yield next.value;
+          next = await generator.next();
+        }
+        const providerResult = next.value;
+        accumulatedMarkdown = providerResult.renderedMarkdown;
+        finalProviderMetadata = providerResult.providerMetadata;
+      } else {
+        const providerResult = await this.providerRouter.generate(input.providerPreference, promptPayload);
+        accumulatedMarkdown = providerResult.renderedMarkdown;
+        finalProviderMetadata = providerResult.providerMetadata;
+        yield accumulatedMarkdown;
+      }
+
+      const result = await this.explanationsRepository.createExplanationResult({
+        ownerUserId: user.userId,
+        explanationRequestId: request.id,
+        chartSnapshotId: input.chartSnapshotId,
+        cacheScope: PERSONALIZED_CACHE_SCOPE,
+        renderedMarkdown: accumulatedMarkdown,
+        providerMetadata: {
+          ...finalProviderMetadata,
+          explanationKind: input.explanationKind,
+          ...(input.palaceScope ? { palaceScope: input.palaceScope } : {}),
+        },
+      });
+
+      const completedRequest = await this.explanationsRepository.updateExplanationRequest({
+        ownerUserId: user.userId,
+        requestId: request.id,
+        requestState: 'completed',
+        failureRetainsUntil: null,
+      });
+
+      await this.historyRepository.createHistoryView({
+        ownerUserId: user.userId,
+        chartSnapshotId: input.chartSnapshotId,
+        explanationResultId: result.id,
+      });
+
+      return createExplanationResponseSchema.parse({
+        request: completedRequest,
+        result,
+        explanationContext,
+      });
+    } catch (error) {
+      const resultAfterError = await this.explanationsRepository.findExplanationResultByRequestId(user.userId, request.id);
+      if (resultAfterError) {
+        const freshRequest = await this.explanationsRepository.findExplanationRequestByIdempotencyKey(user.userId, idempotencyKey);
+        return createExplanationResponseSchema.parse({
+          request: freshRequest ?? request,
+          result: resultAfterError,
+          explanationContext,
+        });
+      }
+
+      await this.explanationsRepository.updateExplanationRequest({
+        ownerUserId: user.userId,
+        requestId: request.id,
+        requestState: 'failed',
+        failureRetainsUntil: buildFailedExplanationRetentionTimestamp(new Date()),
+      });
+
+      if (xuDeducted > 0) {
+        await this.billingService.refundXu(user.userId, xuDeducted);
       }
 
       if (error instanceof ProviderTimeoutError) {

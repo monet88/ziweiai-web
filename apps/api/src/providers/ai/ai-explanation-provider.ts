@@ -62,6 +62,11 @@ export interface AiExplanationProvider {
   // cho phép kiểm tra theo model được ép riêng cho đường vision thay vì model ENV mặc định.
   isVisionCapable(modelOverride?: string): boolean;
   generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult>;
+  // Sprint 61: REAL token streaming cho luận giải lá số.
+  generateExplanationStream?(
+    payload: ExplanationPromptPayload,
+    signal?: AbortSignal,
+  ): AsyncGenerator<string, ExplanationProviderResult, void>;
 }
 
 export interface ConversationPromptPayload {
@@ -72,6 +77,8 @@ export interface ConversationPromptPayload {
   messages: ConversationMessageRecord[];
   userMessage: string;
   quickPromptKey?: QuickPromptKey;
+  // Sprint 61: Cho phép truyền cung vị trọng điểm đang đàm luận
+  palaceScope?: PalaceScope;
   modelOverride?: string;
   // US-025 (decision 0021): for the four time-based divination systems, the stored
   // question + purpose are threaded so the conversation prompt targets the original

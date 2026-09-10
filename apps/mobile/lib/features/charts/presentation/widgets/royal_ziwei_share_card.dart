@@ -747,14 +747,15 @@ class _RoyalZiweiPreviewDialogState extends ConsumerState<RoyalZiweiPreviewDialo
       );
 
       // Tối ưu hóa dung lượng: Nén sang WebP (Sprint 60)
-      final compressedBytes = await RoyalImageCompressor.compressToWebp(imageBytes);
+      final compressedResult = await RoyalImageCompressor.compress(imageBytes);
 
       final directory = await getTemporaryDirectory();
       final prefix = _aspectRatio == RoyalAspectRatio.story9_16 ? 'story_9_16' : 'card_3_4';
+      final ext = compressedResult.fileExtension;
       final imageFile = File(
-        '${directory.path}/chieu_chi_tu_vi_${prefix}_${widget.chartData.chartRecord.id}.webp',
+        '${directory.path}/chieu_chi_tu_vi_${prefix}_${widget.chartData.chartRecord.id}.$ext',
       );
-      await imageFile.writeAsBytes(compressedBytes);
+      await imageFile.writeAsBytes(compressedResult.bytes);
 
       // Tự động lưu vào Thư Viện Hoàng Triều
       final name = widget.chartData.chartRecord.snapshot.birth?['name']?.toString() ??

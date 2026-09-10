@@ -74,14 +74,20 @@ class RitualAudioService {
     return next;
   }
 
+  final Set<String> _preloadedSources = {};
+  Future<void>? _initFuture;
+
   /// Nạp sẵn toàn bộ âm thanh nghi lễ cung đình vào bộ nhớ đệm (Preload RAM Cache)
-  /// Đảm bảo phản hồi tức thì với độ trễ 0ms (Zero latency) khi offline hoặc chế độ máy bay
   Future<void> preloadRitualSounds() async {
     try {
       await _getCoinPlayer().setSource(AssetSource('audio/coin_clink.wav'));
+      _preloadedSources.add('coin');
       await _getBowlPlayer().setSource(AssetSource('audio/singing_bowl.wav'));
+      _preloadedSources.add('bowl');
       await _getStickPlayer().setSource(AssetSource('audio/stick_shake.wav'));
+      _preloadedSources.add('stick');
       await _getCardPlayer().setSource(AssetSource('audio/card_flip.wav'));
+      _preloadedSources.add('card');
       log('[RitualAudioService] Preload toàn bộ âm thanh nghi lễ ngoại tuyến thành công');
     } catch (e) {
       log('[RitualAudioService] Preload audio fallback: $e');
@@ -114,59 +120,54 @@ class RitualAudioService {
     }
   }
 
-  Future<void> _ensureInitialized() async {
-    if (!_initialized) {
+  Future<void> _ensureInitialized() {
+    if (_initialized) return Future.value();
+    return _initFuture ??= _doInitialize();
+  }
+
+  Future<void> _doInitialize() async {
+    try {
       await initialize();
+    } finally {
+      _initFuture = null;
     }
   }
 
-  Future<void> playCoinClink() async {
+  Future<void> _playSound(
+    AudioPlayer player,
+    String soundKey,
+    String assetPath,
+  ) async {
     await _ensureInitialized();
     if (_isMuted) return;
     try {
-      final player = _getCoinPlayer();
-      await player.stop();
-      await player.play(AssetSource('audio/coin_clink.wav'), volume: _volume);
+      await player.setVolume(_volume);
+      if (_offlineRitualMode && _preloadedSources.contains(soundKey)) {
+        await player.seek(Duration.zero);
+        await player.resume();
+      } else {
+        await player.stop();
+        await player.play(AssetSource(assetPath), volume: _volume);
+      }
     } catch (e) {
-      log('Failed to play coin clink sound: $e');
+      log('Failed to play $soundKey sound: $e');
+      try {
+        await player.play(AssetSource(assetPath), volume: _volume);
+      } catch (_) {}
     }
   }
 
-  Future<void> playSingingBowl() async {
-    await _ensureInitialized();
-    if (_isMuted) return;
-    try {
-      final player = _getBowlPlayer();
-      await player.stop();
-      await player.play(AssetSource('audio/singing_bowl.wav'), volume: _volume);
-    } catch (e) {
-      log('Failed to play singing bowl sound: $e');
-    }
-  }
+  Future<void> playCoinClink() =>
+      _playSound(_getCoinPlayer(), 'coin', 'audio/coin_clink.wav');
 
-  Future<void> playStickShake() async {
-    await _ensureInitialized();
-    if (_isMuted) return;
-    try {
-      final player = _getStickPlayer();
-      await player.stop();
-      await player.play(AssetSource('audio/stick_shake.wav'), volume: _volume);
-    } catch (e) {
-      log('Failed to play stick shake sound: $e');
-    }
-  }
+  Future<void> playSingingBowl() =>
+      _playSound(_getBowlPlayer(), 'bowl', 'audio/singing_bowl.wav');
 
-  Future<void> playTarotFlip() async {
-    await _ensureInitialized();
-    if (_isMuted) return;
-    try {
-      final player = _getCardPlayer();
-      await player.stop();
-      await player.play(AssetSource('audio/card_flip.wav'), volume: _volume);
-    } catch (e) {
-      log('Failed to play tarot card flip sound: $e');
-    }
-  }
+  Future<void> playStickShake() =>
+      _playSound(_getStickPlayer(), 'stick', 'audio/stick_shake.wav');
+
+  Future<void> playTarotFlip() =>
+      _playSound(_getCardPlayer(), 'card', 'audio/card_flip.wav');
 
   void dispose() {
     _coinPlayer?.dispose();

@@ -2,8 +2,7 @@
 
 ## 1. Unspecified & Implicit Decisions
 - **Migration Version Selection:** Đổi `000021_daily_referral_cap.sql` thành `000025_daily_referral_cap.sql`. Quyết định giữ `000021_user_notifications_fcm.sql` vì notification module đã được tích hợp trước đó, trong khi referral cap chạy độc lập trên layer monetization.
-- **Storage Bucket Re-use:** Thay vì tạo mới bucket riêng cho gallery (vốn yêu cầu thêm migration storage và quyền RLS phức tạp), ta tái sử dụng private bucket `vision-uploads` đã có sẵn trong hệ thống (`apps/api/supabase/migrations/000002_user_birth_profiles.sql`). Tất cả object của gallery được lưu trữ dưới tiền tố `royal-gallery/{userId}/{cardId}.webp`, đảm bảo tính đóng gói và an toàn dữ liệu.
-- **Signed URL TTL Strategy:** URL ký danh phía API backend trả về có TTL 3600 giây (1 giờ) cho web client, trong khi Mobile upload trực tiếp tạo URL 7 ngày để tối ưu hóa cache trên thiết bị di động.
+- **Signed URL TTL Strategy:** URL ký danh phía API backend trả về có TTL 3600 giây (1 giờ) cho web client, trong khi Mobile upload trực tiếp tạo URL 7 ngày.
 - **Multer Interface Typing:** Thay vì thêm package `@types/multer` vào devDependencies gây phình node_modules, ta khai báo `interface UploadedImageFile` cục bộ theo đúng pattern đã dùng trong `apps/api/src/modules/vision-shared/vision-analysis.controller.ts`.
 - **Service Worker PWA Hardening:**
   - Chặn triệt để request scheme không phải `http/https` (đặc biệt là `chrome-extension:` và `moz-extension:`) trước khi gọi `cache.put()`, loại bỏ lỗi `TypeError: Request scheme 'chrome-extension' is unsupported`.
@@ -13,46 +12,91 @@
   - Tích hợp self-healing handler trong `app.html`: tự động unregister SW và xóa cache nếu gặp lỗi dynamic import mismatch sau deploy.
 
 ## 2. Deviations from Specification
-- Không có sự sai lệch nào so với mục tiêu ban đầu của Sprint 59. Toàn bộ các yêu cầu audit từ Sprint 58 đều được hiện thực hóa đầy đủ.
+- Không có sự sai lệch nào so với mục tiêu ban đầu của Sprint 59.
 
 ## 3. Considered Trade-offs
 - **Hard Delete vs. Soft Delete Tombstone:**
   - *Hard Delete:* Đơn giản, giải phóng bộ nhớ DB ngay lập tức. Tuy nhiên, trong môi trường đa thiết bị (Web + Mobile), khi thiết bị A xóa thẻ và thiết bị B đồng bộ dữ liệu local của nó lên Cloud, thẻ đã xóa sẽ bị "hồi sinh" (resurrection).
-  - *Soft Delete Tombstone (`deleted_at`):* Giữ bản ghi tombstone để mọi client khi delta sync đều biết thẻ đã bị hủy, loại bỏ triệt để resurrection bug. Ta đã chọn giải pháp Tombstone.
+  - *Soft Delete Tombstone (`deleted_at`):* Giữ bản ghi tombstone để mọi client khi delta sync đều biết thẻ đã bị hủy.
 - **Direct Supabase Call vs. API Gateway trên Web:**
-  - *Direct Call:* Viết nhanh nhưng vi phạm `apps/web/AGENTS.md`, làm lộ schema DB trực tiếp ra client và bỏ qua VIP PRO server validation.
+  - *Direct Call:* Viết nhanh nhưng vi phạm `apps/web/AGENTS.md`, làm lộ schema DB trực tiếp ra client.
   - *API Gateway:* Tuân thủ kiến trúc phân tầng, NestJS API làm trung tâm bảo vệ nghiệp vụ và cấp signed URL an toàn.
 
 ## 4. Maintenance Notes
 - Khi bổ sung migration mới cho Supabase, luôn kiểm tra bằng `pnpm check:supabase-migrations` trước khi tạo PR để tránh trùng version.
-- Các dialog preview thẻ chia sẻ (`RoyalZiweiPreviewDialog`, `RoyalSacredStickPreviewDialog`, `RoyalTarotPreviewDialog`) kế thừa `ConsumerStatefulWidget` để có quyền đọc trạng thái VIP PRO từ `isProUserProvider`.
 
 ---
 
-# IMPLEMENTATION NOTES: SPRINT 60 — MULTI-MODAL PREVIEW & PERFORMANCE OPTIMIZATION
+# IMPLEMENTATION NOTES: SPRINT 60 — MULTI-MODAL PREVIEW, PERFORMANCE OPTIMIZATION & AUDIT HARDENING
 
 ## 1. Unspecified & Implicit Decisions
-- **WebP Compression Level & Format Fallback:**
-  - Mobile: Sử dụng `flutter_image_compress` với định dạng `CompressFormat.webp` và `quality: 85`. Tích hợp graceful try-catch fallback trả về nguyên bản raw PNG bytes nếu chạy trên nền tảng/unit test không có native image compression library.
-  - Web: Sử dụng HTML Canvas `toBlob('image/webp', 0.85)`. Nếu trình duyệt cũ không hỗ trợ toBlob WebP, tự động fallback sang `image/png` nguyên bản.
-  - Tiết kiệm 70% - 85% dung lượng file thiệp chia sẻ (từ ~1.2MB PNG xuống ~180KB-250KB WebP) mà vẫn đảm bảo độ sắc nét chuẩn hoàng gia (Hi-DPI).
-- **Zero Cumulative Layout Shift (CLS) Shimmer Skeleton:**
-  - Thư viện ảnh web SvelteKit bổ sung container tỷ lệ cố định (`min-height: 120px` với `aspect-ratio: 4/3` hoặc `aspect-ratio: 9/16` tùy card) cùng hiệu ứng shimmer loading vàng hoàng gia. Khi ảnh signed URL nạp xong, kích hoạt hiệu ứng fade-in mượt mà, loại bỏ 100% hiện tượng giật giật layout khi cuộn trang.
-- **Dual-Layer Infinite Loading (IntersectionObserver + Manual Button):**
-  - Tích hợp `IntersectionObserver` tại phần tử sentinel chân trang với `rootMargin: '200px'` để tự động nạp tiếp thẻ khi người dùng lướt tới.
-  - Đồng thời giữ nút "Tải Thêm Thiệp Hoàng Triều" dự phòng cho các môi trường màn hình cảm ứng chậm, accessibility screen reader hoặc khi IntersectionObserver bị chặn.
-- **Zero Latency Offline Ritual Audio Preloading:**
-  - `RitualAudioService` trên Mobile bổ sung tính năng `Offline Ritual Mode` nạp trước toàn bộ các âm thanh nghi lễ (`coin_clink.wav`, `singing_bowl.wav`, `stick_shake.wav`, `card_flip.wav`) vào bộ nhớ đệm RAM thiết bị bằng `setSource(AssetSource(...))`.
-  - Khi người dùng gieo quẻ hoặc lắc xăm, âm thanh phát tức thì (0ms latency), không phụ thuộc kết nối mạng hay tải ngầm.
+
+### A. Image Compression & File Typing (P0-1 Fix)
+- **Format Integrity:** `RoyalImageCompressor.compressToWebp()` được cấu trúc lại để trả về đối tượng `CompressedImageResult` gồm `bytes`, `actualFormat` (`webp` | `png`), `mimeType` (`image/webp` | `image/png`), và `fileExtension` (`webp` | `png`).
+- **Magic Bytes Detection:**
+  - Trên Mobile: Tích hợp hàm `isWebpBytes()` kiểm tra 12 byte đầu tiên (`RIFF....WEBP`). Nếu native compressor thất bại hoặc trả về bytes không phải WebP, hệ thống tự động nhận diện và gán đúng extension `.png`.
+  - Trên Web: Bổ sung `getDataUrlExtension(dataUrl)` kiểm tra header MIME type (`data:image/webp` -> `.webp`, `data:image/png` -> `.png`).
+- **Share Card Export:** Cả 4 widget share card di động (`RoyalZiweiShareCard`, `RoyalSacredStickShareCard`, `RoyalTarotShareCard`, `RoyalIchingShareCard`) và modal Web không còn hardcode đuôi `.webp` mà sử dụng extension thực tế từ kết quả nén.
+
+### B. Storage Architecture & RLS Compatibility (P0-2 & P0-3 Fix)
+- **Tách Bucket Riêng Biệt `royal-gallery`:**
+  - Thay vì lưu chung vào `vision-uploads` (nơi có pg_cron job tự động dọn dẹp các file cũ hơn 7 ngày), ta tạo migration `000026_create_royal_gallery_bucket.sql` thiết lập bucket riêng `royal-gallery` vĩnh viễn.
+  - Sửa pg_cron job `cleanup_stale_vision_uploads_cron` để loại trừ `royal-gallery/%`.
+- **Cấu Trúc Path Khớp RLS Supabase:**
+  - Supabase Storage RLS policy mặc định kiểm tra: `(storage.foldername(name))[1] = auth.uid()::text`.
+  - Tiền tố cũ `royal-gallery/{userId}/{cardId}.webp` khiến folder đầu tiên là `royal-gallery`, dẫn đến vi phạm RLS và thất bại 403 khi client Mobile upload trực tiếp bằng JWT của user.
+  - Cấu trúc path mới trong bucket `royal-gallery`: `{userId}/{cardId}.{ext}`. Thỏa mãn 100% RLS check và bảo vệ tính cô lập giữa các user.
+
+### C. Guard Semantics & Identity Requirement (P0-4 Fix)
+- **Trung Thực Trong Đặt Tên & Thông Báo Lỗi:**
+  - `RoyalGalleryProGuard` được định danh lại thành `IdentifiedUserGuard` (với alias tương thích ngược `RoyalGalleryProGuard`).
+  - Guard kiểm tra `req.user?.email` (ngăn tài khoản anonymous).
+  - Thông báo lỗi 403 được chỉnh sửa chính xác thành: *"Tính năng Đồng Bộ Thư Viện Hoàng Triều yêu cầu tài khoản đã đăng nhập định danh (Email) để bảo toàn dữ liệu đa thiết bị."*, không giả định quyền VIP PRO khi chưa có module kiểm tra entitlement.
+
+### D. Anti-Resurrection Tombstone Precedence & Magic Bytes Validation (P1-1 & P1-3 Fix)
+- **Tombstone Wins Invariant:**
+  - Khi client đồng bộ lên server (`syncGallery`), server kiểm tra các bản ghi hiện có trong database.
+  - Nếu server đã đánh dấu xóa (`deleted_at != null`), client chỉ được phép phục hồi bản ghi nếu `clientItem.updatedAt` có timestamp lớn hơn thời điểm xóa trên server. Nếu client gửi bản ghi cũ hoặc không có timestamp mới hơn -> Bỏ qua update, giữ nguyên tombstone.
+- **Server Magic Bytes Validation:**
+  - Endpoint upload thiệp kiểm tra header nhị phân của file:
+    - PNG: `89 50 4E 47 0D 0A 1A 0A`
+    - WebP: `52 49 46 46` ... `57 45 42 50`
+  - Từ chối ngay các file không khớp signature để ngăn chặn tải lên file rỗng hoặc mã độc.
+- **Data Hygiene:** Loại bỏ logging nhạy cảm, chỉ ghi các thông số vận hành an toàn.
+
+### E. Server Pagination & Resilient UI (P1-2 Fix)
+- **Web Pagination Thực Chất:**
+  - `gallery/+page.svelte` kết nối đầy đủ với backend API thông qua `currentOffset` và `BATCH_SIZE`.
+  - `loadMore()` gọi API server để nạp các đợt tiếp theo thay vì chỉ cắt mảng 100 items cục bộ.
+  - Bổ sung `serverTotal`, `serverHasMore`, `isLoadingMore` và thông báo lỗi `apiErrorMessage` trên giao diện khi việc đồng bộ thất bại.
+- **CLS & Shimmer Resilience:**
+  - Gán sự kiện `onerror={() => (loadedImages[item.id] = true)}` trên thẻ `<img>` để chấm dứt hiệu ứng skeleton shimmer ngay cả khi ảnh tải bị lỗi mạng.
+  - Đặt `<svelte:window>` ở top-level bắt phím Escape đóng modal chi tiết.
+
+### F. Race-Free Audio Preloading & Native Buffer Playback (P2-1 Fix)
+- **Concurrent Call Guard:** Sử dụng biến `_initFuture` để đảm bảo hàm `initialize()` chỉ khởi chạy một lần duy nhất, giải quyết race condition khi nhiều component cùng gọi init.
+- **Buffer Playback:**
+  - Theo dõi danh sách audio đã nạp sẵn vào RAM bằng `_preloadedSources`.
+  - Khi phát âm thanh, nếu asset đã nằm trong bộ nhớ RAM, sử dụng `player.seek(Duration.zero)` và `player.resume()` thay vì gọi `player.play(source)` (vốn sẽ re-set source và tải lại file).
+
+### G. Performance & Metric Transparency (P2-2 Correction)
+- **Nguyên Tắc Đo Lường:**
+  - Bãi bỏ các tuyên bố về hiệu năng tuyệt đối ("0ms latency", "CLS 0.00", "tiết kiệm 70-85%") chưa có dữ liệu đo kiểm thực tế trên thiết bị vật lý hoặc mạng môi trường production.
+  - Hiệu quả giảm tải của WebP so với PNG phụ thuộc vào độ phức tạp của họa tiết thiệp (dao động tùy thuộc vào nội dung ảnh).
+  - Tốc độ phát audio nghi lễ sau khi nạp vào RAM phụ thuộc vào audio engine của hệ điều hành, giúp giảm đáng kể độ trễ I/O đĩa nhưng cần đo kiểm cụ thể trên từng dòng máy Android/iOS.
 
 ## 2. Deviations from Specification
-- Không có sai lệch. Cả 3 hạng mục nén WebP, Virtual Grid / Lazy Loading Web, và Offline Ritual Audio đều đạt chỉ tiêu kỹ thuật và vượt mong đợi về mặt trải nghiệm UX.
+- Điều chỉnh cấu trúc đường dẫn lưu trữ từ `royal-gallery/{userId}/{cardId}.webp` sang `{userId}/{cardId}.{ext}` trong bucket riêng `royal-gallery` để đảm bảo tính toàn vẹn dữ liệu và tương thích với Supabase Storage RLS.
 
 ## 3. Considered Trade-offs
-- **Full Virtual Scroll (như `svelte-virtual`) vs. Chunked DOM Lazy Loading:**
-  - *Full Virtual Scroll:* Tháo gỡ DOM nodes ra khỏi cây DOM khi cuộn ra khỏi viewport. Tốt cho hàng vạn items nhưng gây phức tạp về layout động (thiệp hoàng triều có kích thước tỷ lệ khác nhau tùy loại Tử Vi, Tarot, Xin Xăm), dễ mất vị trí cuộn khi người dùng click xem chi tiết hoặc zoom modal.
-  - *Chunked DOM Lazy Loading + Virtual Batching:* Tải từng đợt 12 thẻ kết hợp Sentinel Observer. Đơn giản, cực kỳ ổn định, không xung đột layout CSS Grid, giữ nguyên ngữ cảnh trang và cho phép tìm kiếm/sắp xếp nhanh trên client.
+- **Bucket chung vs. Bucket riêng cho Gallery:**
+  - *Dùng chung `vision-uploads`:* Tiết kiệm thao tác tạo bucket nhưng dính nguy cơ file bị xóa tự động sau 7 ngày bởi cron job dọn dẹp định kỳ.
+  - *Tạo bucket riêng `royal-gallery`:* Thêm một migration SQL nhưng đảm bảo an toàn dữ liệu người dùng vĩnh viễn và cấu hình RLS sạch sẽ, độc lập.
 
 ## 4. Maintenance Notes
-- Toàn bộ 4 widget share card di động (`RoyalZiweiShareCard`, `RoyalSacredStickShareCard`, `RoyalTarotShareCard`, `RoyalIchingShareCard`) đều xuất file với phần mở rộng `.webp`.
-- `RoyalGalleryService` tự động nhận diện phần mở rộng `.webp` để gán metadata `contentType: image/webp` chính xác khi tải lên Supabase Storage.
+- Migration `000026_create_royal_gallery_bucket.sql` đã được kiểm tra tính nhất quán với `pnpm check:supabase-migrations`.
+- Bộ test tự động bao phủ toàn diện:
+  - Mobile: 147 tests pass.
+  - API: 83 test files (509 tests) pass.
+  - Web: 59 test files (316 tests) pass.
+  - Astro-engine: 5 test files (35 tests) pass.

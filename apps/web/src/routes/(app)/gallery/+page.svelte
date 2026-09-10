@@ -30,19 +30,30 @@
     { key: 'iching', label: 'Lục Hào Chiêm Bốc', icon: '🪙' },
   ];
 
+  let serverTotal = $state(0);
+  let serverHasMore = $state(false);
+  let currentOffset = $state(0);
+  let isLoadingMore = $state(false);
+  let apiErrorMessage = $state<string | null>(null);
+
   async function loadGallery() {
     loading = true;
+    apiErrorMessage = null;
     try {
       let cloudItems: RoyalGalleryShareRecord[] = [];
 
-      // 1. Tải từ API Backend nếu người dùng đã đăng nhập (hỗ trợ phân trang limit 100)
+      // 1. Tải từ API Backend nếu người dùng đã đăng nhập (hỗ trợ phân trang server-backed)
       const token = auth.getAccessToken();
       if (token) {
         try {
-          const res = await fetchGalleryShares(token, 100, 0);
+          const res = await fetchGalleryShares(token, BATCH_SIZE * 2, 0);
           cloudItems = res.items || [];
-        } catch (apiErr) {
-          void apiErr;
+          serverTotal = res.total ?? cloudItems.length;
+          serverHasMore = res.hasMore ?? false;
+          currentOffset = cloudItems.length;
+        } catch (apiErr: any) {
+          apiErrorMessage = 'Không thể đồng bộ thiệp từ máy chủ đám mây. Đang hiển thị bản sao ngoại tuyến.';
+          console.warn('[gallery] fetchGalleryShares error:', apiErr);
         }
       }
 
@@ -86,7 +97,7 @@
 
       items = Object.values(mergedRecords);
     } catch (loadErr) {
-      void loadErr;
+      console.warn('[gallery] loadGallery error:', loadErr);
       items = [];
     } finally {
       loading = false;
@@ -120,7 +131,7 @@
 
   // Danh sách hiển thị theo Virtual Batch Chunking
   const visibleItems = $derived(filteredItems.slice(0, visibleCount));
-  const hasMoreItems = $derived(visibleCount < filteredItems.length);
+  const hasMoreItems = $derived(visibleCount < filteredItems.length || serverHasMore);
 
   // Khi thay đổi bộ lọc, reset về batch đầu tiên
   $effect(() => {
@@ -135,8 +146,8 @@
     if (!sentinelRef) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMoreItems) {
-          visibleCount = Math.min(visibleCount + BATCH_SIZE, filteredItems.length);
+        if (entries[0].isIntersecting && hasMoreItems && !isLoadingMore) {
+          loadMore();
         }
       },
       { rootMargin: '240px' },
@@ -145,8 +156,35 @@
     return () => observer.disconnect();
   });
 
-  function loadMore() {
-    visibleCount = Math.min(visibleCount + BATCH_SIZE, filteredItems.length);
+  async function loadMore() {
+    if (visibleCount < filteredItems.length) {
+      visibleCount = Math.min(visibleCount + BATCH_SIZE, filteredItems.length);
+      return;
+    }
+
+    if (serverHasMore && !isLoadingMore) {
+      isLoadingMore = true;
+      try {
+        const token = auth.getAccessToken();
+        if (token) {
+          const res = await fetchGalleryShares(token, BATCH_SIZE, currentOffset);
+          const newItems = res.items || [];
+          if (newItems.length > 0) {
+            const existingIds = new Set(items.map((i) => i.id));
+            const freshItems = newItems.filter((i) => !existingIds.has(i.id));
+            items = [...items, ...freshItems];
+            currentOffset += newItems.length;
+            visibleCount += freshItems.length;
+          }
+          serverTotal = res.total ?? items.length;
+          serverHasMore = res.hasMore ?? false;
+        }
+      } catch (err) {
+        console.warn('[gallery] loadMore server pagination error:', err);
+      } finally {
+        isLoadingMore = false;
+      }
+    }
   }
 
   function getCardTypeLabel(type: string): string {
@@ -178,6 +216,14 @@
   <title>Thư Viện Hoàng Triều • ViOS Tử Vi Toàn Tập</title>
 </svelte:head>
 
+<svelte:window
+  onkeydown={(e) => {
+    if (e.key === 'Escape' && previewItem) {
+      previewItem = null;
+    }
+  }}
+/>
+
 <AppScaffold
   eyebrow="KHÂM THIÊN GIÁM NGỰ BÚT"
   title="Thư Viện Hoàng Triều"
@@ -205,6 +251,12 @@
         🔄 Làm Mới
       </button>
     </div>
+
+    {#if apiErrorMessage}
+      <div class="api-warning-banner" role="alert">
+        <span>⚠️ {apiErrorMessage}</span>
+      </div>
+    {/if}
 
     <!-- Category Filter Bar -->
     <div class="filter-bar">
@@ -254,7 +306,7 @@
         </div>
 
         <div class="items-counter">
-          <span>Hiển thị <strong>{visibleItems.length}</strong> / {filteredItems.length} thiệp</span>
+          <span>Hiển thị <strong>{visibleItems.length}</strong> / {filteredItems.length} thiệp{#if serverTotal > items.length} (tổng {serverTotal} trên máy chủ){/if}</span>
         </div>
       </div>
     </div>
@@ -298,6 +350,7 @@
                     class:is-loaded={loadedImages[item.id]}
                     loading="lazy"
                     onload={() => (loadedImages[item.id] = true)}
+                    onerror={() => (loadedImages[item.id] = true)}
                   />
                 </div>
               {:else}
@@ -466,6 +519,17 @@
     color: rgba(255, 255, 255, 0.65);
     font-size: 0.85rem;
     max-width: 600px;
+  }
+
+  .api-warning-banner {
+    display: flex;
+    align-items: center;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    color: #fca5a5;
   }
 
   .refresh-btn {

@@ -66,6 +66,16 @@ export function canvasToWebpDataUrl(
 }
 
 /**
+ * Trích xuất extension ('webp' | 'png') từ chuỗi dataUrl thực tế
+ */
+export function getDataUrlExtension(dataUrl: string): 'webp' | 'png' {
+  if (dataUrl.startsWith('data:image/webp')) {
+    return 'webp';
+  }
+  return 'png';
+}
+
+/**
  * Tải file Blob về máy người dùng
  */
 export function triggerFileDownload(blob: Blob, filename: string): void {

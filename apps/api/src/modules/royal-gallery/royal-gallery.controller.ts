@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -58,10 +59,10 @@ export class RoyalGalleryController {
   async uploadImage(
     @CurrentUser() user: AuthenticatedUser,
     @UploadedFile() file: UploadedImageFile | undefined,
-    @Query('cardId', new ZodValidationPipe(z.string().min(1))) cardId: string,
+    @Query('cardId', new ZodValidationPipe(z.string().min(1).max(128).regex(/^[a-zA-Z0-9_-]+$/, 'ID thẻ không hợp lệ'))) cardId: string,
   ) {
-    if (!file || !file.buffer) {
-      throw new Error('File upload is required');
+    if (!file || !file.buffer || file.buffer.length === 0) {
+      throw new BadRequestException('Vui lòng đính kèm tệp ảnh hợp lệ để tải lên.');
     }
     const contentType = file.mimetype || 'image/png';
     return this.galleryService.uploadCardImage(

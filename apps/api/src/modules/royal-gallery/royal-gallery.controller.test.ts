@@ -68,6 +68,19 @@ describe('RoyalGalleryController & Guard', () => {
     expect(mockService.deleteShare).toHaveBeenCalledWith(user.userId, 'card-1');
   });
 
+  it('uploadImage gọi service khi có file hợp lệ', async () => {
+    const user = { userId: '11111111-1111-4111-8111-111111111111', email: 'vip@user.com' };
+    const mockFile = { buffer: Buffer.from('mock-bytes-data'), mimetype: 'image/webp' };
+    const res = await controller.uploadImage(user, mockFile as any, 'card-1');
+    expect(res.storagePath).toBeDefined();
+    expect(mockService.uploadCardImage).toHaveBeenCalledWith(user.userId, 'card-1', mockFile.buffer, 'image/webp');
+  });
+
+  it('uploadImage ném BadRequestException khi thiếu file', async () => {
+    const user = { userId: '11111111-1111-4111-8111-111111111111', email: 'vip@user.com' };
+    await expect(controller.uploadImage(user, undefined, 'card-1')).rejects.toThrow();
+  });
+
   describe('RoyalGalleryProGuard', () => {
     const guard = new RoyalGalleryProGuard();
 

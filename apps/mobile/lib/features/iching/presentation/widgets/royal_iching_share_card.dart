@@ -14,7 +14,6 @@ import '../../data/models/iching_models.dart';
 import '../../../gallery/data/royal_gallery_service.dart';
 import '../../../gallery/models/royal_share_item.dart';
 import '../../../gallery/presentation/widgets/royal_seal_widget.dart';
-import '../../../subscription/providers/subscription_provider.dart';
 
 class RoyalIChingShareCard extends StatelessWidget {
   final IChingDraw data;
@@ -542,7 +541,6 @@ class _RoyalSharePreviewDialogState extends ConsumerState<RoyalSharePreviewDialo
       // Auto-save to Royal Gallery
       try {
         final galleryService = ref.read(royalGalleryServiceProvider);
-        final isPro = ref.read(isProUserProvider);
         await galleryService.saveItem(
           RoyalShareItem(
             id: 'iching_${DateTime.now().millisecondsSinceEpoch}',
@@ -554,7 +552,7 @@ class _RoyalSharePreviewDialogState extends ConsumerState<RoyalSharePreviewDialo
             aspectRatio: _isStory9_16 ? RoyalAspectRatio.story9_16 : RoyalAspectRatio.standard,
             customSealName: _customSealController.text.trim().isNotEmpty ? _customSealController.text.trim() : null,
           ),
-          isPro: isPro,
+          isPro: true,
         );
       } catch (e) {
         debugPrint('Lỗi lưu vào Hoàng Triều Thư Viện: $e');

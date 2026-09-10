@@ -232,22 +232,23 @@
       const offscreenCanvas = document.createElement('canvas');
       renderCardToCanvas(offscreenCanvas, true); // High-res 2x (800x1120)
 
+      let actualExt = 'webp';
       try {
         const blob = await canvasToWebpBlob(offscreenCanvas, { quality: 0.88 });
-        const ext = blob.type === 'image/webp' ? 'webp' : 'png';
-        triggerFileDownload(blob, `ViOS_Thiep_Moi_${referralCode || 'VIP'}.${ext}`);
+        actualExt = blob.type === 'image/webp' ? 'webp' : 'png';
+        triggerFileDownload(blob, `ViOS_Thiep_Moi_${referralCode || 'VIP'}.${actualExt}`);
       } catch {
         const dataUrl = canvasToWebpDataUrl(offscreenCanvas, 0.88);
-        const ext = getDataUrlExtension(dataUrl);
+        actualExt = getDataUrlExtension(dataUrl);
         const a = document.createElement('a');
         a.href = dataUrl;
-        a.download = `ViOS_Thiep_Moi_${referralCode || 'VIP'}.${ext}`;
+        a.download = `ViOS_Thiep_Moi_${referralCode || 'VIP'}.${actualExt}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
       }
 
-      toast.show('🎉 Đã tải thiệp mời hoàng triều (WebP) thành công! Dung lượng siêu nhẹ, gửi ngay qua Zalo/Facebook.', 'success');
+      toast.show(`🎉 Đã tải thiệp mời hoàng triều (.${actualExt.toUpperCase()}) thành công! Sẵn sàng chia sẻ ngay qua Zalo/Facebook.`, 'success');
     } catch {
       toast.show('Không thể xuất ảnh thiệp mời, vui lòng thử lại.', 'danger');
     } finally {

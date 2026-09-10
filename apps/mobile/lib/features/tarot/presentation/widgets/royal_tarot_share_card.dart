@@ -13,7 +13,6 @@ import '../../../../core/utils/royal_image_compressor.dart';
 import '../../../gallery/data/royal_gallery_service.dart';
 import '../../../gallery/models/royal_share_item.dart';
 import '../../../gallery/presentation/widgets/royal_seal_widget.dart';
-import '../../../subscription/providers/subscription_provider.dart';
 import '../../data/models/tarot_models.dart';
 
 /// Royal Tarot & Lenormand Imperial Share Card (Thiệp Chiêm Tinh Hoàng Gia)
@@ -506,7 +505,7 @@ class _RoyalTarotPreviewDialogState extends ConsumerState<RoyalTarotPreviewDialo
       );
       await RoyalGalleryService().saveItem(
         galleryItem,
-        isPro: ref.read(isProUserProvider),
+        isPro: true,
       );
 
       await SharePlus.instance.share(

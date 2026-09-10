@@ -26,8 +26,12 @@ class RitualAudioService {
   AudioPlayer _getStickPlayer() => _stickPlayer ??= AudioPlayer();
   AudioPlayer _getCardPlayer() => _cardPlayer ??= AudioPlayer();
 
-  Future<void> initialize() async {
-    if (_initialized) return;
+  Future<void> initialize() {
+    if (_initialized) return Future.value();
+    return _initFuture ??= _doInternalInitialize();
+  }
+
+  Future<void> _doInternalInitialize() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       _isMuted = prefs.getBool(_kAudioMutedKey) ?? false;
@@ -52,6 +56,8 @@ class RitualAudioService {
       log('RitualAudioService initialized (isMuted: $_isMuted, volume: $_volume, offlineMode: $_offlineRitualMode)');
     } catch (e) {
       log('Failed to initialize RitualAudioService: $e');
+    } finally {
+      _initFuture = null;
     }
   }
 
@@ -120,25 +126,12 @@ class RitualAudioService {
     }
   }
 
-  Future<void> _ensureInitialized() {
-    if (_initialized) return Future.value();
-    return _initFuture ??= _doInitialize();
-  }
-
-  Future<void> _doInitialize() async {
-    try {
-      await initialize();
-    } finally {
-      _initFuture = null;
-    }
-  }
-
   Future<void> _playSound(
     AudioPlayer player,
     String soundKey,
     String assetPath,
   ) async {
-    await _ensureInitialized();
+    await initialize();
     if (_isMuted) return;
     try {
       await player.setVolume(_volume);

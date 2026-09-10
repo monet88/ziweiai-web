@@ -7,7 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../subscription/providers/subscription_provider.dart';
+import '../../auth/presentation/auth_provider.dart';
 import '../data/royal_gallery_service.dart';
 import '../models/royal_share_item.dart';
 
@@ -28,7 +28,8 @@ class _RoyalGalleryScreenState extends ConsumerState<RoyalGalleryScreen> {
   @override
   Widget build(BuildContext context) {
     final galleryAsync = ref.watch(royalGalleryItemsProvider);
-    final isPro = ref.watch(isProUserProvider);
+    final currentUser = ref.watch(currentUserProvider);
+    final isIdentified = currentUser != null && currentUser.email != null && currentUser.email!.isNotEmpty && !(currentUser.isAnonymous);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F071D),
@@ -51,16 +52,16 @@ class _RoyalGalleryScreenState extends ConsumerState<RoyalGalleryScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: isPro ? 'Đồng bộ Đám Mây (VIP PRO)' : 'Đồng bộ Đám Mây (Yêu cầu VIP PRO)',
+            tooltip: isIdentified ? 'Đồng bộ Đám Mây Hoàng Triều' : 'Đồng bộ Đám Mây (Yêu cầu Đăng Nhập Email)',
             icon: Icon(
-              isPro ? Icons.cloud_sync : Icons.cloud_queue,
-              color: isPro ? AppTheme.goldBright : AppTheme.mysticalTextSecondary,
+              isIdentified ? Icons.cloud_sync : Icons.cloud_queue,
+              color: isIdentified ? AppTheme.goldBright : AppTheme.mysticalTextSecondary,
             ),
             onPressed: () async {
-              if (!isPro) {
+              if (!isIdentified) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Tính năng đồng bộ đa thiết bị dành riêng cho tài khoản VIP PRO.'),
+                    content: Text('Tính năng đồng bộ đa thiết bị yêu cầu tài khoản đã đăng nhập Email.'),
                   ),
                 );
                 return;
@@ -106,18 +107,18 @@ class _RoyalGalleryScreenState extends ConsumerState<RoyalGalleryScreen> {
           // Filter Bar
           _buildFilterBar(),
 
-          // Cloud Sync VIP PRO Banner / Status Pill
+          // Cloud Sync Banner / Status Pill (Identified User)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
-                color: isPro
+                color: isIdentified
                     ? AppTheme.cosmosElevated.withValues(alpha: 0.6)
                     : const Color(0xFF1B1430),
                 border: Border.all(
-                  color: isPro
+                  color: isIdentified
                       ? AppTheme.goldBright.withValues(alpha: 0.3)
                       : Colors.white12,
                   width: 0.8,
@@ -126,32 +127,33 @@ class _RoyalGalleryScreenState extends ConsumerState<RoyalGalleryScreen> {
               child: Row(
                 children: [
                   Icon(
-                    isPro ? Icons.cloud_done : Icons.cloud_off_outlined,
+                    isIdentified ? Icons.cloud_done : Icons.cloud_off_outlined,
                     size: 16,
-                    color: isPro ? AppTheme.goldBright : AppTheme.mysticalTextSecondary,
+                    color: isIdentified ? AppTheme.goldBright : AppTheme.mysticalTextSecondary,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      isPro
-                          ? 'Đồng Bộ Đám Mây VIP PRO: Sẵn sàng trên Web & Mobile'
-                          : 'Nâng cấp VIP PRO để đồng bộ thiệp tự động sang Web & thiết bị mới',
+                      isIdentified
+                          ? 'Đồng Bộ Đám Mây: Sẵn sàng kết nối trên Web & Mobile'
+                          : 'Đăng nhập tài khoản Email để đồng bộ thiệp tự động sang Web & thiết bị mới',
                       style: TextStyle(
-                        color: isPro ? AppTheme.goldBright : AppTheme.mysticalTextSecondary,
+                        color: isIdentified ? AppTheme.goldBright : AppTheme.mysticalTextSecondary,
                         fontSize: 11,
-                        fontWeight: isPro ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: isIdentified ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),
                   ),
-                  if (!isPro)
+                  if (!isIdentified)
                     GestureDetector(
-                      onTap: () => context.push('/wallet'),
+                      onTap: () => context.push('/profile'),
                       child: const Text(
-                        'NÂNG CẤP',
+                        'ĐĂNG NHẬP',
                         style: TextStyle(
                           color: AppTheme.goldBright,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
                         ),
                       ),
                     ),

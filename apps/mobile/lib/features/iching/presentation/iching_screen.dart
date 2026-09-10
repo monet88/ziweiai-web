@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:dio/dio.dart';
 import '../providers/iching_provider.dart';
 import '../data/models/iching_models.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/providers/paywall_provider.dart';
 import '../../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../../ui/animated_background.dart';
 import '../../../../ui/glass_panel.dart';
@@ -155,12 +157,42 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
       if (next.hasError) {
         final error = next.error;
         if (error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(error.toString()),
-              backgroundColor: AppTheme.cinnabarCrimson,
-            ),
-          );
+          bool isPaymentOrQuota = false;
+          if (error is DioException) {
+            final status = error.response?.statusCode;
+            if (status == 402 || status == 403) {
+              isPaymentOrQuota = true;
+            }
+          }
+          final errStr = error.toString().toLowerCase();
+          if (errStr.contains('402') || errStr.contains('số dư') || errStr.contains('insufficient')) {
+            isPaymentOrQuota = true;
+          }
+
+          if (isPaymentOrQuota) {
+            // Mở Royal Paywall Sheet nạp XU lịch thiệp
+            ref.read(paywallProvider.notifier).show(
+              cost: 5,
+              featureName: 'Gieo Quẻ Lục Hào',
+            );
+          } else {
+            String msg = 'Có lỗi xảy ra khi gieo quẻ. Vui lòng thử lại sau.';
+            if (error is DioException) {
+              final resData = error.response?.data;
+              if (resData is Map && resData['message'] != null) {
+                msg = resData['message'].toString();
+              }
+            } else if (error is String) {
+              msg = error;
+            }
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(msg),
+                backgroundColor: AppTheme.cinnabarCrimson,
+              ),
+            );
+          }
         }
       }
     });

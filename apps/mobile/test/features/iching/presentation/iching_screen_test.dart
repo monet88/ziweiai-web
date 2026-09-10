@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:dio/dio.dart';
 import 'package:ziweiai_mobile/core/theme/app_theme.dart';
+import 'package:ziweiai_mobile/core/providers/paywall_provider.dart';
 import 'package:ziweiai_mobile/features/iching/data/models/iching_models.dart';
 import 'package:ziweiai_mobile/features/iching/data/repositories/iching_repository.dart';
 import 'package:ziweiai_mobile/features/iching/presentation/iching_screen.dart';
@@ -139,6 +141,66 @@ void main() {
       // Verify Imperial Commentary & TTS
       expect(find.text('KHÂM THIÊN GIÁM LUẬN QUẺ'), findsOneWidget);
       expect(find.textContaining('Thiên hành kiện'), findsOneWidget);
+    });
+
+    testWidgets('gracefully intercepts 402 HTTP error and triggers Royal Paywall without crude snackbar', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1000, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      late ProviderContainer capturedContainer;
+
+      when(() => mockRepository.drawIChing(
+            question: any(named: 'question'),
+            castArray: any(named: 'castArray'),
+          )).thenThrow(DioException(
+        requestOptions: RequestOptions(path: '/draws/iching'),
+        response: Response(
+          requestOptions: RequestOptions(path: '/draws/iching'),
+          statusCode: 402,
+          data: {'message': 'Tính năng Kinh Dịch yêu cầu 5 XU. Số dư không đủ.'},
+        ),
+      ));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ichingRepositoryProvider.overrideWithValue(mockRepository),
+            walletBalanceProvider.overrideWith((ref) => Future.value(0)),
+          ],
+          child: Consumer(
+            builder: (context, ref, child) {
+              capturedContainer = ProviderScope.containerOf(context);
+              return MaterialApp(
+                theme: AppTheme.mystical,
+                home: const IChingScreen(),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Cast 6 times
+      for (int i = 0; i < 6; i++) {
+        final button = find.textContaining('GIEO HÀO ${i + 1}/6');
+        expect(button, findsOneWidget);
+        await tester.tap(button);
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(const Duration(milliseconds: 600));
+      }
+
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Verify that crude 402 technical string is NOT displayed
+      expect(find.textContaining('402 status lỗi'), findsNothing);
+      expect(find.textContaining('The request returned an invalid status code of 402'), findsNothing);
+
+      // Verify Royal Paywall was invoked
+      final paywallState = capturedContainer.read(paywallProvider);
+      expect(paywallState.isVisible, isTrue);
+      expect(paywallState.cost, 5);
+      expect(paywallState.featureName, 'Gieo Quẻ Lục Hào');
     });
   });
 }

@@ -10,8 +10,8 @@
   />
 </svelte:head>
 
-<div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
-  <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
+<div class="legal-page min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+  <header class="legal-header border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
     <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
       <a href="/" class="flex items-center gap-2 text-decoration-none text-slate-100">
         <ViOSLogo />
@@ -32,15 +32,15 @@
         <span>📜</span>
         <span>Quy Định & Pháp Lý Hoàng Triều</span>
       </div>
-      <h1 class="text-3xl md:text-5xl font-serif font-bold text-amber-200 tracking-wide mb-3">
+      <h1 class="page-title text-3xl md:text-5xl font-serif font-bold text-amber-200 tracking-wide mb-3">
         Chính Sách Bảo Mật Quyền Riêng Tư
       </h1>
-      <p class="text-sm md:text-base text-slate-400">
+      <p class="page-subtitle text-sm md:text-base text-slate-400">
         Ứng dụng <strong class="text-amber-300">Tử Vi Toàn Tập (ViOS)</strong> • Cập nhật lần cuối: Tháng 09/2026
       </p>
     </div>
 
-    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 md:p-10 backdrop-blur-sm shadow-xl space-y-8 text-sm md:text-base leading-relaxed text-slate-300">
+    <div class="legal-card bg-slate-900/60 border border-slate-800 rounded-2xl p-6 md:p-10 backdrop-blur-sm shadow-xl space-y-8 text-sm md:text-base leading-relaxed text-slate-300">
       <section class="space-y-3">
         <h2 class="text-xl md:text-2xl font-serif font-semibold text-amber-300 flex items-center gap-2">
           <span>1.</span> Giới Thiệu & Cam Kết Chung
@@ -120,7 +120,7 @@
         <p>
           Mọi thắc mắc hoặc khiếu nại liên quan đến chính sách bảo mật, xin vui lòng liên hệ Ban Quản Trị:
         </p>
-        <div class="p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-sm space-y-1">
+        <div class="contact-box p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-sm space-y-1">
           <p><strong>Dự án:</strong> Tử Vi Toàn Tập (ViOS)</p>
           <p><strong>Email Hỗ Trợ:</strong> <a href="mailto:galaxypro710@gmail.com" class="text-amber-400 hover:underline">galaxypro710@gmail.com</a></p>
           <p><strong>Trang Chủ & Bản Web:</strong> <a href="https://tuvitoantap.vercel.app" target="_blank" rel="noreferrer" class="text-amber-400 hover:underline">https://tuvitoantap.vercel.app</a></p>
@@ -129,7 +129,42 @@
     </div>
   </main>
 
-  <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+  <footer class="legal-footer border-t border-slate-800 py-6 text-center text-xs text-slate-500">
     <p>© 2026 Tử Vi Toàn Tập (ViOS). Bản quyền thuộc về Hoàng Triều Chiêm Tinh.</p>
   </footer>
 </div>
+
+<style>
+  :global([data-theme="light"]) .legal-page {
+    background-color: #f7f4ed !important;
+    color: #1e293b !important;
+  }
+  :global([data-theme="light"]) .legal-header {
+    background-color: rgba(247, 244, 237, 0.85) !important;
+    border-color: #e2d9c8 !important;
+  }
+  :global([data-theme="light"]) .page-title {
+    color: #78350f !important;
+  }
+  :global([data-theme="light"]) .page-subtitle {
+    color: #64748b !important;
+  }
+  :global([data-theme="light"]) .legal-card {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    border-color: #e2d9c8 !important;
+    color: #334155 !important;
+    box-shadow: 0 10px 25px -5px rgba(180, 130, 50, 0.08) !important;
+  }
+  :global([data-theme="light"]) .legal-card h2 {
+    color: #92400e !important;
+  }
+  :global([data-theme="light"]) .contact-box {
+    background-color: #fdfbf7 !important;
+    border-color: #e2d9c8 !important;
+    color: #1e293b !important;
+  }
+  :global([data-theme="light"]) .legal-footer {
+    border-color: #e2d9c8 !important;
+    color: #94a3b8 !important;
+  }
+</style>

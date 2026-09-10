@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -11,6 +12,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../gallery/data/royal_gallery_service.dart';
 import '../../../gallery/models/royal_share_item.dart';
 import '../../../gallery/presentation/widgets/royal_seal_widget.dart';
+import '../../../subscription/providers/subscription_provider.dart';
 import '../../data/models/stick_models.dart';
 
 /// Royal Sacred Stick Share Card (Thẻ Quẻ Linh Xăm Sơn Son Thếp Vàng)
@@ -453,7 +455,7 @@ class RoyalSacredStickShareCard extends StatelessWidget {
 }
 
 /// Preview & Share Modal Dialog for Royal Sacred Stick Card
-class RoyalSacredStickPreviewDialog extends StatefulWidget {
+class RoyalSacredStickPreviewDialog extends ConsumerStatefulWidget {
   final StickDraw data;
 
   const RoyalSacredStickPreviewDialog({
@@ -473,12 +475,12 @@ class RoyalSacredStickPreviewDialog extends StatefulWidget {
   }
 
   @override
-  State<RoyalSacredStickPreviewDialog> createState() =>
+  ConsumerState<RoyalSacredStickPreviewDialog> createState() =>
       _RoyalSacredStickPreviewDialogState();
 }
 
 class _RoyalSacredStickPreviewDialogState
-    extends State<RoyalSacredStickPreviewDialog> {
+    extends ConsumerState<RoyalSacredStickPreviewDialog> {
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _isSharing = false;
 
@@ -545,7 +547,10 @@ class _RoyalSacredStickPreviewDialogState
             ? _customSealController.text
             : _sealType.label,
       );
-      await RoyalGalleryService().saveItem(galleryItem);
+      await RoyalGalleryService().saveItem(
+        galleryItem,
+        isPro: ref.read(isProUserProvider),
+      );
 
       await SharePlus.instance.share(
         ShareParams(

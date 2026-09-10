@@ -131,12 +131,38 @@ void main() {
       expect((await service.getItems()), isEmpty);
     });
 
-    test('syncCloudGallery returns 0 when isPro is false or not authenticated', () async {
+    test('syncCloudGallery returns notPro when isPro is false and unauthenticated when no user', () async {
       final syncedNonPro = await service.syncCloudGallery(isPro: false);
-      expect(syncedNonPro, 0);
+      expect(syncedNonPro.status, SyncStatus.notPro);
+      expect(syncedNonPro.isSuccess, isFalse);
 
       final syncedNoClient = await service.syncCloudGallery(isPro: true);
-      expect(syncedNoClient, 0);
+      expect(syncedNoClient.status, SyncStatus.unauthenticated);
+      expect(syncedNoClient.isSuccess, isFalse);
+    });
+
+    test('RoyalShareItem handles copyWith, isDeleted and cloud storage fields', () {
+      final now = DateTime.now();
+      final item = RoyalShareItem(
+        id: 'c1',
+        title: 'Thẻ Gốc',
+        type: RoyalCardType.ziwei,
+        createdAt: now,
+        imagePath: '/local.png',
+        storagePath: 'royal-gallery/user1/c1.webp',
+        imageUrl: 'https://supabase.co/signed/c1.webp',
+      );
+
+      expect(item.isDeleted, isFalse);
+      expect(item.storagePath, 'royal-gallery/user1/c1.webp');
+
+      final softDeleted = item.copyWith(deletedAt: DateTime.now());
+      expect(softDeleted.isDeleted, isTrue);
+
+      final jsonStr = softDeleted.toJson();
+      final restored = RoyalShareItem.fromJson(jsonStr);
+      expect(restored.isDeleted, isTrue);
+      expect(restored.storagePath, 'royal-gallery/user1/c1.webp');
     });
   });
 

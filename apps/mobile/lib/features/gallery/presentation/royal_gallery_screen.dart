@@ -69,14 +69,23 @@ class _RoyalGalleryScreenState extends ConsumerState<RoyalGalleryScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Đang đồng bộ Thư Viện Hoàng Triều với Đám Mây...')),
               );
-              final count = await ref.read(royalGalleryItemsProvider.notifier).syncCloud();
+              final result = await ref.read(royalGalleryItemsProvider.notifier).syncCloud();
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Đồng bộ thành công! Hiện có $count thiệp trong thư viện.'),
-                    backgroundColor: AppTheme.etherealJade,
-                  ),
-                );
+                if (result.isSuccess) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Đồng bộ thành công! Hiện có ${result.count} thiệp trong thư viện.'),
+                      backgroundColor: AppTheme.etherealJade,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result.errorMessage ?? 'Đồng bộ thất bại, vui lòng thử lại.'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                }
               }
             },
           ),
@@ -318,6 +327,36 @@ class _RoyalGalleryScreenState extends ConsumerState<RoyalGalleryScreen> {
                       file,
                       fit: BoxFit.cover,
                     )
+                  else if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                    Image.network(
+                      item.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (ctx, err, stack) => Container(
+                        color: const Color(0xFF241544),
+                        child: Center(
+                          child: Text(
+                            item.type.iconAsset,
+                            style: const TextStyle(fontSize: 48),
+                          ),
+                        ),
+                      ),
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Container(
+                          color: const Color(0xFF241544),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFFFFD700),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    )
                   else
                     Container(
                       color: const Color(0xFF241544),
@@ -440,6 +479,12 @@ class _RoyalGalleryScreenState extends ConsumerState<RoyalGalleryScreen> {
           text: '${item.title} từ Khâm Thiên Giám — Tử Vi Toàn Tập',
         ),
       );
+    } else if (item.imageUrl != null && item.imageUrl!.isNotEmpty) {
+      await SharePlus.instance.share(
+        ShareParams(
+          text: '${item.title} từ Khâm Thiên Giám — Tử Vi Toàn Tập\n${item.imageUrl}',
+        ),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Tệp ảnh không tồn tại trên thiết bị')),
@@ -484,8 +529,7 @@ class _RoyalGalleryScreenState extends ConsumerState<RoyalGalleryScreen> {
     );
 
     if (confirmed == true) {
-      await ref.read(royalGalleryServiceProvider).clearAll();
-      await ref.read(royalGalleryItemsProvider.notifier).refresh();
+      await ref.read(royalGalleryItemsProvider.notifier).clearAll();
     }
   }
 }

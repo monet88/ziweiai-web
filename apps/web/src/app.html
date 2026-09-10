@@ -7,6 +7,7 @@
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#0D0B14" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ViOS" />
     <script>
@@ -17,6 +18,38 @@
           document.documentElement.setAttribute('data-theme', theme);
         } catch (e) {}
       })();
+
+      // Self-healing: Tự động dọn Service Worker & Cache cũ khi gặp chunk module mismatch sau deploy
+      window.addEventListener('error', function(event) {
+        var msg = event.message || '';
+        if (
+          msg.indexOf('dynamically imported module') !== -1 ||
+          msg.indexOf('Expected a JavaScript-or-Wasm module script') !== -1 ||
+          msg.indexOf('Failed to fetch dynamically imported module') !== -1
+        ) {
+          if (!sessionStorage.getItem('vios_chunk_reloaded')) {
+            sessionStorage.setItem('vios_chunk_reloaded', '1');
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(regs) {
+                for (var i = 0; i < regs.length; i++) {
+                  regs[i].unregister();
+                }
+                if ('caches' in window) {
+                  caches.keys().then(function(keys) {
+                    return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+                  }).then(function() {
+                    window.location.reload();
+                  });
+                } else {
+                  window.location.reload();
+                }
+              });
+            } else {
+              window.location.reload();
+            }
+          }
+        }
+      });
 
       if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
         window.addEventListener('load', function() {

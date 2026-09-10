@@ -73,7 +73,14 @@ class RitualAudioService {
     }
   }
 
+  Future<void> _ensureInitialized() async {
+    if (!_initialized) {
+      await initialize();
+    }
+  }
+
   Future<void> playCoinClink() async {
+    await _ensureInitialized();
     if (_isMuted) return;
     try {
       final player = _getCoinPlayer();
@@ -85,6 +92,7 @@ class RitualAudioService {
   }
 
   Future<void> playSingingBowl() async {
+    await _ensureInitialized();
     if (_isMuted) return;
     try {
       final player = _getBowlPlayer();
@@ -96,6 +104,7 @@ class RitualAudioService {
   }
 
   Future<void> playStickShake() async {
+    await _ensureInitialized();
     if (_isMuted) return;
     try {
       final player = _getStickPlayer();
@@ -107,6 +116,7 @@ class RitualAudioService {
   }
 
   Future<void> playTarotFlip() async {
+    await _ensureInitialized();
     if (_isMuted) return;
     try {
       final player = _getCardPlayer();
@@ -163,7 +173,13 @@ class RitualAudioVolumeNotifier extends Notifier<double> {
   @override
   double build() {
     _service = ref.watch(ritualAudioServiceProvider);
+    _init();
     return _service.volume;
+  }
+
+  Future<void> _init() async {
+    await _service.initialize();
+    state = _service.volume;
   }
 
   Future<void> setVolume(double vol) async {

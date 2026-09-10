@@ -174,6 +174,8 @@ export const apiEnvSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_CHAT_ID: z.string().optional(),
   ADMIN_EMAILS: z.string().default(''),
+  CRON_SECRET: z.string().optional(),
+  FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
   npm_package_version: z.string().min(1).optional(),
 });
 

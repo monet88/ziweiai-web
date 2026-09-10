@@ -5,12 +5,21 @@ import 'package:screenshot/screenshot.dart';
 
 import '../data/models/chart_snapshot.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'palace_detail_bottom_sheet.dart';
 
 class ZiweiBoard extends StatefulWidget {
   final ChartSnapshot snapshot;
   final ScreenshotController? screenshotController;
+  final ValueChanged<Palace>? onPalaceSelected;
+  final int? selectedPalaceIndex;
 
-  const ZiweiBoard({super.key, required this.snapshot, this.screenshotController});
+  const ZiweiBoard({
+    super.key,
+    required this.snapshot,
+    this.screenshotController,
+    this.onPalaceSelected,
+    this.selectedPalaceIndex,
+  });
 
   @override
   State<ZiweiBoard> createState() => _ZiweiBoardState();
@@ -19,11 +28,13 @@ class ZiweiBoard extends StatefulWidget {
 class _ZiweiBoardState extends State<ZiweiBoard> {
   late final TransformationController _transformationController;
   bool _initializedScale = false;
+  int? _selectedPalaceIndex;
 
   @override
   void initState() {
     super.initState();
     _transformationController = TransformationController();
+    _selectedPalaceIndex = widget.selectedPalaceIndex;
   }
 
   @override
@@ -191,42 +202,79 @@ class _ZiweiBoardState extends State<ZiweiBoard> {
                         ),
 
                         // 12 Palaces
-                        for (final palace in palaces)
-                          Positioned(
-                            left: getCellOffset(palace.index).dx,
-                            top: getCellOffset(palace.index).dy,
-                            width: cellSize,
-                            height: cellSize,
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () {
-                                  HapticFeedback.lightImpact();
-                                },
-                                splashColor: AppTheme.mysticalGold.withValues(alpha: 0.15),
-                                highlightColor: AppTheme.mysticalGold.withValues(alpha: 0.08),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: borderColor, width: 0.8),
-                                    gradient: palace.isBodyPalace || palace.isOriginalPalace
-                                        ? LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              AppTheme.mysticalGold.withValues(alpha: 0.18),
-                                              AppTheme.nebulaPurple.withValues(alpha: 0.12),
-                                              AppTheme.cosmosSurface.withValues(alpha: 0.8),
-                                            ],
-                                          )
-                                        : LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              AppTheme.cosmosSurface.withValues(alpha: 0.9),
-                                              AppTheme.cosmosDeep.withValues(alpha: 0.95),
-                                            ],
-                                          ),
-                                  ),
+                        for (final palace in palaces) ...[
+                          Builder(
+                            builder: (context) {
+                              final isSelected = _selectedPalaceIndex == palace.index;
+
+                              return Positioned(
+                                left: getCellOffset(palace.index).dx,
+                                top: getCellOffset(palace.index).dy,
+                                width: cellSize,
+                                height: cellSize,
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      HapticFeedback.mediumImpact();
+                                      setState(() => _selectedPalaceIndex = palace.index);
+                                      if (widget.onPalaceSelected != null) {
+                                        widget.onPalaceSelected!(palace);
+                                      } else {
+                                        PalaceDetailBottomSheet.show(
+                                          context,
+                                          palaces: widget.snapshot.palaces ?? [],
+                                          initialIndex: palace.index,
+                                          onPalaceChanged: (idx) {
+                                            setState(() => _selectedPalaceIndex = idx);
+                                          },
+                                        );
+                                      }
+                                    },
+                                    splashColor: AppTheme.mysticalGold.withValues(alpha: 0.25),
+                                    highlightColor: AppTheme.mysticalGold.withValues(alpha: 0.12),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 250),
+                                      curve: Curves.easeOutCubic,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: isSelected ? AppTheme.goldBright : borderColor,
+                                          width: isSelected ? 2.0 : 0.8,
+                                        ),
+                                        boxShadow: isSelected
+                                            ? [
+                                                BoxShadow(
+                                                  color: AppTheme.goldBright.withValues(alpha: 0.5),
+                                                  blurRadius: 16,
+                                                  spreadRadius: 2,
+                                                ),
+                                                BoxShadow(
+                                                  color: AppTheme.nebulaPurple.withValues(alpha: 0.3),
+                                                  blurRadius: 10,
+                                                ),
+                                              ]
+                                            : null,
+                                        gradient: palace.isBodyPalace || palace.isOriginalPalace
+                                            ? LinearGradient(
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                                colors: [
+                                                  AppTheme.mysticalGold.withValues(alpha: isSelected ? 0.3 : 0.18),
+                                                  AppTheme.nebulaPurple.withValues(alpha: isSelected ? 0.2 : 0.12),
+                                                  AppTheme.cosmosSurface.withValues(alpha: 0.8),
+                                                ],
+                                              )
+                                            : LinearGradient(
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                                colors: [
+                                                  isSelected
+                                                      ? AppTheme.cosmosElevated.withValues(alpha: 0.95)
+                                                      : AppTheme.cosmosSurface.withValues(alpha: 0.9),
+                                                  AppTheme.cosmosDeep.withValues(alpha: 0.95),
+                                                ],
+                                              ),
+                                      ),
                                   padding: const EdgeInsets.all(10),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,8 +388,11 @@ class _ZiweiBoardState extends State<ZiweiBoard> {
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
+                             ),
+                           );
+                         },
+                       ),
+                     ],
                       ],
                     ),
                   ),

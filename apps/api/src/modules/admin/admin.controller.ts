@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, Query, BadRequestException } from '@nestjs/common';
 import { AdminService } from './admin.service';
-import { reconcileTransactionSchema } from '@ziweiai/contracts';
+import { reconcileTransactionSchema, updateAdminConfigSchema } from '@ziweiai/contracts';
 
 @Controller('admin')
 export class AdminController {
@@ -52,20 +52,17 @@ export class AdminController {
 
   @Get('configs')
   async getConfigs() {
-    return {
-      dailyCheckinXu: 5,
-      rateVndToXu: 1000,
-      features: {
-        face: true,
-        palm: true,
-        annualReport: true,
-        hepan: true,
-        mangpai: true,
-        tarot: true,
-        sticks: true,
-        almanac: true,
-      },
-    };
+    return this.adminService.getConfigs();
+  }
+
+  @Post('configs')
+  async updateConfig(@Body() body: unknown) {
+    const parseResult = updateAdminConfigSchema.safeParse(body);
+    if (!parseResult.success) {
+      throw new BadRequestException('Invalid payload: key and value are required');
+    }
+
+    return this.adminService.updateConfig(parseResult.data.key, parseResult.data.value);
   }
 
   @Post('reconcile')

@@ -19,9 +19,13 @@ class ApiClient {
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final session = Supabase.instance.client.auth.currentSession;
-        if (session != null) {
-          options.headers['Authorization'] = 'Bearer ${session.accessToken}';
+        try {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            options.headers['Authorization'] = 'Bearer ${session.accessToken}';
+          }
+        } catch (_) {
+          // Bỏ qua nếu chạy trong unit test chưa init Supabase
         }
         return handler.next(options);
       },
@@ -83,6 +87,127 @@ class ApiClient {
       return response.data as Map<String, dynamic>;
     } catch (e) {
       rethrow;
+    }
+  }
+
+  // --- Dossier 19-Page Endpoints ---
+  Future<Map<String, dynamic>> getDossierStatus(String chartId) async {
+    try {
+      final response = await _dio.get('/charts/$chartId/dossier/status');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> unlockDossier(String chartId) async {
+    try {
+      final response = await _dio.post('/charts/$chartId/dossier/unlock');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // --- IChing Lục Hào Endpoints ---
+  Future<Map<String, dynamic>> drawIChing({
+    required String question,
+    required List<int> castArray,
+  }) async {
+    try {
+      final response = await _dio.post('/draws/iching', data: {
+        'question': question,
+        'cast_array': castArray,
+      });
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // --- Stick Linh Xăm Quan Thánh Endpoints ---
+  Future<Map<String, dynamic>> drawStick({
+    required String question,
+    int? seed,
+  }) async {
+    try {
+      final response = await _dio.post('/draws/stick', data: {
+        'question': question,
+        'seed': ?seed,
+      });
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // --- Charts & History Endpoints ---
+  Future<Map<String, dynamic>> getHistory({int limit = 20}) async {
+    try {
+      final response = await _dio.get('/history', queryParameters: {'limit': limit});
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getChartDetail(String chartId) async {
+    try {
+      final response = await _dio.get('/charts/$chartId');
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> createChart(Map<String, dynamic> chartInput) async {
+    try {
+      final response = await _dio.post('/charts', data: chartInput);
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // --- Divination Chat & Compatibility AI Endpoints ---
+  Future<Map<String, dynamic>> sendDivinationChat({
+    required String question,
+    String? topic,
+  }) async {
+    try {
+      final response = await _dio.post('/divinations/chat', data: {
+        'question': question,
+        'topic': ?topic,
+      });
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> explainCompatibility(
+    Map<String, dynamic> compatibilityPayload,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/divinations/compatibility/explain',
+        data: compatibilityPayload,
+      );
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<bool> registerFcmToken(String token, {String? platform}) async {
+    try {
+      final response = await _dio.post('/users/me/fcm-token', data: {
+        'token': token,
+        'platform': ?platform,
+      });
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
     }
   }
 }

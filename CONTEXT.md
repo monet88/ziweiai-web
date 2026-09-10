@@ -6,13 +6,13 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 
 ---
 
-## 🚀 Trạng Thái Tính Năng & Sprint (Phase 8: Production Store Distribution & Advanced AI Capabilities — Sprint 39 — 30/08/2026)
-- **Current Branch:** `main` (Merged from `feature/sprint39-mobile-perfection-and-aab`)
-- **Release Tag:** `v1.1.0` (Sprint 39 Production Store Distribution & Advanced AI Capabilities)
-- **Base Release Tag:** `v1.0.0` (commit `1a63fd5` trên `main`)
-- **Total Tests:** **899/899 Passed** (Mobile: 38, API: 443, Web: 258, Contracts: 125, Astro-Engine: 35)
-- **Google Play App Bundle:** `apps/mobile/build/app/outputs/bundle/release/app-release.aab` (**59.3MB**)
-- **Sprint 39 Progress:** 4/4 tickets (Ticket 39.1, Ticket 39.2, Ticket 39.3 & Ticket 39.4: **100% DONE & MERGED**).
+## 🚀 Trạng Thái Tính Năng & Sprint (Phase 12: Imperial Synergy & Khâm Thiên Giám Ngự Báo — Sprint 48 — 10/09/2026)
+- **Current Branch:** `feature/sprint-48-imperial-synergy` (Commit `dcec554`)
+- **Total Tests:** **1.062 / 1.062 Passed (100% Xanh)** (Mobile: 111, API: 478, Web: 303, Contracts: 135, Astro-Engine: 35)
+- **Sprint 48 Progress:** 3/3 Phases (**100% HOÀN TẤT**).
+  - Phase 1: Duyên Định Cung Đình (Astrological Compatibility + Thẻ Story 9:16).
+  - Phase 2: Ngự Phán Phòng Toàn Năng (Global AI Divination Chat + Audio Ducking + TTS).
+  - Phase 3: Khâm Thiên Giám Ngự Báo (Daily Horoscope JD + Local Notification 07:00 AM).
 
 1. **Sprint 39 Ticket 39.1 (DONE):**
    - Cấu hình Keystore signing và build bản phát hành Google Play App Bundle (`.aab`).
@@ -152,36 +152,44 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
     - **Ticket 2 (Xem Chỉ Tay AI - Palmistry Vision Scan)**: Tích hợp endpoint `/api/vision/palm-reading` trên Mobile. Augmented HUD Scanner chuyên biệt: Đường Sinh Đạo, Trí Đạo, Tâm Đạo phát sáng vàng kim và phân tích tướng tay vận mệnh theo thuật số Á Đông.
     - **Ticket 3 (RevenueCat Live Configuration & Subscriptions)**: Tích hợp `purchases_flutter` & `purchases_ui_flutter`. Cấu hình API key `test_QfXsSSzoZikwOkSepsWCLSUiUSF`, entitlement `tử_vi_toàn_tập_pro` (`tu_vi_toan_tap_pro`, `pro`) với 3 gói dịch vụ: Trọn Đời (`lifetime`), Năm (`yearly`), Tháng (`monthly`). Đồng bộ Supabase Auth an toàn với RevenueCat. Tích hợp Native Paywall Sheet và Customer Center trực tiếp trên `WalletScreen` và `HomeScreen`.
     - **Verification & Store Prep**: Hoàn tất 100% Verification Gates: `flutter analyze` (0 issues), `flutter test` (22/22 tests passed), `contracts` (125 tests passed), `web` (258 tests passed), `api` (439 tests passed). Release APK built thành công (**24.8MB**), stream install và khởi chạy mượt mà trên Samsung Galaxy A53 5G (`192.168.2.25:40805`).
+22. **Hoàn Thành Toàn Diện Sprint 48: Imperial Synergy & Khâm Thiên Giám Ngự Báo (10/09/2026)**
+    - **Phase 1 (Duyên Định Cung Đình - Astrological Compatibility)**: Thuật toán Bát Tự Hợp Hôn, tính toán điểm số ngũ hành tương sinh/khắc, Can Chi hợp hóa, 4 trụ tương hợp, Thẻ Story 9:16 chia sẻ mạng xã hội sang trọng.
+    - **Phase 2 (Ngự Phán Phòng Toàn Năng - Global AI Divination Chat)**: Phòng vấn an Khâm Thiên Giám độc lập, stream ngự phán tri thức phong thủy, tích hợp `AudioDuckingService` (tự động hạ âm nền xuống 20% khi phát giọng đọc AI TTS) và khôi phục mượt mà khi ngắt kết nối.
+    - **Phase 3 (Khâm Thiên Giám Ngự Báo - Daily Horoscope & Morning Notification)**:
+      - `DailyHoroscopeService`: Thuật toán Julian Day Number (JD) thiên văn xác định Can Chi ngày chuẩn xác, 12 Trực nhật, 28 Sao Nhị Thập Bát Tú, 6 Giờ Hoàng Đạo, Hướng xuất hành Cát Thần (Tài thần/Hỷ thần/Hạc thần), Lời ngự phê Khâm Thiên Giám đầu ngày kèm In-memory Daily Cache.
+      - `DailyNotificationService`: Riverpod StateNotifier lên lịch thông báo cục bộ 07:00 sáng mỗi ngày, format chỉ dụ cát tường.
+      - `RoyalDailyHoroscopeCard` & `RoyalHoroscopeSheet`: Bento Card thời gian thực trên `HomeScreen`, thư tín cuộn chỉ dụ Khâm Thiên Giám cổ phong, ấn triện son `NGỰ PHÊ`, nút chuông thông báo xúc giác Haptic Feedback.
+    - **Verification & Security Audit**: Đạt **1.062 / 1.062 tests passed 100%** trên toàn bộ monorepo (Mobile: 111, API: 478, Web: 303, Contracts: 135, Astro-Engine: 35), `flutter analyze` 0 issues. Quét sạch file nhạy cảm và di chuyển `demoapp.pem` ra ngoài repo.
 
 ---
 
 ## 📊 Trạng Thái Kiểm Thử (Verification Gates)
-- **Shared Contracts Build & Test**: ✅ `pnpm -F @ziweiai/contracts build && pnpm -F @ziweiai/contracts test` (16/16 files, 125 tests passed)
-- **Backend API**: ✅ `pnpm -F @ziweiai/api test` (72/72 files, 439 tests passed)
-- **Web SvelteKit**: ✅ `pnpm -F @ziweiai/web check` (0 errors) & `pnpm -F @ziweiai/web test` (47/47 files, 258 tests passed)
+- **Shared Contracts Build & Test**: ✅ `pnpm -F @ziweiai/contracts build && pnpm -F @ziweiai/contracts test` (135 tests passed)
+- **Astro Engine Build & Test**: ✅ `pnpm -F @ziweiai/astro-engine test` (35 tests passed)
+- **Backend API**: ✅ `pnpm -F @ziweiai/api test` (77 files, 478 tests passed)
+- **Web SvelteKit**: ✅ `pnpm -F @ziweiai/web check` (0 errors) & `pnpm -F @ziweiai/web test` (56 files, 303 tests passed)
+- **Mobile Flutter**: ✅ `flutter analyze` (0 issues), `flutter test` (111/111 tests passed)
+- **Tổng số Unit/Integration Tests**: **1.062 / 1.062 Tests Passed (100% Xanh)**
 - **Playwright E2E**: ✅ `smoke.spec.ts` & `us-043-numerology.spec.ts` (100% Passed)
-- **Mobile Flutter**: ✅ `flutter analyze` (0 issues), `flutter test` (22/22 tests passed), `flutter build apk --release --target-platform android-arm64` (SUCCESS - 24.8MB)
-- **Samsung Galaxy A53 5G Test**: ✅ Cài đặt & khởi chạy thành công qua ADB Wi-Fi Debugging (`192.168.2.25:40805`)
 - **Vercel Demo Smoke**: ✅ `https://tuvitoantap.vercel.app` (HTTP 200 Root, API health, API features, SPA routes)
-- **Cron-Job.org Keep-Alive**: ✅ `Job #8346899 & #8346900 ACTIVE 24/7`
 
 ---
 
 ## ⚓ Rollback Anchor & Backup
-- **Safe Rollback Point**: `git reset --hard 3ad0f2c` (Chỉ dùng sau khi đã xác nhận và lưu backup stash)
+- **Safe Rollback Point (Sprint 48 Complete)**: `git reset --hard dcec554` (Chỉ dùng sau khi đã xác nhận và lưu backup stash)
 
 ---
 
 ## ⏳ Các Hạng Mục Tiếp Theo (Next Steps)
-- Merge Pull Request #2 vào nhánh `main` khi Đại Ka duyệt.
-- Gắn Release Tag `v1.0.0` trên GitHub.
-- Đóng gói Android App Bundle (.aab) và iOS IPA chuẩn bị nộp Store.
+- Merge nhánh `feature/sprint-48-imperial-synergy` vào nhánh chính khi Đại Ka duyệt.
+- Tùy chọn: Xây dựng endpoint `POST /divinations/chat` có `@RequireXU(1)` trên NestJS API để đồng bộ giao dịch XU trên database server khi mobile online.
+- Chuẩn bị đóng gói Store Release tiếp theo.
 
 ---
 
-## 🛡️ Quy Tắc Phát Triển (Development Rules)
+## 🛡️ Quy Tắc Phát Triển & Bảo Mật (Development & Security Invariants)
 - Mọi tính năng lớn mới bắt buộc phải rẽ nhánh (new branch) và tạo PR theo `/vibe-engineering-workflow` và `/vibe-git-manager`.
-- File `.env.local` là nguồn sự thật cho toàn bộ API key/Token, tuyệt đối KHÔNG commit vào Git.
+- Tuyệt đối không commit file `.pem`, `.key`, `.jks`, keystores, credentials hoặc `.env`.
 - Cập nhật lại file `CONTEXT.md` sau mỗi session hoặc khi hoàn thành mốc tính năng quan trọng.
 
 

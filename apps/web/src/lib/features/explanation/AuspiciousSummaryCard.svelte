@@ -367,4 +367,70 @@
     color: #ea580c;
     text-shadow: none;
   }
+
+  /* =========================================================================
+     PRINT STYLES (@media print)
+     ========================================================================= */
+  @media print {
+    .auspicious-summary {
+      background: #fafaf9 !important;
+      border: 1px solid #d6d3d1 !important;
+      box-shadow: none !important;
+      margin-bottom: 16px !important;
+      padding: 12px 16px !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .summary-header {
+      border-bottom: 1px solid #e7e5e4 !important;
+      padding-bottom: 8px !important;
+      margin-bottom: 10px !important;
+    }
+
+    .tier-title {
+      color: #78350f !important;
+    }
+
+    .tier-sub {
+      color: #44403c !important;
+      font-size: 9.5pt !important;
+    }
+
+    .tier-badge {
+      border: 1px solid #d97706 !important;
+      background: #fef3c7 !important;
+      color: #92400e !important;
+      box-shadow: none !important;
+    }
+
+    .columns {
+      gap: 12px !important;
+    }
+
+    .column {
+      background: #ffffff !important;
+      border: 1px solid #e7e5e4 !important;
+      padding: 10px !important;
+      box-shadow: none !important;
+    }
+
+    .col-title.text-gold {
+      color: #92400e !important;
+    }
+
+    .col-title.text-amber {
+      color: #c2410c !important;
+    }
+
+    .point-item {
+      color: #1f2937 !important;
+      font-size: 9pt !important;
+      line-height: 1.5 !important;
+    }
+
+    .bullet-gem {
+      text-shadow: none !important;
+    }
+  }
 </style>

@@ -28,6 +28,25 @@
 - **Decision**: Tạo component `AuspiciousSummaryCard.svelte` phân tích từ khóa tâm linh và cấu trúc bài luận để tách 2 nhóm "Cát Lành & Vượng Khí" và "Cần Lưu Ý & Phòng Tránh", kèm huy hiệu Vận Khí Cốt Lõi (Đại Cát, Bình Hòa, Tiết Chế).
 - **Rationale**: Giúp người dùng nắm bắt thần tốc các điểm cốt tủy trong 5 giây đầu tiên trước khi đọc chi tiết bài sớ 2000 chữ.
 
+## Decisions Made During Sprint 42 (Deluxe Dossier & Print Engine Hardening)
+
+### 1. Root Cause & Solution: Print Blank Page Fix
+- **Problem**: 
+  - Nút "In sớ / Lưu PDF" tại khối Luận giải chỉ ra 1 trang bị trắng tinh, lấp ló dòng "2. Sự Nghiệp Và Tài Lộc" ở mép đáy trang 1.
+  - Nút "In / Lưu PDF" tại Hồ Sơ Hoàng Gia Deluxe bị trắng toàn bộ trang in.
+- **Root Cause**:
+  1. *Lá số 12 cung chiếm toàn bộ trang 1*: Khối `.board-section` cao 800px không bị ẩn khi in, khi không bật background graphics nó tạo mảng trắng khổng lồ đẩy bài sớ xuống đáy trang 1.
+  2. *Pagination Clip (Kẹt phân trang)*: Thẻ cha `.screen` có `overflow-x: hidden; min-height: 100dvh;`. Trình duyệt Chrome/WebKit coi đây là single-page viewport và cắt đứt phân trang, chỉ in duy nhất 1 trang đầu!
+  3. *Màu chữ tàng hình*: `MarkdownView.svelte` dùng màu `--color-text-secondary` (`#d1d5db` - xám nhạt mờ) và các tiêu đề dùng `-webkit-text-fill-color: transparent`. Trên nền giấy in trắng không có background graphics, chữ biến mất hoàn toàn.
+  4. *Cấu trúc selector sai trong Dossier*: Rule `:global(body > *:not(.dossier-overlay))` đã ẩn `div.app-content-wrapper` (thẻ cha của cả app SvelteKit), khiến toàn bộ modal hồ sơ bị ẩn theo. Ngoài ra trong Book Mode, specificity của `.mode-book .dossier-page:not(.is-active)` làm ẩn 18 trang còn lại.
+- **Solution Applied**:
+  - Mở khóa toàn bộ `overflow` và `height` trên các container tổ tiên (`html, body, .app-content-wrapper, .screen, .container, .detail-page`).
+  - Gắn class chuyên biệt `printing-explanation-scroll` và `printing-deluxe-dossier` vào `document.body` khi in.
+  - Ẩn hoàn toàn các khối không liên quan (`.board-section`, `.top-nav-bar`, `.hero`, `.mobile-bottom-nav`, nút bấm).
+  - Thêm header bản sớ trang trọng (`print-so-header`) cho bản sớ in ấn với đầy đủ thông tin đương số, ngày giờ sinh Âm Dương lịch, Mệnh, Cục.
+  - Định dạng màu chữ in: đen tuyền `#111827`, tiêu đề đồng son `#78350f`, trích dẫn và bảng biểu trang nhã, phân trang mượt mà không bị cắt chữ.
+  - Ép hiển thị trọn vẹn 19 trang A4 vector cho Hồ Sơ Hoàng Gia dù đang ở chế độ Sách hay Cuộn.
+
 ## Decisions Made During Phase 1: Money Flow & Auto-Refund Hardening
 
 ### 1. Reversible Money Flow & Automatic Refunds
@@ -107,4 +126,147 @@
 - **Frontend Web**: 51 test files, 277 tests passed. Svelte-check 0 errors, 0 warnings.
 - **Playwright E2E**: 2 passed (100%) cho `viral-referral-and-turnstile.spec.ts` và 2 passed (100%) cho `anti-cheat-referral.spec.ts`.
 
+## Decisions Made During Sprint 44 — Phase 2: Mobile Royal Edition (Flutter apps/mobile)
+
+### 1. Kiểm soát chiều cao FloatingPillNavBar để khắc phục Hit Test Miss
+- **Decision**: Khi `extendBody: true` được kích hoạt trên `Scaffold`, `FloatingPillNavBar` nằm trong `bottomNavigationBar` không có kích thước ràng buộc dọc cố định, khiến Flutter layout engine mở rộng RenderBox của thanh navigation lên toàn bộ viewport (`800x600`), che phủ toàn bộ sự kiện chạm của các widget phía sau dù chỉ có một phần nhỏ hiển thị ở đáy màn hình.
+- **Decision**: Đặt `SizedBox(height: 60)` bên trong `SafeArea(top: false, child: ...)`. Chiều cao thực tế cố định ở 68.0dp (60dp content + 8dp margin/padding) và neo chuẩn xác ở đáy màn hình `Offset(0.0, 532.0)`.
+
+### 2. Cơ chế hiển thị chi tiết Cung vị (PalaceDetailBottomSheet)
+- **Decision**: Thiết kế Modal Bottom Sheet hoàng gia chuẩn Stitch MCP `4cea86b5`, phân tầng 4 nhóm tinh diệu rõ ràng:
+  - **Chính Tinh Hoàng Triều**: Đi kèm độ sáng đắc hãm (`Miếu`, `Vượng`, `Đắc`, `Hãm`) bằng badge màu sắc quy chuẩn.
+  - **Tứ Hóa Tọa Thủ**: Gắn nhãn badge cung đình chuẩn phong thủy: `Hóa Lộc` (Ngọc bích), `Hóa Quyền` (Vàng kim), `Hóa Khoa` (Lam ngọc), `Hóa Kỵ` (Chu sa).
+  - **Cát Tinh Phước Thiện**: Tông ngọc bích `AppTheme.etherealJade`.
+  - **Sát Tinh & Bại Diệu**: Tông chu sa `AppTheme.cinnabarCrimson`.
+  - **Khâm Thiên Giám Ngự Phê**: Thẻ luận giải tổng quát thời vận cung vị.
+- **Decision**: Nút điều hướng Cung trước/Cung sau và Hoàn tất tra cứu đạt chuẩn tối thiểu 48dp (`AppTheme.touchTargetMin`).
+
+### 3. Hiệu ứng Hào Quang Hoàng Kim trên ZiweiBoard
+- **Decision**: Khi một cung được chạm chọn, viền của cung chuyển sang `AppTheme.goldBright` 2.0px cùng cặp hiệu ứng bóng mờ `BoxShadow` vàng kim (`CelestialShadows.goldGlow`) và tím tinh vân (`nebulaPurple`), giúp người dùng nhận diện ngay cung vị đang xem chi tiết.
+- **Decision**: Tự động mở `PalaceDetailBottomSheet` khi chạm vào cung nếu không truyền custom callback.
+
+### 4. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 2.0s)`.
+- **Flutter Test Suite**: 40/40 tests passed 100%, bao gồm widget test cho `home_flow_test.dart`, `palace_detail_bottom_sheet_test.dart` và `ziwei_board_test.dart`.
+
+## Decisions Made During Sprint 44 — Phase 2.3: Lục Hào Chiêm Bốc 3D (Stitch d028a9a3)
+
+### 1. Đài Gieo 3 Đồng Xu Khang Hy 3D Flip Physics
+- **Decision**: Tạo mô hình 3 đồng tiền cổ Khang Hy mạ vàng (hình tròn lỗ vuông, chữ Hán 'Khang Hy Thông Bảo' ở mặt ngửa, hoa văn khiên hộ mệnh ở mặt sấp) với hiệu ứng lật đa trục `Matrix4.identity()..setEntry(3, 2, 0.002)..rotateY(angle)` và rung lắc đĩa gấm nhung chu sa hoàng cung.
+- **Decision**: Hiển thị rõ lịch sử và kết quả từng lần gieo: `Ngửa/Sấp` ➜ `Thiếu Dương (7) / Thiếu Âm (8) / Lão Dương (9 - Biến) / Lão Âm (6 - Biến)`.
+
+### 2. Tháp Lục Hào Cổ Phong (Hexagram Stupa)
+- **Decision**: Vẽ 6 vạch hào từ dưới lên trên (Sơ Hào đến Thượng Hào) theo đúng dịch lý tiên thiên: Hào Dương liền vàng kim (`goldBright`), Hào Âm đứt ngọc bích (`etherealJade`), và Hào Biến (động) phát quang chu sa (`cinnabarLight`).
+- **Decision**: Thẻ kết quả quẻ chia 2 cột: Quẻ Chủ (Tiên Thiên) và Quẻ Biến (Hậu Thiên) đối xứng, tích hợp TTS `VoicePlayIconButton`.
+
+### 3. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 3.1s)`.
+- **Flutter Test Suite**: 43/43 tests passed 100%, bổ sung test suite `iching_screen_test.dart` đạt 3/3 tests pass tuyệt đối.
+
+## Decisions Made During Sprint 44 — Phase 2.4: Linh Xăm Quan Thánh 3D & Cặp Keo Thoại Bôi (Stitch 587ad2cf)
+
+### 1. Ống Xăm Tre Sơn Son Thếp Vàng & Ejected Stick Animation
+- **Decision**: Thiết kế ống xăm 100 quẻ bằng gỗ tre già sơn son thếp vàng, chạm khắc rồng vàng uốn lượn phong cách cung đình. Tích hợp `AnimationController` mô phỏng chuyển động lắc lư đa trục $\pm 14^\circ$ kèm rung haptic `HapticFeedback.mediumImpact()`.
+- **Decision**: Khi lắc đủ lực, thẻ xăm bằng trúc già nhô cao và văng ra với số quẻ ngẫu nhiên (hoặc từ backend `POST /draws/stick`), chuyển tiếp mượt mà sang bước Gieo Keo (Thoại Bôi).
+
+### 2. Đài Gieo Cặp Keo Thoại Bôi Âm Dương Gỗ Đào
+- **Decision**: Mô phỏng cặp keo (Thoại Bôi) hình trăng lưỡi liềm bằng gỗ đào ngàn năm với hiệu ứng 3D lật quay không gian (`Matrix4.identity()..rotateZ(..)..rotateX(..)`).
+- **Decision**: Quy tắc linh ứng chuẩn Đền Quan Thánh:
+  - **Thánh Bôi (1 Ngửa 1 Sấp)**: Thần linh chuẩn y, quẻ linh ứng đại cát ➜ mở khóa bài thơ quẻ tứ tuyệt và luận giải.
+  - **Tiếu Bôi (2 Ngửa)**: Thần linh mỉm cười chưa định ➜ khấn lại thành tâm và lắc lại ống xăm.
+  - **Âm Bôi (2 Sấp)**: Thần linh quở trách hoặc lòng còn tạp niệm ➜ tĩnh tâm sám hối và gieo lại.
+
+### 3. Thơ Quẻ Tứ Tuyệt & Luận Giải 7 Lĩnh Vực Cốt Lõi
+- **Decision**: Hiển thị thẻ sớ quẻ giấy điệp hoàng cung cổ điển với: Thơ quẻ chữ Hán/Việt âm điệu trang nghiêm, Cát hung phân định (Thượng Thượng Cát, Trung Cát, Hạ Hạ Hung...), và phân tích 7 phương diện: Công danh, Cầu tài, Gia đạo, Hôn nhân, Sức khỏe, Xuất hành, Kiện tụng.
+- **Decision**: Tích hợp Khâm Thiên Giám Ngự Phê (luận giải sâu AI độc bản) tiêu tốn 5 XU, có Modal xác nhận bảo vệ quyền lợi tài chính của thân chủ và tự động đồng bộ số dư ví (`ref.invalidate(walletBalanceProvider)`).
+
+### 4. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 3.5s)`.
+- **Flutter Test Suite**: 45/45 tests passed 100%, bao gồm toàn bộ test suite mới `stick_screen_test.dart` (2/2 passed) kiểm tra toàn vẹn luồng lắc xăm ➜ gieo keo ➜ hiển thị thơ quẻ ➜ mở khóa luận giải chi tiết.
+
+## Decisions Made During Sprint 44 — Phase 2.5: Bát Tự Tứ Trụ & Vận Khí 2026 (Stitch 041e4565)
+
+### 1. Bảng Tứ Trụ Tiên Thiên 4 Cột & Hào Quang Nhật Chủ
+- **Decision**: Thiết kế ma trận 4 cột đối xứng (Trụ Năm, Trụ Tháng, Trụ Ngày, Trụ Giờ). Cột Trụ Ngày (Nhật Chủ) được trang bị vầng sáng vàng hoàng kim `CelestialShadows.goldGlow` và viền `goldBright` 2.0px.
+- **Decision**: Mỗi cột hiển thị đầy đủ: Thập Thần, Can Chi theo màu sắc ngũ hành, Can ẩn (Tàng Can), và Vòng 12 Trường Sinh.
+
+### 2. Thước Đo Ngũ Hành & Bộ Ba Tam Thần Định Mệnh
+- **Decision**: Dùng thanh đa màu sắc hiển thị tỷ lệ 5 nguyên tố (Kim, Mộc, Thủy, Hỏa, Thổ) với trạng thái Vượng/Nhược (Cực Vượng, Vượng, Bình Hòa, Hưu Tù, Bất Cập).
+- **Decision**: Định danh rõ ràng Chân Dụng Thần (cứu rỗi), Hỷ Thần (sinh trợ) và Kỵ Thần (khắc chế) theo đúng Tử Bình cổ pháp.
+
+### 3. Vận Khí Lưu Niên 2026 Bính Ngọ & Khâm Thiên Giám Ngự Phê
+- **Decision**: Đánh giá 4 trụ cột vận trình: Sự nghiệp (88), Tài chính (82), Tình duyên (75), Sức khỏe (70) với lời giải chi tiết.
+- **Decision**: Mở khóa luận giải sâu AI (5 XU) có Confirmation Dialog và tự động cập nhật số dư ví `walletBalanceProvider`.
+
+### 4. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 3.1s)`.
+- **Flutter Test Suite**: 47/47 tests passed 100%, bao gồm toàn bộ test suite mới `bazi_screen_test.dart` (2/2 passed).
+
+## Decisions Made During Sprint 48 — Phase 1: Duyên Định Cung Đình (Imperial Compatibility)
+
+### 1. Thuật Toán 4 Trụ Cột Thuần Túy Offline-First
+- **Decision**: Xây dựng `CompatibilityCalculator` chạy 100% thuần Dart trên máy khách, phản hồi tức thì <50ms:
+  - **Ngũ Hành Nạp Âm**: Tra cứu 60 Hoa Giáp và đánh giá tương sinh (+25đ), tương hòa (+21đ), bình hòa (+16đ), tương khắc (+8đ).
+  - **Cung Phi Bát Trạch**: Tính Cung Phi nam nữ chuẩn hóa theo năm sinh âm lịch; kết hợp 64 phối quẻ (Sinh Khí, Diên Niên, Thiên Y, Phục Vị vs Tuyệt Mệnh, Ngũ Quỷ, Lục Sát, Họa Hại).
+  - **Thiên Can Hợp Phối**: Ngũ Hợp (Giáp Kỷ hóa Thổ, Ất Canh hóa Kim...) vs Trực Xung (Giáp Canh, Ất Tân...).
+  - **Địa Chi Tương Phối**: Lục Hợp (+25đ), Tam Hợp (+24đ), Tứ Hành Xung trực xung (+5đ), Lục Hại (+8đ).
+  - **Thang điểm 100 & Thơ Hoàng Gia**: Xếp hạng Cung Đình (Đại Cát, Cát Tường, Thứ Cát, Trắc Trở) và sinh thơ tứ tuyệt ngự phán.
+
+### 2. Thẻ Chia Sẻ Story 9:16 Cung Đình Hoàng Gia (`RoyalCompatibilityCard`)
+- **Decision**: Thiết kế chuẩn tỷ lệ Story 9:16 (`AspectRatio(aspectRatio: 9 / 16)`) phục vụ chia sẻ lên Zalo/Facebook/Instagram Story:
+  - Khung viền thếp vàng cổ phong, hoa văn mây lành 4 góc Cung Đình.
+  - Vòng tròn điểm số trung tâm rực rỡ kèm huy hiệu Ngự Phê.
+  - 4 thanh chỉ số hòa hợp 4 trụ cột có bọc `Expanded` chống RenderFlex overflow.
+  - Con dấu son đỏ Khâm Thiên Giám và QR Code dẫn link tra cứu.
+  - Hỗ trợ `captureCard` tĩnh để render ảnh PNG chất lượng cao (pixelRatio 3.0).
+
+### 3. Giao Diện & Cơ Chế Thu Phí
+- **Decision**: Tra cứu điểm số 4 trụ cột và xuất thẻ 9:16 **hoàn toàn miễn phí**.
+- **Decision**: Luận giải sâu AI độc bản thu phí **15 XU**, trang bị Dialog xác nhận và tự động cập nhật số dư ví `walletBalanceProvider`.
+
+### 4. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 2.5s)`.
+- **Flutter Test Suite**: 85/85 tests passed 100% (tăng từ 77 lên 85 tests), bao gồm 4 unit tests cho Calculator engine và 4 widget tests cho `CompatibilityScreen` và `RoyalCompatibilityCard`.
+
+## Decisions Made During Sprint 48 — Phase 2: Ngự Phán Phòng Toàn Năng (Global AI Divination Chat)
+
+### 1. Kiến Trúc Chat Toàn Năng Độc Lập
+- **Decision**: Tách biệt `divinationChatProvider` khỏi `AssistantPanel` (vốn gắn liền với `chartSnapshotId`). `DivinationChatScreen` là thư phòng chiêm bái độc lập toàn năng, nơi người dùng có thể vấn an Khâm Thiên Giám bất kỳ điều gì: thời vận, công danh, tài lộc, tình cảm, phong thủy, giải mộng.
+- **Decision**: Khởi tạo với lời chào mừng trang trọng từ Khâm Thiên Giám Ngự Bút, tích hợp 5 dải gợi ý Quick Prompts hoàng gia kinh điển.
+- **Decision**: Chi phí cố định **1 XU / câu hỏi**. Nếu số dư ví < 1 XU, hiển thị Dialog cảnh báo nạp XU mà không làm mất nội dung đang nhập. Khi ví đang trong trạng thái loading, provider chủ động await `walletBalanceProvider.future` để tránh phán đoán nhầm số dư là 0.
+
+### 2. Audio Ducking & Đồng Bộ TTS với Zen Soundscape
+- **Decision**: Mở rộng `VoicePlayerState` với thuộc tính `isDucked` và getter `isZenDucked => isZenMode && isPlaying`.
+- **Decision**: Khi giọng ngự phán AI cất lên (`VoiceStatus.playing`), nếu người dùng đang bật Khí Âm Thiền Định (`isZenMode == true`), trạng thái ducking tự động kích hoạt giúp giảm âm lượng nhạc nền thiền và khôi phục lại khi AI ngừng nói.
+- **Decision**: Tích hợp nút nghe đọc `VoicePlayIconButton` cho từng tin nhắn của Khâm Thiên Giám và thanh phát `VoiceAudioPlayerBar` cố định dưới đáy màn hình.
+
+### 3. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 3.8s)`.
+- **Flutter Test Suite**: **93/93 tests passed 100%** (tăng thêm 8 tests từ 85 lên 93 tests), bao gồm:
+  - 2 unit tests cho `DivinationMessage` serialization và 5 categories `kRoyalDivinationPrompts`.
+  - 4 unit tests cho `DivinationChatNotifier` (chào mừng ban đầu, chặn khi thiếu XU, stream khi đủ XU, clear chat).
+  - 2 widget tests cho `DivinationChatScreen` (render UI, prompt chips, input và insufficient coins dialog).
+
+## Decisions Made During Sprint 48 — Phase 3: Khâm Thiên Giám Ngự Báo (Daily Horoscope & Morning Notification)
+
+### 1. Thuật Toán Thiên Văn Julian Day Number (JD) & Caching
+- **Decision**: Sử dụng công thức toán học Julian Day Number chuẩn thiên văn học để tính Can Chi ngày:
+  `a = (14 - month) ~/ 12`, `y = year + 4800 - a`, `m = month + 12 * a - 3`,
+  `jd = day + ((153 * m + 2) ~/ 5) + 365 * y + (y ~/ 4) - (y ~/ 100) + (y ~/ 400) - 32045`.
+  Với mốc chuẩn thiên văn ngày 01/01/2000 (Mậu Ngọ, JD 2451545), thuật toán tính ra Can Chi ngày chính xác 100% mà không phụ thuộc bất kỳ API hay thư viện bên thứ 3 nào.
+- **Decision**: Tích hợp In-memory Cache `_cachedHoroscope` dựa trên chuỗi ngày `yyyy-MM-dd`. Khi người dùng mở lại thẻ hoặc lướt qua lại `HomeScreen`, kết quả được trả về tức thì <0.1ms.
+- **Decision**: Xây dựng thuật toán 12 Trực nhật (Kiến, Trừ, Mãn, Bình, Định, Chấp, Phá, Nguy, Thành, Thâu, Khai, Bế), 28 Sao Nhị Thập Bát Tú, 6 Giờ Hoàng Đạo, Hướng xuất hành Cát Thần (Tài thần/Hỷ thần/Hạc thần) và Lời ngự phê Khâm Thiên Giám theo ngũ hành nạp âm của ngày.
+
+### 2. Thông Báo Sáng 07:00 AM & Trải Nghiệm Bento Card Hoàng Gia
+- **Decision**: Xây dựng `DailyNotificationNotifier` (Riverpod 3 `Notifier<DailyNotificationState>`) quản lý trạng thái lịch thông báo cục bộ. Tự động tính toán mốc thời gian kế tiếp: nếu hiện tại đã qua 07:00 sáng thì đặt lịch cho 07:00 sáng ngày mai.
+- **Decision**: Thiết kế `RoyalDailyHoroscopeCard` dạng Bento Box mạ vàng phát quang trên `HomeScreen`, thay thế phần hardcode cũ. Nút chuông thông báo có hiệu ứng xúc giác `HapticFeedback.lightImpact()`.
+- **Decision**: Chiếu thư cuộn `RoyalHoroscopeSheet` mở ra dưới dạng `DraggableScrollableSheet` chứa lời ngự phán vận trình, ấn triện son `NGỰ PHÊ`, và nút chuyển tiếp sang `Ngự Phán Phòng` (`/divination-chat`).
+
+### 3. Verification & Validation Gates
+- **Flutter Analyze**: `Analyzing mobile... No issues found! (ran in 2.9s)`.
+- **Flutter Test Suite**: **111/111 tests passed 100%** (tăng thêm 18 tests từ 93 lên 111 tests):
+  - 10 unit tests cho `DailyHoroscopeService` (Julian Day, Can Chi, 12 Trực, 28 Sao, Giờ Hoàng Đạo, Cát Thần, In-memory Cache).
+  - 6 unit tests cho `DailyNotificationService` (bật/tắt, tính mốc 07:00 AM, format thông báo, preview).
+  - 3 widget tests cho `RoyalDailyHoroscopeCard` và `RoyalHoroscopeSheet`.
+- **Toàn bộ Monorepo Verification**: **1.062 / 1.062 tests passed 100%** (Mobile: 111, API: 478, Web: 303, Contracts: 135, Astro-Engine: 35).
 

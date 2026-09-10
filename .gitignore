@@ -24,6 +24,7 @@ scripts/bin/harness-cli.exe
 agent/
 .kiro
 .codegraph/
+.gitnexus/
 .playwright-mcp/
 .codepilot-uploads/
 .headroom/
@@ -85,9 +86,9 @@ plans/reports/
 # ---------------------------------------------------------------------------
 .env
 .env.*
-!.env.example
 *.env
 *.env.*
+!**/.env.example
 *.local
 *.secret
 *.secrets

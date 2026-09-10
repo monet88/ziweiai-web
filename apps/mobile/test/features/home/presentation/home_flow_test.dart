@@ -129,6 +129,8 @@ void main() {
       ),
     );
 
+    // Let all entrance animations settle completely
+    await tester.pump(const Duration(seconds: 1));
 
     // Initial state: home screen
     expect(find.text('THÔNG TIN LẬP LÁ SỐ'), findsOneWidget);
@@ -136,6 +138,7 @@ void main() {
 
     // Enter data (optional, since there's default data)
     await tester.enterText(find.byType(TextField).first, '10');
+    await tester.pump(const Duration(milliseconds: 100));
 
     // Tap submit
     await tester.tap(find.text('LẬP LÁ SỐ TỬ VI'));

@@ -1,0 +1,8 @@
+# Mẫu cấu hình Keystore phát hành Google Play Store cho Hoàng Triều ViOS
+# Sao chép file này thành 'key.properties' tại thư mục 'apps/mobile/android/key.properties'
+# Lưu ý: Tuyệt đối KHÔNG commit file 'key.properties' thật hoặc file '*.jks / *.keystore' lên Git repo.
+
+keyAlias=upload
+keyPassword=YOUR_KEY_PASSWORD_HERE
+storePassword=YOUR_STORE_PASSWORD_HERE
+storeFile=/path/to/your/upload-keystore.jks

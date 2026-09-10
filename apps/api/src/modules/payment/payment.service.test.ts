@@ -134,5 +134,49 @@ describe('PaymentService', () => {
       });
       expect(mockWalletEngine.addXU).toHaveBeenCalledWith('user_rc', 500, 'topup');
     });
+
+    it('should correctly determine XU for vios_xu_50 and vios_xu_600 packages', async () => {
+      const payload50 = {
+        event: {
+          id: 'evt_rc_50',
+          type: 'INITIAL_PURCHASE',
+          app_user_id: 'user_royal_50',
+          product_id: 'vios_xu_50',
+          price: 69000,
+        } as any,
+        api_version: '1.0',
+      };
+
+      await service.processRevenueCatTransaction(payload50 as any);
+
+      expect(mockSupabaseClient.insert).toHaveBeenCalledWith({
+        owner_user_id: 'user_royal_50',
+        amount_vnd: 69000,
+        xu_added: 50,
+        revenuecat_transaction_id: 'evt_rc_50',
+      });
+      expect(mockWalletEngine.addXU).toHaveBeenCalledWith('user_royal_50', 50, 'topup');
+
+      const payload600 = {
+        event: {
+          id: 'evt_rc_600',
+          type: 'INITIAL_PURCHASE',
+          app_user_id: 'user_royal_600',
+          product_id: 'vios_xu_600',
+          price: 699000,
+        } as any,
+        api_version: '1.0',
+      };
+
+      await service.processRevenueCatTransaction(payload600 as any);
+
+      expect(mockSupabaseClient.insert).toHaveBeenCalledWith({
+        owner_user_id: 'user_royal_600',
+        amount_vnd: 699000,
+        xu_added: 600,
+        revenuecat_transaction_id: 'evt_rc_600',
+      });
+      expect(mockWalletEngine.addXU).toHaveBeenCalledWith('user_royal_600', 600, 'topup');
+    });
   });
 });

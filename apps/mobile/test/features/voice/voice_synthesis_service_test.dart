@@ -1,7 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ziweiai_mobile/core/services/voice_synthesis_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('cleanMarkdownForSpeech Helper Tests', () {
     test('cleans headers, bold, italics and markdown syntax cleanly', () {
       const rawMarkdown = '''
@@ -65,22 +68,39 @@ Hãy giữ tâm thanh tịnh `bình an` trong mọi quyết định.
       expect(state.speechRate, 1.0);
       expect(state.currentText, '');
       expect(state.title, '');
+      expect(state.isZenMode, isFalse);
     });
 
     test('copyWith updates state correctly', () {
       const state = VoicePlayerState();
       final updated = state.copyWith(
         status: VoiceStatus.playing,
-        currentText: 'Lá số tử vi của bạn rất vượng.',
-        title: 'Luận Giải Tử Vi',
+        currentText: 'Hello',
+        title: 'Title',
         speechRate: 1.2,
+        isZenMode: true,
       );
 
       expect(updated.status, VoiceStatus.playing);
       expect(updated.isPlaying, isTrue);
-      expect(updated.currentText, 'Lá số tử vi của bạn rất vượng.');
-      expect(updated.title, 'Luận Giải Tử Vi');
+      expect(updated.currentText, 'Hello');
+      expect(updated.title, 'Title');
       expect(updated.speechRate, 1.2);
+      expect(updated.isZenMode, isTrue);
+    });
+
+    test('toggleZenMode flips zen state properly', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(voiceSynthesisProvider.notifier);
+      expect(container.read(voiceSynthesisProvider).isZenMode, isFalse);
+
+      notifier.toggleZenMode();
+      expect(container.read(voiceSynthesisProvider).isZenMode, isTrue);
+
+      notifier.toggleZenMode();
+      expect(container.read(voiceSynthesisProvider).isZenMode, isFalse);
     });
   });
 }

@@ -9,29 +9,38 @@ class VoicePlayerState {
   final String currentText;
   final String title;
   final double speechRate;
+  final bool isZenMode;
+  final bool isDucked;
 
   const VoicePlayerState({
     this.status = VoiceStatus.idle,
     this.currentText = '',
     this.title = '',
     this.speechRate = 1.0,
+    this.isZenMode = false,
+    this.isDucked = false,
   });
 
   bool get isPlaying => status == VoiceStatus.playing;
   bool get isPaused => status == VoiceStatus.paused;
   bool get isIdle => status == VoiceStatus.idle;
+  bool get isZenDucked => isZenMode && isPlaying;
 
   VoicePlayerState copyWith({
     VoiceStatus? status,
     String? currentText,
     String? title,
     double? speechRate,
+    bool? isZenMode,
+    bool? isDucked,
   }) {
     return VoicePlayerState(
       status: status ?? this.status,
       currentText: currentText ?? this.currentText,
       title: title ?? this.title,
       speechRate: speechRate ?? this.speechRate,
+      isZenMode: isZenMode ?? this.isZenMode,
+      isDucked: isDucked ?? (isZenMode ?? this.isZenMode ? (status ?? this.status) == VoiceStatus.playing : false),
     );
   }
 }
@@ -93,9 +102,10 @@ class VoiceSynthesisNotifier extends Notifier<VoicePlayerState> {
   @override
   VoicePlayerState build() {
     _flutterTts = FlutterTts();
-    _initTts();
     ref.onDispose(() {
-      _flutterTts.stop();
+      try {
+        _flutterTts.stop().catchError((_) {});
+      } catch (_) {}
     });
     return const VoicePlayerState();
   }
@@ -247,6 +257,11 @@ class VoiceSynthesisNotifier extends Notifier<VoicePlayerState> {
     } else {
       await setSpeechRate(1.0);
     }
+  }
+
+  /// Toggle Zen Soundscape Mode (Khí Âm Thiền Định)
+  void toggleZenMode() {
+    state = state.copyWith(isZenMode: !state.isZenMode);
   }
 }
 

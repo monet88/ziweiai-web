@@ -36,11 +36,12 @@ class FloatingPillNavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 420),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+        child: SizedBox(
+          height: 60,
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 420),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(32),
               boxShadow: [
@@ -61,7 +62,7 @@ class FloatingPillNavBar extends StatelessWidget {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(32),
                     gradient: const LinearGradient(
@@ -95,9 +96,11 @@ class FloatingPillNavBar extends StatelessWidget {
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 250),
                             curve: Curves.easeOutCubic,
+                            constraints: const BoxConstraints(minHeight: AppTheme.touchTargetMin),
+                            alignment: Alignment.center,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
-                              vertical: 6,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(20),
@@ -120,6 +123,7 @@ class FloatingPillNavBar extends StatelessWidget {
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
                                   isSelected ? (item.activeIcon ?? item.icon) : item.icon,
@@ -150,6 +154,7 @@ class FloatingPillNavBar extends StatelessWidget {
                         ),
                       );
                     }),
+                  ),
                   ),
                 ),
               ),

@@ -49,4 +49,31 @@ export class ProfilesRepository extends SupabaseBaseRepository {
       return toReferralRecord(row, masked);
     });
   }
+
+  async updateFcmToken(userId: string, token: string, platform?: string): Promise<void> {
+    const { error } = await this.client
+      .from('profiles')
+      .update({
+        fcm_token: token,
+        device_platform: platform || 'mobile',
+        fcm_updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId);
+    this.throwIfError(error);
+  }
+
+  async listActiveFcmTokens(): Promise<Array<{ userId: string; token: string; platform?: string }>> {
+    const { data, error } = await this.client
+      .from('profiles')
+      .select('user_id, fcm_token, device_platform')
+      .not('fcm_token', 'is', null)
+      .neq('fcm_token', '');
+    this.throwIfError(error);
+    if (!data) return [];
+    return data.map((row: any) => ({
+      userId: row.user_id,
+      token: row.fcm_token,
+      platform: row.device_platform,
+    }));
+  }
 }

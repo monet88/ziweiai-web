@@ -30,6 +30,12 @@ export type AdminTopupResponse = z.infer<typeof adminTopupResponseSchema>;
 export const adminConfigSchema = z.record(z.string(), z.any());
 export type AdminConfigMap = z.infer<typeof adminConfigSchema>;
 
+export const updateAdminConfigSchema = z.object({
+  key: z.string().min(1, 'Config key must not be empty'),
+  value: z.any(),
+});
+export type UpdateAdminConfigRequest = z.infer<typeof updateAdminConfigSchema>;
+
 export const adminAuditLogSchema = z.object({
   id: z.string().optional(),
   action: z.string(),

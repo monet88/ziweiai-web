@@ -27,6 +27,15 @@ class AppTheme {
   static const Color nebulaPink = Color(0xFFFF4081); // Astral magenta
   static const Color starlight = Color(0xFFE2E8F0); // Shimmering star white
 
+  // Imperial Sacred Accents (Khâm Thiên Giám & Cát/Sát Tinh - Stitch MCP Royal Celestial)
+  static const Color cinnabarCrimson = Color(0xFF8B1D1D); // Triện son Khâm Thiên Giám, Sát tinh
+  static const Color cinnabarLight = Color(0xFFB82B2B); // Đỏ son tương tác, huy hiệu hoàng triều
+  static const Color nephriteJade = Color(0xFF1D6355); // Ngọc bích, Cát tinh, Sinh khí
+  static const Color etherealJade = Color(0xFF298A77); // Hào quang ngọc bích phát sáng
+
+  /// Touch Target Minimum (48x48dp) adhering strictly to /mobile-design thumb ergonomics
+  static const double touchTargetMin = 48.0;
+
   // Backwards-compatible aliases
   static const Color mysticalBg = cosmosDark;
   static const Color mysticalElevated = cosmosSurface;
@@ -183,6 +192,26 @@ class CelestialGradients {
     ],
     stops: [0.0, 0.35, 0.7, 1.0],
   );
+
+  static const LinearGradient cinnabarImperial = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFFB82B2B),
+      Color(0xFF8B1D1D),
+      Color(0xFF5C1010),
+    ],
+  );
+
+  static const LinearGradient jadeAuspicious = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF298A77),
+      Color(0xFF1D6355),
+      Color(0xFF134239),
+    ],
+  );
 }
 
 /// Shadows for depth and glowing aura
@@ -190,6 +219,22 @@ class CelestialShadows {
   static final List<BoxShadow> goldGlow = [
     BoxShadow(
       color: AppTheme.mysticalGold.withValues(alpha: 0.3),
+      blurRadius: 18,
+      spreadRadius: -2,
+    ),
+  ];
+
+  static final List<BoxShadow> cinnabarGlow = [
+    BoxShadow(
+      color: AppTheme.cinnabarCrimson.withValues(alpha: 0.35),
+      blurRadius: 18,
+      spreadRadius: -2,
+    ),
+  ];
+
+  static final List<BoxShadow> jadeGlow = [
+    BoxShadow(
+      color: AppTheme.etherealJade.withValues(alpha: 0.35),
       blurRadius: 18,
       spreadRadius: -2,
     ),

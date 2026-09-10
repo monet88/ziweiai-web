@@ -349,5 +349,106 @@
     color: #92400e;
     text-shadow: none;
   }
+
+  /* =========================================================================
+     PRINT STYLES (@media print) - Chuẩn Mực Văn Bản Giấy A4
+     ========================================================================= */
+  @media print {
+    .celestial-markdown {
+      color: #111827 !important;
+      font-size: 11pt !important;
+      line-height: 1.7 !important;
+      gap: 12px !important;
+    }
+
+    .paragraph {
+      color: #1f2937 !important;
+      margin-bottom: 8px !important;
+      orphans: 3;
+      widows: 3;
+    }
+
+    .heading {
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+      margin-top: 14pt !important;
+      margin-bottom: 6pt !important;
+    }
+
+    .heading.h1 {
+      font-size: 15pt !important;
+      color: #78350f !important;
+      background: none !important;
+      -webkit-background-clip: initial !important;
+      background-clip: initial !important;
+      -webkit-text-fill-color: initial !important;
+      border-bottom: 1.5pt solid #b45309 !important;
+      padding-bottom: 4pt !important;
+    }
+
+    .heading.h2 {
+      font-size: 13pt !important;
+      color: #92400e !important;
+    }
+
+    .heading.h3 {
+      font-size: 11.5pt !important;
+      color: #b45309 !important;
+    }
+
+    .heading-icon,
+    .heading-ornament,
+    .bullet,
+    .quote-icon,
+    .divider-star {
+      color: #b45309 !important;
+    }
+
+    .celestial-quote {
+      background: #fefce8 !important;
+      border-left: 3pt solid #b45309 !important;
+      box-shadow: none !important;
+      padding: 8pt 12pt !important;
+      margin: 10pt 0 !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .quote-content {
+      color: #78350f !important;
+      font-style: italic !important;
+    }
+
+    .table-wrapper {
+      background: #ffffff !important;
+      border: 1px solid #d1d5db !important;
+      box-shadow: none !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .celestial-table th {
+      background: #fef3c7 !important;
+      color: #78350f !important;
+      border-bottom: 1.5pt solid #d1d5db !important;
+      font-weight: 700 !important;
+    }
+
+    .celestial-table td {
+      color: #111827 !important;
+      border-bottom: 1px solid #e5e7eb !important;
+    }
+
+    .list-item {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      color: #1f2937 !important;
+    }
+
+    strong {
+      color: #92400e !important;
+      font-weight: 700 !important;
+    }
+  }
 </style>
 

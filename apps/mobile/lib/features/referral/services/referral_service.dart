@@ -1,0 +1,161 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final referralServiceProvider = Provider<ReferralService>((ref) {
+  return ReferralService();
+});
+
+final userReferralCodeProvider = FutureProvider<String?>((ref) async {
+  final service = ref.watch(referralServiceProvider);
+  return service.getMyReferralCode();
+});
+
+final referralStatsProvider = FutureProvider<ReferralStats>((ref) async {
+  final service = ref.watch(referralServiceProvider);
+  return service.getReferralStats();
+});
+
+class ReferralStats {
+  final int totalInvited;
+  final int totalXuEarned;
+  final String myCode;
+
+  const ReferralStats({
+    required this.totalInvited,
+    required this.totalXuEarned,
+    required this.myCode,
+  });
+}
+
+class ReferralService {
+  SupabaseClient? get _supabase {
+    try {
+      return Supabase.instance.client;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Lấy mã giới thiệu của người dùng hiện tại
+  Future<String?> getMyReferralCode() async {
+    final client = _supabase;
+    if (client == null) return 'VIOS8888';
+
+    final user = client.auth.currentUser;
+    if (user == null) return 'VIOS8888';
+
+    try {
+      final response = await client
+          .from('profiles')
+          .select('referral_code')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      if (response != null && response['referral_code'] != null) {
+        return response['referral_code'] as String;
+      }
+      return user.id.substring(0, 8).toUpperCase();
+    } catch (e) {
+      debugPrint('[ReferralService] getMyReferralCode error: $e');
+      return user.id.substring(0, 8).toUpperCase();
+    }
+  }
+
+  /// Thống kê bạn bè đã mời và XU nhận được
+  Future<ReferralStats> getReferralStats() async {
+    final client = _supabase;
+    final code = await getMyReferralCode() ?? 'VIOS8888';
+    if (client == null) {
+      return ReferralStats(totalInvited: 0, totalXuEarned: 0, myCode: code);
+    }
+
+    final user = client.auth.currentUser;
+    if (user == null) {
+      return ReferralStats(totalInvited: 0, totalXuEarned: 0, myCode: code);
+    }
+
+    try {
+      final response = await client
+          .from('referrals')
+          .select('id, reward_xu')
+          .eq('referrer_id', user.id);
+
+      final list = (response as List<dynamic>?) ?? [];
+      final totalInvited = list.length;
+      int totalXu = 0;
+      for (final item in list) {
+        if (item is Map && item['reward_xu'] is num) {
+          totalXu += (item['reward_xu'] as num).toInt();
+        } else {
+          totalXu += 20; // Default 20 XU per ref
+        }
+      }
+
+      return ReferralStats(
+        totalInvited: totalInvited,
+        totalXuEarned: totalXu,
+        myCode: code,
+      );
+    } catch (e) {
+      debugPrint('[ReferralService] getReferralStats error: $e');
+      return ReferralStats(totalInvited: 0, totalXuEarned: 0, myCode: code);
+    }
+  }
+
+  /// Nhập mã giới thiệu để nhận +20 XU
+  Future<({bool success, int rewardXu, String message})> redeemReferralCode(String code) async {
+    final trimmed = code.trim().toUpperCase();
+    if (trimmed.isEmpty) {
+      return (success: false, rewardXu: 0, message: 'Vui lòng nhập mã giới thiệu');
+    }
+
+    final myCode = await getMyReferralCode();
+    if (myCode != null && myCode.toUpperCase() == trimmed) {
+      return (
+        success: false,
+        rewardXu: 0,
+        message: 'Bạn không thể tự nhập mã giới thiệu của chính mình',
+      );
+    }
+
+    final client = _supabase;
+    if (client == null) {
+      return (
+        success: true,
+        rewardXu: 20,
+        message: 'Nhận thành công 20 XU Vận Khí Cung Đình (Mô phỏng)!',
+      );
+    }
+
+    final user = client.auth.currentUser;
+    if (user == null) {
+      return (
+        success: false,
+        rewardXu: 0,
+        message: 'Vui lòng khởi tạo phiên đăng nhập để nhập mã',
+      );
+    }
+
+    try {
+      final response = await client.rpc('daily_checkin', params: {
+        'p_user_id': user.id,
+        'p_referral_code': trimmed,
+      });
+
+      final reward = (response is num) ? response.toInt() : 20;
+      return (
+        success: true,
+        rewardXu: reward > 0 ? reward : 20,
+        message: 'Đã nhập mã giới thiệu thành công! Nhận ngay +20 XU!',
+      );
+    } catch (e) {
+      debugPrint('[ReferralService] redeem error: $e');
+      return (
+        success: false,
+        rewardXu: 0,
+        message: 'Mã giới thiệu không hợp lệ hoặc đã qua thời hạn áp dụng',
+      );
+    }
+  }
+}

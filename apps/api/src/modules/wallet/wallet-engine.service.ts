@@ -30,14 +30,24 @@ export class WalletEngineService {
    * Deduct XU atomically using log_xu_transaction RPC.
    * Returns true if successful, false if balance is insufficient or user not found.
    */
-  async deductXU(userId: string, amount: number, transactionType = 'ai_usage'): Promise<boolean> {
+  async deductXU(
+    userId: string,
+    amount: number,
+    transactionType = 'ai_usage',
+    actorEmail?: string,
+  ): Promise<boolean> {
     if (amount <= 0) return true;
 
-    const { data, error } = await this.client.rpc('log_xu_transaction', {
+    const rpcParams: Record<string, unknown> = {
       p_user_id: userId,
       p_amount: -amount,
       p_transaction_type: transactionType,
-    });
+    };
+    if (actorEmail) {
+      rpcParams.p_actor_email = actorEmail;
+    }
+
+    const { data, error } = await this.client.rpc('log_xu_transaction', rpcParams);
 
     if (error) {
       this.logger.error(`deductXU failed for user ${userId} (-${amount})`, error);

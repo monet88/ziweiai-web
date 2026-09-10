@@ -353,5 +353,26 @@
   :global([data-theme="light"]) .subtitle {
     color: #57534e;
   }
+
+  @media print {
+    .screen {
+      min-height: 0 !important;
+      height: auto !important;
+      overflow: visible !important;
+      position: static !important;
+      background: #ffffff !important;
+    }
+
+    .container {
+      max-width: 100% !important;
+      padding: 0 !important;
+      gap: 0 !important;
+      transform: none !important;
+    }
+
+    .top-nav-bar {
+      display: none !important;
+    }
+  }
 </style>
 

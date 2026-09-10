@@ -13,6 +13,12 @@ import '../../features/tarot/presentation/tarot_screen.dart';
 import '../../features/numerology/presentation/numerology_screen.dart';
 import '../../features/wallet/presentation/wallet_history_screen.dart';
 import '../../features/iching/presentation/iching_screen.dart';
+import '../../features/stick/presentation/stick_screen.dart';
+import '../../features/bazi/presentation/bazi_screen.dart';
+import '../../features/dossier/presentation/royal_dossier_screen.dart';
+import '../../features/referral/presentation/referral_screen.dart';
+import '../../features/compatibility/presentation/screens/compatibility_screen.dart';
+import '../../features/divination/presentation/screens/divination_chat_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -20,6 +26,14 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/',
       builder: (context, state) => const HomeScreen(),
+    ),
+    GoRoute(
+      path: '/compatibility',
+      builder: (context, state) => const CompatibilityScreen(),
+    ),
+    GoRoute(
+      path: '/divination-chat',
+      builder: (context, state) => const DivinationChatScreen(),
     ),
     GoRoute(
       path: '/charts/:id',
@@ -84,5 +98,23 @@ final appRouter = GoRouter(
       path: '/iching',
       builder: (context, state) => const IChingScreen(),
     ),
+    GoRoute(
+      path: '/stick',
+      builder: (context, state) => const StickScreen(),
+    ),
+    GoRoute(
+      path: '/bazi',
+      builder: (context, state) => const BaziScreen(),
+    ),
+    GoRoute(
+      path: '/dossier',
+      builder: (context, state) => const RoyalDossierScreen(),
+    ),
+    GoRoute(
+      path: '/referral',
+      builder: (context, state) => const ReferralScreen(),
+    ),
   ],
 );
+
+

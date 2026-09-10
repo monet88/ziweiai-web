@@ -129,15 +129,30 @@ export class PaymentService {
 
     const userId = event.app_user_id;
     let xuAdded = 0;
-    if (event.product_id.includes('100')) {
-      xuAdded = 100;
-    } else if (event.product_id.includes('500')) {
-      xuAdded = 500;
-    } else if (event.product_id.includes('2000')) {
+    const productId = event.product_id.toLowerCase();
+
+    if (productId.includes('2000')) {
       xuAdded = 2000;
+    } else if (productId.includes('600')) {
+      xuAdded = 600;
+    } else if (productId.includes('500')) {
+      xuAdded = 500;
+    } else if (productId.includes('120')) {
+      xuAdded = 120;
+    } else if (productId.includes('100')) {
+      xuAdded = 100;
+    } else if (productId.includes('50')) {
+      xuAdded = 50;
+    } else if (productId.includes('20')) {
+      xuAdded = 20;
     } else {
-      this.logger.warn(`Could not determine XU amount for product_id: ${event.product_id}`);
-      return;
+      const match = productId.match(/(\d+)/);
+      if (match) {
+        xuAdded = parseInt(match[1], 10);
+      } else {
+        this.logger.warn(`Could not determine XU amount for product_id: ${event.product_id}`);
+        return;
+      }
     }
 
     const amountPaid = event.price_in_purchased_currency || event.price || 0;

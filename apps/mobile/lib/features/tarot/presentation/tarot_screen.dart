@@ -6,6 +6,8 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/tarot_provider.dart';
+import '../data/models/tarot_models.dart';
+import 'widgets/royal_tarot_share_card.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../../ui/animated_background.dart';
@@ -95,6 +97,15 @@ class _TarotScreenState extends ConsumerState<TarotScreen> with SingleTickerProv
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          if (hasResult)
+            IconButton(
+              icon: const Icon(Icons.share_outlined, color: AppTheme.goldBright),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                RoyalTarotPreviewDialog.show(context, data: state.value!);
+              },
+              tooltip: 'Chia sẻ thiệp hoàng triều',
+            ),
           IconButton(
             icon: const Icon(Icons.refresh, color: AppTheme.goldBright),
             onPressed: () {
@@ -200,11 +211,17 @@ class _TarotScreenState extends ConsumerState<TarotScreen> with SingleTickerProv
                 
                 const SizedBox(height: 36),
                 
-                // Result Narrative
+                // Result Narrative & Royal Share Button
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 600),
                   child: hasResult
-                      ? _buildResultNarrative(state.value!.narrative)
+                      ? Column(
+                          children: [
+                            _buildResultNarrative(state.value!.narrative),
+                            const SizedBox(height: 20),
+                            _buildRoyalShareButton(state.value!),
+                          ],
+                        )
                       : const SizedBox.shrink(),
                 ),
               ],
@@ -467,4 +484,38 @@ class _TarotScreenState extends ConsumerState<TarotScreen> with SingleTickerProv
     );
   }
 
+  Widget _buildRoyalShareButton(TarotDraw resultData) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: CelestialGradients.imperialGold,
+        boxShadow: CelestialShadows.goldGlow,
+      ),
+      child: ElevatedButton.icon(
+        onPressed: () {
+          HapticFeedback.mediumImpact();
+          RoyalTarotPreviewDialog.show(context, data: resultData);
+        },
+        icon: const Icon(Icons.auto_awesome, color: Color(0xFF140D26), size: 18),
+        label: Text(
+          'XUẤT THIỆP HOÀNG TRIỀU (CHIA SẺ)',
+          style: GoogleFonts.cinzel(
+            color: const Color(0xFF140D26),
+            fontWeight: FontWeight.w900,
+            fontSize: 13,
+            letterSpacing: 1.0,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
+    );
+  }
 }

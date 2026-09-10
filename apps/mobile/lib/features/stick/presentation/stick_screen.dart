@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/stick_provider.dart';
 import '../data/models/stick_models.dart';
+import 'widgets/royal_sacred_stick_share_card.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../../ui/animated_background.dart';
@@ -151,6 +152,15 @@ class _StickScreenState extends ConsumerState<StickScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          if (hasResult)
+            IconButton(
+              icon: const Icon(Icons.share_outlined, color: AppTheme.goldBright),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                RoyalSacredStickPreviewDialog.show(context, data: state.value!);
+              },
+              tooltip: 'Chia sẻ thiệp hoàng triều',
+            ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: AppTheme.goldBright),
             onPressed: _reset,
@@ -186,6 +196,8 @@ class _StickScreenState extends ConsumerState<StickScreen>
                   _buildStickResultCard(state.value!),
                   const SizedBox(height: 22),
                   _buildImperialCommentary(state.value!.narrative),
+                  const SizedBox(height: 20),
+                  _buildRoyalShareButton(state.value!),
                 ],
               ],
             ),
@@ -911,6 +923,41 @@ class _StickScreenState extends ConsumerState<StickScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRoyalShareButton(StickDraw resultData) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: CelestialGradients.imperialGold,
+        boxShadow: CelestialShadows.goldGlow,
+      ),
+      child: ElevatedButton.icon(
+        onPressed: () {
+          HapticFeedback.mediumImpact();
+          RoyalSacredStickPreviewDialog.show(context, data: resultData);
+        },
+        icon: const Icon(Icons.auto_awesome, color: Color(0xFF140D26), size: 18),
+        label: Text(
+          'XUẤT THIỆP HOÀNG TRIỀU (CHIA SẺ)',
+          style: GoogleFonts.cinzel(
+            color: const Color(0xFF140D26),
+            fontWeight: FontWeight.w900,
+            fontSize: 13,
+            letterSpacing: 1.0,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
       ),
     );
   }

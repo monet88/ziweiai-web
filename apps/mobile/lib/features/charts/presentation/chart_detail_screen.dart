@@ -1,17 +1,15 @@
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:ziweiai_mobile/ui/premium_button.dart';
 import 'package:ziweiai_mobile/core/theme/app_theme.dart';
 import 'package:ziweiai_mobile/features/assistant/presentation/assistant_panel.dart';
 import 'package:ziweiai_mobile/features/charts/data/models/chart_snapshot.dart';
 import 'package:ziweiai_mobile/features/charts/presentation/ziwei_board.dart';
+import 'package:ziweiai_mobile/features/charts/presentation/widgets/royal_ziwei_share_card.dart';
 import 'package:ziweiai_mobile/features/charts/services/ziwei_pdf_service.dart';
 import 'package:ziweiai_mobile/ui/animated_background.dart';
 import 'package:ziweiai_mobile/ui/glass_panel.dart';
@@ -54,30 +52,8 @@ class _ChartDetailScreenState extends State<ChartDetailScreen>
   }
 
   Future<void> _shareChart(BuildContext context) async {
-    try {
-      final Uint8List? imageBytes =
-          await _screenshotController.capture(pixelRatio: 2.0);
-      if (imageBytes != null) {
-        final directory = await getTemporaryDirectory();
-        final imagePath = await File(
-          '${directory.path}/laso_${widget.chartData.chartRecord.id}.png',
-        ).create();
-        await imagePath.writeAsBytes(imageBytes);
-
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [XFile(imagePath.path)],
-            text: 'Xem lá số tử vi của tôi tại ZiweiAI',
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi chia sẻ: $e')),
-        );
-      }
-    }
+    HapticFeedback.mediumImpact();
+    RoyalZiweiPreviewDialog.show(context, chartData: widget.chartData);
   }
 
   Future<void> _exportPdf() async {
@@ -224,6 +200,27 @@ class _ChartDetailScreenState extends State<ChartDetailScreen>
                     extra: widget.chartData,
                   );
                 },
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFD700),
+                    foregroundColor: const Color(0xFF141026),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 4,
+                  ),
+                  icon: const Icon(Icons.auto_awesome, size: 18, color: Color(0xFF141026)),
+                  label: const Text(
+                    'XUẤT CHIẾU CHỈ HOÀNG TRIỀU',
+                    style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                  ),
+                  onPressed: () => _shareChart(context),
+                ),
               ),
               const SizedBox(height: 10),
               SizedBox(

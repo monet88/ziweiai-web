@@ -7,6 +7,7 @@ import 'core/env/env.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'core/services/push_notification_service.dart';
@@ -104,9 +105,13 @@ class ZiweiAiApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp.router(
       title: 'Tử Vi Toàn Tập',
-      theme: AppTheme.mystical,
+      theme: AppTheme.paperCalm,
+      darkTheme: AppTheme.mystical,
+      themeMode: themeMode,
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
       builder: (context, child) => GlobalPaywallWrapper(

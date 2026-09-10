@@ -39,6 +39,21 @@ class ApiClient {
           if (data is Map<String, dynamic>) {
             cost = data['cost'] ?? 0;
             featureName = data['featureName'] ?? featureName;
+            final message = (data['message'] ?? '').toString();
+            if (cost <= 0) {
+              if (message.contains('5 XU') || message.contains('Kinh Dịch') || message.contains('Lục Hào')) {
+                cost = 5;
+                if (featureName == 'Tính năng này') {
+                  featureName = 'Gieo Quẻ Lục Hào';
+                }
+              } else if (message.contains('1 XU')) {
+                cost = 1;
+              } else {
+                cost = 5;
+              }
+            }
+          } else {
+            cost = 5;
           }
           
           _ref.read(paywallProvider.notifier).show(

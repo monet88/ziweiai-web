@@ -9,6 +9,7 @@ import '../data/repositories/auth_repository.dart';
 import '../../wallet/providers/wallet_provider.dart';
 import '../../subscription/providers/subscription_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../../ui/animated_background.dart';
 import '../../../ui/glass_panel.dart';
 
@@ -153,6 +154,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final email = user?.email ?? (isAnonymous ? 'Khách Ẩn Danh' : 'Tài khoản thành viên');
     final isPro = ref.watch(isProUserProvider);
     final balanceAsync = ref.watch(walletBalanceProvider);
+    final currentThemeMode = ref.watch(themeModeProvider);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -397,6 +399,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ],
                       const Divider(color: Colors.white10, height: 1),
                       _buildListTile(
+                        icon: Icons.palette_outlined,
+                        title: 'Giao Diện Hoàng Triều',
+                        subtitle: _getThemeSubtitle(currentThemeMode),
+                        onTap: () => _showThemeSelectionDialog(context, currentThemeMode),
+                      ),
+                      const Divider(color: Colors.white10, height: 1),
+                      _buildListTile(
                         icon: Icons.security,
                         title: 'Chính Sách Bảo Mật & Điều Khoản',
                         onTap: () {
@@ -442,6 +451,112 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  String _getThemeSubtitle(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.system:
+        return 'Theo Hệ Thống Thiết Bị';
+      case ThemeMode.light:
+        return 'Hoàng Triều Bạch Giấy (Sáng)';
+      case ThemeMode.dark:
+        return 'Hoàng Triều Huyền Bí (Tối)';
+    }
+  }
+
+  void _showThemeSelectionDialog(BuildContext context, ThemeMode currentMode) {
+    HapticFeedback.lightImpact();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.cosmosSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AppTheme.mysticalGold, width: 1.2),
+        ),
+        title: Text(
+          'Chọn Giao Diện Hoàng Triều',
+          style: GoogleFonts.cinzel(
+            color: AppTheme.goldBright,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildThemeOption(
+              context: context,
+              title: 'Hoàng Triều Huyền Bí',
+              subtitle: 'Giao diện đen huyền kim sang trọng',
+              icon: Icons.dark_mode_outlined,
+              isSelected: currentMode == ThemeMode.dark,
+              mode: ThemeMode.dark,
+            ),
+            const Divider(color: Colors.white10, height: 1),
+            _buildThemeOption(
+              context: context,
+              title: 'Hoàng Triều Bạch Giấy',
+              subtitle: 'Giao diện thư quán truyền thống',
+              icon: Icons.light_mode_outlined,
+              isSelected: currentMode == ThemeMode.light,
+              mode: ThemeMode.light,
+            ),
+            const Divider(color: Colors.white10, height: 1),
+            _buildThemeOption(
+              context: context,
+              title: 'Theo Hệ Thống',
+              subtitle: 'Tự động thích ứng thiết bị',
+              icon: Icons.brightness_auto_outlined,
+              isSelected: currentMode == ThemeMode.system,
+              mode: ThemeMode.system,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('ĐÓNG', style: TextStyle(color: AppTheme.goldBright)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeOption({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool isSelected,
+    required ThemeMode mode,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isSelected ? AppTheme.goldBright : AppTheme.mysticalTextSecondary,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isSelected ? AppTheme.goldBright : AppTheme.mysticalText,
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          fontSize: 14,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 11),
+      ),
+      trailing: isSelected
+          ? const Icon(Icons.check_circle, color: AppTheme.goldBright, size: 20)
+          : null,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        ref.read(themeModeProvider.notifier).setThemeMode(mode);
+        Navigator.of(context).pop();
+      },
     );
   }
 

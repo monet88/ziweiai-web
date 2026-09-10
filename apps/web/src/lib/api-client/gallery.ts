@@ -1,5 +1,6 @@
 import {
-  royalGalleryShareRecordSchema,
+  royalGalleryListResponseSchema,
+  type RoyalGalleryListResponse,
   type SyncRoyalGalleryRequest,
   type SyncRoyalGalleryResponse,
   syncRoyalGalleryResponseSchema,
@@ -7,17 +8,14 @@ import {
 import { z } from 'zod';
 import { fetchJson } from './fetch-json';
 
-const galleryListResponseSchema = z.object({
-  items: z.array(royalGalleryShareRecordSchema),
-});
-
-export type GalleryListResponse = z.infer<typeof galleryListResponseSchema>;
+export type GalleryListResponse = RoyalGalleryListResponse;
 
 export function fetchGalleryShares(
   token: string,
   limit = 50,
-): Promise<GalleryListResponse> {
-  return fetchJson(`/gallery?limit=${limit}`, galleryListResponseSchema, { token });
+  offset = 0,
+): Promise<RoyalGalleryListResponse> {
+  return fetchJson(`/gallery?limit=${limit}&offset=${offset}`, royalGalleryListResponseSchema, { token });
 }
 
 export function syncGalleryShares(

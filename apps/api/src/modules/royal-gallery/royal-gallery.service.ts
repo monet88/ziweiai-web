@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import {
+  type RoyalGalleryListResponse,
   type RoyalGalleryShareRecord,
   type SyncRoyalGalleryRequest,
   type SyncRoyalGalleryResponse,
@@ -18,23 +19,44 @@ export class RoyalGalleryService {
   ) {}
 
   /**
-   * Lấy danh sách thiệp đang hoạt động của người dùng (chưa bị soft-delete)
+   * Lấy danh sách thiệp đang hoạt động của người dùng (hỗ trợ phân trang offset & limit)
    */
-  async listShares(userId: string, limit = 50): Promise<RoyalGalleryShareRecord[]> {
+  async listShares(
+    userId: string,
+    limit = 50,
+    offset = 0,
+  ): Promise<RoyalGalleryListResponse> {
+    // 1. Đếm tổng số lượng bản ghi chưa bị xóa
+    const { count, error: countErr } = await this.supabase
+      .from('royal_gallery_shares')
+      .select('*', { count: 'exact', head: true })
+      .eq('owner_user_id', userId)
+      .is('deleted_at', null);
+
+    if (countErr) {
+      this.logger.error(`[gallery] listShares count lỗi (userId=${userId}): ${countErr.message}`);
+    }
+
+    const total = count ?? 0;
+
+    // 2. Lấy trang dữ liệu theo khoảng offset -> offset + limit - 1
     const { data, error } = await this.supabase
       .from('royal_gallery_shares')
       .select('*')
       .eq('owner_user_id', userId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .range(offset, offset + limit - 1);
 
     if (error) {
       this.logger.error(`[gallery] listShares lỗi (userId=${userId}): ${error.message}`);
       throw new Error(`Database error: ${error.message}`);
     }
 
-    return this.mapAndSignRecords(data || []);
+    const items = await this.mapAndSignRecords(data || []);
+    const hasMore = offset + items.length < total;
+
+    return { items, total, hasMore };
   }
 
   /**

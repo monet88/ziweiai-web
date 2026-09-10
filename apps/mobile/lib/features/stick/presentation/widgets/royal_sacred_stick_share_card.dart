@@ -9,6 +9,7 @@ import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/royal_image_compressor.dart';
 import '../../../gallery/data/royal_gallery_service.dart';
 import '../../../gallery/models/royal_share_item.dart';
 import '../../../gallery/presentation/widgets/royal_seal_widget.dart';
@@ -525,13 +526,16 @@ class _RoyalSacredStickPreviewDialogState
         pixelRatio: 3.0,
       );
 
+      // Tối ưu hóa dung lượng: Nén sang WebP (Sprint 60)
+      final compressedBytes = await RoyalImageCompressor.compressToWebp(imageBytes);
+
       final directory = await getTemporaryDirectory();
       final prefix =
           _aspectRatio == RoyalAspectRatio.story9_16 ? 'story_9_16' : 'card_3_4';
       final imageFile = File(
-        '${directory.path}/thiep_linh_xam_${prefix}_${widget.data.stick.id}_${DateTime.now().millisecondsSinceEpoch}.png',
+        '${directory.path}/thiep_linh_xam_${prefix}_${widget.data.stick.id}_${DateTime.now().millisecondsSinceEpoch}.webp',
       );
-      await imageFile.writeAsBytes(imageBytes);
+      await imageFile.writeAsBytes(compressedBytes);
 
       // Lưu vào Thư Viện Hoàng Triều
       final stick = widget.data.stick;

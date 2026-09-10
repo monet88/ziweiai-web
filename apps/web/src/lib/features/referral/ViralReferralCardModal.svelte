@@ -2,6 +2,7 @@
   import { browser } from '$app/environment';
   import { generateQrMatrix } from './qr-matrix';
   import { toast } from '$lib/stores/toast';
+  import { canvasToWebpBlob, canvasToWebpDataUrl, triggerFileDownload } from '$lib/utils/image-compress';
   import {
     X,
     Download,
@@ -231,15 +232,21 @@
       const offscreenCanvas = document.createElement('canvas');
       renderCardToCanvas(offscreenCanvas, true); // High-res 2x (800x1120)
 
-      const dataUrl = offscreenCanvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = `ViOS_Thiep_Moi_${referralCode || 'VIP'}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      try {
+        const blob = await canvasToWebpBlob(offscreenCanvas, { quality: 0.88 });
+        const ext = blob.type === 'image/webp' ? 'webp' : 'png';
+        triggerFileDownload(blob, `ViOS_Thiep_Moi_${referralCode || 'VIP'}.${ext}`);
+      } catch {
+        const dataUrl = canvasToWebpDataUrl(offscreenCanvas, 0.88);
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `ViOS_Thiep_Moi_${referralCode || 'VIP'}.webp`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
 
-      toast.show('🎉 Đã tải thiệp mời thành công! Bạn có thể gửi ngay qua Zalo/Facebook.', 'success');
+      toast.show('🎉 Đã tải thiệp mời hoàng triều (WebP) thành công! Dung lượng siêu nhẹ, gửi ngay qua Zalo/Facebook.', 'success');
     } catch {
       toast.show('Không thể xuất ảnh thiệp mời, vui lòng thử lại.', 'danger');
     } finally {

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const String _kAudioMutedKey = 'vios_mobile_audio_muted';
 const String _kAudioVolumeKey = 'vios_mobile_audio_volume';
+const String _kOfflineRitualModeKey = 'vios_mobile_offline_ritual_mode';
 
 class RitualAudioService {
   AudioPlayer? _coinPlayer;
@@ -13,10 +14,12 @@ class RitualAudioService {
   AudioPlayer? _cardPlayer;
   bool _isMuted = false;
   double _volume = 0.85;
+  bool _offlineRitualMode = false;
   bool _initialized = false;
 
   bool get isMuted => _isMuted;
   double get volume => _volume;
+  bool get isOfflineRitualMode => _offlineRitualMode;
 
   AudioPlayer _getCoinPlayer() => _coinPlayer ??= AudioPlayer();
   AudioPlayer _getBowlPlayer() => _bowlPlayer ??= AudioPlayer();
@@ -29,6 +32,7 @@ class RitualAudioService {
       final prefs = await SharedPreferences.getInstance();
       _isMuted = prefs.getBool(_kAudioMutedKey) ?? false;
       _volume = prefs.getDouble(_kAudioVolumeKey) ?? 0.85;
+      _offlineRitualMode = prefs.getBool(_kOfflineRitualModeKey) ?? false;
       
       // Configure audio players for low latency sound effects
       try {
@@ -39,11 +43,48 @@ class RitualAudioService {
       } catch (e) {
         log('Native AudioPlayer setup skipped in current environment: $e');
       }
+
+      if (_offlineRitualMode) {
+        await preloadRitualSounds();
+      }
       
       _initialized = true;
-      log('RitualAudioService initialized (isMuted: $_isMuted, volume: $_volume)');
+      log('RitualAudioService initialized (isMuted: $_isMuted, volume: $_volume, offlineMode: $_offlineRitualMode)');
     } catch (e) {
       log('Failed to initialize RitualAudioService: $e');
+    }
+  }
+
+  Future<void> setOfflineRitualMode(bool enabled) async {
+    _offlineRitualMode = enabled;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_kOfflineRitualModeKey, enabled);
+      if (enabled) {
+        await preloadRitualSounds();
+      }
+    } catch (e) {
+      log('Failed to persist offline ritual mode state: $e');
+    }
+  }
+
+  Future<bool> toggleOfflineRitualMode() async {
+    final next = !_offlineRitualMode;
+    await setOfflineRitualMode(next);
+    return next;
+  }
+
+  /// Nạp sẵn toàn bộ âm thanh nghi lễ cung đình vào bộ nhớ đệm (Preload RAM Cache)
+  /// Đảm bảo phản hồi tức thì với độ trễ 0ms (Zero latency) khi offline hoặc chế độ máy bay
+  Future<void> preloadRitualSounds() async {
+    try {
+      await _getCoinPlayer().setSource(AssetSource('audio/coin_clink.wav'));
+      await _getBowlPlayer().setSource(AssetSource('audio/singing_bowl.wav'));
+      await _getStickPlayer().setSource(AssetSource('audio/stick_shake.wav'));
+      await _getCardPlayer().setSource(AssetSource('audio/card_flip.wav'));
+      log('[RitualAudioService] Preload toàn bộ âm thanh nghi lễ ngoại tuyến thành công');
+    } catch (e) {
+      log('[RitualAudioService] Preload audio fallback: $e');
     }
   }
 
@@ -200,3 +241,32 @@ final ritualAudioNotifierProvider =
 final ritualAudioVolumeProvider =
     NotifierProvider<RitualAudioVolumeNotifier, double>(RitualAudioVolumeNotifier.new);
 
+class OfflineRitualModeNotifier extends Notifier<bool> {
+  late final RitualAudioService _service;
+
+  @override
+  bool build() {
+    _service = ref.watch(ritualAudioServiceProvider);
+    _init();
+    return _service.isOfflineRitualMode;
+  }
+
+  Future<void> _init() async {
+    await _service.initialize();
+    state = _service.isOfflineRitualMode;
+  }
+
+  Future<void> toggle() async {
+    final next = !state;
+    state = next;
+    await _service.setOfflineRitualMode(next);
+  }
+
+  Future<void> setMode(bool enabled) async {
+    state = enabled;
+    await _service.setOfflineRitualMode(enabled);
+  }
+}
+
+final offlineRitualModeProvider =
+    NotifierProvider<OfflineRitualModeNotifier, bool>(OfflineRitualModeNotifier.new);

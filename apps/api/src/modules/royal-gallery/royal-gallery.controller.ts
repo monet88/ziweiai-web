@@ -38,9 +38,10 @@ export class RoyalGalleryController {
     @CurrentUser() user: AuthenticatedUser,
     @Query('limit', new ZodValidationPipe(z.coerce.number().int().min(1).max(100).default(50)))
     limit: number,
+    @Query('offset', new ZodValidationPipe(z.coerce.number().int().min(0).default(0)))
+    offset: number,
   ) {
-    const items = await this.galleryService.listShares(user.userId, limit);
-    return { items };
+    return this.galleryService.listShares(user.userId, limit, offset);
   }
 
   @Post('sync')

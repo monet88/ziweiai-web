@@ -67,3 +67,11 @@ export const syncRoyalGalleryResponseSchema = z.object({
 });
 
 export type SyncRoyalGalleryResponse = z.infer<typeof syncRoyalGalleryResponseSchema>;
+
+export const royalGalleryListResponseSchema = z.object({
+  items: z.array(royalGalleryShareRecordSchema),
+  total: z.number().int().nonnegative().optional(),
+  hasMore: z.boolean().optional(),
+});
+
+export type RoyalGalleryListResponse = z.infer<typeof royalGalleryListResponseSchema>;

@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Trang Thư Viện Hoàng Triều (Sprint 59 - Royal Gallery API & Multi-device Cloud Sync)
+  // Trang Thư Viện Hoàng Triều (Sprint 60 - Virtual Grid, Lazy Loading & Performance Optimization)
   // Kết nối qua API client, hỗ trợ Signed URL hiển thị ảnh thật, Zod validation
   import { onMount } from 'svelte';
   import { AppScaffold, EmptyStateCard, Spinner } from '$lib/components/ui';
@@ -12,7 +12,15 @@
   let loading = $state(true);
   let items = $state<RoyalGalleryShareRecord[]>([]);
   let selectedFilter = $state<string>('all');
+  let searchQuery = $state<string>('');
+  let sortOrder = $state<'newest' | 'oldest'>('newest');
   let previewItem = $state<RoyalGalleryShareRecord | null>(null);
+
+  // Virtual Lazy Chunking (Render theo lô 12 thiệp để giữ DOM siêu nhẹ)
+  const BATCH_SIZE = 12;
+  let visibleCount = $state<number>(BATCH_SIZE);
+  let loadedImages = $state<Record<string, boolean>>({});
+  let sentinelRef = $state<HTMLDivElement | null>(null);
 
   const filterOptions = [
     { key: 'all', label: 'Tất Cả', icon: '👑' },
@@ -27,11 +35,11 @@
     try {
       let cloudItems: RoyalGalleryShareRecord[] = [];
 
-      // 1. Tải từ API Backend nếu người dùng đã đăng nhập
+      // 1. Tải từ API Backend nếu người dùng đã đăng nhập (hỗ trợ phân trang limit 100)
       const token = auth.getAccessToken();
       if (token) {
         try {
-          const res = await fetchGalleryShares(token);
+          const res = await fetchGalleryShares(token, 100, 0);
           cloudItems = res.items || [];
         } catch (apiErr) {
           void apiErr;
@@ -76,9 +84,7 @@
         }
       }
 
-      items = Object.values(mergedRecords).sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+      items = Object.values(mergedRecords);
     } catch (loadErr) {
       void loadErr;
       items = [];
@@ -91,11 +97,57 @@
     loadGallery();
   });
 
-  const filteredItems = $derived(
-    selectedFilter === 'all'
-      ? items
-      : items.filter((i) => i.cardType === selectedFilter),
-  );
+  // Lọc và Sắp xếp
+  const filteredItems = $derived.by(() => {
+    let list = items;
+    if (selectedFilter !== 'all') {
+      list = list.filter((i) => i.cardType === selectedFilter);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (i) =>
+          i.title.toLowerCase().includes(q) ||
+          (i.subtitle && i.subtitle.toLowerCase().includes(q)) ||
+          (i.customSealName && i.customSealName.toLowerCase().includes(q)),
+      );
+    }
+    return [...list].sort((a, b) => {
+      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return sortOrder === 'newest' ? diff : -diff;
+    });
+  });
+
+  // Danh sách hiển thị theo Virtual Batch Chunking
+  const visibleItems = $derived(filteredItems.slice(0, visibleCount));
+  const hasMoreItems = $derived(visibleCount < filteredItems.length);
+
+  // Khi thay đổi bộ lọc, reset về batch đầu tiên
+  $effect(() => {
+    void selectedFilter;
+    void searchQuery;
+    void sortOrder;
+    visibleCount = BATCH_SIZE;
+  });
+
+  // Tự động lazy load khi người dùng cuộn tới sentinel
+  $effect(() => {
+    if (!sentinelRef) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreItems) {
+          visibleCount = Math.min(visibleCount + BATCH_SIZE, filteredItems.length);
+        }
+      },
+      { rootMargin: '240px' },
+    );
+    observer.observe(sentinelRef);
+    return () => observer.disconnect();
+  });
+
+  function loadMore() {
+    visibleCount = Math.min(visibleCount + BATCH_SIZE, filteredItems.length);
+  }
 
   function getCardTypeLabel(type: string): string {
     switch (type) {
@@ -175,6 +227,38 @@
       {/each}
     </div>
 
+    <!-- Search & Performance Toolbar (Sprint 60) -->
+    <div class="gallery-toolbar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          bind:value={searchQuery}
+          placeholder="Tìm thiệp theo tên, quẻ số, chú thích..."
+          class="search-input"
+        />
+        {#if searchQuery}
+          <button class="clear-search-btn" onclick={() => (searchQuery = '')} title="Xóa tìm kiếm">✕</button>
+        {/if}
+      </div>
+
+      <div class="toolbar-actions">
+        <div class="sort-selector">
+          <span class="sort-label">Thứ tự:</span>
+          <button
+            class="sort-toggle-btn"
+            onclick={() => (sortOrder = sortOrder === 'newest' ? 'oldest' : 'newest')}
+          >
+            {sortOrder === 'newest' ? '⏳ Mới Nhất' : '⌛ Cũ Nhất'}
+          </button>
+        </div>
+
+        <div class="items-counter">
+          <span>Hiển thị <strong>{visibleItems.length}</strong> / {filteredItems.length} thiệp</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Gallery Body -->
     {#if loading}
       <div class="loading-state">
@@ -183,12 +267,12 @@
       </div>
     {:else if filteredItems.length === 0}
       <EmptyStateCard
-        title="Chưa Có Thiệp Hoàng Triều Nào"
-        description="Khi bạn xuất thiệp chia sẻ Tử Vi, bốc Thẻ Xăm, rút bài Tarot hoặc gieo quẻ Kinh Dịch, các thiệp sẽ được lưu trữ tự động tại đây."
+        title={searchQuery ? "Không Tìm Thấy Thiệp Nào" : "Chưa Có Thiệp Hoàng Triều Nào"}
+        description={searchQuery ? `Không có thiệp nào khớp với từ khóa "${searchQuery}". Vui lòng thử lại.` : "Khi bạn xuất thiệp chia sẻ Tử Vi, bốc Thẻ Xăm, rút bài Tarot hoặc gieo quẻ Kinh Dịch, các thiệp sẽ được lưu trữ tự động tại đây."}
       />
     {:else}
       <div class="gallery-grid">
-        {#each filteredItems as item (item.id)}
+        {#each visibleItems as item (item.id)}
           <div class="gallery-card">
             <!-- Header Tags -->
             <div class="card-header">
@@ -200,15 +284,22 @@
               </span>
             </div>
 
-            <!-- Card Thumbnail / Visual Box -->
+            <!-- Card Thumbnail / Visual Box với Shimmer Skeleton Loading chống CLS -->
             <div class="card-visual">
               {#if item.imageUrl}
-                <img
-                  src={item.imageUrl}
-                  alt={item.title}
-                  class="card-preview-image"
-                  loading="lazy"
-                />
+                <div class="card-thumb-container">
+                  {#if !loadedImages[item.id]}
+                    <div class="thumb-shimmer"></div>
+                  {/if}
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    class="card-preview-image"
+                    class:is-loaded={loadedImages[item.id]}
+                    loading="lazy"
+                    onload={() => (loadedImages[item.id] = true)}
+                  />
+                </div>
               {:else}
                 <div class="card-emblem">
                   {#if item.cardType === 'ziwei'}📜
@@ -246,6 +337,15 @@
           </div>
         {/each}
       </div>
+
+      <!-- Virtual Infinite Scroll Sentinel & Load More Fallback (Sprint 60) -->
+      {#if hasMoreItems}
+        <div bind:this={sentinelRef} class="sentinel-container">
+          <button class="load-more-btn" onclick={loadMore}>
+            ✨ Tải Thêm Thiệp Hoàng Triều ({filteredItems.length - visibleCount} thiệp nữa)
+          </button>
+        </div>
+      {/if}
     {/if}
   </div>
 
@@ -426,6 +526,105 @@
     font-size: 0.75rem;
   }
 
+  /* Gallery Toolbar (Sprint 60) */
+  .gallery-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.85rem;
+    background: rgba(20, 13, 38, 0.6);
+    border: 1px solid rgba(212, 175, 55, 0.18);
+    border-radius: 10px;
+    backdrop-filter: blur(8px);
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 220px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 0.35rem 0.6rem;
+  }
+
+  .search-icon {
+    font-size: 0.85rem;
+    opacity: 0.7;
+  }
+
+  .search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 0.85rem;
+    outline: none;
+  }
+
+  .search-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .clear-search-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0 0.2rem;
+  }
+
+  .clear-search-btn:hover {
+    color: #fff;
+  }
+
+  .toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .sort-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .sort-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .sort-toggle-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    color: #ffd700;
+    border-radius: 4px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .sort-toggle-btn:hover {
+    background: rgba(212, 175, 55, 0.2);
+  }
+
+  .items-counter {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .items-counter strong {
+    color: #ffd700;
+  }
+
   /* Loading State */
   .loading-state {
     display: flex;
@@ -509,7 +708,7 @@
     background: #0f0a1c;
     border: 1px dashed rgba(212, 175, 55, 0.2);
     border-radius: 8px;
-    padding: 1.25rem 0.75rem;
+    padding: 1rem 0.75rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -520,12 +719,69 @@
     overflow: hidden;
   }
 
+  .card-thumb-container {
+    position: relative;
+    width: 100%;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .thumb-shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.04) 0%, rgba(255, 215, 0, 0.14) 50%, rgba(255, 215, 0, 0.04) 100%);
+    background-size: 200% 100%;
+    animation: shimmerAnim 1.8s infinite;
+    border-radius: 6px;
+  }
+
+  @keyframes shimmerAnim {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
   .card-preview-image {
     max-width: 100%;
     max-height: 120px;
     object-fit: cover;
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  .card-preview-image.is-loaded {
+    opacity: 1;
+  }
+
+  /* Sentinel Container & Load More Button */
+  .sentinel-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 0 1rem;
+  }
+
+  .load-more-btn {
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    color: #ffd700;
+    font-weight: 600;
+    padding: 0.65rem 1.6rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+  }
+
+  .load-more-btn:hover {
+    background: #ffd700;
+    color: #140d26;
+    box-shadow: 0 4px 18px rgba(255, 215, 0, 0.35);
   }
 
   .card-emblem {

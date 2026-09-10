@@ -341,12 +341,25 @@
         <h2 class="section-title" id="explanation-title">{copy.explanationTitle}</h2>
         {#if detail.isOwner}
           <p class="hint">{explanationHint}</p>
-          <PrimaryButton
-            label={explanation.hasResult ? copy.regenerateExplanation : explanationButtonLabel}
-            loading={explanation.isPending}
-            disabled={explanationBlocked}
-            onclick={explanation.generate}
-          />
+          <div class="explanation-actions-row">
+            <PrimaryButton
+              label={explanation.hasResult ? copy.regenerateExplanation : explanationButtonLabel}
+              loading={explanation.isPending}
+              disabled={explanationBlocked}
+              onclick={explanation.generate}
+            />
+            {#if explanation.isPending}
+              <button
+                type="button"
+                class="btn-abort-stream"
+                onclick={explanation.abort}
+                title="Dừng sinh luận giải"
+              >
+                <span class="stop-icon">■</span>
+                <span>Dừng luận giải</span>
+              </button>
+            {/if}
+          </div>
         {/if}
         {#if explanationBlocked}
           <NoticeBanner tone="warning" message={copy.explanationBlockedDescription} />
@@ -356,6 +369,14 @@
           <NoticeBanner tone="danger" message={explanation.errorMessage} />
         {:else if explanation.hasResult && explanation.renderedMarkdown}
           <div class="explanation-result-container">
+            {#if explanation.isPending || explanation.isStreaming}
+              <div class="streaming-hud-banner">
+                <span class="pulse-dot"></span>
+                <span class="streaming-hud-text">Khâm Thiên Giám đang truyền thiên cơ từng câu chữ...</span>
+                <button type="button" class="streaming-abort-chip" onclick={explanation.abort}>Dừng sinh</button>
+              </div>
+            {/if}
+
             <!-- Bản Sớ Header (Chỉ xuất hiện khi in ra giấy hoặc lưu PDF) -->
             <header class="print-so-header">
               <div class="so-emblem">✦ VIOS KHÂM THIÊN GIÁM ✦</div>
@@ -383,6 +404,9 @@
             />
             <article class="result surface-glass printable-content">
               <MarkdownView markdown={explanation.renderedMarkdown} />
+              {#if explanation.isPending || explanation.isStreaming}
+                <span class="live-streaming-cursor">▍</span>
+              {/if}
             </article>
           </div>
         {:else}
@@ -579,6 +603,97 @@
     line-height: 1.5;
   }
 
+  .explanation-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: var(--space-md, 16px);
+  }
+
+  .btn-abort-stream {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: var(--radius-md, 8px);
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-abort-stream:hover {
+    background: rgba(239, 68, 68, 0.28);
+    border-color: #ef4444;
+    color: #fee2e2;
+  }
+
+  .streaming-hud-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, rgba(30, 24, 48, 0.85) 0%, rgba(18, 14, 32, 0.95) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #fbbf24;
+    box-shadow: 0 0 10px #fbbf24;
+    animation: pulse-dot-anim 1.2s infinite ease-in-out;
+  }
+
+  @keyframes pulse-dot-anim {
+    0%, 100% { transform: scale(0.6); opacity: 0.4; }
+    50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 12px #fbbf24; }
+  }
+
+  .streaming-hud-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fef08a;
+    flex: 1;
+  }
+
+  .streaming-abort-chip {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .streaming-abort-chip:hover {
+    background: rgba(239, 68, 68, 0.35);
+    color: #fee2e2;
+  }
+
+  .live-streaming-cursor {
+    display: inline-block;
+    color: #ffd700;
+    font-size: 16px;
+    font-weight: 700;
+    margin-left: 4px;
+    animation: blink-cursor 0.9s step-end infinite;
+  }
+
+  @keyframes blink-cursor {
+    50% { opacity: 0; }
+  }
+
   .result {
     margin-top: 0;
     padding: var(--space-xl, 24px);
@@ -596,6 +711,36 @@
     background: #ffffff;
     border-color: rgba(180, 83, 9, 0.18);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  :global([data-theme="light"]) .btn-abort-stream {
+    background: #fee2e2;
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #b91c1c;
+  }
+
+  :global([data-theme="light"]) .btn-abort-stream:hover {
+    background: #fecaca;
+    color: #991b1b;
+  }
+
+  :global([data-theme="light"]) .streaming-hud-banner {
+    background: linear-gradient(135deg, #ffffff 0%, #fef3c7 100%);
+    border-color: rgba(180, 83, 9, 0.3);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  }
+
+  :global([data-theme="light"]) .streaming-hud-text {
+    color: #78350f;
+  }
+
+  :global([data-theme="light"]) .pulse-dot {
+    background-color: #b45309;
+    box-shadow: 0 0 10px #b45309;
+  }
+
+  :global([data-theme="light"]) .live-streaming-cursor {
+    color: #b45309;
   }
 
   @media (min-width: 1080px) {

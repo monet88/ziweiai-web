@@ -86,7 +86,9 @@
 
   :global([data-theme="light"]) .number-badge {
     background: radial-gradient(circle at 30% 30%, #ffffff 0%, #fef3c7 70%, #fde68a 100%);
-    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
+    border-color: #b45309;
+    color: #78350f;
+    box-shadow: 0 4px 12px rgba(180, 83, 9, 0.15);
   }
 
   :global([data-theme="light"]) .card-title {

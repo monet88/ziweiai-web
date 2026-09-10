@@ -698,4 +698,19 @@
   :global([data-theme="light"]) .reading-title {
     color: #78350f;
   }
+
+  :global([data-theme="light"]) .result-eyebrow {
+    color: #6b21a8;
+  }
+
+  :global([data-theme="light"]) .orient {
+    background: rgba(147, 51, 234, 0.1);
+    border-color: rgba(147, 51, 234, 0.35);
+    color: #6b21a8;
+  }
+
+  :global([data-theme="light"]) .reading :global(.markdown .paragraph),
+  :global([data-theme="light"]) .reading :global(.markdown .list-item) {
+    color: #1c1917;
+  }
 </style>

@@ -47,6 +47,7 @@ export function createAssistantModel(options: AssistantModelOptions) {
   let currentConversationId = $state<string | null>(null);
   let isGenerating = $state(false);
   let lastError = $state<string | null>(null);
+  let currentAbortController: AbortController | null = null;
 
   function getTokenOrThrow(): string {
     const token = auth.getAccessToken();
@@ -81,6 +82,7 @@ export function createAssistantModel(options: AssistantModelOptions) {
     if (isGenerating) return false;
     isGenerating = true;
     lastError = null;
+    currentAbortController = new AbortController();
 
     // Optimistic user message
     const displayContent = request.content ?? (request.quickPromptKey ? (QUICK_PROMPT_LABELS[request.quickPromptKey] ?? '') : '');
@@ -110,7 +112,7 @@ export function createAssistantModel(options: AssistantModelOptions) {
 
       let streamedText = '';
 
-      for await (const evt of streamConversationMessage(token, conversationId, request)) {
+      for await (const evt of streamConversationMessage(token, conversationId, request, currentAbortController.signal)) {
         if (evt.type === 'chunk') {
           streamedText += evt.delta;
           messages = [
@@ -137,10 +139,25 @@ export function createAssistantModel(options: AssistantModelOptions) {
         }
       }
 
-        // Invalidate detail queries so other views (future list) sync
-        await queryClient.invalidateQueries({ queryKey: ['conversation-detail', conversationId] });
-        return true;
+      // Invalidate detail queries so other views (future list) sync
+      await queryClient.invalidateQueries({ queryKey: ['conversation-detail', conversationId] });
+      return true;
     } catch (err) {
+      if (currentAbortController?.signal.aborted) {
+        // User aborted intentionally: keep streamed text, stop streaming flag
+        const lastIdx = messages.length - 1;
+        if (lastIdx >= 0 && messages[lastIdx].role === 'assistant') {
+          messages = [
+            ...messages.slice(0, lastIdx),
+            {
+              ...messages[lastIdx],
+              isStreaming: false,
+            },
+          ];
+        }
+        return true;
+      }
+
       // Roll back the optimistic turn ONLY if generation failed before completion (placeholder still
       // streaming): drop BOTH the user message and the assistant placeholder so a retry does not
       // duplicate the prompt or leave it orphaned without an answer. If the stream already emitted
@@ -156,6 +173,7 @@ export function createAssistantModel(options: AssistantModelOptions) {
       // false so callers can react (e.g. restore the composer input).
       return false;
     } finally {
+      currentAbortController = null;
       isGenerating = false;
     }
   }
@@ -189,6 +207,24 @@ export function createAssistantModel(options: AssistantModelOptions) {
     }));
   }
 
+  function abort(): void {
+    if (currentAbortController) {
+      currentAbortController.abort();
+      currentAbortController = null;
+    }
+    isGenerating = false;
+    const lastIdx = messages.length - 1;
+    if (lastIdx >= 0 && messages[lastIdx].role === 'assistant' && messages[lastIdx].isStreaming) {
+      messages = [
+        ...messages.slice(0, lastIdx),
+        {
+          ...messages[lastIdx],
+          isStreaming: false,
+        },
+      ];
+    }
+  }
+
   return {
     get messages(): AssistantMessageView[] {
       return messages;
@@ -204,6 +240,7 @@ export function createAssistantModel(options: AssistantModelOptions) {
     },
     sendText,
     sendQuickPrompt,
+    abort,
     resetForNewConversation,
     loadFromRecords,
   };

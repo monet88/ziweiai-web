@@ -33,6 +33,7 @@ export function createExplanation(
 export async function* streamExplanation(
   token: string,
   request: CreateExplanationRequest,
+  signal?: AbortSignal,
 ): AsyncGenerator<ExplanationStreamEvent> {
   const res = await fetch(buildUrl(env.apiBaseUrl, '/explanations/stream'), {
     method: 'POST',
@@ -41,6 +42,7 @@ export async function* streamExplanation(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(request),
+    signal,
   });
 
   if (!res.ok || !res.body) {
@@ -62,6 +64,7 @@ export async function* streamExplanation(
     let buffer = '';
 
     while (true) {
+      if (signal?.aborted) break;
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
@@ -97,6 +100,11 @@ export async function* streamExplanation(
         yield parsed.data;
       }
     }
+  } catch (err) {
+    if (signal?.aborted || (err instanceof Error && err.name === 'AbortError')) {
+      return;
+    }
+    throw err;
   } finally {
     reader.cancel().catch(() => {});
     reader.releaseLock();
@@ -148,6 +156,7 @@ export async function* streamConversationMessage(
   token: string,
   conversationId: string,
   request: CreateConversationMessageRequest,
+  signal?: AbortSignal,
 ): AsyncGenerator<ConversationStreamEvent> {
   const res = await fetch(buildUrl(env.apiBaseUrl, `/conversations/${conversationId}/messages/stream`), {
     method: 'POST',
@@ -156,6 +165,7 @@ export async function* streamConversationMessage(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(request),
+    signal,
   });
 
   if (!res.ok || !res.body) {
@@ -177,6 +187,7 @@ export async function* streamConversationMessage(
     let buffer = '';
 
     while (true) {
+      if (signal?.aborted) break;
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
@@ -212,6 +223,11 @@ export async function* streamConversationMessage(
         yield parsed.data;
       }
     }
+  } catch (err) {
+    if (signal?.aborted || (err instanceof Error && err.name === 'AbortError')) {
+      return;
+    }
+    throw err;
   } finally {
     reader.cancel().catch(() => {});
     reader.releaseLock();

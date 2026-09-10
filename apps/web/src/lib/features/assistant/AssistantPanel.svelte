@@ -59,11 +59,29 @@
   let inputValue = $state('');
   let transcriptContainer = $state<HTMLDivElement | null>(null);
   let copiedMessageId = $state<string | null>(null);
+  let isUserScrolledUp = $state(false);
 
-  // Auto-scroll transcript khi có tin nhắn mới hoặc đang streaming
+  function handleScroll() {
+    if (!transcriptContainer) return;
+    const distanceToBottom = transcriptContainer.scrollHeight - transcriptContainer.scrollTop - transcriptContainer.clientHeight;
+    isUserScrolledUp = distanceToBottom > 60;
+  }
+
+  function scrollToBottom() {
+    if (!transcriptContainer) return;
+    isUserScrolledUp = false;
+    transcriptContainer.scrollTo({
+      top: transcriptContainer.scrollHeight,
+      behavior: 'smooth',
+    });
+  }
+
+  // Auto-scroll transcript khi có tin nhắn mới hoặc đang streaming (chỉ khi user không chủ động cuộn lên đọc)
   $effect(() => {
     if (transcriptContainer && (assistant.isGenerating || assistant.messages.length > 0)) {
-      transcriptContainer.scrollTop = transcriptContainer.scrollHeight;
+      if (!isUserScrolledUp) {
+        transcriptContainer.scrollTop = transcriptContainer.scrollHeight;
+      }
     }
   });
 
@@ -75,6 +93,7 @@
       inputValue = '';
     }
 
+    isUserScrolledUp = false;
     const ok = await assistant.sendText(text);
     if (!ok && !customText) {
       inputValue = text;
@@ -83,11 +102,13 @@
 
   async function handleQuickPrompt(key: QuickPromptKey) {
     if (assistant.isGenerating) return;
+    isUserScrolledUp = false;
     await assistant.sendQuickPrompt(key);
   }
 
   async function handleSmartPrompt(prompt: SmartAstroPrompt) {
     if (assistant.isGenerating) return;
+    isUserScrolledUp = false;
     await handleSendText(prompt.query);
   }
 
@@ -174,74 +195,93 @@
   </div>
 
   <!-- Chat Transcript -->
-  <div class="transcript-box" bind:this={transcriptContainer} aria-live="polite">
-    {#if assistant.messages.length === 0}
-      <!-- Welcome Greeting Card -->
-      <div class="welcome-card">
-        <div class="welcome-badge">✦ Đàm Đạo Cùng Khâm Thiên Giám ✦</div>
-        <h4 class="welcome-title">Kính chào Đương Số, tôi là ViOS Astrological Agent</h4>
-        <p class="welcome-text">
-          Toàn bộ cấu trúc tinh bàn, tương quan 12 cung, vị trí Tứ Hóa và lưu niên Bính Ngọ 2026 của bạn đã được tôi tiếp nhận.
-          Mỗi khúc mắc đều có căn nguyên từ cơ chế sao chiếu và vận hạn. Bạn muốn tôi làm rõ điều gì hôm nay?
-        </p>
-        <div class="welcome-suggestions">
-          <span class="sugg-hint">Chủ đề thường vấn đáp:</span>
-          <div class="sugg-tags">
-            <span class="sugg-tag">Đại hạn 10 năm</span>
-            <span class="sugg-tag">Cung Tài Bạch & Dòng tiền</span>
-            <span class="sugg-tag">Hôn nhân & Phu Thê</span>
-            <span class="sugg-tag">Hóa giải hung tinh</span>
+  <div class="transcript-wrapper">
+    <div
+      class="transcript-box"
+      bind:this={transcriptContainer}
+      onscroll={handleScroll}
+      aria-live="polite"
+    >
+      {#if assistant.messages.length === 0}
+        <!-- Welcome Greeting Card -->
+        <div class="welcome-card">
+          <div class="welcome-badge">✦ Đàm Đạo Cùng Khâm Thiên Giám ✦</div>
+          <h4 class="welcome-title">Kính chào Đương Số, tôi là ViOS Astrological Agent</h4>
+          <p class="welcome-text">
+            Toàn bộ cấu trúc tinh bàn, tương quan 12 cung, vị trí Tứ Hóa và lưu niên Bính Ngọ 2026 của bạn đã được tôi tiếp nhận.
+            Mỗi khúc mắc đều có căn nguyên từ cơ chế sao chiếu và vận hạn. Bạn muốn tôi làm rõ điều gì hôm nay?
+          </p>
+          <div class="welcome-suggestions">
+            <span class="sugg-hint">Chủ đề thường vấn đáp:</span>
+            <div class="sugg-tags">
+              <span class="sugg-tag">Đại hạn 10 năm</span>
+              <span class="sugg-tag">Cung Tài Bạch & Dòng tiền</span>
+              <span class="sugg-tag">Hôn nhân & Phu Thê</span>
+              <span class="sugg-tag">Hóa giải hung tinh</span>
+            </div>
           </div>
         </div>
-      </div>
-    {:else}
-      {#each assistant.messages as m, idx (idx)}
-        <div class={m.role === 'user' ? 'msg-row user-row' : 'msg-row assistant-row'}>
-          {#if m.role === 'assistant'}
-            <div class="avatar-cell">
-              <span class="mini-avatar">🔮</span>
-            </div>
-          {/if}
+      {:else}
+        {#each assistant.messages as m, idx (idx)}
+          <div class={m.role === 'user' ? 'msg-row user-row' : 'msg-row assistant-row'}>
+            {#if m.role === 'assistant'}
+              <div class="avatar-cell">
+                <span class="mini-avatar">🔮</span>
+              </div>
+            {/if}
 
-          <div class="msg-bubble" class:streaming={m.isStreaming}>
-            <div class="bubble-header">
-              <span class="sender-name">
-                {m.role === 'user' ? 'Đương số' : 'Khâm Thiên Giám AI'}
-              </span>
-              {#if m.role === 'assistant' && !m.isStreaming && m.content}
-                <button
-                  type="button"
-                  class="copy-btn"
-                  onclick={() => copyToClipboard(m.content, idx)}
-                  title="Sao chép lời luận giải"
-                >
-                  {#if copiedMessageId === `msg-${idx}`}
-                    ✓ Đã chép
-                  {:else}
-                    📋 Sao chép
-                  {/if}
-                </button>
-              {/if}
-            </div>
-
-            <div class="bubble-content">
-              {#if m.role === 'assistant' && !m.quickPromptKey}
-                <MarkdownView markdown={m.content} />
-                {#if m.isStreaming}
-                  <span class="streaming-cursor">▍</span>
+            <div class="msg-bubble" class:streaming={m.isStreaming}>
+              <div class="bubble-header">
+                <span class="sender-name">
+                  {m.role === 'user' ? 'Đương số' : 'Khâm Thiên Giám AI'}
+                </span>
+                {#if m.role === 'assistant' && !m.isStreaming && m.content}
+                  <button
+                    type="button"
+                    class="copy-btn"
+                    onclick={() => copyToClipboard(m.content, idx)}
+                    title="Sao chép lời luận giải"
+                  >
+                    {#if copiedMessageId === `msg-${idx}`}
+                      ✓ Đã chép
+                    {:else}
+                      📋 Sao chép
+                    {/if}
+                  </button>
                 {/if}
-              {:else}
-                <p class="plain-turn">
-                  {m.quickPromptKey ? (QUICK_PROMPT_LABELS[m.quickPromptKey] ?? m.content) : m.content}
+              </div>
+
+              <div class="bubble-content">
+                {#if m.role === 'assistant' && !m.quickPromptKey}
+                  <MarkdownView markdown={m.content} />
                   {#if m.isStreaming}
                     <span class="streaming-cursor">▍</span>
                   {/if}
-                </p>
-              {/if}
+                {:else}
+                  <p class="plain-turn">
+                    {m.quickPromptKey ? (QUICK_PROMPT_LABELS[m.quickPromptKey] ?? m.content) : m.content}
+                    {#if m.isStreaming}
+                      <span class="streaming-cursor">▍</span>
+                    {/if}
+                  </p>
+                {/if}
+              </div>
             </div>
           </div>
-        </div>
-      {/each}
+        {/each}
+      {/if}
+    </div>
+
+    {#if isUserScrolledUp}
+      <button
+        type="button"
+        class="scroll-bottom-pill"
+        onclick={scrollToBottom}
+        aria-label="Cuộn xuống tin mới nhất"
+      >
+        <span class="scroll-arrow">↓</span>
+        <span>Tin mới nhất</span>
+      </button>
     {/if}
   </div>
 
@@ -262,6 +302,17 @@
         rows={2}
         disabled={assistant.isGenerating}
       ></textarea>
+      {#if assistant.isGenerating}
+        <button
+          type="button"
+          class="btn-abort-agent"
+          onclick={() => assistant.abort()}
+          title="Dừng sinh văn bản"
+        >
+          <span class="stop-icon">■</span>
+          <span>Dừng</span>
+        </button>
+      {/if}
       <button
         type="button"
         class="btn-send-agent"
@@ -486,6 +537,11 @@
   }
 
   /* Transcript */
+  .transcript-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
   .transcript-box {
     background: rgba(10, 11, 16, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -498,6 +554,41 @@
     flex-direction: column;
     gap: 16px;
     scroll-behavior: smooth;
+  }
+
+  .scroll-bottom-pill {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(30, 34, 48, 0.95) 0%, rgba(20, 22, 32, 0.95) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 10px rgba(212, 175, 55, 0.25);
+    color: #fef08a;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: bounce-subtle 2s infinite;
+  }
+
+  .scroll-bottom-pill:hover {
+    background: linear-gradient(135deg, rgba(40, 46, 64, 1) 0%, rgba(26, 30, 44, 1) 100%);
+    border-color: #ffd700;
+    color: #ffd700;
+    transform: translateX(-50%) translateY(-2px);
+  }
+
+  @keyframes bounce-subtle {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-4px); }
   }
 
   /* Welcome Card */
@@ -751,6 +842,35 @@
   .composer-inner textarea:focus {
     border-color: #ffd700;
     box-shadow: 0 0 10px rgba(212, 175, 55, 0.25);
+  }
+
+  .btn-abort-agent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.3) 100%);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    font-weight: 700;
+    font-size: 13px;
+    border-radius: 10px;
+    padding: 12px 14px;
+    height: 46px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .btn-abort-agent:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.35) 0%, rgba(185, 28, 28, 0.5) 100%);
+    color: #fee2e2;
+    border-color: #ef4444;
+  }
+
+  .stop-icon {
+    font-size: 10px;
+    line-height: 1;
   }
 
   .btn-send-agent {
@@ -1015,5 +1135,29 @@
 
   :global([data-theme="light"]) .topup-link {
     color: #b45309;
+  }
+
+  :global([data-theme="light"]) .scroll-bottom-pill {
+    background: #ffffff;
+    border-color: rgba(180, 83, 9, 0.4);
+    color: #92400e;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  }
+
+  :global([data-theme="light"]) .scroll-bottom-pill:hover {
+    background: #fef3c7;
+    border-color: #d97706;
+    color: #78350f;
+  }
+
+  :global([data-theme="light"]) .btn-abort-agent {
+    background: #fee2e2;
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #b91c1c;
+  }
+
+  :global([data-theme="light"]) .btn-abort-agent:hover {
+    background: #fecaca;
+    color: #991b1b;
   }
 </style>

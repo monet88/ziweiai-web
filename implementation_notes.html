@@ -3,27 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Implementation Notes — Sprint 51: Hoàng Triều Store Launch & Phát Hành Toàn Cầu</title>
+  <title>Sprint 56: Royal Share Ecosystem - Implementation Notes</title>
   <style>
     :root {
-      --bg: #0b0c14;
-      --card-bg: rgba(20, 24, 38, 0.88);
-      --border: rgba(212, 175, 55, 0.35);
-      --gold: #d4af37;
-      --gold-bright: #ffd700;
-      --text-main: #f5f6fa;
-      --text-muted: rgba(245, 246, 250, 0.75);
-      --accent-green: #2ecc71;
-      --accent-blue: #38bdf8;
-      --cinnabar: #e74c3c;
+      --bg: #0d0e15;
+      --card-bg: #151824;
+      --text: #e2e8f0;
+      --accent: #e6b800;
+      --accent-glow: rgba(230, 184, 0, 0.25);
+      --border: #2d3748;
+      --success: #38a169;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
       line-height: 1.6;
-      padding: 30px 20px;
       margin: 0;
+      padding: 30px 20px;
     }
     .container {
       max-width: 960px;
@@ -33,150 +30,89 @@
       border-bottom: 1px solid var(--border);
       padding-bottom: 20px;
       margin-bottom: 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 15px;
     }
     h1 {
-      margin: 0;
-      font-size: 24px;
-      color: var(--gold-bright);
+      color: var(--accent);
+      margin: 0 0 10px 0;
+      font-size: 28px;
+      letter-spacing: 0.5px;
     }
     .badge {
-      background: rgba(46, 204, 113, 0.2);
-      border: 1px solid rgba(46, 204, 113, 0.5);
-      color: var(--accent-green);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 13px;
+      display: inline-block;
+      background: var(--success);
+      color: white;
+      font-size: 12px;
       font-weight: bold;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      text-transform: uppercase;
     }
-    .card {
+    .section {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 24px;
-      margin-bottom: 25px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      margin-bottom: 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
     }
     h2 {
+      color: var(--accent);
       margin-top: 0;
-      color: var(--gold);
-      font-size: 18px;
-      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
-      padding-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      font-size: 20px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
     }
-    ul, ol {
+    ul {
+      margin: 0;
       padding-left: 20px;
-      margin-bottom: 0;
     }
     li {
       margin-bottom: 10px;
     }
-    li:last-child {
-      margin-bottom: 0;
-    }
     code {
-      background: rgba(255, 255, 255, 0.1);
+      background: #1e2235;
+      color: #ffd700;
       padding: 2px 6px;
       border-radius: 4px;
-      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-      font-size: 0.9em;
-      color: var(--accent-blue);
-    }
-    .table-custom {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    .table-custom th, .table-custom td {
-      border: 1px solid rgba(212, 175, 55, 0.2);
-      padding: 10px 14px;
-      text-align: left;
-    }
-    .table-custom th {
-      background: rgba(212, 175, 55, 0.1);
-      color: var(--gold);
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <div>
-        <h1>Implementation Notes — Sprint 51</h1>
-        <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Dự án: ViOS — Tử Vi Toàn Tập (ziweiai-web)</div>
-      </div>
-      <div class="badge">● SPRINT 51: STORE LAUNCH & GLOBAL ROLLOUT</div>
+      <span class="badge">100% Hoàn Thành & Verified</span>
+      <h1>Sprint 56: Royal Share Ecosystem — Implementation Notes</h1>
+      <p>Chiếu Chỉ Tử Vi Khâm Thiên Giám, Thẻ Quẻ Thánh Hoàng Triều, Thẻ Huyền Học Tây Phương Tarot & Lenormand</p>
     </header>
 
-    <div class="card">
-      <h2>1. Các Quyết Định Thiết Kế Ngầm & Kiến Trúc (Architectural Decisions)</h2>
+    <div class="section">
+      <h2>1. Quyết Định Thiết Kế & Kiến Trúc (Architectural Decisions)</h2>
       <ul>
-        <li>
-          <strong>Khắc phục triệt để Auth Guard trên NotificationsController:</strong> Bổ sung decorator <code>@Public()</code> cho controller này để Vercel Cron và Admin request không bị chặn bởi global <code>SupabaseAuthGuard</code> với lỗi <em>"Thiếu bearer token"</em>. Cơ chế bảo vệ được chuyển sang kiểm tra <code>CRON_SECRET</code> và <code>ADMIN_SECRET</code> chuyên biệt.
-        </li>
-        <li>
-          <strong>Chuẩn hóa Store Metadata cho iOS:</strong> Cập nhật <code>CFBundleDisplayName</code> thành <code>Tử Vi Toàn Tập</code>. Bổ sung các Usage Descriptions bắt buộc gồm <code>NSCameraUsageDescription</code> và <code>NSPhotoLibraryUsageDescription</code> với lý do thuyết minh nghiệp vụ chiêm đoán nhân tướng và lưu lá số, loại bỏ nguy cơ Apple Review tự động reject.
-        </li>
-        <li>
-          <strong>Chính Sách Bảo Mật Chuẩn Store (Privacy Policy):</strong> Xây dựng route công khai <code>/privacy-policy</code> trên SvelteKit với giao diện hoàng triều, đáp ứng đầy đủ điều khoản về dữ liệu cá nhân, quyền thiết bị và quyền xóa tài khoản của Google Play và App Store.
-        </li>
-        <li>
-          <strong>Cấu hình Keystore An Toàn:</strong> Cung cấp template <code>key.properties.example</code> kết hợp cơ chế fallback debug signing tự động trong Gradle, đảm bảo pipeline đóng gói <code>.aab</code> luôn hoạt động mượt mà.
-        </li>
+        <li><strong>Ngôn Ngữ Thiết Kế Cung Đình Đồng Bộ:</strong> Kế thừa thành công của Thẻ Quẻ Lục Hào (Sprint 55), toàn bộ 3 phân hệ (Tử Vi, Thẻ Tre Linh Xăm, Tarot/Lenormand) đều ứng dụng viền kép mạ vàng <code>CelestialGradients.imperialGold</code>, ấn triện son đỏ cung đình và huy hiệu hoàng gia.</li>
+        <li><strong>Khắc Phục Lỗi Tràn Khung Màn Hình (RenderFlex Overflow):</strong> Sử dụng <code>FittedBox(fit: BoxFit.scaleDown)</code> trên các thanh 4 trụ Bát tự Can Chi và footer chứa ấn triện + QR Code, đảm bảo card 360pt co giãn hoàn hảo trên mọi kích thước thiết bị và độ phân giải xuất ảnh (pixelRatio 3.0).</li>
+        <li><strong>Tách Biệt Dialog Preview & Card Render:</strong> Mỗi phân hệ đều có 1 widget card độc lập (chuyên phục vụ <code>RepaintBoundary</code> để chụp ảnh) và 1 widget preview dialog hiển thị giao diện xem trước kèm nút Lưu Ảnh / Chia Sẻ.</li>
       </ul>
     </div>
 
-    <div class="card">
-      <h2>2. Sai Lệch So Với Đặc Tả Ban Đầu & Biện Minh (Deviations)</h2>
+    <div class="section">
+      <h2>2. Kết Quả Quality Gates (967 Tests Passed 100%)</h2>
       <ul>
-        <li>
-          <strong>Local Hardware Notification Trigger:</strong> Thiết bị Samsung Galaxy A53 (Android 14) nhận banner thông báo hoàng triều trực tiếp qua notification subsystem native của Android, cung cấp bằng chứng nghiệm thu thực tế trước khi cấu hình FCM project trên cloud.
-        </li>
+        <li><code>apps/mobile</code>: <code>flutter analyze</code> 0 issues, <code>flutter test</code> <strong>127/127 passed</strong>.</li>
+        <li><code>apps/api</code>: <code>typecheck</code> 0 errors, <code>pnpm test</code> <strong>496/496 passed</strong>.</li>
+        <li><code>apps/web</code>: <code>svelte-check</code> 0 errors 0 warnings, <code>pnpm test</code> <strong>309/309 passed</strong>.</li>
+        <li><code>packages/astro-engine</code>: <code>pnpm test</code> <strong>35/35 passed</strong>.</li>
+        <li><code>packages/contracts</code>: build 100% OK.</li>
       </ul>
     </div>
 
-    <div class="card">
-      <h2>3. Đánh Đổi Kỹ Thuật Đã Cân Nhắc (Considered Trade-offs)</h2>
-      <table class="table-custom">
-        <thead>
-          <tr>
-            <th>Giải Pháp Cân Nhắc</th>
-            <th>Ưu Điểm</th>
-            <th>Nhược Điểm</th>
-            <th>Lựa Chọn & Lý Do</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Gắn <code>@Public()</code> cho NotificationsController</td>
-            <td>Cron và Admin call không bị vướng Supabase Bearer token</td>
-            <td>Cần tự kiểm tra secret thủ công trong handler</td>
-            <td><strong>Được chọn:</strong> Phù hợp hoàn hảo với tiêu chuẩn HTTP trigger của Vercel Cron.</td>
-          </tr>
-          <tr>
-            <td>Phát hành qua Google Play App Bundle (AAB) thay vì APK</td>
-            <td>Kích thước tải về người dùng giảm 20-30%, Google Play tự tối ưu ABI</td>
-            <td>Không thể sideload trực tiếp mà cần trích xuất qua bundletool</td>
-            <td><strong>Được chọn:</strong> Yêu cầu bắt buộc của Google Play đối với ứng dụng mới.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="card">
-      <h2>4. Ghi Chú Bảo Trì & Quality Gates (Maintenance Notes)</h2>
+    <div class="section">
+      <h2>3. Vercel Production Deployment & Smoke Test</h2>
       <ul>
-        <li><strong>Backend API:</strong> <code>496/496 tests PASS 100%</code>, Typecheck 0 errors, Build sạch sẽ.</li>
-        <li><strong>Web Client:</strong> <code>303/303 tests PASS 100%</code>, <code>svelte-check</code> 0 errors / 0 warnings.</li>
-        <li><strong>Samsung Galaxy A53:</strong> ADB <code>192.168.1.17:35347</code>, PID 23755, Render 1080x2400, Banner thông báo hoàng triều đã hiển thị thành công.</li>
-        <li><strong>Đóng gói Google Play:</strong> File <code>.aab</code> sẵn sàng đưa lên Google Play Console.</li>
+        <li><strong>URL:</strong> <code>https://tuvitoantap.vercel.app</code></li>
+        <li><strong>Deployment ID:</strong> <code>dpl_4hY1GQuzyEsiZmXcfNHyCnF2brf7</code></li>
+        <li><strong>API Health Check:</strong> <code>GET /api/health</code> trả về HTTP 200 OK.</li>
+        <li><strong>Feature Flags:</strong> <code>GET /api/features</code> trả về HTTP 200 OK (toàn bộ 10 phân hệ active).</li>
       </ul>
     </div>
   </div>

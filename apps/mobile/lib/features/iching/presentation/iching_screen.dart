@@ -13,6 +13,7 @@ import '../data/models/iching_models.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/paywall_provider.dart';
 import '../../../../core/services/ritual_audio_service.dart';
+import '../../../../core/presentation/widgets/ceremony_audio_toggle.dart';
 import '../../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../../ui/animated_background.dart';
 import '../../../../ui/glass_panel.dart';
@@ -255,21 +256,7 @@ class _IChingScreenState extends ConsumerState<IChingScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          Consumer(
-            builder: (context, ref, _) {
-              final isMuted = ref.watch(ritualAudioNotifierProvider);
-              return IconButton(
-                icon: Icon(
-                  isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-                  color: AppTheme.goldBright,
-                ),
-                onPressed: () =>
-                    ref.read(ritualAudioNotifierProvider.notifier).toggleMute(),
-                tooltip:
-                    isMuted ? 'Bật âm thanh nghi thức' : 'Tắt âm thanh nghi thức',
-              );
-            },
-          ),
+          const CeremonyAudioToggle(),
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: AppTheme.goldBright),
             onPressed: _reset,

@@ -50,5 +50,27 @@ void main() {
       expect(secondToggle, false);
       expect(service.isMuted, false);
     });
+
+    test('volume defaults to 0.85 and updates/persists correctly', () async {
+      final service = RitualAudioService();
+      await service.initialize();
+      expect(service.volume, 0.85);
+
+      await service.setVolume(0.5);
+      expect(service.volume, 0.5);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getDouble('vios_mobile_audio_volume'), 0.5);
+    });
+
+    test('audio play methods execute without throwing', () async {
+      final service = RitualAudioService();
+      await service.initialize();
+
+      await expectLater(service.playCoinClink(), completes);
+      await expectLater(service.playSingingBowl(), completes);
+      await expectLater(service.playStickShake(), completes);
+      await expectLater(service.playTarotFlip(), completes);
+    });
   });
 }

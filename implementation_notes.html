@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sprint 57: Royal Gallery & Social Stories Share - Implementation Notes</title>
+  <title>Sprint 58: Royal Audio Ambience & Ceremony Sound Engine - Implementation Notes</title>
   <style>
     :root {
       --bg: #0d0e15;
       --card-bg: #151824;
       --text: #e2e8f0;
-      --accent: #e6b800;
-      --accent-glow: rgba(230, 184, 0, 0.25);
+      --accent: #ffd700;
+      --accent-glow: rgba(255, 215, 0, 0.25);
       --border: #2d3748;
       --success: #38a169;
+      --purple: #9f7aea;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -53,34 +54,39 @@
       border-radius: 12px;
       padding: 24px;
       margin-bottom: 24px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     }
     h2 {
       color: var(--accent);
-      margin-top: 0;
       font-size: 20px;
-      border-bottom: 1px solid rgba(230, 184, 0, 0.2);
-      padding-bottom: 8px;
+      margin-top: 0;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     ul {
+      margin: 0;
       padding-left: 20px;
-      margin-bottom: 0;
     }
     li {
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     code {
-      background: rgba(0,0,0,0.4);
-      color: #f6ad55;
+      background: rgba(255, 255, 255, 0.08);
       padding: 2px 6px;
       border-radius: 4px;
-      font-family: Consolas, monospace;
-      font-size: 0.9em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #f6ad55;
+      font-size: 14px;
+    }
+    .table-box {
+      overflow-x: auto;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 12px;
+      margin-top: 10px;
     }
     th, td {
       border: 1px solid var(--border);
@@ -88,7 +94,7 @@
       text-align: left;
     }
     th {
-      background: rgba(230, 184, 0, 0.1);
+      background: rgba(255, 215, 0, 0.1);
       color: var(--accent);
     }
   </style>
@@ -96,79 +102,80 @@
 <body>
   <div class="container">
     <header>
-      <h1>Sprint 57: Royal Gallery & Social Stories Share (9:16)</h1>
-      <span class="badge">Hoàn Thành 100% · 978 Tests Passed</span>
-      <p style="color: #a0aec0; margin: 10px 0 0 0;">Dự án ViOS — Tử Vi Toàn Tập (ziweiai-web) · Khâm Thiên Giám Hoàng Triều</p>
+      <h1>Sprint 58: Royal Audio Ambience & Ceremony Sound Engine</h1>
+      <span class="badge">Hoàn Thành 100% Quality Gates (983/983 Tests)</span>
+      <p style="color: #a0aec0; margin-top: 8px;">Dự án ViOS — Tử Vi Toàn Tập (ziweiai-web) | Khâm Thiên Giám Ngự Bút</p>
     </header>
 
+    <!-- 1. Unspecified & Implicit Decisions -->
     <div class="section">
       <h2>1. Unspecified & Implicit Decisions</h2>
       <ul>
-        <li><strong>Tỷ lệ xuất Story 9:16:</strong> Thiết lập tỷ lệ khung chuẩn dọc với kích thước tối ưu (360x640 trên Mobile preview và 3.0 pixelRatio khi render ảnh), banner hoàng đạo phía trên và bọc lớp thủy ấn Khâm Thiên Giám in chìm 45 độ.</li>
-        <li><strong>Thuật toán chia dòng ấn triện tùy biến:</strong> Đối với ấn danh xưng tự do, nếu có từ 2 từ trở lên, hệ thống tự động ngắt theo tỷ lệ cân đối đối xứng (dòng 1: nửa đầu, dòng 2: nửa sau) để giữ đúng tinh thần triện son cổ truyền; nếu chỉ có 1 từ thì dòng 2 mặc định là <code>KÍNH BÚT</code>.</li>
-        <li><strong>Lưu trữ Local Gallery:</strong> Sử dụng <code>SharedPreferences</code> để lưu tối đa 50 bản ghi chia sẻ gần nhất, sắp xếp giảm dần theo thời gian tạo để bảo vệ hiệu năng và dung lượng bộ nhớ người dùng.</li>
-        <li><strong>Bảo toàn User ID khi chuyển từ Anonymous:</strong> Bổ sung phương thức <code>upgradeAnonymousToPermanentAccount()</code> dùng <code>supabase.auth.updateUser()</code> thay vì <code>signUp()</code> để không làm phân mảnh lá số và số dư XU của khách vãng lai.</li>
+        <li><strong>Acoustic Asset Generation (PCM 44.1kHz):</strong> Do hệ thống không phụ thuộc vào network CDN bên thứ 3 cho hiệu ứng âm thanh cốt lõi, âm thanh xóc ống thẻ Quan Thánh (<code>stick_shake.wav</code>) và tiếng lật bài Tarot (<code>card_flip.wav</code>) được tổng hợp trực tiếp bằng Python script thuật toán âm học vật lý, đảm bảo kích thước siêu nhẹ (&lt;100KB) và độ trễ phát 0ms (instant latency).</li>
+        <li><strong>Web Audio Web API vs Audio Files:</strong> Trên nền tảng Web SvelteKit, thay vì tải các tệp tĩnh gây bloat và cold-cache misses, engine <code>ritual-audio.ts</code> sử dụng thuần Web Audio API (<code>AudioContext</code>) để tổng hợp trực tiếp sóng âm chuông đồng Khâm Thiên Giám, đồng xu Càn Long, và va chạm ống tre Quan Thánh.</li>
+        <li><strong>Bi-directional Cloud Sync Fallback:</strong> Dữ liệu Thư Viện Hoàng Triều hỗ trợ cả <code>SharedPreferences</code>/<code>localStorage</code> và Supabase table <code>royal_gallery_shares</code>, người dùng vãng lai vẫn lưu offline bình thường, người dùng VIP PRO đăng nhập sẽ tự động đồng bộ chéo tức thì.</li>
+        <li><strong>Unified Toggle Pattern:</strong> Thiết kế component <code>CeremonyAudioToggle</code> có thể render linh hoạt ở 2 chế độ: <code>IconButton</code> nhỏ gọn trên AppBar hoặc <code>FloatingActionButton</code> trôi nổi có bóng đổ hoàng triều.</li>
       </ul>
     </div>
 
+    <!-- 2. Deviations from Specification -->
     <div class="section">
       <h2>2. Deviations from Specification</h2>
       <ul>
-        <li><strong>Khắc phục dứt điểm spam mail GitHub Actions CI:</strong> Phát hiện và xóa 2 tham số không sử dụng (<code>_query</code>, <code>_topic</code>) trong <code>divination-chat.service.ts</code> khiến lệnh <code>pnpm lint</code> trong workflow CI bị chặn lại và gửi email báo lỗi liên tục mỗi lần push.</li>
+        <li><strong>Không phá vỡ API Contracts cũ:</strong> Thêm bảng mới <code>royal_gallery_shares</code> với RLS riêng và schema <code>RoyalGalleryItemSchema</code> trong <code>packages/contracts</code>, hoàn toàn không sửa đổi các schema bốc quẻ và lá số hiện hữu.</li>
+        <li><strong>Svelte 5 Runes Clean Compatibility:</strong> Sửa dụng <code>Record&lt;string, RoyalGalleryItem&gt;</code> thay vì mutable <code>Map</code> bên trong component Svelte 5 để triệt tiêu 100% cảnh báo <code>svelte/prefer-svelte-reactivity</code> và tuân thủ tuyệt đối chuẩn ESLint.</li>
       </ul>
     </div>
 
+    <!-- 3. Considered Trade-offs -->
     <div class="section">
       <h2>3. Considered Trade-offs</h2>
-      <ul>
-        <li><strong>Lưu ảnh Local vs Cloud Storage cho Gallery:</strong> Lưu đường dẫn ảnh tạm trên máy cục bộ giúp người dùng xem lại và chia sẻ lại tức thì mà không tiêu tốn băng thông CDN hoặc chi phí lưu trữ server.</li>
-        <li><strong>Watermark chìm:</strong> Đặt watermark mờ nhẹ (opacity 0.05) xoay nghiêng -0.35 rad (khoảng 20 độ) vừa đảm bảo bản quyền Khâm Thiên Giám vừa không gây rối mắt các thông tin quẻ và lời bình.</li>
-      </ul>
+      <div class="table-box">
+        <table>
+          <thead>
+            <tr>
+              <th>Phương án cân nhắc</th>
+              <th>Lựa chọn thực hiện</th>
+              <th>Lý do &amp; Đánh đổi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Dùng MP3 tải từ CDN đám mây</td>
+              <td>WAV 16-bit PCM nhúng thẳng trong Mobile asset + Web Audio synthesizer</td>
+              <td>Triệt tiêu độ trễ mạng khi người dùng gieo quẻ, hoạt động 100% offline không sợ lỗi timeout/bandwidth.</td>
+            </tr>
+            <tr>
+              <td>Đồng bộ Cloud cưỡng bức tất cả người dùng</td>
+              <td>Chỉ kích hoạt Cloud Sync cho tài khoản VIP PRO qua Supabase RLS</td>
+              <td>Tối ưu chi phí database I/O cho Supabase Free/Pro tier, đồng thời tăng giá trị độc quyền cho gói thuê bao VIP PRO.</td>
+            </tr>
+            <tr>
+              <td>Gộp âm lượng hệ thống và âm lượng nghi lễ</td>
+              <td>Tách riêng Volume Slider nghi lễ cung đình (0% - 100%)</td>
+              <td>Giúp người dùng có thể nghe nhạc nền Spotify/Apple Music bên ngoài mà vẫn kiểm soát được độ lớn của tiếng xóc quẻ/chuông đồng.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
+    <!-- 4. Maintenance Notes -->
     <div class="section">
-      <h2>4. Verification & Quality Gates (978 Tests Passed)</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Module</th>
-            <th>Lệnh Kiểm Thử</th>
-            <th>Kết Quả</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Monorepo Lint</td>
-            <td><code>pnpm lint</code></td>
-            <td>0 errors, 0 warnings (100% Clean)</td>
-          </tr>
-          <tr>
-            <td>Astro Engine</td>
-            <td><code>pnpm -F @ziweiai/astro-engine test</code></td>
-            <td>35 tests passed</td>
-          </tr>
-          <tr>
-            <td>API Service</td>
-            <td><code>pnpm -F @ziweiai/api test</code></td>
-            <td>496 tests passed (81 suites)</td>
-          </tr>
-          <tr>
-            <td>Web Frontend</td>
-            <td><code>pnpm -F @ziweiai/web test & check</code></td>
-            <td>312 tests passed (58 suites), 0 type errors</td>
-          </tr>
-          <tr>
-            <td>Mobile App</td>
-            <td><code>flutter test & analyze</code></td>
-            <td>135 tests passed, 0 issues found</td>
-          </tr>
-          <tr>
-            <td>Turborepo Build</td>
-            <td><code>pnpm build</code></td>
-            <td>6/6 tasks successful</td>
-          </tr>
-        </tbody>
-      </table>
+      <h2>4. Maintenance Notes</h2>
+      <ul>
+        <li><strong>Supabase Migration:</strong> Tệp <code>apps/api/supabase/migrations/000024_create_royal_gallery_shares.sql</code> đã sẵn sàng để migrate lên production database khi có service-role token.</li>
+        <li><strong>Flutter Audio Mocking:</strong> Trong unit test widget Flutter, các channel <code>xyz.luan/audioplayers</code> và <code>xyz.luan/audioplayers.global</code> đã được mock qua <code>MethodChannel.setMockMethodCallHandler</code>, ngăn chặn crash Headless test runner.</li>
+        <li><strong>Quality Gates Metrics:</strong>
+          <ul>
+            <li>Mobile Flutter tests: <strong>140/140 passed</strong> (0 analyzer warnings)</li>
+            <li>Web Vitest: <strong>312/312 passed</strong> (svelte-check 0 errors, 0 warnings)</li>
+            <li>API NestJS tests: <strong>496/496 passed</strong></li>
+            <li>Astro Engine tests: <strong>35/35 passed</strong></li>
+            <li>Tổng cộng: <strong>983 tests passed</strong> (100% green bar).</li>
+          </ul>
+        </li>
+      </ul>
     </div>
   </div>
 </body>

@@ -10,6 +10,7 @@ import '../../wallet/providers/wallet_provider.dart';
 import '../../subscription/providers/subscription_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/theme_provider.dart';
+import '../../../core/services/ritual_audio_service.dart';
 import '../../../ui/animated_background.dart';
 import '../../../ui/glass_panel.dart';
 
@@ -155,6 +156,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final isPro = ref.watch(isProUserProvider);
     final balanceAsync = ref.watch(walletBalanceProvider);
     final currentThemeMode = ref.watch(themeModeProvider);
+    final isAudioMuted = ref.watch(ritualAudioNotifierProvider);
+    final audioVolume = ref.watch(ritualAudioVolumeProvider);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -436,6 +439,155 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ),
 
+                const SizedBox(height: 24),
+
+                // Ceremony Sound Settings
+                Text(
+                  'ÂM THANH & NGHI LỄ HOÀNG TRIỀU',
+                  style: GoogleFonts.cinzel(
+                    color: AppTheme.goldBright,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                GlassPanel(
+                  padding: const EdgeInsets.all(18),
+                  borderGradient: CelestialGradients.starlightBorder,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                isAudioMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                                color: isAudioMuted ? AppTheme.mysticalTextSecondary : AppTheme.goldBright,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 14),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Hiệu Ứng Âm Thanh Nghi Lễ',
+                                    style: TextStyle(
+                                      color: AppTheme.mysticalText,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    isAudioMuted ? 'Đang tắt nhạc khí' : 'Bật nhạc khí cung đình',
+                                    style: const TextStyle(
+                                      color: AppTheme.mysticalTextSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Switch.adaptive(
+                            value: !isAudioMuted,
+                            activeThumbColor: AppTheme.goldBright,
+                            activeTrackColor: AppTheme.goldBright.withValues(alpha: 0.4),
+                            onChanged: (val) {
+                              HapticFeedback.lightImpact();
+                              ref.read(ritualAudioNotifierProvider.notifier).setMuted(!val);
+                            },
+                          ),
+                        ],
+                      ),
+                      if (!isAudioMuted) ...[
+                        const SizedBox(height: 16),
+                        const Divider(color: Colors.white10, height: 1),
+                        const SizedBox(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Âm lượng nhạc khí:',
+                              style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 13),
+                            ),
+                            Text(
+                              '${(audioVolume * 100).round()}%',
+                              style: const TextStyle(
+                                color: AppTheme.goldBright,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            activeTrackColor: AppTheme.goldBright,
+                            inactiveTrackColor: Colors.white12,
+                            thumbColor: AppTheme.goldBright,
+                            overlayColor: AppTheme.goldBright.withValues(alpha: 0.2),
+                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                          ),
+                          child: Slider(
+                            value: audioVolume,
+                            min: 0.0,
+                            max: 1.0,
+                            divisions: 20,
+                            onChanged: (newVol) {
+                              ref.read(ritualAudioVolumeProvider.notifier).setVolume(newVol);
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Thử nghiệm nhạc khí hoàng triều:',
+                          style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 12),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _buildSoundTestChip(
+                              label: '🔔 Chuông Đồng',
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                ref.read(ritualAudioNotifierProvider.notifier).playSingingBowl();
+                              },
+                            ),
+                            _buildSoundTestChip(
+                              label: '🪙 Đồng Xu',
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                ref.read(ritualAudioNotifierProvider.notifier).playCoinClink();
+                              },
+                            ),
+                            _buildSoundTestChip(
+                              label: '🎋 Thẻ Xăm',
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                ref.read(ritualAudioNotifierProvider.notifier).playStickShake();
+                              },
+                            ),
+                            _buildSoundTestChip(
+                              label: '🔮 Lá Bài Tarot',
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                ref.read(ritualAudioNotifierProvider.notifier).playTarotFlip();
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
                 const SizedBox(height: 30),
 
                 // Version Footer
@@ -586,6 +738,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           : null,
       trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppTheme.mysticalTextSecondary),
       onTap: onTap,
+    );
+  }
+
+  Widget _buildSoundTestChip({
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: AppTheme.cosmosElevated.withValues(alpha: 0.7),
+          border: Border.all(
+            color: AppTheme.mysticalGold.withValues(alpha: 0.35),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: AppTheme.goldBright,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }

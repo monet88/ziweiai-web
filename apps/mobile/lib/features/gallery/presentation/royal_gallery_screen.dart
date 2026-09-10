@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../subscription/providers/subscription_provider.dart';
 import '../data/royal_gallery_service.dart';
 import '../models/royal_share_item.dart';
 
@@ -25,6 +28,7 @@ class _RoyalGalleryScreenState extends ConsumerState<RoyalGalleryScreen> {
   @override
   Widget build(BuildContext context) {
     final galleryAsync = ref.watch(royalGalleryItemsProvider);
+    final isPro = ref.watch(isProUserProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F071D),
@@ -47,6 +51,36 @@ class _RoyalGalleryScreenState extends ConsumerState<RoyalGalleryScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: isPro ? 'Đồng bộ Đám Mây (VIP PRO)' : 'Đồng bộ Đám Mây (Yêu cầu VIP PRO)',
+            icon: Icon(
+              isPro ? Icons.cloud_sync : Icons.cloud_queue,
+              color: isPro ? AppTheme.goldBright : AppTheme.mysticalTextSecondary,
+            ),
+            onPressed: () async {
+              if (!isPro) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Tính năng đồng bộ đa thiết bị dành riêng cho tài khoản VIP PRO.'),
+                  ),
+                );
+                return;
+              }
+              HapticFeedback.mediumImpact();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Đang đồng bộ Thư Viện Hoàng Triều với Đám Mây...')),
+              );
+              final count = await ref.read(royalGalleryItemsProvider.notifier).syncCloud();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Đồng bộ thành công! Hiện có $count thiệp trong thư viện.'),
+                    backgroundColor: AppTheme.etherealJade,
+                  ),
+                );
+              }
+            },
+          ),
+          IconButton(
             tooltip: 'Làm mới',
             icon: const Icon(Icons.refresh, color: AppTheme.mysticalTextSecondary),
             onPressed: () => ref.read(royalGalleryItemsProvider.notifier).refresh(),
@@ -62,6 +96,60 @@ class _RoyalGalleryScreenState extends ConsumerState<RoyalGalleryScreen> {
         children: [
           // Filter Bar
           _buildFilterBar(),
+
+          // Cloud Sync VIP PRO Banner / Status Pill
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: isPro
+                    ? AppTheme.cosmosElevated.withValues(alpha: 0.6)
+                    : const Color(0xFF1B1430),
+                border: Border.all(
+                  color: isPro
+                      ? AppTheme.goldBright.withValues(alpha: 0.3)
+                      : Colors.white12,
+                  width: 0.8,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isPro ? Icons.cloud_done : Icons.cloud_off_outlined,
+                    size: 16,
+                    color: isPro ? AppTheme.goldBright : AppTheme.mysticalTextSecondary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isPro
+                          ? 'Đồng Bộ Đám Mây VIP PRO: Sẵn sàng trên Web & Mobile'
+                          : 'Nâng cấp VIP PRO để đồng bộ thiệp tự động sang Web & thiết bị mới',
+                      style: TextStyle(
+                        color: isPro ? AppTheme.goldBright : AppTheme.mysticalTextSecondary,
+                        fontSize: 11,
+                        fontWeight: isPro ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  if (!isPro)
+                    GestureDetector(
+                      onTap: () => context.push('/wallet'),
+                      child: const Text(
+                        'NÂNG CẤP',
+                        style: TextStyle(
+                          color: AppTheme.goldBright,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
 
           // Gallery Body
           Expanded(

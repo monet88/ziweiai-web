@@ -130,6 +130,14 @@ void main() {
       await service.clearAll();
       expect((await service.getItems()), isEmpty);
     });
+
+    test('syncCloudGallery returns 0 when isPro is false or not authenticated', () async {
+      final syncedNonPro = await service.syncCloudGallery(isPro: false);
+      expect(syncedNonPro, 0);
+
+      final syncedNoClient = await service.syncCloudGallery(isPro: true);
+      expect(syncedNoClient, 0);
+    });
   });
 
   group('RoyalSealWidget and Watermark Tests', () {

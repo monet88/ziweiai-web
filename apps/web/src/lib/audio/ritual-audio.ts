@@ -168,3 +168,45 @@ export function playCardFlip(): void {
   noise.start(now);
   noise.stop(now + 0.09);
 }
+
+/**
+ * Âm thanh xóc ống thẻ xăm Quan Thánh chân thực bằng tiếng va đập của các thanh tre rỗng.
+ */
+export function playStickShake(): void {
+  if (isRitualAudioMuted()) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  // Chuỗi các va chạm thanh tre lách cách dồn dập
+  const clickDelays = [0, 0.06, 0.13, 0.22, 0.31, 0.42, 0.55];
+  const resonantFreqs = [880, 1150, 960, 1320, 1050, 1220, 920];
+
+  clickDelays.forEach((delay, idx) => {
+    const hitTime = now + delay;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(resonantFreqs[idx], hitTime);
+    osc.frequency.exponentialRampToValueAtTime(resonantFreqs[idx] * 0.7, hitTime + 0.04);
+
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(resonantFreqs[idx], hitTime);
+    filter.Q.setValueAtTime(4.0, hitTime);
+
+    const amp = 0.14 * (1 - idx * 0.08); // giảm dần về cuối
+    gain.gain.setValueAtTime(0, hitTime);
+    gain.gain.linearRampToValueAtTime(amp, hitTime + 0.003);
+    gain.gain.exponentialRampToValueAtTime(0.0001, hitTime + 0.045);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(hitTime);
+    osc.stop(hitTime + 0.05);
+  });
+}
+

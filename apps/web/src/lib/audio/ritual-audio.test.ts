@@ -6,6 +6,7 @@ import {
   playCoinClink,
   playSingingBowl,
   playCardFlip,
+  playStickShake,
 } from './ritual-audio';
 
 describe('Ritual Audio Synthesizer', () => {
@@ -32,6 +33,7 @@ describe('Ritual Audio Synthesizer', () => {
     expect(() => playCoinClink()).not.toThrow();
     expect(() => playSingingBowl()).not.toThrow();
     expect(() => playCardFlip()).not.toThrow();
+    expect(() => playStickShake()).not.toThrow();
   });
 
   it('respects muted state and does not create audio when muted', () => {
@@ -42,6 +44,7 @@ describe('Ritual Audio Synthesizer', () => {
     playCoinClink();
     playSingingBowl();
     playCardFlip();
+    playStickShake();
 
     expect(audioSpy).not.toHaveBeenCalled();
   });

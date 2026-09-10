@@ -9,6 +9,8 @@ import '../providers/tarot_provider.dart';
 import '../data/models/tarot_models.dart';
 import 'widgets/royal_tarot_share_card.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/ritual_audio_service.dart';
+import '../../../../core/presentation/widgets/ceremony_audio_toggle.dart';
 import '../../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../../ui/animated_background.dart';
 import '../../../../ui/glass_panel.dart';
@@ -75,6 +77,7 @@ class _TarotScreenState extends ConsumerState<TarotScreen> with SingleTickerProv
       
       if (next.hasValue && next.value != null && !next.isLoading) {
         HapticFeedback.heavyImpact();
+        ref.read(ritualAudioNotifierProvider.notifier).playTarotFlip();
         _flipController.forward();
       } else if (next.isLoading) {
         _flipController.reverse();
@@ -97,6 +100,7 @@ class _TarotScreenState extends ConsumerState<TarotScreen> with SingleTickerProv
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          const CeremonyAudioToggle(),
           if (hasResult)
             IconButton(
               icon: const Icon(Icons.share_outlined, color: AppTheme.goldBright),

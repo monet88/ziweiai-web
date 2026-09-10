@@ -9,6 +9,8 @@ import '../providers/stick_provider.dart';
 import '../data/models/stick_models.dart';
 import 'widgets/royal_sacred_stick_share_card.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/services/ritual_audio_service.dart';
+import '../../../../core/presentation/widgets/ceremony_audio_toggle.dart';
 import '../../../../core/presentation/widgets/voice_audio_player_bar.dart';
 import '../../../../ui/animated_background.dart';
 import '../../../../ui/glass_panel.dart';
@@ -64,6 +66,9 @@ class _StickScreenState extends ConsumerState<StickScreen>
     FocusScope.of(context).unfocus();
     HapticFeedback.heavyImpact();
 
+    // Phát âm thanh nghi lễ xóc ống thẻ xăm tre Quan Thánh
+    ref.read(ritualAudioNotifierProvider.notifier).playStickShake();
+
     setState(() {
       _isShaking = true;
       _blocksThrown = false;
@@ -83,6 +88,9 @@ class _StickScreenState extends ConsumerState<StickScreen>
 
     // Stick emerges and falls, Moon blocks cast (1 Flat, 1 Curved = Divine Assent)
     _stickFallController.forward(from: 0.0);
+    // Phát âm thanh chuông đồng Khâm Thiên Giám ngân nga chứng giám quẻ thẻ
+    ref.read(ritualAudioNotifierProvider.notifier).playSingingBowl();
+
     setState(() {
       _blocksThrown = true;
       _isShaking = false;
@@ -152,6 +160,7 @@ class _StickScreenState extends ConsumerState<StickScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          const CeremonyAudioToggle(),
           if (hasResult)
             IconButton(
               icon: const Icon(Icons.share_outlined, color: AppTheme.goldBright),

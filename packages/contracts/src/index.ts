@@ -61,3 +61,5 @@ export * from './auth/turnstile';
 export * from './dossier/pdf-dossier';
 export * from './chart/divination-chat';
 export * from './auth/fcm-token';
+export * from './persistence/royal-gallery';
+

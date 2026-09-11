@@ -54,4 +54,10 @@ describe('AdminController', () => {
     const res = await controller.updateConfig({ key: 'testKey', value: 123 });
     expect(res).toEqual({ success: true, key: 'testKey', value: 123 });
   });
+
+  it('should get audit logs', async () => {
+    (service as any).getAuditLogs = vi.fn().mockResolvedValue({ logs: [{ id: '1', action: 'TOPUP_XU' }], count: 1, page: 1, limit: 50 });
+    const res = await controller.getAuditLogs('1', '50');
+    expect(res).toEqual({ logs: [{ id: '1', action: 'TOPUP_XU' }], count: 1, page: 1, limit: 50 });
+  });
 });

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { resolve } from '$app/paths';
-  import { ShieldCheck, LayoutDashboard, ArrowLeftRight, Users, UserPlus, BarChart3, Sliders, ScrollText, Sparkles } from 'lucide-svelte';
+  import { ShieldCheck, LayoutDashboard, ArrowLeftRight, Users, UserPlus, BarChart3, Sliders, ScrollText, Sparkles, BookOpen } from 'lucide-svelte';
   import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 </script>
 
@@ -73,6 +73,13 @@
         >
           <Sliders size={16} />
           <span>Cấu hình Cờ AI</span>
+        </a>
+        <a
+          href={resolve('/admin/blog')}
+          class="admin-tab {$page.url.pathname.startsWith('/admin/blog') ? 'active' : ''}"
+        >
+          <BookOpen size={16} />
+          <span>Cẩm Nang</span>
         </a>
         <a
           href={resolve('/admin/audit-logs')}

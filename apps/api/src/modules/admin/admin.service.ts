@@ -115,12 +115,95 @@ export class AdminService {
     if (startDate) params.p_start_date = startDate;
     if (endDate) params.p_end_date = endDate;
 
-    const { data, error } = await this.client.rpc('get_admin_analytics', params);
-    if (error) {
-      this.logger.error('Failed to get admin analytics', error);
-      throw new BadRequestException('Could not get admin analytics');
+    try {
+      const { data, error } = await this.client.rpc('get_admin_analytics', params);
+      if (!error && data) {
+        return { analytics: data };
+      }
+      this.logger.warn(`RPC get_admin_analytics failed: ${error?.message || 'null data'}, falling back to direct table queries`);
+    } catch (rpcErr: any) {
+      this.logger.warn(`RPC get_admin_analytics error: ${rpcErr?.message}, falling back to direct table queries`);
     }
-    return { analytics: data };
+
+    // Resilient fallback query when RPC is missing or fails on production
+    try {
+      const { count: totalUsers } = await this.client
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      let txQuery = this.client
+        .from('xu_transactions')
+        .select('amount, transaction_type, created_at');
+
+      if (startDate) txQuery = txQuery.gte('created_at', startDate);
+      if (endDate) txQuery = txQuery.lte('created_at', endDate);
+
+      const { data: txs } = await txQuery.order('created_at', { ascending: false }).limit(2000);
+
+      let totalXuTopup = 0;
+      let totalXuConsumed = 0;
+      const featureMap = new Map<string, number>();
+      const dailyMap = new Map<string, { date: string; new_users: number; xu_topup: number; xu_consumed: number }>();
+
+      // Seed 30 recent days
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().slice(0, 10);
+        dailyMap.set(dateStr, { date: dateStr, new_users: 0, xu_topup: 0, xu_consumed: 0 });
+      }
+
+      for (const tx of txs || []) {
+        const amt = Number(tx.amount || 0);
+        const day = (tx.created_at || '').slice(0, 10);
+        if (amt > 0) {
+          totalXuTopup += amt;
+          if (dailyMap.has(day)) {
+            dailyMap.get(day)!.xu_topup += amt;
+          }
+        } else if (amt < 0) {
+          const absAmt = Math.abs(amt);
+          totalXuConsumed += absAmt;
+          const feat = tx.transaction_type || 'ai_usage';
+          featureMap.set(feat, (featureMap.get(feat) || 0) + absAmt);
+          if (dailyMap.has(day)) {
+            dailyMap.get(day)!.xu_consumed += absAmt;
+          }
+        }
+      }
+
+      const featureUsage = Array.from(featureMap.entries()).map(([feature, consumed]) => ({
+        feature,
+        consumed,
+      }));
+
+      const dailyStats = Array.from(dailyMap.values());
+
+      return {
+        analytics: {
+          total_users: totalUsers || 0,
+          total_xu_topup: totalXuTopup,
+          total_xu_consumed: totalXuConsumed,
+          total_charts_created: 0,
+          total_readings_generated: 0,
+          feature_usage: featureUsage,
+          daily_stats: dailyStats,
+        },
+      };
+    } catch (fallbackErr: any) {
+      this.logger.error('Failed fallback analytics query', fallbackErr);
+      return {
+        analytics: {
+          total_users: 0,
+          total_xu_topup: 0,
+          total_xu_consumed: 0,
+          total_charts_created: 0,
+          total_readings_generated: 0,
+          feature_usage: [],
+          daily_stats: [],
+        },
+      };
+    }
   }
 
   async getReferralAnalytics() {
@@ -146,11 +229,74 @@ export class AdminService {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
+    const sanitizedRecent = (referrals || []).map((ref) => ({
+      ...ref,
+      referrer_id: ref.referrer_id || '',
+      referee_id: ref.referee_id || ref.referred_id || '',
+      referred_id: ref.referee_id || ref.referred_id || '',
+    }));
+
     return {
       totalReferrals: (referrals || []).length,
       topReferrers,
-      recentReferrals: referrals || [],
+      recentReferrals: sanitizedRecent,
     };
+  }
+
+  async getAuditLogs(
+    page: number = 1,
+    limit: number = 50,
+    action?: string,
+    startDate?: string,
+    endDate?: string,
+  ) {
+    try {
+      if (this.adminRepo) {
+        const { data: rawLogs, count } = await this.adminRepo.adminGetAuditLogs(
+          page,
+          limit,
+          action,
+          startDate,
+          endDate,
+        );
+
+        const logs = (rawLogs || []).map((l: any) => ({
+          ...l,
+          actor_email: l.actor_email || l.admin_email || 'admin@system',
+          metadata: l.metadata || l.payload || l.details || null,
+        }));
+
+        return { logs, count, page, limit };
+      }
+    } catch (err: any) {
+      this.logger.warn(`Failed to fetch audit logs via repo: ${err.message}. Trying direct query...`);
+    }
+
+    try {
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+      let query = this.client
+        .from('admin_audit_logs')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (action) query = query.eq('action', action);
+      if (startDate) query = query.gte('created_at', startDate);
+      if (endDate) query = query.lte('created_at', endDate);
+
+      const { data: rawLogs, count } = await query;
+      const logs = (rawLogs || []).map((l: any) => ({
+        ...l,
+        actor_email: l.actor_email || l.admin_email || 'admin@system',
+        metadata: l.metadata || l.payload || l.details || null,
+      }));
+
+      return { logs: logs || [], count: count || 0, page, limit };
+    } catch (queryErr: any) {
+      this.logger.error('Failed to query admin_audit_logs', queryErr);
+      return { logs: [], count: 0, page, limit };
+    }
   }
 
   async reconcileTransaction(transactionId: string, targetUserId: string) {

@@ -13,7 +13,9 @@
     CheckCircle2,
     HelpCircle,
     ArrowLeft,
-    BookOpen
+    BookOpen,
+    Copy,
+    Check
   } from 'lucide-svelte';
 
   const slug = $derived(page.params.slug);
@@ -22,9 +24,54 @@
 
   let copied = $state(false);
 
-  function handleShare(): void {
+  function getShareUrl(): string {
+    if (typeof window !== 'undefined' && window.location?.href) {
+      return window.location.href;
+    }
+    return `https://tuvitoantap.vercel.app/blog/${slug}`;
+  }
+
+  function shareFacebook(): void {
+    const url = encodeURIComponent(getShareUrl());
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'noopener,noreferrer,width=620,height=580');
+  }
+
+  function shareZalo(): void {
+    const url = encodeURIComponent(getShareUrl());
+    window.open(`https://sp.zalo.me/share_inline?link=${url}`, '_blank', 'noopener,noreferrer,width=620,height=580');
+  }
+
+  function shareTwitter(): void {
+    const url = encodeURIComponent(getShareUrl());
+    const text = encodeURIComponent(post?.title ? `${post.title} — Tử Vi Toàn Tập ViOS` : 'ViOS Mệnh Lý');
+    window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank', 'noopener,noreferrer,width=620,height=580');
+  }
+
+  function shareTelegram(): void {
+    const url = encodeURIComponent(getShareUrl());
+    const text = encodeURIComponent(post?.title || 'ViOS Mệnh Lý');
+    window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank', 'noopener,noreferrer,width=620,height=580');
+  }
+
+  async function shareNative(): Promise<void> {
+    if (typeof navigator !== 'undefined' && (navigator as any).share && post) {
+      try {
+        await (navigator as any).share({
+          title: post.title,
+          text: post.summary,
+          url: getShareUrl(),
+        });
+        return;
+      } catch {
+        // Fallback to copy link if user cancels or error
+      }
+    }
+    handleCopyLink();
+  }
+
+  function handleCopyLink(): void {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      void navigator.clipboard.writeText(window.location.href);
+      void navigator.clipboard.writeText(getShareUrl());
       copied = true;
       setTimeout(() => {
         copied = false;
@@ -172,10 +219,34 @@
             </div>
           </div>
 
-          <button type="button" class="btn-share" onclick={handleShare}>
-            <Share2 size={15} />
-            <span>{copied ? 'Đã Sao Chép Link!' : 'Chia Sẻ Bài Viết'}</span>
-          </button>
+          <!-- Social Share Bar Header -->
+          <div class="share-actions-group">
+            <span class="share-label">Chia sẻ:</span>
+            <button type="button" class="btn-share-icon btn-fb" title="Chia sẻ lên Facebook" aria-label="Facebook" onclick={shareFacebook}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </button>
+            <button type="button" class="btn-share-icon btn-zalo" title="Chia sẻ qua Zalo" aria-label="Zalo" onclick={shareZalo}>
+              <span class="zalo-pill-icon">Zalo</span>
+            </button>
+            <button type="button" class="btn-share-icon btn-x" title="Chia sẻ lên X (Twitter)" aria-label="X (Twitter)" onclick={shareTwitter}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </button>
+            <button type="button" class="btn-share-icon btn-tg" title="Chia sẻ qua Telegram" aria-label="Telegram" onclick={shareTelegram}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+            </button>
+            <button type="button" class="btn-share-copy" title="Sao chép liên kết bài viết" onclick={handleCopyLink}>
+              {#if copied}
+                <Check size={14} class="text-emerald" />
+                <span class="text-emerald">Đã chép!</span>
+              {:else}
+                <Copy size={14} />
+                <span>Sao chép</span>
+              {/if}
+            </button>
+            <button type="button" class="btn-share-native" title="Chia sẻ đa kênh trên điện thoại" onclick={shareNative}>
+              <Share2 size={14} />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -237,6 +308,46 @@
           </div>
         </section>
       {/if}
+
+      <!-- Social Viral Share Box (Cuối Bài Viết) -->
+      <section class="social-share-box">
+        <div class="social-share-content">
+          <div class="share-box-icon">
+            <Share2 size={20} class="text-gold" />
+          </div>
+          <div>
+            <h3 class="share-box-title">Lan Tỏa Tri Thức Mệnh Lý Hoàng Gia</h3>
+            <p class="share-box-desc">Nếu bài viết hữu ích, hãy chia sẻ cùng bạn bè và cộng đồng nghiên cứu mệnh lý, phong thủy.</p>
+          </div>
+        </div>
+        <div class="share-box-buttons">
+          <button type="button" class="social-btn btn-fb-pill" onclick={shareFacebook}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            <span>Facebook</span>
+          </button>
+          <button type="button" class="social-btn btn-zalo-pill" onclick={shareZalo}>
+            <span class="zalo-bold">Zalo</span>
+            <span>Chia Sẻ</span>
+          </button>
+          <button type="button" class="social-btn btn-x-pill" onclick={shareTwitter}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            <span>Twitter / X</span>
+          </button>
+          <button type="button" class="social-btn btn-tg-pill" onclick={shareTelegram}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+            <span>Telegram</span>
+          </button>
+          <button type="button" class="social-btn btn-copy-pill" onclick={handleCopyLink}>
+            {#if copied}
+              <Check size={16} class="text-emerald" />
+              <span class="text-emerald">Đã Sao Chép!</span>
+            {:else}
+              <Copy size={16} />
+              <span>Sao Chép Link</span>
+            {/if}
+          </button>
+        </div>
+      </section>
 
       <!-- Keywords / Tags -->
       <div class="tags-row">
@@ -419,32 +530,6 @@
   .author-role {
     font-size: 11px;
     color: var(--color-text-muted);
-  }
-
-  .btn-share {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 14px;
-    border-radius: var(--radius-pill);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: var(--color-text-primary);
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  :global([data-theme="light"]) .btn-share {
-    background: #f3f4f6;
-    border-color: #e5e7eb;
-  }
-
-  .btn-share:hover {
-    background: rgba(212, 175, 55, 0.15);
-    border-color: rgba(212, 175, 55, 0.35);
-    color: var(--celestial-gold-text);
   }
 
   /* Table of Contents */
@@ -749,5 +834,235 @@
     gap: 4px;
     font-size: 11px;
     color: var(--color-text-muted);
+  }
+
+  /* Social Share Group (Header) */
+  .share-actions-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .share-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    margin-right: 2px;
+  }
+
+  .btn-share-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--overlay-border);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-share-icon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+
+  .btn-fb:hover {
+    background: #1877f2;
+    border-color: #1877f2;
+    color: #ffffff;
+  }
+
+  .btn-zalo {
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .zalo-pill-icon {
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+  }
+
+  .btn-zalo:hover {
+    background: #0068ff;
+    border-color: #0068ff;
+    color: #ffffff;
+  }
+
+  .btn-x:hover {
+    background: #000000;
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #ffffff;
+  }
+
+  .btn-tg:hover {
+    background: #229ed9;
+    border-color: #229ed9;
+    color: #ffffff;
+  }
+
+  .btn-share-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--overlay-border);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-primary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-share-copy:hover {
+    background: rgba(212, 175, 55, 0.12);
+    border-color: rgba(212, 175, 55, 0.35);
+    color: var(--celestial-gold-text);
+  }
+
+  .btn-share-native {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--celestial-gold-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-share-native:hover {
+    background: rgba(212, 175, 55, 0.25);
+    transform: translateY(-2px);
+  }
+
+  /* Social Viral Share Box (Cuối bài) */
+  .social-share-box {
+    margin: 40px 0 24px;
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(106, 61, 232, 0.08) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  :global([data-theme="light"]) .social-share-box {
+    background: linear-gradient(135deg, #fffbeb 0%, #f5f3ff 100%);
+    border-color: #fde68a;
+  }
+
+  .social-share-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .share-box-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    flex-shrink: 0;
+  }
+
+  .share-box-title {
+    font-size: 16px;
+    font-weight: 800;
+    margin: 0 0 4px 0;
+    color: var(--color-text-primary);
+  }
+
+  .share-box-desc {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .share-box-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .social-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+  }
+
+  .social-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-fb-pill {
+    background: #1877f2;
+    color: #ffffff;
+  }
+
+  .btn-zalo-pill {
+    background: #0068ff;
+    color: #ffffff;
+  }
+
+  .zalo-bold {
+    font-weight: 900;
+    letter-spacing: -0.5px;
+  }
+
+  .btn-x-pill {
+    background: #111827;
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  :global([data-theme="light"]) .btn-x-pill {
+    background: #1f2937;
+  }
+
+  .btn-tg-pill {
+    background: #229ed9;
+    color: #ffffff;
+  }
+
+  .btn-copy-pill {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--overlay-border);
+    color: var(--color-text-primary);
+  }
+
+  :global([data-theme="light"]) .btn-copy-pill {
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+  }
+
+  .btn-copy-pill:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: rgba(212, 175, 55, 0.4);
+    color: var(--celestial-gold-text);
   }
 </style>

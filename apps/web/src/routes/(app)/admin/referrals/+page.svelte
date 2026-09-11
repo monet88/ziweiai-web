@@ -11,7 +11,8 @@
   interface ReferralRecord {
     id: string;
     referrer_id: string;
-    referred_id: string;
+    referee_id?: string;
+    referred_id?: string;
     reward_xu: number;
     created_at: string;
   }
@@ -162,10 +163,10 @@
                     {new Date(ref.created_at).toLocaleString('vi-VN')}
                   </td>
                   <td>
-                    <code class="id-code">{ref.referrer_id.substring(0, 12)}…</code>
+                    <code class="id-code">{(ref.referrer_id || '').slice(0, 12)}…</code>
                   </td>
                   <td>
-                    <code class="id-code">{ref.referred_id.substring(0, 12)}…</code>
+                    <code class="id-code">{(ref.referee_id || ref.referred_id || '').slice(0, 12)}…</code>
                   </td>
                   <td class="align-right text-gold">
                     <span class="xu-pill">

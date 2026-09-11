@@ -77,4 +77,17 @@ export class AdminController {
       parseResult.data.targetUserId,
     );
   }
+
+  @Get('audit-logs')
+  async getAuditLogs(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('action') action?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const pageNum = page ? Math.max(1, parseInt(page, 10)) : 1;
+    const limitNum = limit ? Math.max(1, Math.min(100, parseInt(limit, 10))) : 50;
+    return this.adminService.getAuditLogs(pageNum, limitNum, action, startDate, endDate);
+  }
 }

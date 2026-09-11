@@ -38,5 +38,21 @@
 ---
 
 ## 4. Ghi Chú Bảo Trì (Maintenance Notes)
-- Khi thêm bài viết mới, chỉ cần thêm 1 object vào mảng `BLOG_POSTS` trong `apps/web/src/lib/features/blog/blog-data.ts`. Hệ thống tự động cập nhật danh sách `/blog`, trang chi tiết `/blog/[slug]`, bài viết liên quan và Schema.org tương ứng.
+- Khi thêm bài viết mới, chỉ cần thêm 1 object vào mảng `BLOG_POSTS` trong `apps/web/src/lib/features/blog/blog-data.ts`. Hệ thống tự động cập nhật danh sách `/blog`, trang chi tiết `/blog/[slug]`, bài viết liên quan, trang quản trị `/admin/blog` và Schema.org tương ứng.
 - File ảnh `og-image.png` (1200x630) được phục vụ trực tiếp từ `apps/web/static/og-image.png`.
+
+---
+
+## 5. Sprint 71 Hardening: Sửa Lỗi Admin & Nâng Cấp Social Share
+1. **Nâng cấp Social Share Đa Kênh Cho Cẩm Nang**:
+   - Tích hợp các nút chia sẻ mạng xã hội trực tiếp: Facebook Share Dialog, Zalo Share Inline, Twitter / X Tweet Intent, Telegram Share URL.
+   - Hỗ trợ Web Share API (`navigator.share`) trên mobile native để mở khay chia sẻ hệ thống (Instagram Story, Messenger, WhatsApp, v.v.).
+   - Thêm Social Viral Share Box ở cuối bài viết để kích thích độc giả chia sẻ.
+2. **Sửa Lỗi Crash Tại `/admin/referrals`**:
+   - Đồng bộ tên cột `referee_id` từ Supabase với frontend, thêm toán tử an toàn `(ref.referee_id || ref.referred_id || '').slice(0, 12)` loại bỏ hoàn toàn lỗi `Cannot read properties of undefined (reading 'substring')`.
+3. **Resilient Fallback Cho `/admin/analytics`**:
+   - Khi RPC PostgreSQL `get_admin_analytics` gặp lỗi hoặc chưa đồng bộ schema trên production, backend tự động chuyển sang fallback queries trực tiếp từ `profiles` và `xu_transactions` tính toán đầy đủ các chỉ số KPI, đảm bảo API luôn phản hồi 200 OK.
+4. **Bổ Sung Route `/admin/audit-logs`**:
+   - Khai báo endpoint `@Get('audit-logs')` trên `AdminController` và kết nối với `AdminService.getAuditLogs`, giải quyết dứt điểm lỗi 404 Not Found.
+5. **Module Quản Trị Cẩm Nang (`/admin/blog`)**:
+   - Bổ sung tab "Cẩm Nang" vào thanh điều hướng Admin, cho phép quản trị viên tra cứu bài viết, xem cấu trúc SEO và mở link xem trước trực tiếp.

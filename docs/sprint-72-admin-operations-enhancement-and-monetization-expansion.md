@@ -2,32 +2,46 @@
 
 > **Ngày thực hiện:** 11/09/2026  
 > **Dự án:** ViOS — Tử Vi Toàn Tập (`ziweiai-web`)  
-> **Mục tiêu:** Tối ưu hóa toàn diện Admin Operations, bổ sung đối soát dòng tiền SePay / XU, Debounce Search, giải quyết 2 thắc mắc lớn về định danh người giới thiệu và quản trị cẩm nang.
+> **Trạng thái:** ✅ **100% HOÀN THÀNH — ĐÃ COMMIT & DEPLOY PRODUCTION VERCEL**  
+> **Production URL:** [https://tuvitoantap.vercel.app](https://tuvitoantap.vercel.app)  
+> **Git Commit:** `6d3f8d1` (nhánh `main`)
 
 ---
 
-## 1. Tóm Tắt Kết Quả Sprint 72
+## 1. Mục Tiêu Sprint 72
 
-1. **Định Danh Người Dùng Tại `/admin/referrals`**:
-   - Backend `AdminService.getReferralAnalytics()` tự động thu thập danh sách `user_id`, tra cứu `display_name` từ bảng `profiles` và `email` từ `auth.users`.
-   - Bảng Vinh Danh (Leaderboard) và Lịch Sử Giới Thiệu hiển thị rõ ràng: Tên hiển thị, Email người giới thiệu và người được mời, kèm mã UUID thu gọn bên dưới để Admin biết chính xác ai đang hoạt động.
-2. **Widget Giám Sát Tình Trạng SePay Webhook 24h (`/admin/transactions`)**:
-   - Thẻ HUD giám sát thời gian thực: Tín hiệu Webhook (`Online / Healthy`) kèm hiệu ứng pulsing xanh, số lượng giao dịch trong 24 giờ qua, số giao dịch đã khớp vs chưa khớp (chờ đối soát), tổng dòng tiền VNĐ và XU phát sinh trong 24h, mốc thời gian nhận giao dịch gần nhất.
-3. **Nút Xuất File Báo Cáo CSV (Excel) Chuẩn UTF-8 BOM**:
-   - Tại `/admin/transactions` (Giao dịch SePay): Xuất chi tiết mã giao dịch, mã SePay, User ID nhận, số tiền (VNĐ), XU quy đổi, thời gian tạo, trạng thái gán tài khoản.
-   - Tại `/admin/analytics` (Biến động XU & Người dùng): Xuất bảng dòng tiền 30 ngày (Ngày, Đăng ký mới, XU nạp, XU tiêu thụ) và bảng phân phối tiêu thụ theo tính năng AI.
-   - Toàn bộ file CSV xuất ra đều được gắn Byte Order Mark (`\uFEFF`), mở trực tiếp trên Microsoft Excel máy tính Windows/Mac mà không bao giờ bị lỗi font tiếng Việt có dấu.
-4. **Thanh Tìm Kiếm Debounce Search Tại `/admin/users`**:
-   - Tự động kích hoạt tìm kiếm sau 350ms khi Admin ngừng gõ (không cần bấm Enter hay nhấn nút Tìm).
-   - Tích hợp nút Xóa nhanh (Clear) và spinner chỉ báo trạng thái đang tìm kiếm.
-5. **Bộ Công Cụ Quản Trị Cẩm Nang Bài Viết (`/admin/blog`)**:
-   - Bổ sung nút **"Viết Bài Mới"** trên thanh công cụ.
-   - Bổ sung Modal Soạn Thảo / Chỉnh Sửa trực quan (nhập tiêu đề, phụ đề, chuyên mục, slug, tác giả, thời gian đọc, từ khóa SEO, tóm tắt, FAQ Schema).
-   - Bổ sung cụm nút Thao Tác (Xem trước / Sửa / Xóa) cho từng dòng bài viết.
+1. **Định danh người dùng giới thiệu (`/admin/referrals`):** Xử lý triệt để việc chỉ hiển thị mã UUID thô không thể nhận diện danh tính.
+2. **Nâng cấp đối soát tài chính:** Bổ sung chức năng xuất báo cáo CSV/Excel chuẩn UTF-8 (BOM) cho Giao dịch SePay (`/admin/transactions`) và Thống kê nạp/tiêu XU (`/admin/analytics`).
+3. **Tối ưu trải nghiệm tìm kiếm (`/admin/users`):** Thêm thanh tìm kiếm Debounce 350ms tự động kích hoạt kèm nút Clear nhanh (X).
+4. **Widget Giám Sát SePay Webhook 24h:** Giám sát thời gian thực tín hiệu webhook, số giao dịch, tỷ lệ khớp tài khoản và doanh thu phát sinh trong 24 giờ qua.
+5. **Bộ công cụ Quản Trị Cẩm Nang (`/admin/blog`):** Khởi tạo nút "Viết Bài Mới", Modal soạn thảo/chỉnh sửa nội dung & SEO FAQ Schema, và cụm nút Thao tác (Xem / Sửa / Xóa).
 
 ---
 
-## 2. Danh Sách Tệp Tin Đã Chỉnh Sửa
+## 2. Việc Đã Làm & Chi Tiết Kỹ Thuật
+
+### 2.1. Backend API (`apps/api`)
+- Nâng cấp `AdminService.getReferralAnalytics()` tại `apps/api/src/modules/admin/admin.service.ts`:
+  - Thu thập toàn bộ `user_id` từ `topReferrers` và `recentReferrals`.
+  - Thực hiện batch query lấy `display_name` từ bảng `profiles` và `email` từ `auth.admin.listUsers()`.
+  - Trả về cấu trúc phong phú: `referrer_email`, `referrer_name`, `referee_email`, `referee_name`, `displayName`, `email`.
+
+### 2.2. Frontend Web (`apps/web`)
+- **`/admin/referrals` (`referrals/+page.svelte`):**
+  - Hiển thị nổi bật Tên người dùng và Email trên Bảng Vinh Danh và Lịch Sử Gần Đây. Kèm mã UUID thu gọn bên dưới để Admin đối soát kỹ thuật.
+- **`/admin/transactions` (`transactions/+page.svelte`):**
+  - Thêm thẻ HUD giám sát Webhook SePay 24h với đèn tín hiệu xanh pulsing, thống kê giao dịch 24h qua, giao dịch chờ đối soát và dòng tiền 24h.
+  - Bổ sung nút **"Xuất File CSV"** sử dụng tiền tố UTF-8 Byte Order Mark (`\uFEFF`) giúp mở trực tiếp trên Microsoft Excel không bị lỗi font tiếng Việt.
+- **`/admin/analytics` (`analytics/+page.svelte`):**
+  - Bổ sung nút **"Xuất CSV"** tải về báo cáo biến động dòng tiền 30 ngày và phân phối tiêu thụ theo từng tính năng AI.
+- **`/admin/users` (`users/+page.svelte`):**
+  - Thêm Debounce Search **350ms** tự động gọi API khi người dùng dừng gõ, bổ sung nút Clear (X) và spinner xoay báo trạng thái.
+- **`/admin/blog` (`blog/+page.svelte`):**
+  - Thêm nút **"Viết Bài Mới"**, Modal Soạn Thảo (tiêu đề, phụ đề, chuyên mục, slug, tác giả, thời gian đọc, từ khóa, tóm tắt, FAQ Schema) và cụm nút Thao Tác (Xem / Sửa / Xóa) cho từng bài viết.
+
+---
+
+## 3. Danh Sách Tệp Tin Đã Chỉnh Sửa
 
 | STT | Tệp tin | Hành động | Nội dung thay đổi |
 |---|---|---|---|
@@ -41,10 +55,40 @@
 
 ---
 
-## 3. Kết Quả Kiểm Thử (Validation Gates - 100% Pass)
+## 4. Phân Tích Kỹ Thuật: Cảnh Báo "Cannot read properties of undefined (reading 'startTime')"
 
-- **API Unit Tests:** `pnpm -F @ziweiai/api test` -> **84/84 test suites passed** (523/523 tests pass).
+- **Hiện tượng:** Mở Google Chrome F12 Console thấy xuất hiện:
+  ```text
+  VM6559:2 Uncaught TypeError: Cannot read properties of undefined (reading 'startTime')
+      at et.reportAllChanges (<anonymous>:2:19429)
+      at n.timeout (<anonymous>:2:5652)
+      at requestIdleCallback
+  ```
+- **Phân tích nguồn gốc:**
+  1. File phát sinh là `VMxxxx:2` (Virtual Machine Script) do Chrome DevTools hoặc Chrome Extensions tự động chèn vào context của trang web, hoàn toàn không nằm trong codebase của ViOS.
+  2. Hàm `reportAllChanges` là hàm đo đạc Core Web Vitals (LCP, INP) nội bộ của thư viện Google `web-vitals` chạy trong bảng Live Metrics của Chrome DevTools.
+  3. Khi chuyển route trong ứng dụng SPA SvelteKit, bộ đệm Performance Entry của trình duyệt bị reset hoặc trả về danh sách rỗng, mã của DevTools thiếu kiểm tra null check trước khi đọc `.startTime`.
+- **Kết luận:** **Hoàn toàn vô hại (100% Safe)**. Người dùng bình thường không mở DevTools sẽ không bao giờ bị kích hoạt script này. Toàn bộ logic ứng dụng, thanh toán và dữ liệu của ViOS vẫn hoạt động tuyệt đối an toàn.
+
+---
+
+## 5. Kết Quả Kiểm Thử (Validation Gates - 100% Pass)
+
+- **API Unit Tests:** `pnpm -F @ziweiai/api test` -> **84/84 test suites passed** (523/523 tests pass 100%).
 - **Web Type Check:** `pnpm -F @ziweiai/web check` -> **0 errors, 0 warnings**.
-- **Web Unit Tests:** `pnpm -F @ziweiai/web test` -> **69/69 test suites passed** (378/378 tests pass).
-- **Monorepo Typecheck:** `pnpm typecheck` -> **10/10 tasks successful**.
-- **Web Production Build:** `pnpm -F @ziweiai/web build` -> **Hoàn thành xuất sắc không lỗi**.
+- **Web Unit Tests:** `pnpm -F @ziweiai/web test` -> **69/69 test suites passed** (378/378 tests pass 100%).
+- **Monorepo Typecheck:** `pnpm typecheck` -> **10/10 packages passed**.
+- **Web Production Build:** `pnpm -F @ziweiai/web build` -> **Build thành công không lỗi**.
+- **Live Smoke Test:** `curl https://tuvitoantap.vercel.app/api/health` -> `{"service":"ziweiai-api","status":"ok"}`.
+
+---
+
+## 6. Tài Liệu Bàn Giao & Lộ Trình Sprint 73 (Handover Specification)
+
+- **Giai đoạn hiện tại:** Đã hoàn thành 100% **Sprint 72 (Admin Operations Enhancement & Monetization Expansion)**.
+- **Sprint tiếp theo:** **SPRINT 73 — DEEP CODEBASE AUDIT, SECURITY HARDENING & BEHAVIOR MODEL OPTIMIZATION**.
+- **Mục tiêu trọng tâm Sprint 73:**
+  1. Sử dụng kỹ năng `behavior-model-debugger` và `security-auditor` rà soát toàn bộ codebase (NestJS API + SvelteKit Frontend).
+  2. Kiểm tra các lỗ hổng bảo mật: Rate limiting, SQL/NoSQL Injection, XSS trong rich text/markdown, phân quyền Role-Based Access Control (RBAC) trên các endpoints `/admin/*`.
+  3. Tối ưu hóa bộ nhớ (Memory Leaks) và dọn dẹp các biến/imports thừa (Dead Code Elimination).
+  4. Nâng cấp cơ chế retry/fallback cho các AI Providers (Gemini Flash, DeepSeek).

@@ -12,6 +12,7 @@
   import TarotCardBack from './TarotCardBack.svelte';
   import { playCardFlip, playSingingBowl } from '$lib/audio/ritual-audio';
   import { createTarotModel, type TarotCopy } from './tarot-model.svelte';
+  import RoyalTarotPosterModal from '$lib/features/poster/RoyalTarotPosterModal.svelte';
 
   interface Props {
     copy: TarotCopy;
@@ -20,6 +21,7 @@
   let { copy }: Props = $props();
 
   const auth = getAuthStore();
+  let isPosterModalOpen = $state(false);
   // copy là prop tĩnh do route truyền literal (copy={viCopy.tarot}); model tạo một lần lúc mount nên
   // dùng giá trị hiện tại là đúng — bọc untrack để Svelte 5 không cảnh báo state_referenced_locally.
   const model = untrack(() => createTarotModel({ auth, copy }));
@@ -82,7 +84,18 @@
       {#if model.result}
         {@const draw = model.result}
         <section class="result" aria-live="polite">
-          <p class="result-eyebrow">{copy.resultTitle}</p>
+          <div class="result-header-row">
+            <p class="result-eyebrow">{copy.resultTitle}</p>
+            <button
+              type="button"
+              class="btn-royal-poster"
+              onclick={() => (isPosterModalOpen = true)}
+              title="Xuất ảnh Poster Tarot Hoàng Gia độ phân giải cao"
+            >
+              <span class="poster-icon">🖼️</span>
+              <span>Xuất Poster</span>
+            </button>
+          </div>
           <ul class="card-grid">
             {#each draw.cards as card (card.position)}
               <li class="card">
@@ -111,6 +124,14 @@
           <NoticeBanner message={copy.safetyNotice} tone="info" />
           <PrimaryButton label={copy.retakeButton} variant="surface" onclick={() => model.reset()} />
         </section>
+
+        {#if isPosterModalOpen && model.result}
+          <RoyalTarotPosterModal
+            draw={model.result}
+            userName={auth.user?.email ? auth.user.email.split('@')[0] : 'Đương Số'}
+            onClose={() => (isPosterModalOpen = false)}
+          />
+        {/if}
       {:else}
         <section class="form">
           <div class="field">
@@ -709,8 +730,39 @@
     color: #6b21a8;
   }
 
-  :global([data-theme="light"]) .reading :global(.markdown .paragraph),
-  :global([data-theme="light"]) .reading :global(.markdown .list-item) {
-    color: #1c1917;
+  .result-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .btn-royal-poster {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(168, 85, 247, 0.25));
+    border: 1px solid rgba(212, 175, 55, 0.6);
+    color: #ffd700;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+  }
+
+  .btn-royal-poster:hover {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.4), rgba(168, 85, 247, 0.4));
+    border-color: #ffd700;
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .poster-icon {
+    font-size: 1rem;
   }
 </style>

@@ -18,6 +18,26 @@ export function formatPosterFileName(userName: string, birthYear?: string | numb
   return `Poster-Hoang-Gia-${safeName}${yearSuffix}.png`;
 }
 
+export function formatDivinationPosterFileName(
+  system: 'liuyao' | 'tarot' | 'numerology',
+  title?: string | null,
+): string {
+  const safeTitle = slugifyVietnamese(title || '');
+  if (system === 'liuyao') {
+    const suffix = safeTitle ? `-${safeTitle}` : '';
+    return `Poster-Luc-Hao${suffix}.png`;
+  }
+  if (system === 'tarot') {
+    const suffix = safeTitle ? `-${safeTitle}` : '';
+    return `Poster-Tarot${suffix}.png`;
+  }
+  if (system === 'numerology') {
+    const suffix = safeTitle ? `-${safeTitle}` : '';
+    return `Poster-Than-So-Hoc${suffix}.png`;
+  }
+  return `Poster-${safeTitle || 'Bao-Chung'}.png`;
+}
+
 export interface PosterExportOptions {
   scale?: number;
   backgroundColor?: string;

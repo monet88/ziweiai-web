@@ -175,4 +175,26 @@ describe('assistant-model.svelte', () => {
     await sendPromise;
     expect(model.isGenerating).toBe(false);
   });
+
+  it('preserves partial streamed message and user question when stream drops unexpectedly', async () => {
+    async function* failingStream(): AsyncGenerator<ConversationStreamEvent> {
+      yield { type: 'chunk', delta: 'Đoạn văn bản đã nhận được...' };
+      throw new Error('Network socket disconnected');
+    }
+    mockStreamConversationMessage.mockReturnValue(failingStream());
+
+    const { model } = setupModel();
+    const success = await model.sendText('Câu hỏi quan trọng');
+
+    expect(success).toBe(false);
+    expect(model.isGenerating).toBe(false);
+    // User message and partial assistant message must NOT be rolled back
+    expect(model.messages).toHaveLength(2);
+    expect(model.messages[0].role).toBe('user');
+    expect(model.messages[0].content).toBe('Câu hỏi quan trọng');
+    expect(model.messages[1].role).toBe('assistant');
+    expect(model.messages[1].content).toBe('Đoạn văn bản đã nhận được...');
+    expect(model.messages[1].isStreaming).toBe(false);
+    expect(model.errorMessage).toContain('gián đoạn');
+  });
 });

@@ -19,6 +19,30 @@ import {
 import { fetchJson, buildUrl } from './fetch-json';
 import { env } from '$lib/env';
 
+export interface StreamRetryOptions {
+  maxRetries?: number;
+  initialDelayMs?: number;
+  backoffFactor?: number;
+}
+
+function sleepWithSignal(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
 export function createExplanation(
   token: string,
   request: CreateExplanationRequest,
@@ -34,26 +58,61 @@ export async function* streamExplanation(
   token: string,
   request: CreateExplanationRequest,
   signal?: AbortSignal,
+  retryOptions?: StreamRetryOptions,
 ): AsyncGenerator<ExplanationStreamEvent> {
-  const res = await fetch(buildUrl(env.apiBaseUrl, '/explanations/stream'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(request),
-    signal,
-  });
+  const maxRetries = retryOptions?.maxRetries ?? 3;
+  const initialDelayMs = retryOptions?.initialDelayMs ?? 1000;
+  const backoffFactor = retryOptions?.backoffFactor ?? 2;
 
-  if (!res.ok || !res.body) {
-    let message = `Yêu cầu thất bại (${res.status}).`;
+  let res: Response | null = null;
+  let attempt = 0;
+
+  while (attempt <= maxRetries) {
+    if (signal?.aborted) return;
     try {
-      const err: unknown = await res.json();
-      if (err && typeof err === 'object' && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
-        message = (err as { message: string }).message;
+      res = await fetch(buildUrl(env.apiBaseUrl, '/explanations/stream'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(request),
+        signal,
+      });
+
+      // Retry on server errors (502, 503, 504) or connection drops before streaming
+      if (!res.ok && [502, 503, 504].includes(res.status) && attempt < maxRetries) {
+        attempt += 1;
+        const delay = initialDelayMs * Math.pow(backoffFactor, attempt - 1) + Math.random() * 200;
+        await sleepWithSignal(delay, signal);
+        continue;
       }
-    } catch {
-      // ignore
+      break;
+    } catch (err) {
+      if (signal?.aborted || (err instanceof Error && err.name === 'AbortError')) {
+        return;
+      }
+      if (attempt < maxRetries) {
+        attempt += 1;
+        const delay = initialDelayMs * Math.pow(backoffFactor, attempt - 1) + Math.random() * 200;
+        await sleepWithSignal(delay, signal);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  if (!res || !res.ok || !res.body) {
+    let message = `Yêu cầu thất bại (${res?.status ?? 'unknown'}).`;
+    if (res) {
+      try {
+        const err: unknown = await res.json();
+        if (err && typeof err === 'object' && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+          message = (err as { message: string }).message;
+        }
+      } catch {
+        // ignore
+      }
     }
     throw new Error(message);
   }
@@ -157,30 +216,67 @@ export async function* streamConversationMessage(
   conversationId: string,
   request: CreateConversationMessageRequest,
   signal?: AbortSignal,
+  retryOptions?: StreamRetryOptions,
 ): AsyncGenerator<ConversationStreamEvent> {
-  const res = await fetch(buildUrl(env.apiBaseUrl, `/conversations/${conversationId}/messages/stream`), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(request),
-    signal,
-  });
+  const maxRetries = retryOptions?.maxRetries ?? 3;
+  const initialDelayMs = retryOptions?.initialDelayMs ?? 1000;
+  const backoffFactor = retryOptions?.backoffFactor ?? 2;
 
-  if (!res.ok || !res.body) {
-    let message = `Yêu cầu thất bại (${res.status}).`;
+  let res: Response | null = null;
+  let attempt = 0;
+
+  while (attempt <= maxRetries) {
+    if (signal?.aborted) return;
     try {
-      const err: unknown = await res.json();
-      if (err && typeof err === 'object' && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
-        message = (err as { message: string }).message;
+      res = await fetch(buildUrl(env.apiBaseUrl, `/conversations/${conversationId}/messages/stream`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(request),
+        signal,
+      });
+
+      // Retry on server errors (502, 503, 504) or connection drops before streaming
+      if (!res.ok && [502, 503, 504].includes(res.status) && attempt < maxRetries) {
+        attempt += 1;
+        const delay = initialDelayMs * Math.pow(backoffFactor, attempt - 1) + Math.random() * 200;
+        await sleepWithSignal(delay, signal);
+        continue;
       }
-    } catch {
-      // ignore
+      break;
+    } catch (err) {
+      if (signal?.aborted || (err instanceof Error && err.name === 'AbortError')) {
+        return;
+      }
+      if (attempt < maxRetries) {
+        attempt += 1;
+        const delay = initialDelayMs * Math.pow(backoffFactor, attempt - 1) + Math.random() * 200;
+        await sleepWithSignal(delay, signal);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  if (!res || !res.ok || !res.body) {
+    let message = `Yêu cầu thất bại (${res?.status ?? 'unknown'}).`;
+    if (res) {
+      try {
+        const err: unknown = await res.json();
+        if (err && typeof err === 'object' && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+          message = (err as { message: string }).message;
+        }
+      } catch {
+        // ignore
+      }
     }
     throw new Error(message);
   }
 
+  let accumulatedText = '';
+  let receivedDone = false;
   const reader = res.body.getReader();
   try {
     const decoder = new TextDecoder();
@@ -220,6 +316,13 @@ export async function* streamConversationMessage(
           }
           continue;
         }
+
+        if (parsed.data.type === 'chunk') {
+          accumulatedText += parsed.data.delta;
+        } else if (parsed.data.type === 'done') {
+          receivedDone = true;
+        }
+
         yield parsed.data;
       }
     }
@@ -227,6 +330,26 @@ export async function* streamConversationMessage(
     if (signal?.aborted || (err instanceof Error && err.name === 'AbortError')) {
       return;
     }
+
+    // Nếu stream bị ngắt kết nối giữa chừng mà chưa nhận done: thử phục hồi tin nhắn từ backend
+    if (!receivedDone && accumulatedText.length > 0) {
+      try {
+        await sleepWithSignal(800, signal);
+        const detail = await fetchConversationDetail(token, conversationId);
+        const lastMsg = detail.messages[detail.messages.length - 1];
+        if (lastMsg && lastMsg.role === 'assistant') {
+          if (lastMsg.content.length > accumulatedText.length) {
+            const missingDelta = lastMsg.content.slice(accumulatedText.length);
+            yield { type: 'chunk', delta: missingDelta };
+          }
+          yield { type: 'done', message: lastMsg };
+          return;
+        }
+      } catch {
+        // Tiếp tục xuống dưới để throw lỗi hoặc để caller xử lý graceful
+      }
+    }
+
     throw err;
   } finally {
     reader.cancel().catch(() => {});

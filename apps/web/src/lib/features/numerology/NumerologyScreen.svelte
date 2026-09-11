@@ -8,6 +8,7 @@
   import NumerologyCard from './NumerologyCard.svelte';
   import { createNumerologyModel, type NumerologyCopy } from './numerology-model.svelte';
   import { Sparkles, Compass, ShieldCheck } from 'lucide-svelte';
+  import RoyalNumerologyPosterModal from '$lib/features/poster/RoyalNumerologyPosterModal.svelte';
 
   interface Props {
     copy: NumerologyCopy;
@@ -16,6 +17,7 @@
   let { copy }: Props = $props();
 
   const auth = getAuthStore();
+  let isPosterModalOpen = $state(false);
   const model = untrack(() => createNumerologyModel({ auth, copy }));
 
   function goToWallet(): void {
@@ -29,9 +31,20 @@
       {@const res = model.calculatedResult}
       <section class="result-section celestial-card-glass" aria-live="polite">
         <div class="result-header">
-          <div class="result-badge">
-            <Sparkles class="badge-icon" />
-            <span>Kết Quả Kim Tự Tháp Pythagoras</span>
+          <div class="result-header-top">
+            <div class="result-badge">
+              <Sparkles class="badge-icon" />
+              <span>Kết Quả Kim Tự Tháp Pythagoras</span>
+            </div>
+            <button
+              type="button"
+              class="btn-royal-poster"
+              onclick={() => (isPosterModalOpen = true)}
+              title="Xuất ảnh Poster Thần Số Học Hoàng Gia độ phân giải cao"
+            >
+              <span class="poster-icon">🖼️</span>
+              <span>Xuất Poster</span>
+            </button>
           </div>
           <h2 class="result-title">{copy.resultTitle}</h2>
           <p class="result-profile">
@@ -116,6 +129,16 @@
           />
         </div>
       </section>
+
+      {#if isPosterModalOpen && model.calculatedResult}
+        <RoyalNumerologyPosterModal
+          fullName={model.fullName}
+          birthDateString={model.birthDateString}
+          result={model.calculatedResult}
+          aiNarrative={model.aiNarrative}
+          onClose={() => (isPosterModalOpen = false)}
+        />
+      {/if}
     {:else}
       <section class="form-section celestial-card-glass">
         <div class="section-header">
@@ -509,5 +532,41 @@
 
   :global([data-theme="light"]) .reading-body {
     color: #292524;
+  }
+
+  .result-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .btn-royal-poster {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(56, 189, 248, 0.2));
+    border: 1px solid rgba(212, 175, 55, 0.6);
+    color: #ffd700;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+  }
+
+  .btn-royal-poster:hover {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.4), rgba(56, 189, 248, 0.35));
+    border-color: #ffd700;
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .poster-icon {
+    font-size: 1rem;
   }
 </style>

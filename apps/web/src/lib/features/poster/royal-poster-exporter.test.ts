@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import {
   slugifyVietnamese,
   formatPosterFileName,
+  formatDivinationPosterFileName,
   exportPosterToPng,
   triggerDirectDownload,
   sharePosterImage,
@@ -39,6 +40,23 @@ describe('royal-poster-exporter', () => {
       expect(formatPosterFileName('Nguyễn Văn An', 1990)).toBe('Poster-Hoang-Gia-Nguyen-Van-An-1990.png');
       expect(formatPosterFileName('Đỗ Long')).toBe('Poster-Hoang-Gia-Do-Long.png');
       expect(formatPosterFileName('', null)).toBe('Poster-Hoang-Gia-Duong-So.png');
+    });
+  });
+
+  describe('formatDivinationPosterFileName', () => {
+    it('formats divination poster file name for liuyao', () => {
+      expect(formatDivinationPosterFileName('liuyao', 'Thuần Càn')).toBe('Poster-Luc-Hao-Thuan-Can.png');
+      expect(formatDivinationPosterFileName('liuyao', '')).toBe('Poster-Luc-Hao.png');
+    });
+
+    it('formats divination poster file name for tarot', () => {
+      expect(formatDivinationPosterFileName('tarot', 'three-card')).toBe('Poster-Tarot-three-card.png');
+      expect(formatDivinationPosterFileName('tarot', null)).toBe('Poster-Tarot.png');
+    });
+
+    it('formats divination poster file name for numerology', () => {
+      expect(formatDivinationPosterFileName('numerology', 'Lê Hoàng')).toBe('Poster-Than-So-Hoc-Le-Hoang.png');
+      expect(formatDivinationPosterFileName('numerology', '')).toBe('Poster-Than-So-Hoc.png');
     });
   });
 

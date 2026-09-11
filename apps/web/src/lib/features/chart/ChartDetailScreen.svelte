@@ -37,6 +37,7 @@
   import DeluxePdfDossierModal from '$lib/features/dossier/DeluxePdfDossierModal.svelte';
   import RoyalBaziDossierModal from '$lib/features/dossier/RoyalBaziDossierModal.svelte';
   import RoyalPosterModal from '$lib/features/poster/RoyalPosterModal.svelte';
+  import RoyalLiuyaoPosterModal from '$lib/features/poster/RoyalLiuyaoPosterModal.svelte';
   import { resolvePalaceScope } from '$lib/features/explanation/explanation-model.svelte';
   import { appendReferralQuery, sanitizeReferralCode } from '$lib/features/referral/append-referral-query';
   import { revealElements, revealHexagramLines } from '$lib/motion/reveal';
@@ -239,12 +240,12 @@
 >
   {#snippet action()}
     <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-      {#if (showBoard || detail.chartSystem === 'ba-zi') && detail.snapshot}
+      {#if (showBoard || detail.chartSystem === 'ba-zi' || detail.chartSystem === 'liu-yao') && detail.snapshot}
         <button
           type="button"
           class="btn-royal-poster"
           onclick={() => (isPosterModalOpen = true)}
-          title="Xuất ảnh Lá Số Hoàng Gia chuẩn poster ngọc bảo để lưu trữ và chia sẻ"
+          title="Xuất ảnh Lá Số / Quẻ Dịch Hoàng Gia chuẩn poster ngọc bảo để lưu trữ và chia sẻ"
         >
           <span class="poster-icon">🖼️</span>
           <span class="poster-text">Xuất Poster</span>
@@ -453,12 +454,21 @@
 </AppScaffold>
 
 {#if isPosterModalOpen && detail.snapshot}
-  <RoyalPosterModal
-    snapshot={detail.snapshot}
-    chartId={detail.chartId}
-    userName={auth.user?.email ? auth.user.email.split('@')[0] : 'Đương Số'}
-    onClose={() => (isPosterModalOpen = false)}
-  />
+  {#if detail.chartSystem === 'liu-yao'}
+    <RoyalLiuyaoPosterModal
+      snapshot={detail.snapshot}
+      chartId={detail.chartId}
+      userName={auth.user?.email ? auth.user.email.split('@')[0] : 'Đương Số'}
+      onClose={() => (isPosterModalOpen = false)}
+    />
+  {:else}
+    <RoyalPosterModal
+      snapshot={detail.snapshot}
+      chartId={detail.chartId}
+      userName={auth.user?.email ? auth.user.email.split('@')[0] : 'Đương Số'}
+      onClose={() => (isPosterModalOpen = false)}
+    />
+  {/if}
 {/if}
 
 {#if dossier.isModalOpen && detail.snapshot}

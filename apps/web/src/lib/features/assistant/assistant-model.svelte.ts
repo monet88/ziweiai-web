@@ -162,19 +162,29 @@ export function createAssistantModel(options: AssistantModelOptions) {
         return true;
       }
 
-      // Roll back the optimistic turn ONLY if generation failed before completion (placeholder still
-      // streaming): drop BOTH the user message and the assistant placeholder so a retry does not
-      // duplicate the prompt or leave it orphaned without an answer. If the stream already emitted
-      // `done` (placeholder replaced by the real message, isStreaming=false) a late error — e.g. a
-      // network close after completion — must NOT discard the completed answer, so leave it intact.
+      // SSE Stream Resilience (Sprint 64):
+      // Nếu lỗi xảy ra khi đang stream nhưng ĐÃ nhận được một phần nội dung (last.content.length > 0):
+      // Tuyệt đối không rollback xóa bỏ tin nhắn của user và câu trả lời dở dang!
+      // Giữ lại nội dung đã stream, tắt cờ isStreaming và hiển thị thông báo gián đoạn nhẹ nhàng.
+      // Chỉ khi chưa nhận được bất kỳ token nào (content rỗng) mới rollback 2 message để user có thể gửi lại.
       const last = messages[messages.length - 1];
       if (last?.role === 'assistant' && last.isStreaming) {
-        messages = messages.slice(0, -2);
+        if (last.content.trim().length > 0) {
+          messages = [
+            ...messages.slice(0, -1),
+            {
+              ...last,
+              isStreaming: false,
+            },
+          ];
+          lastError = 'Kết nối gián đoạn. Đoạn văn bản đàm đạo đã nhận được bảo toàn an toàn.';
+        } else {
+          messages = messages.slice(0, -2);
+          lastError = err instanceof Error ? err.message : viCopy.explanation.statusFailed;
+        }
+      } else {
+        lastError = err instanceof Error ? err.message : viCopy.explanation.statusFailed;
       }
-      lastError = err instanceof Error ? err.message : viCopy.explanation.statusFailed;
-      // Do NOT rethrow: callers are UI event handlers, and an unawaited rejection would surface as an
-      // unhandled promise rejection. The error is already captured in `lastError` for display; return
-      // false so callers can react (e.g. restore the composer input).
       return false;
     } finally {
       currentAbortController = null;

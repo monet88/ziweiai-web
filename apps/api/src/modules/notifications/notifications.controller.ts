@@ -1,8 +1,7 @@
-import { Controller, Get, Post, Headers, UnauthorizedException, HttpCode, HttpStatus, Logger, Body, UseGuards, Req, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Headers, UnauthorizedException, HttpCode, HttpStatus, Logger, Body, Req, BadRequestException } from '@nestjs/common';
 import { NotificationsService, PushNotificationResult } from './notifications.service';
 import { apiEnv } from '../../config/env';
 import { Public, Private } from '../auth/decorators/public.decorator';
-import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
 import type { InAppNotificationsResponse } from '@ziweiai/contracts';
 
@@ -18,7 +17,6 @@ export class NotificationsController {
    */
   @Get('notifications/in-app')
   @Private()
-  @UseGuards(SupabaseAuthGuard)
   @HttpCode(HttpStatus.OK)
   async getInAppNotifications(@Req() req: AuthenticatedRequest): Promise<InAppNotificationsResponse> {
     const userId = req.authenticatedUser?.userId;

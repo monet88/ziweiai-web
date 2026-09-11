@@ -75,3 +75,27 @@
 5. **Bộ Công Cụ Quản Trị Cẩm Nang Bài Viết (`/admin/blog`)**:
    - Bổ sung nút **"Viết Bài Mới"** kèm Modal Form Soạn Thảo (tiêu đề, phụ đề, chuyên mục, slug, tác giả, thời gian đọc, từ khóa SEO, câu hỏi FAQ chuẩn Schema).
    - Bổ sung cụm nút Thao tác (Xem trước / Sửa / Xóa) trên từng dòng bài viết với cơ chế cập nhật trực tiếp state và thông báo toast.
+
+---
+
+## 7. Sprint 73: Deep Codebase Audit, Security Hardening & AI Resilience
+1. **Kiểm Soát Phân Quyền (RBAC) & Bảo Vệ Endpoints Admin**:
+   - Toàn bộ `AdminController` được bảo vệ cấp class bởi `ModeratorGuard`.
+   - Các mutation endpoints nhạy cảm (`topup`, `topupUserXu`, `cleanup-anon`, `configs`, `reconcile`) được thắt chặt thêm bởi `SuperAdminGuard`.
+   - Bổ sung thông tin actor `currentUser.email` vào hàm nạp tiền `topupUser` để lưu audit log chính xác.
+2. **Sửa Lỗi Rate-Limit Xác Thực Người Dùng (`DynamicThrottlerGuard`)**:
+   - Phát hiện và khắc phục lỗi `request.user` vs `request.authenticatedUser` (do `SupabaseAuthGuard` lưu vào `request.authenticatedUser`).
+   - Sinh key tracker `usr_${user.userId || user.id}` giúp áp dụng đúng quota cho người dùng đã đăng nhập.
+3. **Phòng Chống Lỗ Hổng CSV/Formula Injection**:
+   - Tạo module tiện ích `sanitizeCsvCell(val)` chuẩn OWASP: tự động bọc chuỗi trong dấu nháy kép `""`, nhân đôi dấu `""` bên trong và thêm tiền tố nháy đơn `'` nếu ô dữ liệu bắt đầu bằng các ký tự công thức (`=`, `+`, `-`, `@`, `\t`, `\r`).
+   - Áp dụng triệt để cho toàn bộ các nút xuất CSV trong `/admin/transactions` và `/admin/analytics`.
+4. **Khắc Phục Memory Leaks & Trùng Lặp Realtime Channels**:
+   - Tối ưu hóa `WalletIndicator.svelte` và `WalletBalance.svelte`: Chuyển sang dùng store dùng chung `getWalletStore()` từ Context thay vì khởi tạo instance riêng lẻ gây tràn kết nối Supabase WebSocket.
+   - Thêm cờ `{ once: true }` và hook `onDestroy()` dọn dẹp class in ấn trong `ExplanationToolbar.svelte`.
+5. **Tăng Cường Độ Tin Cậy Của AI Hạ Tầng (AI Provider Resilience)**:
+   - Khắc phục `getProviderChain`: Duy trì danh sách fallback đầy đủ `[preferred, ...remaining]` cho mọi cấu hình provider preference thay vì chỉ trả về 1 provider duy nhất.
+   - Tự động retry 1 lần (delay 400ms) trong `llm-exchange.ts` khi gặp sự cố mạng tạm thời hoặc rớt socket.
+6. **Chuẩn Hóa Mã Nguồn (100% Lint Clean)**:
+   - Dọn sạch toàn bộ imports/types mồ côi (dead code) trong các trang blog và admin.
+   - Bổ sung khóa định danh `key` cho tất cả các vòng lặp `{#each}`.
+   - Đạt 0 lỗi, 0 cảnh báo trên `pnpm lint`.

@@ -4,6 +4,7 @@ import {
   assertNoCjk,
   buildProviderMetadata,
   type LlmChatAdapter,
+  type LlmParsedResult,
 } from './llm-chat-adapter';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
 
@@ -36,15 +37,37 @@ export class LlmExchange {
     try {
       const model = adapter.resolveModel(params.modelOverride);
       const timeoutMs = params.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
-      const { url, init } = adapter.buildRequest({
-        prompt: params.prompt,
-        imageInput: params.imageInput,
-        model,
-        signal: AbortSignal.timeout(timeoutMs),
-      });
 
-      const response = await fetch(url, init);
-      const { text, usage } = await adapter.parseResult(response);
+      const executeFetch = async (attempt: number): Promise<LlmParsedResult> => {
+        const { url, init } = adapter.buildRequest({
+          prompt: params.prompt,
+          imageInput: params.imageInput,
+          model,
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+
+        try {
+          const response = await fetch(url, init);
+          return await adapter.parseResult(response);
+        } catch (err) {
+          const isTransient =
+            err instanceof Error &&
+            !err.message.includes('chữ Hán') &&
+            !err.message.includes('nội dung không hợp lệ') &&
+            err.name !== 'TimeoutError' &&
+            err.name !== 'AbortError' &&
+            /fetch failed|ECONNRESET|ETIMEDOUT|503|ENOTFOUND/i.test(err.message);
+
+          if (attempt === 0 && isTransient) {
+            this.logger.warn(`AI Provider [${adapter.providerName}] transient error, retrying in 400ms... (${err.message})`);
+            await new Promise((r) => setTimeout(r, 400));
+            return executeFetch(1);
+          }
+          throw err;
+        }
+      };
+
+      const { text, usage } = await executeFetch(0);
 
       const renderedMarkdown = text.trim();
       if (!renderedMarkdown) {

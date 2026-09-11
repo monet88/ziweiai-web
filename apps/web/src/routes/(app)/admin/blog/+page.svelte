@@ -9,11 +9,9 @@
     ExternalLink,
     CheckCircle2,
     Clock,
-    FileText,
     HelpCircle,
     Layers,
     Search,
-    Share2,
     TrendingUp,
     PlusCircle,
     Edit3,
@@ -237,7 +235,7 @@
       >
         Tất cả ({postsList.length})
       </button>
-      {#each BLOG_CATEGORIES as cat}
+      {#each BLOG_CATEGORIES as cat (cat.id)}
         <button
           class="cat-filter-btn {selectedCategory === cat.id ? 'active' : ''}"
           onclick={() => (selectedCategory = cat.id)}
@@ -352,7 +350,6 @@
       aria-label="Đóng cửa sổ soạn thảo"
     >
       <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
       <div
         class="modal-card"
         onclick={(e) => e.stopPropagation()}
@@ -397,7 +394,7 @@
             <div class="form-group">
               <label for="formCategory">Chuyên Mục</label>
               <select id="formCategory" class="form-input" bind:value={formCategory}>
-                {#each BLOG_CATEGORIES.filter((c) => c.id !== 'all') as cat}
+                {#each BLOG_CATEGORIES.filter((c) => c.id !== 'all') as cat (cat.id)}
                   <option value={cat.id}>{cat.label}</option>
                 {/each}
               </select>

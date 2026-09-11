@@ -1,21 +1,18 @@
 <script lang="ts">
   import { getAuthStore } from '$lib/auth/auth-context';
+  import { getWalletStore, type WalletStore } from '$lib/features/payment/wallet-context';
   import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
   import { Coins } from 'lucide-svelte';
-  import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
   const auth = getAuthStore();
-  const wallet = createWalletModel(auth);
-
-  onMount(() => {
-    wallet.subscribe();
-  });
-
-  onDestroy(() => {
-    wallet.unsubscribe();
-  });
+  let wallet: WalletStore;
+  try {
+    wallet = getWalletStore();
+  } catch {
+    wallet = createWalletModel(auth);
+  }
 
   function handleTopup() {
     goto(resolve('/wallet'));

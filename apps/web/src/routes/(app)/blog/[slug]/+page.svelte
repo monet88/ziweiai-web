@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* eslint-disable svelte/no-at-html-tags */
   import { page } from '$app/state';
   import { resolve } from '$app/paths';
   import { getBlogPostBySlug, getRelatedPosts } from '$lib/features/blog/blog-data';
@@ -8,7 +9,6 @@
     Calendar,
     ChevronRight,
     Sparkles,
-    Compass,
     Share2,
     CheckCircle2,
     HelpCircle,
@@ -78,6 +78,77 @@
       }, 2500);
     }
   }
+
+  const schemaOrgJson = $derived(
+    post
+      ? JSON.stringify({
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'Article',
+              headline: post.title,
+              description: post.summary,
+              datePublished: post.publishedAt,
+              author: {
+                '@type': 'Person',
+                name: post.author.name,
+              },
+              publisher: {
+                '@type': 'Organization',
+                name: 'ViOS — Tử Vi Toàn Tập',
+                logo: {
+                  '@type': 'ImageObject',
+                  url: 'https://tuvitoantap.vercel.app/icon-192.svg',
+                },
+              },
+              mainEntityOfPage: {
+                '@type': 'WebPage',
+                '@id': `https://tuvitoantap.vercel.app/blog/${post.slug}`,
+              },
+              image: 'https://tuvitoantap.vercel.app/og-image.png',
+            },
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                {
+                  '@type': 'ListItem',
+                  position: 1,
+                  name: 'Trang Chủ',
+                  item: 'https://tuvitoantap.vercel.app/',
+                },
+                {
+                  '@type': 'ListItem',
+                  position: 2,
+                  name: 'Cẩm Nang Mệnh Lý',
+                  item: 'https://tuvitoantap.vercel.app/blog',
+                },
+                {
+                  '@type': 'ListItem',
+                  position: 3,
+                  name: post.title,
+                  item: `https://tuvitoantap.vercel.app/blog/${post.slug}`,
+                },
+              ],
+            },
+            ...(post.faqs.length > 0
+              ? [
+                  {
+                    '@type': 'FAQPage',
+                    mainEntity: post.faqs.map((faq) => ({
+                      '@type': 'Question',
+                      name: faq.question,
+                      acceptedAnswer: {
+                        '@type': 'Answer',
+                        text: faq.answer,
+                      },
+                    })),
+                  },
+                ]
+              : []),
+          ],
+        })
+      : null
+  );
 </script>
 
 <svelte:head>
@@ -104,75 +175,9 @@
     <meta name="twitter:image" content="https://tuvitoantap.vercel.app/og-image.png" />
 
     <!-- Schema.org Article & FAQPage JSON-LD -->
-    {@html `
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "Article",
-            "headline": "${post.title}",
-            "description": "${post.summary}",
-            "datePublished": "${post.publishedAt}",
-            "author": {
-              "@type": "Person",
-              "name": "${post.author.name}"
-            },
-            "publisher": {
-              "@type": "Organization",
-              "name": "ViOS — Tử Vi Toàn Tập",
-              "logo": {
-                "@type": "ImageObject",
-                "url": "https://tuvitoantap.vercel.app/icon-192.svg"
-              }
-            },
-            "mainEntityOfPage": {
-              "@type": "WebPage",
-              "@id": "https://tuvitoantap.vercel.app/blog/${post.slug}"
-            },
-            "image": "https://tuvitoantap.vercel.app/og-image.png"
-          },
-          {
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-              {
-                "@type": "ListItem",
-                "position": 1,
-                "name": "Trang Chủ",
-                "item": "https://tuvitoantap.vercel.app/"
-              },
-              {
-                "@type": "ListItem",
-                "position": 2,
-                "name": "Cẩm Nang Mệnh Lý",
-                "item": "https://tuvitoantap.vercel.app/blog"
-              },
-              {
-                "@type": "ListItem",
-                "position": 3,
-                "name": "${post.title}",
-                "item": "https://tuvitoantap.vercel.app/blog/${post.slug}"
-              }
-            ]
-          }
-          ${post.faqs.length > 0 ? `,
-          {
-            "@type": "FAQPage",
-            "mainEntity": [
-              ${post.faqs.map(faq => `{
-                "@type": "Question",
-                "name": ${JSON.stringify(faq.question)},
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": ${JSON.stringify(faq.answer)}
-                }
-              }`).join(',')}
-            ]
-          }` : ''}
-        ]
-      }
-    </script>
-    `}
+    {#if schemaOrgJson}
+      {@html '<' + 'script type="application/ld+json">' + schemaOrgJson + '</' + 'script>'}
+    {/if}
   {/if}
 </svelte:head>
 
@@ -258,7 +263,7 @@
             <strong>Mục Lục Bài Viết</strong>
           </div>
           <ul class="toc-list">
-            {#each post.tableOfContents as item}
+            {#each post.tableOfContents as item (item.id)}
               <li>
                 <a href={`#${item.id}`}>{item.title}</a>
               </li>
@@ -296,7 +301,7 @@
             <span>Câu Hỏi Thường Gặp</span>
           </h2>
           <div class="faq-list">
-            {#each post.faqs as faq}
+            {#each post.faqs as faq (faq.question)}
               <div class="faq-item">
                 <h3 class="faq-q">
                   <CheckCircle2 size={16} class="text-emerald" />
@@ -351,7 +356,7 @@
 
       <!-- Keywords / Tags -->
       <div class="tags-row">
-        {#each post.keywords as kw}
+        {#each post.keywords as kw (kw)}
           <span class="kw-tag">#{kw}</span>
         {/each}
       </div>

@@ -12,13 +12,17 @@ export class DynamicThrottlerGuard extends ThrottlerGuard {
   private readonly adminRepository!: AdminRepository;
 
   protected async getTracker(req: Record<string, any>): Promise<string> {
+    const user = req.authenticatedUser || req.user;
+    if (user?.userId || user?.id) {
+      return `usr_${user.userId || user.id}`;
+    }
     return req.ips?.length ? req.ips[0] : req.ip; 
   }
 
   protected async handleRequest(requestProps: any): Promise<boolean> {
     const { context, limit, ttl } = requestProps;
     const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    const user = request.authenticatedUser || request.user;
     const isAuth = !!(user && user.email);
     const configKey = isAuth ? 'RATE_LIMIT_AUTH' : 'RATE_LIMIT_ANON';
 

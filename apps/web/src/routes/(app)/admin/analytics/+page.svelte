@@ -3,6 +3,7 @@
   import { page } from '$app/stores';
   import type { PageData } from './$types';
   import { BarChart3, Users, Coins, TrendingDown, TrendingUp, Sparkles, Filter, X, Calendar, Download } from 'lucide-svelte';
+  import { sanitizeCsvCell } from '$lib/utils/csv-sanitizer';
 
   let { data }: { data: PageData } = $props();
   let analytics = $derived(data.analytics);
@@ -38,10 +39,10 @@
 
     const headers = ['Ngày', 'Đăng Ký Mới', 'XU Nạp (+)', 'XU Tiêu Thụ (-)'];
     const rows = analytics.daily_stats.map((stat) => [
-      `"${stat.date}"`,
-      stat.new_users || 0,
-      stat.xu_topup || 0,
-      stat.xu_consumed || 0,
+      sanitizeCsvCell(stat.date),
+      sanitizeCsvCell(stat.new_users || 0),
+      sanitizeCsvCell(stat.xu_topup || 0),
+      sanitizeCsvCell(stat.xu_consumed || 0),
     ]);
 
     // Section 2: Tiêu thụ theo tính năng AI
@@ -49,18 +50,18 @@
     const featureTitle = ['--- PHÂN PHỐI TIÊU THỤ THEO TÍNH NĂNG AI ---', '', '', ''];
     const featureColHeaders = ['Tính Năng AI', 'XU Tiêu Thụ', '', ''];
     const featureRows = (analytics.feature_usage || []).map((f) => [
-      `"${f.feature}"`,
-      f.consumed || 0,
-      '',
-      '',
+      sanitizeCsvCell(f.feature),
+      sanitizeCsvCell(f.consumed || 0),
+      sanitizeCsvCell(''),
+      sanitizeCsvCell(''),
     ]);
 
     const allLines = [
-      headers.join(','),
+      headers.map(sanitizeCsvCell).join(','),
       ...rows.map((r) => r.join(',')),
       featureHeaders.join(','),
-      featureTitle.join(','),
-      featureColHeaders.join(','),
+      featureTitle.map(sanitizeCsvCell).join(','),
+      featureColHeaders.map(sanitizeCsvCell).join(','),
       ...featureRows.map((r) => r.join(',')),
     ];
 

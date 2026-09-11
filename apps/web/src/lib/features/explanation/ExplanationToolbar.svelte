@@ -65,6 +65,14 @@
     toast.show(`📥 Đã tải tệp .${format} thành công!`, 'success');
   }
 
+  import { onDestroy } from 'svelte';
+
+  onDestroy(() => {
+    if (browser) {
+      document.body.classList.remove('printing-explanation-scroll');
+    }
+  });
+
   function handlePrint() {
     if (!browser) return;
     document.body.classList.add('printing-explanation-scroll');
@@ -72,7 +80,7 @@
       document.body.classList.remove('printing-explanation-scroll');
       window.removeEventListener('afterprint', onAfterPrint);
     };
-    window.addEventListener('afterprint', onAfterPrint);
+    window.addEventListener('afterprint', onAfterPrint, { once: true });
     toast.show('🖨️ Đang chuẩn bị bản sớ in ấn A4 chuẩn mực...', 'info');
     setTimeout(() => {
       window.print();

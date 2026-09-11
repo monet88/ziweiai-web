@@ -28,29 +28,30 @@ export abstract class ProviderRouterBase<P extends AiExplanationProvider> {
   }
 
   protected getProviderChain(preference: ProviderPreference): P[] {
+    const defaultOrder: P[] = [this.geminiProvider, this.openAiCompatProvider, this.deepseekProvider];
+
     if (preference === 'deepseek') {
-      return [this.deepseekProvider];
+      return [this.deepseekProvider, ...defaultOrder.filter((p) => p !== this.deepseekProvider)];
     }
 
     if (preference === 'openai-compat') {
-      return [this.openAiCompatProvider];
+      return [this.openAiCompatProvider, ...defaultOrder.filter((p) => p !== this.openAiCompatProvider)];
     }
 
     if (preference === 'gemini') {
-      return [this.geminiProvider];
+      return [this.geminiProvider, ...defaultOrder.filter((p) => p !== this.geminiProvider)];
     }
 
     // preference === 'auto': chain mặc định gemini → openai-compat → deepseek (gemini siêu tốc độ
     // làm provider mặc định để tránh 504 Vercel, openai-compat fallback kế). AI_DEFAULT_PROVIDER 
     // (nếu khác 'auto') vẫn được đưa lên đầu chain, phần còn lại giữ nguyên làm fallback.
-    const order: P[] = [this.geminiProvider, this.openAiCompatProvider, this.deepseekProvider];
     const head = apiEnv.AI_DEFAULT_PROVIDER;
     if (head === 'auto') {
-      return order;
+      return defaultOrder;
     }
 
-    const preferred = order.find((provider) => provider.providerName === head);
-    return preferred ? [preferred, ...order.filter((provider) => provider !== preferred)] : order;
+    const preferred = defaultOrder.find((provider) => provider.providerName === head);
+    return preferred ? [preferred, ...defaultOrder.filter((provider) => provider !== preferred)] : defaultOrder;
   }
 
   // Vòng failover dùng chung: thử lần lượt các provider khả dụng, trả kết quả đầu tiên thành công.

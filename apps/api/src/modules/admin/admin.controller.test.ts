@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
+import { AdminRepository } from '../../database/repositories/admin.repository';
+import type { AuthenticatedUser } from '@ziweiai/contracts';
 
 describe('AdminController', () => {
   let controller: AdminController;
@@ -11,6 +13,11 @@ describe('AdminController', () => {
     const mockService = {
       getRecentTransactions: vi.fn(),
       reconcileTransaction: vi.fn(),
+      topupUser: vi.fn(),
+    };
+
+    const mockAdminRepo = {
+      checkAdminRole: vi.fn().mockResolvedValue('SUPER_ADMIN'),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -19,6 +26,10 @@ describe('AdminController', () => {
         {
           provide: AdminService,
           useValue: mockService,
+        },
+        {
+          provide: AdminRepository,
+          useValue: mockAdminRepo,
         },
       ],
     }).compile();
@@ -35,6 +46,18 @@ describe('AdminController', () => {
     service.getRecentTransactions.mockResolvedValue([{ id: 'tx_1' }] as any);
     const res = await controller.getTransactions();
     expect(res).toEqual([{ id: 'tx_1' }]);
+  });
+
+  it('should topup user and log actor email', async () => {
+    service.topupUser.mockResolvedValue({ success: true, userId: 'u_123', amount: 50 });
+    const mockAdmin: AuthenticatedUser = {
+      userId: 'admin-id',
+      email: 'admin@ziweiai.com',
+      isAnonymous: false,
+    };
+    const res = await controller.topupUser('u_123', { amount: 50 }, mockAdmin);
+    expect(res).toEqual({ success: true, userId: 'u_123', amount: 50 });
+    expect(service.topupUser).toHaveBeenCalledWith('u_123', 50, 'admin@ziweiai.com');
   });
 
   it('should reconcile transaction', async () => {

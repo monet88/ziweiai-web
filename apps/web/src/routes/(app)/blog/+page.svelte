@@ -1,15 +1,13 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
   import { BLOG_POSTS, BLOG_CATEGORIES } from '$lib/features/blog/blog-data';
-  import type { BlogCategory, BlogPost } from '$lib/features/blog/types';
+  import type { BlogCategory } from '$lib/features/blog/types';
   import {
-    BookOpen,
     Clock,
     User,
     ArrowRight,
     Sparkles,
     Compass,
-    Tag,
     ChevronRight
   } from 'lucide-svelte';
 

@@ -1,8 +1,12 @@
-import { Controller, Get, Post, Body, Param, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, BadRequestException, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
-import { reconcileTransactionSchema, updateAdminConfigSchema } from '@ziweiai/contracts';
+import { reconcileTransactionSchema, updateAdminConfigSchema, type AuthenticatedUser } from '@ziweiai/contracts';
+import { ModeratorGuard } from '../../common/guards/moderator.guard';
+import { SuperAdminGuard } from '../../common/guards/super-admin.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('admin')
+@UseGuards(ModeratorGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
@@ -17,22 +21,33 @@ export class AdminController {
   }
 
   @Post('users/:userId/topup')
-  async topupUser(@Param('userId') userId: string, @Body() body: { amount: number; reason?: string }) {
+  @UseGuards(SuperAdminGuard)
+  async topupUser(
+    @Param('userId') userId: string,
+    @Body() body: { amount: number; reason?: string },
+    @CurrentUser() currentUser?: AuthenticatedUser,
+  ) {
     if (typeof body?.amount !== 'number') {
       throw new BadRequestException('Amount is required and must be a number');
     }
-    return this.adminService.topupUser(userId, body.amount, body.reason);
+    return this.adminService.topupUser(userId, body.amount, currentUser?.email || undefined);
   }
 
   @Post('users/:userId/xu')
-  async topupUserXu(@Param('userId') userId: string, @Body() body: { amount: number; reason?: string }) {
+  @UseGuards(SuperAdminGuard)
+  async topupUserXu(
+    @Param('userId') userId: string,
+    @Body() body: { amount: number; reason?: string },
+    @CurrentUser() currentUser?: AuthenticatedUser,
+  ) {
     if (typeof body?.amount !== 'number') {
       throw new BadRequestException('Amount is required and must be a number');
     }
-    return this.adminService.topupUser(userId, body.amount, body.reason);
+    return this.adminService.topupUser(userId, body.amount, currentUser?.email || undefined);
   }
 
   @Post('users/cleanup-anon')
+  @UseGuards(SuperAdminGuard)
   async cleanupAnonUsers() {
     return this.adminService.cleanupAnonUsers();
   }
@@ -56,6 +71,7 @@ export class AdminController {
   }
 
   @Post('configs')
+  @UseGuards(SuperAdminGuard)
   async updateConfig(@Body() body: unknown) {
     const parseResult = updateAdminConfigSchema.safeParse(body);
     if (!parseResult.success) {
@@ -66,6 +82,7 @@ export class AdminController {
   }
 
   @Post('reconcile')
+  @UseGuards(SuperAdminGuard)
   async reconcile(@Body() body: unknown) {
     const parseResult = reconcileTransactionSchema.safeParse(body);
     if (!parseResult.success) {

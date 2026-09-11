@@ -1,22 +1,19 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
   import { getAuthStore } from '$lib/auth/auth-context';
+  import { getWalletStore, type WalletStore } from './wallet-context';
   import { createWalletModel } from './wallet-model.svelte';
   import { Coins, Plus } from 'lucide-svelte';
   import { viCopy } from '$lib/i18n/vi';
-  import { onMount, onDestroy } from 'svelte';
   import { Spinner } from '$lib/components/ui';
 
   const auth = getAuthStore();
-  const wallet = createWalletModel(auth);
-
-  onMount(() => {
-    wallet.subscribe();
-  });
-
-  onDestroy(() => {
-    wallet.unsubscribe();
-  });
+  let wallet: WalletStore;
+  try {
+    wallet = getWalletStore();
+  } catch {
+    wallet = createWalletModel(auth);
+  }
 </script>
 
 {#if auth.isAuthenticated && !auth.isAnonymous}

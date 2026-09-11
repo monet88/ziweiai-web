@@ -3,6 +3,7 @@
   import { getAuthStore } from '$lib/auth/auth-context';
   import { NoticeBanner } from '$lib/components/ui';
   import { toast } from '$lib/stores/toast';
+  import { sanitizeCsvCell } from '$lib/utils/csv-sanitizer';
   import { ArrowLeftRight, RefreshCw, Search, CheckCircle2, AlertTriangle, Coins, ShieldCheck, UserCheck, X, Link, Download, Activity, Clock } from 'lucide-svelte';
 
   interface Transaction {
@@ -60,16 +61,16 @@
 
     const headers = ['Mã Giao Dịch', 'Mã SePay', 'User ID Nhận', 'Số Tiền (VNĐ)', 'XU Quy Đổi', 'Thời Gian Tạo', 'Trạng Thái'];
     const rows = filteredTransactions.map((tx) => [
-      `"${tx.id}"`,
-      `"${tx.sepay_transaction_id || ''}"`,
-      `"${tx.owner_user_id || 'Chưa gán'}"`,
-      tx.amount_vnd || 0,
-      tx.xu_added || 0,
-      `"${new Date(tx.created_at).toLocaleString('vi-VN')}"`,
-      `"${tx.owner_user_id ? 'Đã gán thành công' : 'Chờ gán thủ công'}"`,
+      sanitizeCsvCell(tx.id),
+      sanitizeCsvCell(tx.sepay_transaction_id || ''),
+      sanitizeCsvCell(tx.owner_user_id || 'Chưa gán'),
+      sanitizeCsvCell(tx.amount_vnd || 0),
+      sanitizeCsvCell(tx.xu_added || 0),
+      sanitizeCsvCell(new Date(tx.created_at).toLocaleString('vi-VN')),
+      sanitizeCsvCell(tx.owner_user_id ? 'Đã gán thành công' : 'Chờ gán thủ công'),
     ]);
 
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+    const csvContent = '\uFEFF' + [headers.map(sanitizeCsvCell).join(','), ...rows.map((r) => r.join(','))].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

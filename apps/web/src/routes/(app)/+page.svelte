@@ -11,6 +11,8 @@
   import BirthForm from '$lib/features/dashboard/BirthForm.svelte';
   import DashboardSidebar from '$lib/features/dashboard/DashboardSidebar.svelte';
   import WalletBalance from '$lib/features/payment/WalletBalance.svelte';
+  import NotificationBell from '$lib/features/notifications/NotificationBell.svelte';
+  import DailyCheckinWidget from '$lib/features/rewards/DailyCheckinWidget.svelte';
   import {
     Sparkles,
     Compass,
@@ -255,6 +257,7 @@
 
       <div class="session-actions">
         <ThemeToggle />
+        <NotificationBell />
         
         <!-- Nút Nạp XU Hoàng Kim -->
         <a class="wallet-pill-luxury" href={resolve('/wallet')} title="Mở ví XU & Điểm danh">
@@ -439,6 +442,8 @@
 
     <!-- TẦNG 3: THIỆP VÀNG HOÀNG GIA (CONVERSION TEASER PAYWALL & NẠP XU) -->
     <section class="vip-conversion-section" id="vip-conversion">
+      <DailyCheckinWidget />
+
       <div class="royal-card">
         <div class="royal-badge-wrap">
           <Crown size={16} class="text-celestial-gold" />
@@ -1515,6 +1520,9 @@
   .vip-conversion-section {
     position: relative;
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
   }
 
   .royal-card {

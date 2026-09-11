@@ -1,6 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Inject, Optional } from '@nestjs/common';
 import { ProfilesRepository } from '../../database/repositories/profiles.repository';
 import { apiEnv } from '../../config/env';
+import { SUPABASE_CLIENT } from '../../database/supabase-client';
+import { type SupabaseClient } from '@supabase/supabase-js';
+import type { InAppNotification, InAppNotificationsResponse } from '@ziweiai/contracts';
 
 export interface PushNotificationPayload {
   title: string;
@@ -22,7 +25,10 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
   private checkInterval: NodeJS.Timeout | null = null;
   private lastExecutedDay: string | null = null;
 
-  constructor(private readonly profilesRepo: ProfilesRepository) {}
+  constructor(
+    private readonly profilesRepo: ProfilesRepository,
+    @Optional() @Inject(SUPABASE_CLIENT) private readonly client?: SupabaseClient,
+  ) {}
 
   onModuleInit() {
     // Chỉ kích hoạt in-memory runner khi chạy ở chế độ standalone dev/server thông thường
@@ -148,5 +154,108 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     payload: PushNotificationPayload,
   ): Promise<void> {
     this.logger.debug(`Dispatching FCM message to token: ${token.slice(0, 10)}... (payload: ${payload.title})`);
+  }
+
+  /**
+   * Get In-App Notifications for a user
+   */
+  async getUserInAppNotifications(userId: string): Promise<InAppNotificationsResponse> {
+    const notifications: InAppNotification[] = [];
+
+    if (!this.client) {
+      return { data: [], unreadCount: 0 };
+    }
+
+    try {
+      // 1. Fetch recent transactions from xu_transactions
+      const { data: transactions, error: txError } = await this.client
+        .from('xu_transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (!txError && transactions) {
+        for (const tx of transactions) {
+          const amount = Number(tx.amount);
+          if (amount > 0) {
+            const isCheckin = tx.transaction_type === 'daily_checkin';
+            const isAd = tx.transaction_type === 'ad_reward';
+            const isRef = tx.transaction_type === 'referral_bonus';
+
+            notifications.push({
+              id: tx.id || `tx-${Math.random().toString(36).substring(2, 9)}`,
+              type: isCheckin || isAd ? 'checkin_reward' : isRef ? 'referral_reward' : 'topup_success',
+              title: isCheckin
+                ? 'Thưởng Điểm Danh Khởi Vận'
+                : isAd
+                ? 'Thưởng Xem Quảng Cáo'
+                : isRef
+                ? 'Thưởng Giới Thiệu Bạn Bè'
+                : 'Nạp XU Hoàng Kim Thành Công',
+              body: `+${amount} XU đã được cộng vào ví của bạn.`,
+              amountXu: amount,
+              link: '/wallet',
+              createdAt: tx.created_at || new Date().toISOString(),
+              isRead: false,
+            });
+          } else {
+            notifications.push({
+              id: tx.id || `tx-${Math.random().toString(36).substring(2, 9)}`,
+              type: 'feature_spent',
+              title: 'Mở Khóa Tính Năng Hoàng Gia',
+              body: `Đã sử dụng ${Math.abs(amount)} XU để mở khóa luận giải chi tiết.`,
+              amountXu: amount,
+              link: '/charts',
+              createdAt: tx.created_at || new Date().toISOString(),
+              isRead: false,
+            });
+          }
+        }
+      }
+
+      // 2. Check today's checkin status
+      const { data: profile } = await this.client
+        .from('profiles')
+        .select('last_checkin_date, checkin_streak')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+      const today = formatter.format(new Date());
+
+      if (!profile?.last_checkin_date || profile.last_checkin_date < today) {
+        notifications.unshift({
+          id: `daily-reminder-${today}`,
+          type: 'system_reminder',
+          title: 'Khí Vận Nhật Khóa — Điểm Danh Nhận XU',
+          body: 'Hôm nay bạn chưa điểm danh. Hãy nhận 5 XU miễn phí để duy trì chuỗi hoàng đạo!',
+          amountXu: 5,
+          link: '/wallet',
+          createdAt: new Date().toISOString(),
+          isRead: false,
+        });
+      }
+
+      // 3. Fallback welcome notification if empty
+      if (notifications.length === 0) {
+        notifications.push({
+          id: 'welcome-notification',
+          type: 'system_reminder',
+          title: 'Chào Mừng Đến Với ViOS Tử Vi Toàn Tập',
+          body: 'Hệ điều hành thuật số AI hoàng triều đỉnh cao. Trải nghiệm luận giải và nhận XU mỗi ngày!',
+          link: '/wallet',
+          createdAt: new Date().toISOString(),
+          isRead: false,
+        });
+      }
+    } catch (err) {
+      this.logger.error(`Failed to build in-app notifications for user ${userId}`, err);
+    }
+
+    return {
+      data: notifications,
+      unreadCount: notifications.filter((n) => !n.isRead).length,
+    };
   }
 }

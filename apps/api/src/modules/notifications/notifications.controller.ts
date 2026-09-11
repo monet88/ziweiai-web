@@ -1,7 +1,10 @@
-import { Controller, Get, Post, Headers, UnauthorizedException, HttpCode, HttpStatus, Logger, Body } from '@nestjs/common';
+import { Controller, Get, Post, Headers, UnauthorizedException, HttpCode, HttpStatus, Logger, Body, UseGuards, Req, BadRequestException } from '@nestjs/common';
 import { NotificationsService, PushNotificationResult } from './notifications.service';
 import { apiEnv } from '../../config/env';
-import { Public } from '../auth/decorators/public.decorator';
+import { Public, Private } from '../auth/decorators/public.decorator';
+import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
+import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
+import type { InAppNotificationsResponse } from '@ziweiai/contracts';
 
 @Public()
 @Controller()
@@ -9,6 +12,22 @@ export class NotificationsController {
   private readonly logger = new Logger(NotificationsController.name);
 
   constructor(private readonly notificationsService: NotificationsService) {}
+
+  /**
+   * Endpoint lấy danh sách thông báo in-app cho người dùng đã đăng nhập
+   */
+  @Get('notifications/in-app')
+  @Private()
+  @UseGuards(SupabaseAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getInAppNotifications(@Req() req: AuthenticatedRequest): Promise<InAppNotificationsResponse> {
+    const userId = req.authenticatedUser?.userId;
+    if (!userId) {
+      throw new BadRequestException('User ID not found');
+    }
+
+    return this.notificationsService.getUserInAppNotifications(userId);
+  }
 
   /**
    * Endpoint kích hoạt bởi Vercel Cron (định kỳ mỗi 00:00 UTC = 07:00 AM VN)

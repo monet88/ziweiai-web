@@ -3,6 +3,7 @@
   import { resolve } from '$app/paths';
   import WalletIndicator from '$lib/features/payment/WalletIndicator.svelte';
   import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
+  import NotificationBell from '$lib/features/notifications/NotificationBell.svelte';
   import { fadeUp } from '$lib/animations/gsap';
   import { ArrowLeft, Compass } from 'lucide-svelte';
 
@@ -49,6 +50,7 @@
 
       <div class="nav-actions">
         <ThemeToggle />
+        <NotificationBell />
         <WalletIndicator />
       </div>
     </div>

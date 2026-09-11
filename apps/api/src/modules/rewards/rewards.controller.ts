@@ -50,6 +50,16 @@ export class RewardsController {
     return this.rewardsService.claimAdReward(userId);
   }
 
+  @Get('status')
+  async getStatus(@Req() req: AuthenticatedRequest) {
+    const userId = req.authenticatedUser?.userId;
+    if (!userId) {
+      throw new BadRequestException('User ID not found');
+    }
+
+    return this.rewardsService.getCheckinStatus(userId);
+  }
+
   @Get('referrals')
   async getReferrals(@Req() req: AuthenticatedRequest) {
     const userId = req.authenticatedUser?.userId;

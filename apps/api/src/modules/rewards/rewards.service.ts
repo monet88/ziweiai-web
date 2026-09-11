@@ -106,6 +106,49 @@ export class RewardsService {
     };
   }
 
+  async getCheckinStatus(userId: string) {
+    const { data: profile, error } = await this.client
+      .from('profiles')
+      .select('last_checkin_date, checkin_streak')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      this.logger.error(`Failed to get checkin status for user ${userId}`, error);
+    }
+
+    const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+    const today = formatter.format(new Date());
+
+    const yesterdayDate = new Date();
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterday = formatter.format(yesterdayDate);
+
+    const lastCheckin = (profile?.last_checkin_date as string | null) ?? null;
+    let streak = (profile?.checkin_streak as number) || 0;
+    let canCheckin = true;
+
+    if (lastCheckin === today) {
+      canCheckin = false;
+    } else if (lastCheckin === yesterday) {
+      canCheckin = true;
+    } else {
+      // Bỏ lỡ ngày điểm danh trước đó -> reset chuỗi về 0
+      streak = 0;
+      canCheckin = true;
+    }
+
+    const nextStreak = canCheckin ? streak + 1 : streak;
+    const rewardToday = nextStreak % 7 === 0 ? 10 : 5;
+
+    return {
+      canCheckin,
+      streak,
+      lastCheckinDate: lastCheckin,
+      rewardToday,
+    };
+  }
+
   async getReferralHistory(userId: string) {
     return this.profilesRepository.listReferralsByReferrerId(userId);
   }

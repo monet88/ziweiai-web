@@ -266,4 +266,42 @@ describe('RewardsController & RewardsService', () => {
       expect(mockProfilesRepo.listReferralsByReferrerId).toHaveBeenCalledWith('user-uuid-123');
     });
   });
+
+  describe('getStatus', () => {
+    it('should return checkin status and streak info', async () => {
+      const mockReq = {
+        authenticatedUser: { userId: 'user-uuid-123' },
+      } as AuthenticatedRequest;
+
+      mockSupabaseClient.from.mockImplementation((table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { last_checkin_date: '2026-09-10', checkin_streak: 2 },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      const res = await controller.getStatus(mockReq);
+      expect(res).toBeDefined();
+      expect(typeof res.canCheckin).toBe('boolean');
+      expect(typeof res.streak).toBe('number');
+      expect(typeof res.rewardToday).toBe('number');
+    });
+
+    it('should throw BadRequestException if user id is missing', async () => {
+      const mockReq = {
+        authenticatedUser: undefined,
+      } as any;
+
+      await expect(controller.getStatus(mockReq)).rejects.toThrow(BadRequestException);
+    });
+  });
 });

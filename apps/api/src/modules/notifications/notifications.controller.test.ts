@@ -153,4 +153,36 @@ describe('NotificationsController', () => {
       }
     });
   });
+
+  describe('getInAppNotifications', () => {
+    it('should throw BadRequestException if userId is missing', async () => {
+      const mockReq = { authenticatedUser: undefined } as any;
+      await expect(controller.getInAppNotifications(mockReq)).rejects.toThrow();
+    });
+
+    it('should return in-app notifications for authenticated user', async () => {
+      const mockReq = {
+        authenticatedUser: { userId: 'user-uuid-abc' },
+      } as any;
+
+      (service as any).getUserInAppNotifications = vi.fn().mockResolvedValue({
+        data: [
+          {
+            id: 'notif-1',
+            type: 'topup_success',
+            title: 'Nạp XU thành công',
+            body: '+50 XU',
+            createdAt: '2026-09-11T12:00:00.000Z',
+            isRead: false,
+          },
+        ],
+        unreadCount: 1,
+      });
+
+      const res = await controller.getInAppNotifications(mockReq);
+      expect(res.unreadCount).toBe(1);
+      expect(res.data[0].id).toBe('notif-1');
+      expect((service as any).getUserInAppNotifications).toHaveBeenCalledWith('user-uuid-abc');
+    });
+  });
 });

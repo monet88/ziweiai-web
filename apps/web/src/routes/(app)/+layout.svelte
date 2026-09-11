@@ -8,6 +8,8 @@
     GlobalBottomSheet,
     AnonymousPreservationBanner,
   } from '$lib/components/ui';
+  import NotificationDrawer from '$lib/features/notifications/NotificationDrawer.svelte';
+  import { notificationStore } from '$lib/features/notifications/notification-store.svelte';
   import type { Snippet } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -52,6 +54,21 @@
       }
     }
   });
+
+  $effect(() => {
+    if (wallet.lastTopupEvent) {
+      notificationStore.pushNotification({
+        id: `topup-${Date.now()}`,
+        type: 'topup_success',
+        title: 'Nạp XU Hoàng Kim Thành Công',
+        body: `+${wallet.lastTopupEvent.added} XU đã được cộng vào ví của bạn qua VietQR. Số dư mới: ${wallet.lastTopupEvent.newBalance} XU.`,
+        amountXu: wallet.lastTopupEvent.added,
+        link: '/wallet',
+        createdAt: new Date().toISOString(),
+        isRead: false,
+      });
+    }
+  });
 </script>
 
 {#if auth.isInitializing}
@@ -67,6 +84,7 @@
   <MobileBottomNav />
 {/if}
 
+<NotificationDrawer />
 <GlobalPaywallModal />
 <GlobalAuthModal />
 <GlobalBottomSheet />

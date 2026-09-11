@@ -215,6 +215,21 @@ describe('backend API contracts', () => {
     expect(() => createConversationMessageRequestSchema.parse({ quickPromptKey: 'ignore-all-rules' })).toThrow();
   });
 
+  it('accepts valid palaceScope in conversation message request', () => {
+    const withPalace = createConversationMessageRequestSchema.parse({
+      content: 'Cung này có sao gì chiếu?',
+      palaceScope: 'careerPalace',
+    });
+    expect(withPalace.palaceScope).toBe('careerPalace');
+
+    expect(() =>
+      createConversationMessageRequestSchema.parse({
+        content: 'Test',
+        palaceScope: 'invalidPalace' as any,
+      }),
+    ).toThrow();
+  });
+
   it('accepts typed conversation stream events', () => {
     expect(conversationStreamEventSchema.parse({ type: 'chunk', delta: 'Xin chào' }).type).toBe('chunk');
     const done = conversationStreamEventSchema.parse({

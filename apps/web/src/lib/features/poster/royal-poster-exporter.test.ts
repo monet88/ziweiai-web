@@ -1,0 +1,96 @@
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import {
+  slugifyVietnamese,
+  formatPosterFileName,
+  exportPosterToPng,
+  triggerDirectDownload,
+  sharePosterImage,
+} from './royal-poster-exporter';
+
+vi.mock('html2canvas', () => {
+  return {
+    default: vi.fn().mockImplementation(() => {
+      return Promise.resolve({
+        width: 800,
+        height: 1100,
+        toBlob: vi.fn().mockImplementation((callback: (blob: Blob | null) => void) => {
+          callback(new Blob(['mock-png-data'], { type: 'image/png' }));
+        }),
+      });
+    }),
+  };
+});
+
+describe('royal-poster-exporter', () => {
+  describe('slugifyVietnamese', () => {
+    it('handles empty input gracefully', () => {
+      expect(slugifyVietnamese('')).toBe('');
+    });
+
+    it('removes accents and special characters correctly', () => {
+      expect(slugifyVietnamese('Nguyễn Văn An')).toBe('Nguyen-Van-An');
+      expect(slugifyVietnamese('Đỗ Hoàng Long')).toBe('Do-Hoang-Long');
+      expect(slugifyVietnamese('Trần Thị Ánh Tuyết!')).toBe('Tran-Thi-Anh-Tuyet');
+    });
+  });
+
+  describe('formatPosterFileName', () => {
+    it('creates formatted file name with user name and year', () => {
+      expect(formatPosterFileName('Nguyễn Văn An', 1990)).toBe('Poster-Hoang-Gia-Nguyen-Van-An-1990.png');
+      expect(formatPosterFileName('Đỗ Long')).toBe('Poster-Hoang-Gia-Do-Long.png');
+      expect(formatPosterFileName('', null)).toBe('Poster-Hoang-Gia-Duong-So.png');
+    });
+  });
+
+  describe('exportPosterToPng', () => {
+    it('converts DOM element to Blob successfully', async () => {
+      const dummyElement = document.createElement('div');
+      const blob = await exportPosterToPng(dummyElement, { scale: 2 });
+      expect(blob).toBeInstanceOf(Blob);
+      expect(blob.type).toBe('image/png');
+    });
+  });
+
+  describe('triggerDirectDownload', () => {
+    beforeEach(() => {
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-url');
+      vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('creates anchor and triggers click without error', () => {
+      const blob = new Blob(['mock'], { type: 'image/png' });
+      expect(() => triggerDirectDownload(blob, 'test.png')).not.toThrow();
+    });
+  });
+
+  describe('sharePosterImage', () => {
+    it('returns false when navigator.share is not available', async () => {
+      const blob = new Blob(['mock'], { type: 'image/png' });
+      const result = await sharePosterImage(blob, 'test.png', 'Title', 'Text');
+      expect(result).toBe(false);
+    });
+
+    it('returns true when navigator.canShare and navigator.share succeed', async () => {
+      const mockShare = vi.fn().mockResolvedValue(undefined);
+      const mockCanShare = vi.fn().mockReturnValue(true);
+
+      Object.defineProperty(globalThis, 'navigator', {
+        value: {
+          share: mockShare,
+          canShare: mockCanShare,
+        },
+        configurable: true,
+        writable: true,
+      });
+
+      const blob = new Blob(['mock'], { type: 'image/png' });
+      const result = await sharePosterImage(blob, 'test.png', 'Lá số', 'Mô tả');
+      expect(result).toBe(true);
+      expect(mockShare).toHaveBeenCalled();
+    });
+  });
+});

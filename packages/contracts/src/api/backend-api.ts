@@ -54,17 +54,6 @@ export const createConversationRequestSchema = z.object({
   title: z.string().trim().min(1).max(120).nullish(),
 });
 
-export const createConversationMessageRequestSchema = z
-  .object({
-    content: z.string().trim().min(1).max(2_000).nullish(),
-    quickPromptKey: quickPromptKeySchema.nullish(),
-    providerPreference: providerPreferenceSchema.default('auto'),
-  })
-  .refine((value) => Boolean(value.content) !== Boolean(value.quickPromptKey), {
-    message: 'Gửi đúng một trong content hoặc quickPromptKey.',
-    path: ['content'],
-  });
-
 // Phạm vi luận giải theo từng cung (12 cung an theo iztro nameKey) cộng hai mục vận hạn
 // (decadal = Đại Vận, yearly = Lưu Niên — mục Lưu Niên gói luôn dữ liệu Tiểu Vận theo
 // tuổi vào prompt). Tách khỏi explanationKind (chủ đề) để không phá vỡ luồng overview cũ;
@@ -85,6 +74,18 @@ export const palaceScopeSchema = z.enum([
   'decadal',
   'yearly',
 ]);
+
+export const createConversationMessageRequestSchema = z
+  .object({
+    content: z.string().trim().min(1).max(2_000).nullish(),
+    quickPromptKey: quickPromptKeySchema.nullish(),
+    providerPreference: providerPreferenceSchema.default('auto'),
+    palaceScope: palaceScopeSchema.nullish(),
+  })
+  .refine((value) => Boolean(value.content) !== Boolean(value.quickPromptKey), {
+    message: 'Gửi đúng một trong content hoặc quickPromptKey.',
+    path: ['content'],
+  });
 
 export const apiErrorSchema = z.object({
   code: apiErrorCodeSchema,

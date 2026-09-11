@@ -312,6 +312,7 @@ export class ConversationsService {
         messages: previousMessages,
         userMessage: userContent,
         quickPromptKey: input.quickPromptKey ?? undefined,
+        palaceScope: input.palaceScope ?? undefined,
         divinationInquiry,
       },
     };

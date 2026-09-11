@@ -22,14 +22,23 @@
   import { getWalletStore, type WalletStore } from '$lib/features/payment/wallet-context';
   import { toast } from '$lib/stores/toast';
   import { resolve } from '$app/paths';
+  import type { PalaceScope } from '@ziweiai/contracts';
 
   interface Props {
     chartSnapshotId: string;
     conversationId?: string | null;
     onConversationCreated?: (id: string) => void;
+    activePalaceScope?: PalaceScope | null;
+    activePalaceName?: string | null;
   }
 
-  let { chartSnapshotId, conversationId: initialConversationId = null, onConversationCreated }: Props = $props();
+  let {
+    chartSnapshotId,
+    conversationId: initialConversationId = null,
+    onConversationCreated,
+    activePalaceScope = null,
+    activePalaceName = null,
+  }: Props = $props();
 
   const auth = getAuthStore();
   const queryClient = useQueryClient();
@@ -41,6 +50,8 @@
   } catch {
     walletStore = null;
   }
+
+  let isPalaceContextActive = $state(true);
 
   // svelte-ignore state_referenced_locally
   let localConversationId = $state<string | null>(initialConversationId);
@@ -54,6 +65,7 @@
       localConversationId = id;
       onConversationCreated?.(id);
     },
+    getActivePalaceScope: () => (isPalaceContextActive ? activePalaceScope : null),
   });
 
   let inputValue = $state('');
@@ -164,6 +176,29 @@
     </div>
   </header>
 
+  <!-- Multi-Palace Assistant Context Banner -->
+  {#if activePalaceScope && activePalaceName}
+    <div class="palace-context-banner" role="status" aria-label="Ngữ cảnh cung vị đang chọn">
+      <div class="palace-context-content">
+        <span class="palace-context-icon">🧭</span>
+        <div class="palace-context-text">
+          <span class="palace-context-lead">Ngữ cảnh đàm đạo:</span>
+          <strong class="palace-context-name">{activePalaceName}</strong>
+          <span class="palace-context-relations">(kèm Tam Phương Tứ Chính, Nhị Hợp, Giáp Cung)</span>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="palace-context-toggle-btn"
+        class:active={isPalaceContextActive}
+        onclick={() => (isPalaceContextActive = !isPalaceContextActive)}
+        title={isPalaceContextActive ? 'Click để chuyển sang đàm đạo toàn bàn' : 'Click để kích hoạt soi chiếu cung này'}
+      >
+        {isPalaceContextActive ? 'Đang soi chiếu ✓' : 'Đàm đạo toàn bàn'}
+      </button>
+    </div>
+  {/if}
+
   <!-- Smart Astrological Prompt Chips -->
   <div class="chips-container" role="region" aria-label="Gợi ý câu hỏi tinh bàn chuyên sâu">
     <div class="chips-label">✨ Gợi ý trọng điểm:</div>
@@ -235,6 +270,11 @@
                 <span class="sender-name">
                   {m.role === 'user' ? 'Đương số' : 'Khâm Thiên Giám AI'}
                 </span>
+                {#if m.palaceScope}
+                  <span class="bubble-palace-pill" title="Ngữ cảnh cung vị: {m.palaceScope}">
+                    🧭 {m.palaceScope}
+                  </span>
+                {/if}
                 {#if m.role === 'assistant' && !m.isStreaming && m.content}
                   <button
                     type="button"
@@ -474,6 +514,121 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    margin: 12px 0 4px;
+  }
+
+  /* Multi-Palace Assistant Context Banner */
+  .palace-context-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    margin: 12px 0 6px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(217, 119, 6, 0.08));
+    border: 1px solid rgba(217, 119, 6, 0.25);
+    border-radius: 10px;
+    backdrop-filter: blur(8px);
+  }
+
+  .palace-context-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .palace-context-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .palace-context-text {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: #e5e9f0;
+  }
+
+  .palace-context-lead {
+    color: rgba(229, 233, 240, 0.7);
+  }
+
+  .palace-context-name {
+    color: #fbbf24;
+    font-weight: 700;
+  }
+
+  .palace-context-relations {
+    font-size: 0.75rem;
+    color: #34d399;
+    opacity: 0.9;
+  }
+
+  .palace-context-toggle-btn {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  .palace-context-toggle-btn:hover {
+    background: rgba(245, 158, 11, 0.25);
+  }
+
+  .palace-context-toggle-btn.active {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff;
+    border-color: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+  }
+
+  .bubble-palace-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border-radius: 12px;
+    background: rgba(217, 119, 6, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(217, 119, 6, 0.3);
+  }
+
+  :global([data-theme="light"]) .palace-context-banner {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(217, 119, 6, 0.08));
+    border-color: rgba(180, 83, 9, 0.3);
+  }
+
+  :global([data-theme="light"]) .palace-context-text {
+    color: #1f2937;
+  }
+
+  :global([data-theme="light"]) .palace-context-lead {
+    color: #4b5563;
+  }
+
+  :global([data-theme="light"]) .palace-context-name {
+    color: #b45309;
+  }
+
+  :global([data-theme="light"]) .palace-context-relations {
+    color: #047857;
+  }
+
+  :global([data-theme="light"]) .bubble-palace-pill {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fcd34d;
   }
 
   .chips-label {

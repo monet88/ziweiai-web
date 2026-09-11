@@ -12,7 +12,7 @@
  * SSE parsing dùng streamConversationMessage + collectAssistantStream từ api-client.
  */
 
-import type { ConversationMessageRecord, CreateConversationMessageRequest, QuickPromptKey } from '@ziweiai/contracts';
+import type { ConversationMessageRecord, CreateConversationMessageRequest, PalaceScope, QuickPromptKey } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
 import type { QueryClient } from '@tanstack/svelte-query';
 import { streamConversationMessage, createConversation } from '$lib/api-client/conversations';;
@@ -28,6 +28,8 @@ export interface AssistantModelOptions {
   getConversationId: () => string | null;
   /** Setter để lưu conversationId sau khi tạo. */
   setConversationId: (id: string) => void;
+  /** Getter cung vị trọng điểm đang chọn trên lá số (Tam Phương Tứ Chính & Liên Cung). */
+  getActivePalaceScope?: () => PalaceScope | null;
 }
 
 export interface AssistantMessageView {
@@ -35,6 +37,7 @@ export interface AssistantMessageView {
   role: 'user' | 'assistant';
   content: string;
   quickPromptKey?: QuickPromptKey | null;
+  palaceScope?: PalaceScope | null;
   isStreaming?: boolean;
 }
 
@@ -91,6 +94,7 @@ export function createAssistantModel(options: AssistantModelOptions) {
       role: 'user',
       content: displayContent,
       quickPromptKey: request.quickPromptKey ?? null,
+      palaceScope: request.palaceScope ?? null,
     };
     messages = [...messages, userView];
 
@@ -178,17 +182,21 @@ export function createAssistantModel(options: AssistantModelOptions) {
     }
   }
 
-  async function sendText(content: string): Promise<boolean> {
+  async function sendText(content: string, overridePalaceScope?: PalaceScope | null): Promise<boolean> {
+    const palaceScope = overridePalaceScope !== undefined ? overridePalaceScope : (options.getActivePalaceScope?.() ?? null);
     return appendUserAndStream({
       content,
       providerPreference: 'auto',
+      ...(palaceScope ? { palaceScope } : {}),
     });
   }
 
-  async function sendQuickPrompt(quickPromptKey: QuickPromptKey): Promise<boolean> {
+  async function sendQuickPrompt(quickPromptKey: QuickPromptKey, overridePalaceScope?: PalaceScope | null): Promise<boolean> {
+    const palaceScope = overridePalaceScope !== undefined ? overridePalaceScope : (options.getActivePalaceScope?.() ?? null);
     return appendUserAndStream({
       quickPromptKey,
       providerPreference: 'auto',
+      ...(palaceScope ? { palaceScope } : {}),
     });
   }
 
@@ -237,6 +245,9 @@ export function createAssistantModel(options: AssistantModelOptions) {
     },
     get conversationId(): string | null {
       return ensureConversationId();
+    },
+    get activePalaceScope(): PalaceScope | null {
+      return options.getActivePalaceScope?.() ?? null;
     },
     sendText,
     sendQuickPrompt,

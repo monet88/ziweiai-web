@@ -118,3 +118,54 @@
   - API: 83 test files (512 tests) pass 100%.
   - Web: 59 test files (316 tests) pass 100%.
   - Astro-engine: 5 test files (35 tests) pass 100%.
+
+---
+
+# IMPLEMENTATION NOTES: SPRINT 63 — MULTI-PALACE ASSISTANT CONTEXT & HOÀNG GIA POSTER EXPORT
+
+## 1. Unspecified & Implicit Decisions
+
+### A. Multi-Palace Assistant Context Integration
+- **Contracts Schema Extension:** Bổ sung `palaceScope?: PalaceScope` vào `createConversationMessageRequestSchema` trong `@ziweiai/contracts`. Khai báo `palaceScopeSchema` ngay trước để tránh hoisting issue.
+- **Dynamic Context Injection:**
+  - Trong `ConversationsService.prepareGeneration`, khi `input.palaceScope` có mặt, hệ thống tự động truyền vào `promptPayload`.
+  - `buildConversationPrompt` tự động nạp `buildPalaceExplanationPrompt` và `buildPalaceScopeLines`, cung cấp cho LLM thông tin đầy đủ về:
+    1. Bản cung (chính tinh, phụ tinh, độ sáng Miếu/Vượng/Đắc/Hãm, Tứ Hóa Khoa/Quyền/Lộc/Kỵ, Can Chi cung).
+    2. Đối cung (xung chiếu / bổ trợ).
+    3. Tam hợp (2 phương hội chiếu cùng tam hợp cục).
+    4. Nhị hợp (Lục hợp tương hỗ hoặc ẩn tàng).
+    5. Giáp cung (hai cung liền trước/sau che chở hoặc kẹp giáp sát tinh).
+- **User Control & Transparency in AssistantPanel:**
+  - Banner `palace-context-banner` hiển thị tên cung vị đang chọn, kèm nút toggle cho phép người dùng chuyển đổi linh hoạt giữa đàm đạo chuyên sâu cung vị và đàm đạo toàn bàn lá số.
+  - Tin nhắn có ngữ cảnh cung vị được đánh dấu bằng badge `bubble-palace-pill`.
+
+### B. Hoàng Gia Poster Export Architecture
+- **Retina High-DPI Canvas Rendering:**
+  - Tách logic render sang `royal-poster-exporter.ts` sử dụng `html2canvas` với `scale: 2` (hoặc 3 trên màn hình lớn) và nền tối `#0c0a09`.
+  - Thiết kế cố định layout 780px trong container scrollable, đảm bảo khi render sang canvas không bao giờ bị méo, co giật hay vỡ tỷ lệ trên các thiết bị mobile.
+- **Royal Aesthetic Consistency:**
+  - Viền thếp vàng hoàng gia (`#d4af37`), 4 hoa văn góc `✦`.
+  - Bàn 12 cung sắp xếp 4x4 chuẩn địa chi Tử Vi.
+  - Trung cung đóng triện son đỏ viền vàng *"TỬ VI TOÀN TẬP • KHÂM THIÊN GIÁM"*.
+  - Chân trang hiển thị mã chứng thư `royalSecurityCode` lấy từ `chartId` để đảm bảo tính xác thực.
+- **Web Share API Fallback:**
+  - Khi thiết bị hỗ trợ `navigator.canShare({ files })`, xuất trực tiếp file `image/png` lên các app mạng xã hội (Zalo, Messenger, Facebook).
+  - Khi thiết bị không hỗ trợ hoặc người dùng hủy share, tự động fallback sang `triggerDirectDownload` để lưu file PNG về máy.
+
+## 2. Deviations from Specification
+- Không có sự sai lệch nào so với yêu cầu ban đầu của Sprint 63.
+
+## 3. Considered Trade-offs
+- **Canvas Screenshot DOM vs. SVG Vector Direct Render:**
+  - *SVG Vector:* Cần dựng lại toàn bộ component dưới dạng thẻ `<svg>`, tăng phức tạp trong việc tính toán dòng chữ và wrap text.
+  - *HTML2Canvas DOM:* Tái sử dụng trọn vẹn HTML/CSS design tokens hiện có, căn chỉnh chữ tiếng Việt tự nhiên và hỗ trợ xuất ảnh PNG sắc nét với scale 2x.
+
+## 4. Maintenance Notes
+- Quality Gates 100% pass:
+  - `pnpm lint`: 0 error, 0 warning
+  - `pnpm typecheck`: 10/10 tasks pass
+  - `pnpm -F @ziweiai/web check`: 0 error, 0 warning
+  - `pnpm test`: 847 tests pass (520 API + 327 Web)
+  - `turbo build`: 6/6 packages build pass
+  - `playwright smoke`: 1 passed (17.0s)
+  - `flutter analyze apps/mobile`: No issues found

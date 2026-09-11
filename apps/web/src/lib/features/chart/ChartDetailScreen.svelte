@@ -36,6 +36,8 @@
   import { createDossierModel } from '$lib/features/dossier/dossier-model.svelte';
   import DeluxePdfDossierModal from '$lib/features/dossier/DeluxePdfDossierModal.svelte';
   import RoyalBaziDossierModal from '$lib/features/dossier/RoyalBaziDossierModal.svelte';
+  import RoyalPosterModal from '$lib/features/poster/RoyalPosterModal.svelte';
+  import { resolvePalaceScope } from '$lib/features/explanation/explanation-model.svelte';
   import { appendReferralQuery, sanitizeReferralCode } from '$lib/features/referral/append-referral-query';
   import { revealElements, revealHexagramLines } from '$lib/motion/reveal';
   import { goto } from '$app/navigation';
@@ -48,6 +50,7 @@
 
   let { chartId }: Props = $props();
   let detailRoot: HTMLDivElement | undefined = $state();
+  let isPosterModalOpen = $state(false);
 
   const auth = getAuthStore();
   const queryClient = useQueryClient();
@@ -239,6 +242,15 @@
       {#if (showBoard || detail.chartSystem === 'ba-zi') && detail.snapshot}
         <button
           type="button"
+          class="btn-royal-poster"
+          onclick={() => (isPosterModalOpen = true)}
+          title="Xuất ảnh Lá Số Hoàng Gia chuẩn poster ngọc bảo để lưu trữ và chia sẻ"
+        >
+          <span class="poster-icon">🖼️</span>
+          <span class="poster-text">Xuất Poster</span>
+        </button>
+        <button
+          type="button"
           class="btn-royal-dossier"
           disabled={dossier.isChecking || dossier.isUnlocking}
           onclick={() => dossier.openOrUnlock(wallet.balance)}
@@ -421,6 +433,8 @@
         <section class="assistant-section" data-reveal aria-labelledby="assistant-title">
           <AssistantPanel
             chartSnapshotId={detail.chartId}
+            activePalaceScope={resolvePalaceScope(detail.selectedPalaceKey)}
+            activePalaceName={detail.selectedPalace?.name ?? null}
             onConversationCreated={() => {
               /* no-op: panel tự quản lý conversation id; có thể mở rộng để lưu vào chart-detail cache */
             }}
@@ -437,6 +451,15 @@
     </div>
   {/if}
 </AppScaffold>
+
+{#if isPosterModalOpen && detail.snapshot}
+  <RoyalPosterModal
+    snapshot={detail.snapshot}
+    chartId={detail.chartId}
+    userName={auth.user?.email ? auth.user.email.split('@')[0] : 'Đương Số'}
+    onClose={() => (isPosterModalOpen = false)}
+  />
+{/if}
 
 {#if dossier.isModalOpen && detail.snapshot}
   {#if detail.chartSystem === 'ba-zi'}
@@ -457,6 +480,47 @@
 {/if}
 
 <style>
+  .btn-royal-poster {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    background: linear-gradient(135deg, #241a0d 0%, #120e07 100%);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    border-radius: var(--radius-md, 6px);
+    color: #fef3c7;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+    transition: all 0.2s ease;
+  }
+
+  .btn-royal-poster:hover {
+    background: linear-gradient(135deg, #382711 0%, #1d160a 100%);
+    border-color: #ffd700;
+    color: #ffd700;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+  }
+
+  .poster-icon {
+    font-size: 14px;
+  }
+
+  :global([data-theme="light"]) .btn-royal-poster {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-color: #d97706;
+    color: #92400e;
+    box-shadow: 0 2px 6px rgba(217, 119, 6, 0.15);
+  }
+
+  :global([data-theme="light"]) .btn-royal-poster:hover {
+    background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+    border-color: #b45309;
+    color: #78350f;
+  }
+
   .btn-royal-dossier {
     display: inline-flex;
     align-items: center;

@@ -35,7 +35,6 @@
   } from 'lucide-svelte';
 
   import {
-    SEPAY_BANKS,
     getDefaultBank,
     type SepayBankAccount
   } from '$lib/features/payment/bank-config';
@@ -43,9 +42,7 @@
   const auth = getAuthStore();
   const walletModel = getWalletStore();
 
-  let selectedBank = $state<SepayBankAccount>(
-    getDefaultBank(env.PUBLIC_SEPAY_BANK, env.PUBLIC_SEPAY_ACCOUNT)
-  );
+  const selectedBank: SepayBankAccount = getDefaultBank(env.PUBLIC_SEPAY_ACCOUNT);
 
   const packages = XU_PACKAGES;
 
@@ -418,26 +415,6 @@
             </div>
           {:else}
             <p class="instruction">Quét mã QR bằng ứng dụng Ngân hàng (ACB, Vietcombank, Momo, MB, Techcombank...) để thanh toán tự động.</p>
-
-          <!-- Bank Selector (ACB / Vietcombank) -->
-          <div class="bank-selector-container">
-            <span class="bank-selector-label">Chọn ngân hàng thụ hưởng:</span>
-            <div class="bank-pills">
-              {#each SEPAY_BANKS as bank (bank.id)}
-                <button
-                  type="button"
-                  class="bank-pill-btn"
-                  class:active={selectedBank.id === bank.id}
-                  onclick={() => (selectedBank = bank)}
-                >
-                  <span class="bank-pill-name">{bank.shortName}</span>
-                  {#if bank.badge}
-                    <span class="bank-pill-badge">{bank.badge}</span>
-                  {/if}
-                </button>
-              {/each}
-            </div>
-          </div>
 
           {#if qrUrl}
             <div class="qr-frame">
@@ -1292,96 +1269,8 @@
   .instruction {
     font-size: 12px;
     color: var(--color-text-secondary, #475569);
-    margin: 0 0 12px;
+    margin: 0 0 14px;
     line-height: 1.4;
-  }
-
-  .bank-selector-container {
-    width: 100%;
-    margin-bottom: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    align-items: center;
-  }
-
-  .bank-selector-label {
-    font-size: 11.5px;
-    font-weight: 600;
-    color: var(--color-text-secondary, #475569);
-  }
-
-  .bank-pills {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    width: 100%;
-  }
-
-  .bank-pill-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    padding: 8px 10px;
-    border-radius: var(--radius-md, 10px);
-    border: 1px solid var(--color-border-hairline, #cbd5e1);
-    background: var(--color-bg-elevated, #f8fafc);
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .bank-pill-btn:hover {
-    border-color: #d97706;
-    background: #fffbeb;
-  }
-
-  .bank-pill-btn.active {
-    border-color: #d97706;
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(217, 119, 6, 0.08));
-    box-shadow: 0 0 12px rgba(217, 119, 6, 0.2);
-  }
-
-  :global([data-theme="dark"]) .bank-pill-btn {
-    background: rgba(30, 41, 59, 0.6);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  :global([data-theme="dark"]) .bank-pill-btn:hover {
-    background: rgba(245, 158, 11, 0.12);
-    border-color: #f59e0b;
-  }
-
-  :global([data-theme="dark"]) .bank-pill-btn.active {
-    background: rgba(245, 158, 11, 0.2);
-    border-color: #f59e0b;
-  }
-
-  .bank-pill-name {
-    font-size: 13px;
-    font-weight: 800;
-    color: var(--color-text-primary, #0f172a);
-  }
-
-  .bank-pill-btn.active .bank-pill-name {
-    color: #b45309;
-  }
-  :global([data-theme="dark"]) .bank-pill-btn.active .bank-pill-name {
-    color: #fbbf24;
-  }
-
-  .bank-pill-badge {
-    font-size: 10px;
-    font-weight: 700;
-    padding: 1px 6px;
-    border-radius: 999px;
-    background: rgba(217, 119, 6, 0.15);
-    color: #b45309;
-  }
-  :global([data-theme="dark"]) .bank-pill-badge {
-    background: rgba(245, 158, 11, 0.25);
-    color: #fef08a;
   }
 
   .owner-name {

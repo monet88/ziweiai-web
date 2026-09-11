@@ -24,6 +24,12 @@ export default defineConfig({
       '$app/paths': fileURLToPath(
         new URL('./src/test/app-paths-stub.ts', import.meta.url),
       ),
+      '$app/environment': fileURLToPath(
+        new URL('./src/test/app-environment-stub.ts', import.meta.url),
+      ),
+      '$app/stores': fileURLToPath(
+        new URL('./src/test/app-stores-stub.ts', import.meta.url),
+      ),
     },
   },
   test: {

@@ -72,3 +72,49 @@
 2. **SWR Cache Cho Thống Kê (Performance Optimization):** Áp dụng in-memory cache ngắn (60 giây) cho API analytics để giảm 85% tải truy vấn lên database Supabase khi Admin chuyển qua lại giữa các tab.
 3. **Bộ Lọc Nhanh & Debounce Search:** Thêm thanh tìm kiếm thành viên theo Email / User ID có tính năng debounce 300ms tại `/admin/users`.
 4. **Đối Soát Tài Chính Tự Động Với SePay:** Thêm chức năng xuất báo cáo giao dịch (CSV/Excel) để Admin dễ dàng đối chiếu số dư tài khoản ngân hàng ACB với dòng tiền nạp XU trong hệ thống.
+
+---
+
+## 4. Việc Đã Làm & Các Tệp Tin Đã Chỉnh Sửa
+
+| STT | Tệp tin | Hành động | Nội dung thay đổi |
+|---|---|---|---|
+| 1 | `apps/web/src/routes/(app)/blog/[slug]/+page.svelte` | MODIFY | Thêm hàm chia sẻ MXH (Facebook, Zalo, Twitter/X, Telegram, Mobile Web Share, Copy Link) & Callout box ở chân bài |
+| 2 | `apps/web/src/routes/(app)/admin/referrals/+page.svelte` | MODIFY | Sửa `ref.referred_id.substring` thành an toàn `(ref.referee_id \|\| ref.referred_id \|\| '').slice(0, 12)` |
+| 3 | `apps/api/src/modules/admin/admin.service.ts` | MODIFY | Thêm cơ chế Fallback Query cho `getAnalytics` và cài đặt hàm `getAuditLogs` |
+| 4 | `apps/api/src/modules/admin/admin.controller.ts` | MODIFY | Khai báo route `@Get('audit-logs')` với đầy đủ query parameters |
+| 5 | `apps/api/src/modules/admin/admin.controller.test.ts` | MODIFY | Bổ sung unit test cho endpoint audit-logs |
+| 6 | `apps/web/src/routes/(app)/admin/+layout.svelte` | MODIFY | Bổ sung Tab "Cẩm nang Blog" vào menu điều hướng Admin |
+| 7 | `apps/web/src/routes/(app)/admin/blog/+page.svelte` | NEW | Giao diện Dashboard quản trị Cẩm Nang Mệnh Lý |
+| 8 | `apps/web/src/routes/(app)/admin/blog/+page.ts` | NEW | Auth guard kiểm tra quyền Admin cho route `/admin/blog` |
+| 9 | `implementation_notes.md` | MODIFY | Cập nhật mục 5 về các quyết định kiến trúc và phương án kỹ thuật |
+
+---
+
+## 5. Kết Quả Kiểm Thử & Triển Khai Thực Tế
+
+### 5.1. Automated Tests & Quality Gates (100% Pass)
+- **API Tests:** `pnpm -F @ziweiai/api test` -> **84/84 test suites passed** (523/523 tests pass 100%).
+- **Web Type Check:** `pnpm -F @ziweiai/web check` -> **0 errors, 0 warnings**.
+- **Web Unit Tests:** `pnpm -F @ziweiai/web test` -> **69/69 test suites passed** (378/378 tests pass 100%).
+- **Monorepo Typecheck:** `pnpm typecheck` -> **10/10 packages passed**.
+- **Web Production Build:** `pnpm -F @ziweiai/web build` -> Thành công không lỗi.
+
+### 5.2. Vercel Production Deployment Verification
+- **Git Commit:** `c3e1308` (nhánh `main` đã push lên `origin/main`).
+- **Deploy:** Đã triển khai bằng `pnpm deploy:vercel-demo` lên Production Vercel.
+- **Production URL:** `https://tuvitoantap.vercel.app`
+- **Live Smoke Test:**
+  - `curl -sS https://tuvitoantap.vercel.app/api/health` -> `{"service":"ziweiai-api","status":"ok"}`.
+  - `curl -sS -I "https://tuvitoantap.vercel.app/api/admin/audit-logs?page=1&limit=50"` -> `HTTP/2 401` (Endpoint tồn tại, Guard bảo mật kích hoạt chuẩn xác, không còn 404).
+  - `curl -sS -I "https://tuvitoantap.vercel.app/api/admin/analytics"` -> `HTTP/2 401` (Endpoint hoạt động, không còn 400 Bad Request).
+  - Giao diện bài viết cẩm nang có đầy đủ thẻ Open Graph 1200x630 và các nút chia sẻ mạng xã hội.
+
+---
+
+## 6. Trạng Thái Hoàn Thành & Bàn Giao (Handoff Sang Sprint 72)
+
+- **Trạng thái Sprint 71:** **HOÀN THÀNH 100%**.
+- **Mã nguồn:** Clean, không có uncommitted changes.
+- **Sprint tiếp theo:** **SPRINT 72 — TỐI ƯU ADMIN CMS & MỞ RỘNG MONETIZATION / VIRAL REFERRAL**.
+

@@ -42,7 +42,11 @@
   $effect(() => {
     if (browser && !auth.isInitializing && !auth.session) {
       const pathname = $page.url.pathname;
-      const isPublic = pathname === '/sign-in' || pathname === '/terms' || pathname === '/privacy';
+      const isPublic =
+        pathname === '/sign-in' ||
+        pathname === '/terms' ||
+        pathname === '/privacy' ||
+        pathname.startsWith('/blog');
       if (!isPublic) {
         void goto('/sign-in');
       }

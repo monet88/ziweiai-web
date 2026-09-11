@@ -57,7 +57,7 @@
     sheetStore.open(BirthForm, { model }, 'Lập Lá Số Tử Vi Chi Tiết');
   }
 
-  // 12 Hệ Thuật Số được tinh gọn theo 3 Trụ Cột Phễu Lớn (Trụ Cột Bản Mệnh, Chiêm Bốc Tức Thì, Bí Thuật Chiêm Tinh)
+  // 12 Hệ Thuật Số được tinh gọn theo 3 Trụ Cột Phễu Lớn với trực quan hóa Freemium [MIỄN PHÍ 100%] và [50 XU]
   const systemGroups = [
     {
       groupTitle: 'Trụ Cột Bản Mệnh',
@@ -66,10 +66,10 @@
       icon: Compass,
       themeColor: '#ffd700',
       items: [
-        { route: '/charts' as const, label: 'Tử Vi Đẩu Số', badge: 'Chính Tông', desc: 'Thiên Bàn 12 Cung & Sao Hạn Cát Hung' },
-        { route: '/bazi' as const, label: 'Bát Tự Tứ Trụ', badge: 'Hà Lạc', desc: 'Can Chi, Thập Thần & Ngũ Hành Thịnh Suy' },
-        { route: '/numerology' as const, label: 'Thần Số Học', badge: 'Pythagoras', desc: 'Con Số Chủ Đạo & Kim Tự Tháp Cuộc Đời' },
-        { route: '/hepan' as const, label: 'Hợp Hôn So Mệnh', badge: 'Duyên Phận', desc: 'Đối Chiếu Bản Mệnh Phu Thê & Đối Tác' }
+        { route: '/charts' as const, label: 'Tử Vi Đẩu Số', badge: 'MIỄN PHÍ 100%', tier: 'free', desc: 'Thiên Bàn 12 Cung & Sao Hạn Cát Hung' },
+        { route: '/bazi' as const, label: 'Bát Tự Tứ Trụ', badge: 'MIỄN PHÍ 100%', tier: 'free', desc: 'Can Chi, Thập Thần & Ngũ Hành Thịnh Suy' },
+        { route: '/numerology' as const, label: 'Thần Số Học', badge: 'MIỄN PHÍ 100%', tier: 'free', desc: 'Con Số Chủ Đạo & Kim Tự Tháp Cuộc Đời' },
+        { route: '/hepan' as const, label: 'Hợp Hôn So Mệnh', badge: 'VIP 50 XU', tier: 'xu', desc: 'Đối Chiếu Bản Mệnh Phu Thê & Đối Tác' }
       ]
     },
     {
@@ -79,10 +79,10 @@
       icon: CoinsIcon,
       themeColor: '#c084fc',
       items: [
-        { route: '/liuyao' as const, label: 'Kinh Dịch Lục Hào', badge: '3 Đồng Xu', desc: 'Gieo Quẻ Cổ Tự Động & Hào Động Biến Dịch' },
-        { route: '/meihua' as const, label: 'Mai Hoa Dịch Số', badge: 'Tâm Dịch', desc: 'Khởi Quẻ Theo Thời Khắc & Hiện Tượng' },
-        { route: '/stick' as const, label: 'Xin Xăm Quán Âm', badge: '100 Thẻ Linh', desc: 'Cầu Điềm Lành & Thỉnh Lời Khuyên Hóa Giải' },
-        { route: '/dream' as const, label: 'Giải Mộng Triêm Bốc', badge: 'Giấc Mơ', desc: 'Giải Mã Điềm Báo Trong Giấc Chiêm Bao' }
+        { route: '/liuyao' as const, label: 'Kinh Dịch Lục Hào', badge: 'MIỄN PHÍ 100%', tier: 'free', desc: 'Gieo Quẻ Cổ Tự Động & Hào Động Biến Dịch' },
+        { route: '/meihua' as const, label: 'Mai Hoa Dịch Số', badge: 'MIỄN PHÍ 100%', tier: 'free', desc: 'Khởi Quẻ Theo Thời Khắc & Hiện Tượng' },
+        { route: '/stick' as const, label: 'Xin Xăm Quán Âm', badge: 'MIỄN PHÍ', tier: 'free', desc: 'Cầu Điềm Lành & Thỉnh Lời Khuyên Hóa Giải' },
+        { route: '/dream' as const, label: 'Giải Mộng Triêm Bốc', badge: 'MIỄN PHÍ', tier: 'free', desc: 'Giải Mã Điềm Báo Trong Giấc Chiêm Bao' }
       ]
     },
     {
@@ -92,21 +92,23 @@
       icon: Layers,
       themeColor: '#38bdf8',
       items: [
-        { route: '/qimen' as const, label: 'Kỳ Môn Độn Giáp', badge: 'Trận Đồ', desc: 'Bố Trận Thời Vị & Chọn Cửa Thắng Cảnh' },
-        { route: '/daliuren' as const, label: 'Đại Lục Nhâm', badge: 'Tam Thức', desc: 'Đệ Nhất Thần Toán Dự Đoán Nhật Nguyệt' },
-        { route: '/lenormand' as const, label: 'Bài Lenormand', badge: '36 Lá', desc: 'Tiên Tri Sự Kiện Cụ Thể Đời Thường' },
-        { route: '/almanac' as const, label: 'Lịch Vạn Niên Hoàng Đạo', badge: 'Trực Trừ', desc: 'Chọn Ngày Giờ Lành Xuất Hành & Khai Trương' }
+        { route: '/qimen' as const, label: 'Kỳ Môn Độn Giáp', badge: 'VIP 50 XU', tier: 'xu', desc: 'Bố Trận Thời Vị & Chọn Cửa Thắng Cảnh' },
+        { route: '/daliuren' as const, label: 'Đại Lục Nhâm', badge: 'VIP 50 XU', tier: 'xu', desc: 'Đệ Nhất Thần Toán Dự Đoán Nhật Nguyệt' },
+        { route: '/lenormand' as const, label: 'Bài Lenormand', badge: 'MIỄN PHÍ', tier: 'free', desc: 'Tiên Tri Sự Kiện Cụ Thể Đời Thường' },
+        { route: '/almanac' as const, label: 'Lịch Vạn Niên Hoàng Đạo', badge: 'MIỄN PHÍ', tier: 'free', desc: 'Chọn Ngày Giờ Lành Xuất Hành & Khai Trương' }
       ]
     }
   ];
 
-  // AI Tools Bento Grid - Bộ công cụ trực giác & sinh trắc AI
+  // AI Tools Bento Grid - Bộ công cụ trực giác & sinh trắc AI với giá rõ ràng
   const bentoTools = [
     {
       route: '/face' as const,
       flag: 'face' as keyof FeaturesResponse,
-      badge: 'AI VISION SCAN',
+      badge: '50 XU • AI VISION SCAN',
       badgeColor: 'gold',
+      tier: 'xu',
+      price: '50 XU',
       icon: Eye,
       title: viCopy.dashboard.toolFaceTitle,
       desc: viCopy.dashboard.toolFaceDescription,
@@ -115,8 +117,10 @@
     {
       route: '/palm' as const,
       flag: 'palm' as keyof FeaturesResponse,
-      badge: 'BIOMETRICS SCAN',
+      badge: '50 XU • BIOMETRICS SCAN',
       badgeColor: 'gold',
+      tier: 'xu',
+      price: '50 XU',
       icon: Hand,
       title: viCopy.dashboard.toolPalmTitle,
       desc: viCopy.dashboard.toolPalmDescription,
@@ -125,8 +129,10 @@
     {
       route: '/tarot' as const,
       flag: 'tarot' as keyof FeaturesResponse,
-      badge: '78 LÁ RIDER-WAITE',
-      badgeColor: 'purple',
+      badge: 'MIỄN PHÍ • 78 LÁ BÀI',
+      badgeColor: 'emerald',
+      tier: 'free',
+      price: 'MIỄN PHÍ',
       icon: Layers,
       title: viCopy.dashboard.toolTarotTitle,
       desc: viCopy.dashboard.toolTarotDescription,
@@ -135,8 +141,10 @@
     {
       route: '/vision-tarot' as const,
       flag: 'tarot' as keyof FeaturesResponse,
-      badge: 'AI PHOTO ORACLE',
-      badgeColor: 'blue',
+      badge: '20 XU • PHOTO ORACLE',
+      badgeColor: 'gold',
+      tier: 'xu',
+      price: '20 XU',
       icon: Camera,
       title: viCopy.dashboard.toolVisionTarotTitle,
       desc: viCopy.dashboard.toolVisionTarotDescription,
@@ -145,8 +153,10 @@
     {
       route: '/numerology' as const,
       flag: 'mbti' as keyof FeaturesResponse,
-      badge: 'PYTHAGORAS MATRIX',
-      badgeColor: 'gold',
+      badge: 'MIỄN PHÍ 100% • PYTHAGORAS',
+      badgeColor: 'emerald',
+      tier: 'free',
+      price: 'MIỄN PHÍ 100%',
       icon: Hash,
       title: 'Thần Số Học Toàn Diện',
       desc: 'Tính toán con số chủ đạo, 4 đỉnh cao cuộc đời và biểu đồ ngày sinh.',
@@ -155,8 +165,10 @@
     {
       route: '/liuyao' as const,
       flag: 'mangpai' as keyof FeaturesResponse,
-      badge: '64 QUẺ KINH DỊCH',
-      badgeColor: 'purple',
+      badge: 'MIỄN PHÍ 100% • KINH DỊCH',
+      badgeColor: 'emerald',
+      tier: 'free',
+      price: 'MIỄN PHÍ 100%',
       icon: CoinsIcon,
       title: 'Gieo Quẻ Lục Hào',
       desc: 'Gieo 3 đồng tiền cổ tự động, lập quẻ chủ - quẻ biến và phân tích hào động.',
@@ -199,7 +211,20 @@
 </script>
 
 <svelte:head>
-  <title>ViOS - Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia</title>
+  <title>ViOS — Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia</title>
+  <meta name="description" content="ViOS Tử Vi Toàn Tập — Nền tảng thuật số AI hoàng triều đỉnh cao: Lập lá số Tử Vi chính tông, Bát Tự Tứ Trụ, Thần Số Học, Kinh Dịch Lục Hào, Xem Tướng Mặt & Chỉ Tay AI. Trải nghiệm miễn phí 100% & Nhận 50 XU mỗi ngày!" />
+  <link rel="canonical" href="https://tuvitoantap.vercel.app/" />
+  
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://tuvitoantap.vercel.app/" />
+  <meta property="og:title" content="ViOS — Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia" />
+  <meta property="og:description" content="Khám phá vận mệnh cùng ViOS: Lập lá số Tử Vi, Tứ Trụ Bát Tự, Thần Số Học, Kinh Dịch, Nhân Tướng AI. Trải nghiệm miễn phí 100% & Điểm danh nhận 50 XU mỗi ngày!" />
+  <meta property="og:image" content="https://tuvitoantap.vercel.app/og-image.png" />
+  
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ViOS — Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia" />
+  <meta name="twitter:description" content="Khám phá vận mệnh cùng ViOS: Lập lá số Tử Vi, Tứ Trụ Bát Tự, Thần Số Học, Kinh Dịch, Nhân Tướng AI. Trải nghiệm miễn phí 100% & Điểm danh nhận 50 XU mỗi ngày!" />
+  <meta name="twitter:image" content="https://tuvitoantap.vercel.app/og-image.png" />
 </svelte:head>
 
 <main class="celestial-page">
@@ -222,6 +247,7 @@
         <a href="#ai-tools" class="nav-btn">Thần Khí AI</a>
         <a href="#vip-conversion" class="nav-btn">Ví XU & Ưu Đãi</a>
         <a href="#universe-hub" class="nav-btn">12 Thuật Số</a>
+        <a href={resolve('/blog')} class="nav-btn">Cẩm Nang</a>
         {#if isMember}
           <a href={resolve('/history')} class="nav-btn">Lịch Sử</a>
         {/if}
@@ -400,7 +426,10 @@
             </div>
 
             <div class="bento-card-footer">
-              <span>Trải nghiệm ngay</span>
+              <div class="bento-footer-label">
+                <span>Trải nghiệm ngay</span>
+                <span class="bento-price-pill price-{tool.tier}">{tool.price}</span>
+              </div>
               <ArrowRight size={14} class="arrow-icon" />
             </div>
           </a>
@@ -524,7 +553,7 @@
                       <span class="item-label">{item.label}</span>
                       <small class="item-desc">{item.desc}</small>
                     </div>
-                    <span class="item-badge">{item.badge}</span>
+                    <span class="item-badge badge-{item.tier}">{item.badge}</span>
                   </a>
                 {/each}
               </div>
@@ -572,6 +601,8 @@
         </div>
 
         <div class="footer-links">
+          <a href={resolve('/blog')}>Cẩm Nang Mệnh Lý</a>
+          <span class="sep">•</span>
           <a href={resolve('/terms')}>Điều Khoản Dịch Vụ</a>
           <span class="sep">•</span>
           <a href={resolve('/privacy')}>Chính Sách Bảo Mật</a>
@@ -1357,6 +1388,20 @@
     border-color: rgba(2, 132, 199, 0.35);
   }
 
+  .badge-emerald {
+    background: rgba(16, 185, 129, 0.16);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+  }
+
+  :global([data-theme="light"]) .badge-emerald {
+    background: rgba(209, 250, 229, 0.95);
+    color: #047857;
+    border-color: rgba(5, 150, 105, 0.4);
+    font-weight: 800;
+  }
+
   .bento-icon-box {
     display: flex;
     align-items: center;
@@ -1406,6 +1451,7 @@
   .bento-card-footer {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 6px;
     font-size: 13px;
     font-weight: 750;
@@ -1415,6 +1461,44 @@
   :global([data-theme="light"]) .bento-card-footer {
     color: #b45309;
     font-weight: 800;
+  }
+
+  .bento-footer-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .bento-price-pill {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: var(--radius-pill);
+    letter-spacing: 0.03em;
+  }
+
+  .bento-price-pill.price-free {
+    background: rgba(16, 185, 129, 0.16);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+  }
+
+  :global([data-theme="light"]) .bento-price-pill.price-free {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: rgba(5, 150, 105, 0.4);
+  }
+
+  .bento-price-pill.price-xu {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+  }
+
+  :global([data-theme="light"]) .bento-price-pill.price-xu {
+    background: #fffbeb;
+    color: #b45309;
+    border-color: rgba(217, 119, 6, 0.4);
   }
 
   .arrow-icon {
@@ -1855,12 +1939,42 @@
 
   .item-badge {
     font-size: 10px;
-    font-weight: 700;
-    padding: 2px 6px;
+    font-weight: 750;
+    padding: 2px 7px;
     border-radius: var(--radius-pill);
     background: var(--celestial-badge-bg);
     color: var(--celestial-badge-text);
     border: 1px solid var(--celestial-badge-border);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+
+  .item-badge.badge-free {
+    background: rgba(16, 185, 129, 0.16);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.15);
+  }
+
+  :global([data-theme="light"]) .item-badge.badge-free {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: rgba(5, 150, 105, 0.4);
+    font-weight: 800;
+  }
+
+  .item-badge.badge-xu {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.15);
+  }
+
+  :global([data-theme="light"]) .item-badge.badge-xu {
+    background: #fffbeb;
+    color: #b45309;
+    border-color: rgba(217, 119, 6, 0.4);
+    font-weight: 800;
   }
 
   .sidebar-history-wrap {

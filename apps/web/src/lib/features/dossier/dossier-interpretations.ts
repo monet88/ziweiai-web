@@ -1,4 +1,6 @@
 import type { ChartSnapshot } from '@ziweiai/contracts';
+import { translateBaziKey } from '@ziweiai/contracts';
+import { formatStructuredLunarDate } from '$lib/features/chart/chart-display';
 
 export interface PalaceDossierData {
   index: number;
@@ -85,8 +87,16 @@ export function buildDossierData(snapshot: ChartSnapshot, userNameInput?: string
 
   const name = userNameInput || birth.name || 'Đương Số Hoàng Triều';
   const gender = birth.gender === 'male' ? 'Nam Mạng' : (birth.gender === 'female' ? 'Nữ Mạng' : 'Bản Mệnh');
-  const solarDate = summary.solarDate || birth.solarDate || 'N/A';
-  const lunarDate = summary.lunarDate || birth.lunarDate || 'N/A';
+
+  const resolvedDate = birth.resolvedDateTime?.date;
+  const solarDate =
+    summary.solarDate ||
+    birth.solarDate ||
+    (resolvedDate ? `${resolvedDate.day}/${resolvedDate.month}/${resolvedDate.year}` : 'N/A');
+
+  const rawLunar = summary.lunarDate || birth.lunarDate;
+  const lunarDate = (rawLunar ? formatStructuredLunarDate(rawLunar) : '') || 'N/A';
+
   const fiveElements = summary.destinyElement || summary.fiveElements || 'Chưa định';
   const fiveElementsClass = summary.fiveElementsClass || 'N/A';
   const destinyYinYang = summary.destinyYinYang || 'Âm Dương Thuận Lý';
@@ -100,10 +110,26 @@ export function buildDossierData(snapshot: ChartSnapshot, userNameInput?: string
     return p.stemBranch || p.name || JSON.stringify(p);
   };
 
-  const baziYear = extractPillar(summary.yearPillar);
-  const baziMonth = extractPillar(summary.monthPillar);
-  const baziDay = extractPillar(summary.dayPillar);
-  const baziHour = extractPillar(summary.hourPillar);
+  const baziPillars = snapshot.bazi?.pillars;
+  const rawYear = extractPillar(summary.yearPillar);
+  const baziYear = rawYear !== 'N/A'
+    ? rawYear
+    : (baziPillars?.[0] ? `${translateBaziKey(baziPillars[0].heavenlyStemKey)} ${translateBaziKey(baziPillars[0].earthlyBranchKey)}` : 'N/A');
+
+  const rawMonth = extractPillar(summary.monthPillar);
+  const baziMonth = rawMonth !== 'N/A'
+    ? rawMonth
+    : (baziPillars?.[1] ? `${translateBaziKey(baziPillars[1].heavenlyStemKey)} ${translateBaziKey(baziPillars[1].earthlyBranchKey)}` : 'N/A');
+
+  const rawDay = extractPillar(summary.dayPillar);
+  const baziDay = rawDay !== 'N/A'
+    ? rawDay
+    : (baziPillars?.[2] ? `${translateBaziKey(baziPillars[2].heavenlyStemKey)} ${translateBaziKey(baziPillars[2].earthlyBranchKey)}` : 'N/A');
+
+  const rawHour = extractPillar(summary.hourPillar);
+  const baziHour = rawHour !== 'N/A'
+    ? rawHour
+    : (baziPillars?.[3] ? `${translateBaziKey(baziPillars[3].heavenlyStemKey)} ${translateBaziKey(baziPillars[3].earthlyBranchKey)}` : 'N/A');
 
   // Map 12 Palaces
   const palaces: PalaceDossierData[] = (snapshot.palaces || []).map((p: any, idx: number) => {

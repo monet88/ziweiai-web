@@ -2,212 +2,120 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sprint 61: Realtime AI SSE Streaming, Multi-Palace Analysis & Deep Audit Hardening</title>
+  <title>Sprint 67 Implementation Notes: Royal Bazi Poster & Profile Data Hydration</title>
   <style>
     :root {
-      --bg: #0d0e15;
-      --card-bg: #151824;
-      --text: #e2e8f0;
-      --accent: #ffd700;
-      --accent-glow: rgba(255, 215, 0, 0.25);
-      --border: #2d3748;
-      --success: #38a169;
-      --purple: #9f7aea;
-      --cyan: #38bdf8;
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --heading: #58a6ff;
+      --accent: #d29922;
+      --success: #3fb950;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--bg);
       color: var(--text);
       line-height: 1.6;
-      margin: 0;
-      padding: 30px 20px;
-    }
-    .container {
+      padding: 32px;
       max-width: 960px;
       margin: 0 auto;
     }
-    header {
+    h1, h2, h3 {
+      color: var(--heading);
       border-bottom: 1px solid var(--border);
-      padding-bottom: 20px;
-      margin-bottom: 30px;
-    }
-    h1 {
-      color: var(--accent);
-      margin: 0 0 10px 0;
-      font-size: 26px;
-      letter-spacing: 0.5px;
+      padding-bottom: 8px;
     }
     .badge {
       display: inline-block;
-      background: var(--success);
-      color: white;
-      font-size: 12px;
-      font-weight: bold;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      text-transform: uppercase;
-      margin-right: 8px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(210, 153, 34, 0.2);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      margin-left: 8px;
     }
-    .badge-cyan {
-      background: var(--cyan);
-      color: #0f172a;
-    }
-    .badge-purple {
-      background: var(--purple);
-      color: white;
-    }
-    .section {
+    .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    }
-    h2 {
-      color: var(--accent);
-      margin-top: 0;
-      font-size: 18px;
-      border-bottom: 1px dashed var(--border);
-      padding-bottom: 8px;
-    }
-    h3 {
-      color: var(--cyan);
-      font-size: 15px;
-      margin-top: 16px;
-      margin-bottom: 8px;
-    }
-    ul {
-      padding-left: 20px;
-      margin: 8px 0;
-    }
-    li {
-      margin-bottom: 8px;
-    }
-    code {
-      background: rgba(255, 255, 255, 0.08);
-      color: #f6ad55;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.9em;
-    }
-    .table-box {
-      overflow-x: auto;
-      margin: 15px 0;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 14px;
+      margin: 16px 0;
     }
     th, td {
       border: 1px solid var(--border);
-      padding: 10px 14px;
+      padding: 8px 12px;
       text-align: left;
     }
     th {
-      background: rgba(255, 215, 0, 0.08);
-      color: var(--accent);
+      background: #21262d;
+      color: var(--heading);
+    }
+    code {
+      background: rgba(110, 118, 129, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.9em;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Sprint 61: Realtime AI SSE Streaming, Multi-Palace Analysis &amp; Deep Audit Hardening</h1>
-      <span class="badge">Production Ready</span>
-      <span class="badge badge-cyan">Sprint 61</span>
-      <span class="badge badge-purple">100% Gates Passed</span>
-    </header>
+  <h1>Sprint 67 Implementation Notes <span class="badge">Royal Bazi Poster</span></h1>
 
-    <!-- 1. Unspecified & Implicit Decisions -->
-    <div class="section">
-      <h2>1. Quyết Định Kiến Trúc &amp; Thiết Kế (Implicit &amp; Architectural Decisions)</h2>
-      
-      <h3>A. Realtime AI Server-Sent Events (SSE) Streaming Protocol</h3>
-      <ul>
-        <li><strong>Endpoint:</strong> <code>POST /explanations/stream</code> chấp nhận payload <code>createExplanationRequestSchema</code> kèm <code>Accept: text/event-stream</code>.</li>
-        <li><strong>Data Serialization:</strong> Tuân thủ format SSE <code>data: {json}\n\n</code> với typed events:
-          <ul>
-            <li><code>type: "chunk"</code>: Chứa delta string sinh ra từ LLM upstream theo thời gian thực.</li>
-            <li><code>type: "done"</code>: Hoàn tất stream, trả về <code>request</code>, <code>result</code> (ExplanationResultRecord đã lưu DB), và <code>explanationContext</code>.</li>
-            <li><code>type: "error"</code>: Bắn typed <code>ApiErrorCode</code> và thông điệp tiếng Việt khi có sự cố.</li>
-          </ul>
-        </li>
-        <li><strong>Resilience &amp; Idempotency:</strong> Hỗ trợ billing XU transactional, bồi hoàn XU tức thì (refund) khi stream đứt gãy hoặc timeout, lưu trữ kết quả hoàn chỉnh vào <code>explanation_results</code> và <code>history_views</code>.</li>
-      </ul>
+  <div class="card">
+    <h2>1. Unspecified & Implicit Decisions</h2>
+    <ul>
+      <li><strong>Poster Layout Form-Factor:</strong> Giữ kích thước chiều rộng cố định <code>780px</code> (tương đương với Poster Tử Vi và Lục Hào) với tỷ lệ xuất ảnh High-DPI 2x Retina (<code>1560px</code>) để đảm bảo tính đồng bộ hoàn hảo trong toàn bộ hệ sinh thái Poster của ViOS.</li>
+      <li><strong>Four Pillars Structure:</strong> Thiết kế bảng Tứ Trụ gồm 5 cột (1 cột nhãn chỉ mục + 4 cột mốc thời gian: Năm, Tháng, Ngày, Giờ). Trụ Ngày (Nhật Chủ) được ưu tiên viền vàng đôi hoàng kim <code>#ffd700</code> và huy hiệu <code>NHẬT CHỦ</code> để làm nổi bật vị trí trung tâm của bản mệnh.</li>
+      <li><strong>Date Normalization:</strong> Sử dụng hàm <code>formatStructuredLunarDate</code> kết hợp <code>normalizeLegacyLunarDate</code> để tự động chuyển chuỗi chữ Hán (ví dụ: <code>一九九〇年八月二十</code>) thành <code>20/08/1990 Canh Ngọ</code>, đảm bảo tuân thủ triệt để quy tắc bảo vệ ngôn ngữ của repository.</li>
+    </ul>
+  </div>
 
-      <h3>B. Liên Cung Luận Giải (Multi-Palace Synthesis)</h3>
-      <ul>
-        <li><strong>Lục Hợp (Nhị Hợp) Địa Chi Chuẩn:</strong> Tý (0) &harr; Sửu (1), Dần (2) &harr; Hợi (11), Mão (3) &harr; Tuất (10), Thìn (4) &harr; Dậu (9), Tị (5) &harr; Thân (8), Ngọ (6) &harr; Mùi (7).</li>
-        <li><strong>Giáp Cung:</strong> Tiền giáp <code>(index + 11) % 12</code> và Hậu giáp <code>(index + 1) % 12</code>.</li>
-        <li><strong>Tam Phương Tứ Chính:</strong> Bản cung, Đối cung (<code>+6 % 12</code>), Tam hợp 1 (<code>+4 % 12</code>), Tam hợp 2 (<code>+8 % 12</code>).</li>
-        <li><strong>Tương Tác Mobile:</strong> Cung cấp các chip bấm chuyển cung tức thì trong <code>PalaceDetailBottomSheet</code> với kích thước chuẩn &ge; 48dp, kèm nút <em>"ĐÀM ĐẠO VỚI KHÂM THIÊN GIÁM AI"</em>.</li>
-      </ul>
+  <div class="card">
+    <h2>2. Deviations from Specification</h2>
+    <p>Không có sai lệch so với yêu cầu ban đầu. Kế hoạch đã khắc phục trọn vẹn cả 3 khía cạnh: modal routing, hiển thị dữ liệu Bát Tự, và triệt tiêu lỗi rò rỉ chữ Hán.</p>
+  </div>
 
-      <h3>C. Codex Deep Audit Remediation</h3>
-      <ul>
-        <li><strong>P0 Identified User:</strong> Khóa hoàn toàn anonymous user khỏi các mutation trong Royal Gallery trên cả Mobile &amp; API; chỉ tài khoản Identified (email/password) mới được tạo tác phẩm.</li>
-        <li><strong>P1 Orphan Compensation Rollback:</strong> Tự động dọn dẹp file Storage mồ côi nếu cập nhật Database thất bại.</li>
-        <li><strong>P1 Versioned Upload &amp; Affected-Row Verification:</strong> Đảm bảo upload path duy nhất theo versioned UUID và xác thực số dòng affected &gt; 0 trong DB update.</li>
-      </ul>
-    </div>
+  <div class="card">
+    <h2>3. Considered Trade-offs</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Phương án</th>
+          <th>Ưu điểm</th>
+          <th>Nhược điểm & Lý do chọn / loại bỏ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Dùng chung <code>RoyalPosterModal</code> với if/else bên trong</strong></td>
+          <td>Tái sử dụng một component duy nhất.</td>
+          <td><em>Loại bỏ:</em> Làm component phình to hơn 1500 dòng, trộn lẫn logic Tử Vi (12 cung) và Bát Tự (4 trụ), dễ gây hồi quy và khó bảo trì.</td>
+        </tr>
+        <tr>
+          <td><strong>Tách riêng <code>RoyalBaziPosterModal.svelte</code> (Được chọn)</strong></td>
+          <td>Module hóa rõ ràng, độc lập cho Bát Tự; tương tự như <code>RoyalLiuyaoPosterModal</code>, <code>RoyalNumerologyPosterModal</code>, <code>RoyalTarotPosterModal</code>.</td>
+          <td><em>Được chọn:</em> Kiến trúc sạch (Clean Architecture), dễ test, bảo đảm an toàn cho các hệ thuật số khác.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
-    <!-- 2. Deviations from Specification -->
-    <div class="section">
-      <h2>2. Sai Lệch So Với Đặc Tả &amp; Lý Do (Deviations from Specification)</h2>
-      <ul>
-        <li><strong>Non-stream Fallback Generator:</strong> Khi AI provider không hỗ trợ native streaming, generator tự động wrap kết quả hoàn chỉnh thành một chunk duy nhất mà không cần viết lại router logic, đảm bảo 100% tính tương thích ngược.</li>
-        <li><strong>Zod UUID Variant Strictness:</strong> Sửa các fixture test sang variant hợp lệ RFC 4122 (<code>11111111-1111-4111-8111-111111111111</code>) để thỏa mãn kiểm định thép của <code>@ziweiai/contracts</code>.</li>
-      </ul>
-    </div>
-
-    <!-- 3. Considered Trade-offs -->
-    <div class="section">
-      <h2>3. Các Phương Án Cân Nhắc &amp; Đánh Đổi (Considered Trade-offs)</h2>
-      <div class="table-box">
-        <table>
-          <thead>
-            <tr>
-              <th>Phương án cân nhắc</th>
-              <th>Lựa chọn thực hiện</th>
-              <th>Lý do &amp; Đánh đổi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Dùng WebSocket cho Streaming</td>
-              <td>Server-Sent Events (SSE) qua HTTP POST</td>
-              <td>SSE đơn giản, không cần thiết lập kết nối socket 2 chiều phức tạp, chạy mượt mà trên serverless/edge gateways và Vercel reverse proxy.</td>
-            </tr>
-            <tr>
-              <td>Gửi cả lá số vào prompt từng cung</td>
-              <td>Chỉ trích xuất Tam Phương Tứ Chính + Nhị Hợp + Giáp Cung</td>
-              <td>Giảm 70% token context window, tăng tốc độ sinh phản hồi LLM lên gấp 3 lần, tập trung sâu vào mối tương quan cát hung thực tế.</td>
-            </tr>
-            <tr>
-              <td>Refund XU bằng cron job quét định kỳ</td>
-              <td>Synchronous Refund trong khối try/catch của stream generator</td>
-              <td>Đảm bảo người dùng không bị mất XU oan uổng dù chỉ 1 giây nếu provider ngắt kết nối giữa chừng.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- 5. Homepage Theme & Legal Pages Overhaul -->
-    <div class="section">
-      <h2>5. Nâng Cấp Theme Homepage &amp; Tái Thiết Kế /terms, /privacy (WCAG AA/AAA)</h2>
-      <p>Khắc phục triệt để lỗi giao diện lèo màu, mờ chữ trên Light Mode và sửa dứt điểm lỗi vỡ layout HTML thô của các trang pháp lý:</p>
-      <ul>
-        <li><strong>Homepage Adaptive Luxury Palette:</strong> Trên Light Mode, chuyển toàn bộ sắc vàng phát sáng sang <em>Imperial Amber &amp; Antique Ochre</em> (<code>#854d0e</code>, <code>#92400e</code>, <code>#b45309</code>) với tỷ lệ tương phản &ge; 5.5:1. Thiên Bàn 12 Địa Chi đổi sang mực than tím hoàng gia <code>#3b0764</code> / hổ phách <code>#78350f</code> nét căng 100%.</li>
-        <li><strong>Xóa Bỏ Các Khối Tối Lem Luốc:</strong> Chuyển các tag HUD và feature pill dưới Thiên Bàn thành <em>Glass Card ngọc ngà trắng kem viền mạ vàng hổ phách</em>.</li>
-        <li><strong>Tái Thiết Kế /terms &amp; /privacy Bằng Vanilla CSS:</strong> Loại bỏ 100% các class Tailwind ảo gây vỡ giao diện; xây dựng lại layout căn giữa trang nhã, thẻ Glassmorphism ngọc ngà cao cấp, heading Playfair Display uy nghi và hỗ trợ hoàn hảo cả Light &amp; Dark Mode.</li>
-      </ul>
-    </div>
+  <div class="card">
+    <h2>4. Maintenance Notes</h2>
+    <ul>
+      <li>Khi thêm các hệ thuật số mới vào màn hình chi tiết lá số (<code>ChartDetailScreen.svelte</code>), cần cập nhật cả 2 nhánh: <code>isPosterModalOpen</code> (xuất poster) và <code>dossier.isModalOpen</code> (xuất hồ sơ PDF).</li>
+      <li>Mọi dữ liệu ngày tháng âm lịch hiển thị ra UI user-facing bắt buộc phải đi qua <code>formatStructuredLunarDate</code> để chặn triệt để chữ Hán lọt ra ngoài.</li>
+    </ul>
   </div>
 </body>
 </html>

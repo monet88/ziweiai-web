@@ -18,11 +18,21 @@ export function formatPosterFileName(userName: string, birthYear?: string | numb
   return `Poster-Hoang-Gia-${safeName}${yearSuffix}.png`;
 }
 
+export function formatBaziPosterFileName(userName: string, dayMaster?: string | null): string {
+  const safeName = slugifyVietnamese(userName) || 'Duong-So';
+  const dmSuffix = dayMaster ? `-${slugifyVietnamese(dayMaster)}` : '';
+  return `Poster-Bat-Tu-${safeName}${dmSuffix}.png`;
+}
+
 export function formatDivinationPosterFileName(
-  system: 'liuyao' | 'tarot' | 'numerology',
+  system: 'liuyao' | 'tarot' | 'numerology' | 'bazi',
   title?: string | null,
 ): string {
   const safeTitle = slugifyVietnamese(title || '');
+  if (system === 'bazi') {
+    const suffix = safeTitle ? `-${safeTitle}` : '';
+    return `Poster-Bat-Tu${suffix}.png`;
+  }
   if (system === 'liuyao') {
     const suffix = safeTitle ? `-${safeTitle}` : '';
     return `Poster-Luc-Hao${suffix}.png`;

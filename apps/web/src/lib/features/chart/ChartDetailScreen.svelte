@@ -37,6 +37,7 @@
   import DeluxePdfDossierModal from '$lib/features/dossier/DeluxePdfDossierModal.svelte';
   import RoyalBaziDossierModal from '$lib/features/dossier/RoyalBaziDossierModal.svelte';
   import RoyalPosterModal from '$lib/features/poster/RoyalPosterModal.svelte';
+  import RoyalBaziPosterModal from '$lib/features/poster/RoyalBaziPosterModal.svelte';
   import RoyalLiuyaoPosterModal from '$lib/features/poster/RoyalLiuyaoPosterModal.svelte';
   import RoyalExplanationPdfModal from '$lib/features/explanation/RoyalExplanationPdfModal.svelte';
   import { resolvePalaceScope } from '$lib/features/explanation/explanation-model.svelte';
@@ -460,6 +461,13 @@
 {#if isPosterModalOpen && detail.snapshot}
   {#if detail.chartSystem === 'liu-yao'}
     <RoyalLiuyaoPosterModal
+      snapshot={detail.snapshot}
+      chartId={detail.chartId}
+      userName={auth.user?.email ? auth.user.email.split('@')[0] : 'Đương Số'}
+      onClose={() => (isPosterModalOpen = false)}
+    />
+  {:else if detail.chartSystem === 'ba-zi'}
+    <RoyalBaziPosterModal
       snapshot={detail.snapshot}
       chartId={detail.chartId}
       userName={auth.user?.email ? auth.user.email.split('@')[0] : 'Đương Số'}

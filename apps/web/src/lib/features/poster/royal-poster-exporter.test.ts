@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import {
   slugifyVietnamese,
   formatPosterFileName,
+  formatBaziPosterFileName,
   formatDivinationPosterFileName,
   exportPosterToPng,
   triggerDirectDownload,
@@ -43,7 +44,19 @@ describe('royal-poster-exporter', () => {
     });
   });
 
+  describe('formatBaziPosterFileName', () => {
+    it('creates formatted file name for bazi poster', () => {
+      expect(formatBaziPosterFileName('galaxypro710', 'Bính Hỏa')).toBe('Poster-Bat-Tu-galaxypro710-Binh-Hoa.png');
+      expect(formatBaziPosterFileName('', null)).toBe('Poster-Bat-Tu-Duong-So.png');
+    });
+  });
+
   describe('formatDivinationPosterFileName', () => {
+    it('formats divination poster file name for bazi', () => {
+      expect(formatDivinationPosterFileName('bazi', 'Tu-Tru')).toBe('Poster-Bat-Tu-Tu-Tru.png');
+      expect(formatDivinationPosterFileName('bazi', '')).toBe('Poster-Bat-Tu.png');
+    });
+
     it('formats divination poster file name for liuyao', () => {
       expect(formatDivinationPosterFileName('liuyao', 'Thuần Càn')).toBe('Poster-Luc-Hao-Thuan-Can.png');
       expect(formatDivinationPosterFileName('liuyao', '')).toBe('Poster-Luc-Hao.png');

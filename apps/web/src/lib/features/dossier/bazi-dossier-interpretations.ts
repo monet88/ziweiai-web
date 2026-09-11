@@ -1,5 +1,6 @@
 import type { ChartSnapshot } from '@ziweiai/contracts';
 import { translateBaziKey, formatBaziStemBranchLabel } from '@ziweiai/contracts';
+import { formatStructuredLunarDate } from '$lib/features/chart/chart-display';
 import {
   calculateFiveElementsBalance,
   evaluateDayMaster,
@@ -130,7 +131,8 @@ export function buildBaziDossierData(snapshot: ChartSnapshot, userNameInput?: st
     birth.solarDate ||
     (resolvedDate ? `${resolvedDate.day}/${resolvedDate.month}/${resolvedDate.year}` : 'Chưa xác định');
 
-  const lunarDateText = summary.lunarDate || birth.lunarDate || 'Chưa xác định';
+  const rawLunar = summary.lunarDate || birth.lunarDate;
+  const lunarDateText = (rawLunar ? formatStructuredLunarDate(rawLunar) : '') || 'Chưa xác định';
 
   const resolvedTime = birth.resolvedDateTime?.time || birth.time;
   const birthHourText = resolvedTime

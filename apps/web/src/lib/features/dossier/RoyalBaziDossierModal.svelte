@@ -100,7 +100,7 @@
     toast.show('🖨️ Đang mở giao diện in ấn Bát Tự chuẩn A4 Vector...', 'info');
     setTimeout(() => {
       window.print();
-    }, 250);
+    }, 300);
   }
 
   function scrollToPage(index: number) {
@@ -148,6 +148,9 @@
       percent: 0,
       stage: 'Đang khởi tạo Engine xuất bản PDF Bát Tự Vector...',
     };
+
+    // Chờ 250ms để DOM cập nhật class .is-exporting-pdf, bung đầy đủ 17 trang ra layout
+    await new Promise((resolve) => setTimeout(resolve, 250));
 
     try {
       const pageElements = Array.from(
@@ -3078,24 +3081,77 @@
   }
 
   /* ========================================================================= */
-  /* PRINT STYLESHEET (NO BLANK PAGES, PERFECT A4 VECTOR) */
+  /* PRINT STYLESHEET (CHUẨN A4 VECTOR HOÀNG GIA - KHÔNG TRẮNG TRANG) */
   /* ========================================================================= */
   @media print {
+    :global(html),
     :global(body) {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #faf6ed !important;
       overflow: visible !important;
-      background: #fff !important;
+      height: auto !important;
+      min-height: 0 !important;
     }
 
-    :global(body > *:not(.dossier-modal-overlay)) {
+    :global(body.printing-deluxe-dossier),
+    :global(body:has(.dossier-modal-overlay)) {
+      overflow: visible !important;
+      height: auto !important;
+      min-height: 0 !important;
+      background: #faf6ed !important;
+    }
+
+    /* Ẩn các thành phần giao diện nền của trang web khi in */
+    :global(body.printing-deluxe-dossier .top-nav-bar),
+    :global(body.printing-deluxe-dossier .hero),
+    :global(body.printing-deluxe-dossier .board-section),
+    :global(body.printing-deluxe-dossier .explanation-section),
+    :global(body.printing-deluxe-dossier .assistant-section),
+    :global(body.printing-deluxe-dossier .fortune-section),
+    :global(body.printing-deluxe-dossier .mobile-bottom-nav),
+    :global(body.printing-deluxe-dossier .chart-header-actions),
+    :global(body.printing-deluxe-dossier .no-print),
+    :global(body.printing-deluxe-dossier nav),
+    :global(body.printing-deluxe-dossier header:not(.page-header)),
+    :global(body.printing-deluxe-dossier footer),
+    :global(body.printing-deluxe-dossier button),
+    :global(body.printing-deluxe-dossier .toast-container) {
       display: none !important;
+    }
+
+    /* Mở khóa toàn bộ các container cha của SvelteKit để trang in bung ra tự do */
+    :global(body.printing-deluxe-dossier .app-content-wrapper),
+    :global(body.printing-deluxe-dossier .screen),
+    :global(body.printing-deluxe-dossier .container),
+    :global(body.printing-deluxe-dossier .body-layout),
+    :global(body.printing-deluxe-dossier .content),
+    :global(body.printing-deluxe-dossier .detail-page) {
+      overflow: visible !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      position: static !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      background: #faf6ed !important;
+      transform: none !important;
+      border: none !important;
+      box-shadow: none !important;
     }
 
     .dossier-modal-overlay {
       position: static !important;
+      inset: auto !important;
       width: 100% !important;
       height: auto !important;
-      background: #fff !important;
+      background: #faf6ed !important;
+      backdrop-filter: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: visible !important;
       display: block !important;
+      z-index: auto !important;
     }
 
     .dossier-navbar,
@@ -3104,37 +3160,58 @@
     }
 
     .dossier-stage {
+      position: static !important;
       overflow: visible !important;
+      height: auto !important;
+      max-height: none !important;
       background: transparent !important;
+      padding: 0 !important;
+      margin: 0 !important;
     }
 
     .dossier-document-scroll {
-      overflow: visible !important;
+      position: static !important;
       padding: 0 !important;
+      margin: 0 !important;
+      overflow: visible !important;
+      height: auto !important;
+      max-height: none !important;
       gap: 0 !important;
       display: block !important;
     }
 
-    .dossier-page {
-      display: block !important;
+    /* Hiển thị toàn bộ 17 trang Bát Tự khi in dù đang ở chế độ sách hay cuộn */
+    .dossier-document-scroll.view-book .dossier-page,
+    .dossier-document-scroll.view-book .dossier-page:not(.is-active),
+    .dossier-document-scroll .dossier-page {
+      display: flex !important;
       width: 210mm !important;
-      height: 297mm !important;
       min-height: 297mm !important;
-      max-height: 297mm !important;
-      margin: 0 !important;
+      height: 297mm !important;
+      margin: 0 auto !important;
       padding: 10mm !important;
       box-shadow: none !important;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
       page-break-after: always !important;
       break-after: page !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      transform: none !important;
+      animation: none !important;
+      background-color: #fcf9f2 !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
 
-    .dossier-page:last-child {
+    .dossier-document-scroll .dossier-page:last-child {
       page-break-after: auto !important;
       break-after: auto !important;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 0;
     }
   }
 

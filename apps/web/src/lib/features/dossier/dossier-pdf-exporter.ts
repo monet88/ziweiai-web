@@ -185,14 +185,23 @@ export async function exportDossierToPdf(
       pageTitle,
     });
 
+    // Cuộn trang vào khung nhìn để trình duyệt tính toán bounding box chính xác
+    if (typeof pageElement.scrollIntoView === 'function') {
+      pageElement.scrollIntoView({ block: 'start' });
+      await new Promise((r) => setTimeout(r, 60));
+    }
+
     // Render DOM page sang canvas với độ nét cao và nền hoàng triều
     const canvas = await html2canvas(pageElement, {
       scale,
       useCORS: true,
+      allowTaint: true,
       logging: false,
-      backgroundColor: '#faf6ed',
-      windowWidth: 794,
-      windowHeight: 1123,
+      backgroundColor: '#fcf9f2',
+      scrollX: 0,
+      scrollY: -window.scrollY,
+      width: pageElement.offsetWidth || 794,
+      height: pageElement.offsetHeight || 1123,
     });
 
     if (signal?.aborted) {

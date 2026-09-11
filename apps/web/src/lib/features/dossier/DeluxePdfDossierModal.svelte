@@ -156,6 +156,9 @@
       isExportingPdf = true;
       abortController = new AbortController();
 
+      // Chờ 200ms để DOM hiển thị trọn vẹn toàn bộ 19 trang
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
       // Thu thập 19 trang DOM A4
       const pageElements: HTMLElement[] = [];
       for (let i = 1; i <= totalPages; i++) {

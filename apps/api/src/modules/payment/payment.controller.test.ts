@@ -56,6 +56,33 @@ describe('PaymentController', () => {
       }
     });
 
+    it('should process transaction successfully with SePay Apikey authorization header', async () => {
+      const originalSecret = apiEnv.SEPAY_WEBHOOK_SECRET;
+      Object.assign(apiEnv, { SEPAY_WEBHOOK_SECRET: 'sepay-token-xyz' });
+
+      const payload = {
+        id: 123,
+        gateway: 'MBBank',
+        transactionDate: '2026-07-24 12:00:00',
+        accountNumber: '0123456789',
+        code: null,
+        content: 'TVTT 12345678',
+        transferType: 'in',
+        transferAmount: 50000,
+        accumulated: 150000,
+        referenceCode: 'REF123',
+        description: 'Test',
+      };
+
+      try {
+        const result = await controller.handleSepayWebhook('Apikey sepay-token-xyz', payload);
+        expect(result).toEqual({ success: true });
+        expect(service.processTransaction).toHaveBeenCalledWith(payload);
+      } finally {
+        Object.assign(apiEnv, { SEPAY_WEBHOOK_SECRET: originalSecret });
+      }
+    });
+
     it('should process transaction successfully with valid payload', async () => {
       const payload = {
         id: 123,

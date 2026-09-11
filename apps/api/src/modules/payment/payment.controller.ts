@@ -16,27 +16,38 @@ export class PaymentController {
     @Headers('Authorization') authHeader: string,
     @Body() payload: unknown,
   ) {
-    const sepaySecret = apiEnv.SEPAY_WEBHOOK_SECRET;
-    if (process.env.NODE_ENV === 'production' && !sepaySecret) {
-      this.logger.error('SePay webhook secret is not configured in production');
+    const expectedSecret = apiEnv.SEPAY_WEBHOOK_SECRET || apiEnv.SEPAY_API_KEY;
+    if (process.env.NODE_ENV === 'production' && !expectedSecret) {
+      this.logger.error('SePay webhook secret (SEPAY_WEBHOOK_SECRET or SEPAY_API_KEY) is not configured in production');
       throw new UnauthorizedException('Webhook configuration error');
     }
-    if (sepaySecret) {
-      if (!authHeader || authHeader !== `Bearer ${sepaySecret}`) {
-        this.logger.warn('Invalid or missing Authorization header for SePay webhook');
+    if (expectedSecret) {
+      const token = this.extractAuthToken(authHeader);
+      if (!token || token !== expectedSecret) {
+        this.logger.warn(`Invalid or missing Authorization header for SePay webhook`);
         throw new UnauthorizedException('Invalid webhook token');
       }
     }
 
     const parseResult = sepayWebhookSchema.safeParse(payload);
     if (!parseResult.success) {
-      this.logger.error('Invalid SePay webhook payload', parseResult.error);
+      this.logger.error('Invalid SePay webhook payload', parseResult.error.format());
       throw new BadRequestException('Invalid payload');
     }
 
     await this.paymentService.processTransaction(parseResult.data);
 
     return { success: true };
+  }
+
+  private extractAuthToken(authHeader?: string): string | null {
+    if (!authHeader) return null;
+    const trimmed = authHeader.trim();
+    const match = trimmed.match(/^(?:Apikey|Bearer)\s+(.+)$/i);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+    return trimmed;
   }
 
   @Public()

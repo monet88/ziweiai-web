@@ -9,6 +9,14 @@
   import { onMount } from 'svelte';
   import ViralReferralCardModal from '$lib/features/referral/ViralReferralCardModal.svelte';
   import TurnstileWidget from '$lib/components/security/TurnstileWidget.svelte';
+  import { page } from '$app/state';
+  import {
+    XU_PACKAGES,
+    FEATURE_COSTS,
+    findPackageByXu,
+    getDefaultPackage,
+    type XuPackage
+  } from '$lib/features/payment/pricing-config';
   import {
     Copy,
     Check,
@@ -32,23 +40,32 @@
   const accountNo = env.PUBLIC_SEPAY_ACCOUNT || '0123456789';
   const bankName = env.PUBLIC_SEPAY_BANK || 'MBBank';
 
-  // Package definitions with cost-efficiency guidance
-  const packages = [
-    { xu: 20, price: 20000, label: 'Gói Cơ Bản', badge: null, desc: 'Dùng cho 4 lượt luận giải AI' },
-    { xu: 50, price: 50000, label: 'Gói Phổ Biến', badge: 'Bán Chạy', desc: 'Dùng cho 10 lượt luận giải AI' },
-    { xu: 120, price: 100000, label: 'Gói Nâng Cao', badge: '+20% XU', desc: 'Tặng thêm 20 XU thưởng' },
-    { xu: 600, price: 500000, label: 'Gói VIP Thưởng Lớn', badge: '+20% XU', desc: 'Tặng thêm 100 XU thưởng' },
-  ];
+  const packages = XU_PACKAGES;
 
-  const featureCosts = [
-    { name: 'Luận giải AI Chuyên sâu', cost: '5 XU / lượt', tag: 'Xem nhiều nhất', icon: Sparkles },
-    { name: 'Xem Tướng Mặt / Bàn Tay AI', cost: '10 XU / lượt', tag: 'Phân tích ảnh', icon: Zap },
-    { name: 'Gieo Quẻ Kinh Dịch / Lục Hào', cost: '3 XU / lượt', tag: 'Dự đoán vận hạn', icon: CreditCard },
-    { name: 'Rút Bài Tarot / Lenormand', cost: '3 XU / lượt', tag: 'Lời khuyên ngày', icon: Gift },
-    { name: 'Lập lá số Tử Vi / Bát Tự', cost: '0 XU', tag: 'Miễn phí 100%', icon: CheckCircle2 },
-  ];
+  const costIconMap: Record<string, any> = {
+    deep_explanation: Sparkles,
+    face_palm_vision: Zap,
+    iching_divination: CreditCard,
+    tarot_lenormand: Gift,
+    chart_creation: CheckCircle2,
+    annual_report: Sparkles
+  };
 
-  let selectedPackage = $state(packages[1]); // Default to 50 XU
+  const featureCosts = FEATURE_COSTS.map((item) => ({
+    ...item,
+    icon: costIconMap[item.id] || Sparkles
+  }));
+
+  let selectedPackage = $state<XuPackage>(getDefaultPackage());
+
+  // Check URL query param ?package=
+  $effect(() => {
+    const pkgParam = page.url.searchParams.get('package');
+    const pkgFromQuery = findPackageByXu(pkgParam);
+    if (pkgFromQuery && pkgFromQuery.xu !== selectedPackage.xu) {
+      selectedPackage = pkgFromQuery;
+    }
+  });
   let shortUuid = $derived(auth.user?.id?.substring(0, 8).toUpperCase() ?? '');
   let qrUrl = $derived.by(() => {
     if (!shortUuid) return '';

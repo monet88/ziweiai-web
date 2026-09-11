@@ -29,7 +29,7 @@
         <strong class="amount">{wallet.balance}</strong>
       {/if}
     </a>
-    <a href={resolve('/pricing')} class="add-btn" aria-label={viCopy.pricing.addXuAction} title="Nạp XU">
+    <a href={resolve('/wallet')} class="add-btn" aria-label={viCopy.pricing.addXuAction} title="Nạp XU">
       <Plus class="w-3 h-3" strokeWidth={3} />
     </a>
   </div>

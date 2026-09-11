@@ -17,13 +17,29 @@
     children: Snippet;
     /** default = monochrome light product; mystical = dark glass chart surfaces */
     tone?: 'default' | 'mystical';
+    /** Cho phép container mở rộng 1200px cho các trang lá số/bảng biểu rộng */
+    wide?: boolean;
   }
 
-  let { eyebrow, title, subtitle, action, sidebar, children, tone = 'default' }: Props = $props();
+  let {
+    eyebrow,
+    title,
+    subtitle,
+    action,
+    sidebar,
+    children,
+    tone = 'default',
+    wide = false
+  }: Props = $props();
 </script>
 
 <div class="screen" class:theme-mystical={tone === 'mystical'} data-tone={tone}>
-  <div class="container" class:has-sidebar={Boolean(sidebar)} use:fadeUp={{ duration: 0.8, y: 30 }}>
+  <div
+    class="container"
+    class:has-sidebar={Boolean(sidebar)}
+    class:is-wide={wide}
+    use:fadeUp={{ duration: 0.8, y: 30 }}
+  >
     <!-- Top Nav Bar Hoàng Gia -->
     <div class="top-nav-bar">
       <a href={resolve('/')} class="vios-back-btn">
@@ -152,16 +168,17 @@
   .hero {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 18px;
     padding-bottom: 24px;
     border-bottom: 1px solid rgba(212, 175, 55, 0.18);
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 960px) {
     .hero {
       flex-direction: row;
-      align-items: flex-end;
+      align-items: flex-start;
       justify-content: space-between;
+      gap: 32px;
     }
   }
 
@@ -170,6 +187,7 @@
     flex-direction: column;
     gap: 10px;
     min-width: 0;
+    flex: 1 1 360px;
   }
 
   .eyebrow-badge {
@@ -197,7 +215,7 @@
   .title {
     margin: 0;
     font-family: var(--font-serif);
-    font-size: clamp(26px, 4vw, 36px);
+    font-size: clamp(24px, 3.2vw, 36px);
     font-weight: 800;
     letter-spacing: -0.01em;
     line-height: 1.25;
@@ -218,7 +236,14 @@
   }
 
   .hero-action-slot {
-    flex-shrink: 0;
+    flex: 0 1 auto;
+  }
+
+  @media (min-width: 960px) {
+    .hero-action-slot {
+      display: flex;
+      justify-content: flex-end;
+    }
   }
 
   .body-layout {
@@ -250,7 +275,11 @@
       max-width: 1120px;
     }
 
-    .container:not(.has-sidebar) {
+    .container.is-wide {
+      max-width: 1200px;
+    }
+
+    .container:not(.has-sidebar):not(.is-wide) {
       max-width: 840px;
     }
 

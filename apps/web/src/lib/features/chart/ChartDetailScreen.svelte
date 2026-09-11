@@ -239,9 +239,10 @@
   title={copy.heroTitle}
   subtitle={copy.heroSubtitle}
   tone="mystical"
+  wide={true}
 >
   {#snippet action()}
-    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+    <div class="chart-header-actions">
       {#if (showBoard || detail.chartSystem === 'ba-zi' || detail.chartSystem === 'liu-yao') && detail.snapshot}
         <button
           type="button"
@@ -504,6 +505,19 @@
 {/if}
 
 <style>
+  .chart-header-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  @media (min-width: 960px) {
+    .chart-header-actions {
+      justify-content: flex-end;
+    }
+  }
+
   .btn-royal-poster {
     display: inline-flex;
     align-items: center;

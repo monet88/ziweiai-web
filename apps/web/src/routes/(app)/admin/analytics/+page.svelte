@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import type { PageData } from './$types';
-  import { BarChart3, Users, Coins, TrendingDown, TrendingUp, Sparkles, Filter, X, Calendar } from 'lucide-svelte';
+  import { BarChart3, Users, Coins, TrendingDown, TrendingUp, Sparkles, Filter, X, Calendar, Download } from 'lucide-svelte';
 
   let { data }: { data: PageData } = $props();
   let analytics = $derived(data.analytics);
@@ -28,6 +28,53 @@
     url.searchParams.delete('startDate');
     url.searchParams.delete('endDate');
     goto(url.toString(), { keepFocus: true, noScroll: true });
+  }
+
+  function exportAnalyticsToCsv() {
+    if (!analytics || !analytics.daily_stats || analytics.daily_stats.length === 0) {
+      alert('Chưa có dữ liệu thống kê để xuất file');
+      return;
+    }
+
+    const headers = ['Ngày', 'Đăng Ký Mới', 'XU Nạp (+)', 'XU Tiêu Thụ (-)'];
+    const rows = analytics.daily_stats.map((stat) => [
+      `"${stat.date}"`,
+      stat.new_users || 0,
+      stat.xu_topup || 0,
+      stat.xu_consumed || 0,
+    ]);
+
+    // Section 2: Tiêu thụ theo tính năng AI
+    const featureHeaders = ['', '', '', ''];
+    const featureTitle = ['--- PHÂN PHỐI TIÊU THỤ THEO TÍNH NĂNG AI ---', '', '', ''];
+    const featureColHeaders = ['Tính Năng AI', 'XU Tiêu Thụ', '', ''];
+    const featureRows = (analytics.feature_usage || []).map((f) => [
+      `"${f.feature}"`,
+      f.consumed || 0,
+      '',
+      '',
+    ]);
+
+    const allLines = [
+      headers.join(','),
+      ...rows.map((r) => r.join(',')),
+      featureHeaders.join(','),
+      featureTitle.join(','),
+      featureColHeaders.join(','),
+      ...featureRows.map((r) => r.join(',')),
+    ];
+
+    const csvContent = '\uFEFF' + allLines.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `vios-analytics-xu-${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 </script>
 
@@ -61,6 +108,12 @@
         <Filter size={14} />
         <span>Lọc Báo Cáo</span>
       </button>
+
+      <button class="btn btn-export" onclick={exportAnalyticsToCsv} disabled={!analytics}>
+        <Download size={14} />
+        <span>Xuất CSV</span>
+      </button>
+
       {#if startDate || endDate}
         <button class="btn btn-clear-filter" onclick={clearFilters}>
           <X size={14} />
@@ -282,6 +335,18 @@
 
   .btn-filter:hover {
     background: var(--color-accent-primary-pressed);
+    transform: translateY(-1px);
+  }
+
+  .btn-export {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: #d4af37;
+  }
+
+  .btn-export:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.15) 100%);
+    border-color: #d4af37;
     transform: translateY(-1px);
   }
 

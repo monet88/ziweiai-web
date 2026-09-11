@@ -6,6 +6,8 @@
   interface TopReferrer {
     referrerId: string;
     count: number;
+    email?: string | null;
+    displayName?: string | null;
   }
 
   interface ReferralRecord {
@@ -13,6 +15,10 @@
     referrer_id: string;
     referee_id?: string;
     referred_id?: string;
+    referrer_email?: string | null;
+    referrer_name?: string | null;
+    referee_email?: string | null;
+    referee_name?: string | null;
     reward_xu: number;
     created_at: string;
   }
@@ -104,8 +110,8 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th style="width: 100px;">Hạng</th>
-                <th>Người Giới Thiệu (User ID)</th>
+                <th style="width: 80px;">Hạng</th>
+                <th>Người Giới Thiệu (Tên / Email / User ID)</th>
                 <th class="align-right">Số Lượt Mời</th>
                 <th class="align-right">XU Thưởng Nhận</th>
               </tr>
@@ -117,7 +123,13 @@
                     <span class="rank-badge rank-{idx + 1}">#{idx + 1}</span>
                   </td>
                   <td class="primary-cell">
-                    <code class="id-code">{top.referrerId}</code>
+                    <div class="user-badge-group">
+                      <span class="user-primary-name">{top.displayName || top.email || 'Thành viên ViOS'}</span>
+                      {#if top.displayName && top.email}
+                        <span class="user-email-text">{top.email}</span>
+                      {/if}
+                      <code class="user-sub-id">{top.referrerId}</code>
+                    </div>
                   </td>
                   <td class="align-right">
                     <strong>{top.count} người</strong>
@@ -163,10 +175,22 @@
                     {new Date(ref.created_at).toLocaleString('vi-VN')}
                   </td>
                   <td>
-                    <code class="id-code">{(ref.referrer_id || '').slice(0, 12)}…</code>
+                    <div class="user-badge-group">
+                      <span class="user-primary-name">{ref.referrer_name || ref.referrer_email || 'Thành viên'}</span>
+                      {#if ref.referrer_name && ref.referrer_email}
+                        <span class="user-email-text">{ref.referrer_email}</span>
+                      {/if}
+                      <code class="user-sub-id">{(ref.referrer_id || '').slice(0, 12)}…</code>
+                    </div>
                   </td>
                   <td>
-                    <code class="id-code">{(ref.referee_id || ref.referred_id || '').slice(0, 12)}…</code>
+                    <div class="user-badge-group">
+                      <span class="user-primary-name">{ref.referee_name || ref.referee_email || 'Khách mới'}</span>
+                      {#if ref.referee_name && ref.referee_email}
+                        <span class="user-email-text">{ref.referee_email}</span>
+                      {/if}
+                      <code class="user-sub-id">{(ref.referee_id || ref.referred_id || '').slice(0, 12)}…</code>
+                    </div>
                   </td>
                   <td class="align-right text-gold">
                     <span class="xu-pill">
@@ -424,5 +448,30 @@
     color: #ef4444;
     border-radius: var(--radius-md);
     border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .user-badge-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .user-primary-name {
+    font-weight: 600;
+    font-size: 13.5px;
+    color: var(--color-text-primary);
+  }
+
+  .user-email-text {
+    font-size: 12px;
+    color: var(--color-primary-light, #c084fc);
+    font-weight: 500;
+  }
+
+  .user-sub-id {
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    opacity: 0.8;
   }
 </style>

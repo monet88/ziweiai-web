@@ -219,22 +219,78 @@ export class AdminService {
     }
 
     const referrerCounts = new Map<string, number>();
+    const userIds = new Set<string>();
+
     for (const ref of referrals || []) {
-      const count = referrerCounts.get(ref.referrer_id) || 0;
-      referrerCounts.set(ref.referrer_id, count + 1);
+      if (ref.referrer_id) {
+        userIds.add(ref.referrer_id);
+        const count = referrerCounts.get(ref.referrer_id) || 0;
+        referrerCounts.set(ref.referrer_id, count + 1);
+      }
+      const target = ref.referee_id || ref.referred_id;
+      if (target) {
+        userIds.add(target);
+      }
+    }
+
+    // Lookup user display names
+    const profileMap = new Map<string, string>();
+    const idArray = Array.from(userIds);
+    if (idArray.length > 0) {
+      try {
+        const { data: profiles } = await this.client
+          .from('profiles')
+          .select('user_id, display_name')
+          .in('user_id', idArray);
+        for (const p of profiles || []) {
+          if (p.user_id && p.display_name) {
+            profileMap.set(p.user_id, p.display_name);
+          }
+        }
+      } catch (profileErr) {
+        this.logger.warn('Failed to query profiles for referrals', profileErr);
+      }
+    }
+
+    // Lookup user emails from auth
+    const emailMap = new Map<string, string>();
+    try {
+      const { data: authData } = await this.client.auth.admin.listUsers();
+      if (authData && authData.users) {
+        for (const u of authData.users) {
+          if (u.id && u.email) {
+            emailMap.set(u.id, u.email);
+          }
+        }
+      }
+    } catch {
+      // Ignored if restricted
     }
 
     const topReferrers = Array.from(referrerCounts.entries())
-      .map(([referrerId, count]) => ({ referrerId, count }))
+      .map(([referrerId, count]) => ({
+        referrerId,
+        count,
+        email: emailMap.get(referrerId) || null,
+        displayName: profileMap.get(referrerId) || null,
+      }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
-    const sanitizedRecent = (referrals || []).map((ref) => ({
-      ...ref,
-      referrer_id: ref.referrer_id || '',
-      referee_id: ref.referee_id || ref.referred_id || '',
-      referred_id: ref.referee_id || ref.referred_id || '',
-    }));
+    const sanitizedRecent = (referrals || []).map((ref) => {
+      const refId = ref.referrer_id || '';
+      const targetId = ref.referee_id || ref.referred_id || '';
+      return {
+        ...ref,
+        referrer_id: refId,
+        referee_id: targetId,
+        referred_id: targetId,
+        referrer_email: emailMap.get(refId) || null,
+        referrer_name: profileMap.get(refId) || null,
+        referee_email: emailMap.get(targetId) || null,
+        referee_name: profileMap.get(targetId) || null,
+      };
+    });
 
     return {
       totalReferrals: (referrals || []).length,

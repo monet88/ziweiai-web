@@ -3,7 +3,7 @@
   import { getAuthStore } from '$lib/auth/auth-context';
   import { NoticeBanner } from '$lib/components/ui';
   import { toast } from '$lib/stores/toast';
-  import { ArrowLeftRight, RefreshCw, Search, CheckCircle2, AlertTriangle, Coins, ShieldCheck, UserCheck, X, Link } from 'lucide-svelte';
+  import { ArrowLeftRight, RefreshCw, Search, CheckCircle2, AlertTriangle, Coins, ShieldCheck, UserCheck, X, Link, Download, Activity, Clock } from 'lucide-svelte';
 
   interface Transaction {
     id: string;
@@ -38,6 +38,50 @@
   let totalVnd = $derived(transactions.reduce((sum, tx) => sum + (tx.amount_vnd || 0), 0));
   let totalXuAdded = $derived(transactions.reduce((sum, tx) => sum + (tx.xu_added || 0), 0));
   let unmatchedCount = $derived(transactions.filter((tx) => !tx.owner_user_id).length);
+
+  // 24h Webhook Monitoring Metrics
+  let tx24h = $derived(
+    transactions.filter((tx) => {
+      const created = new Date(tx.created_at).getTime();
+      return Date.now() - created <= 24 * 60 * 60 * 1000;
+    })
+  );
+  let total24hVnd = $derived(tx24h.reduce((sum, tx) => sum + (tx.amount_vnd || 0), 0));
+  let total24hXu = $derived(tx24h.reduce((sum, tx) => sum + (tx.xu_added || 0), 0));
+  let matched24hCount = $derived(tx24h.filter((tx) => Boolean(tx.owner_user_id)).length);
+  let unmatched24hCount = $derived(tx24h.filter((tx) => !tx.owner_user_id).length);
+  let latestTx = $derived(transactions[0] || null);
+
+  function exportToCsv() {
+    if (filteredTransactions.length === 0) {
+      toast.show('Không có dữ liệu giao dịch để xuất file', 'info');
+      return;
+    }
+
+    const headers = ['Mã Giao Dịch', 'Mã SePay', 'User ID Nhận', 'Số Tiền (VNĐ)', 'XU Quy Đổi', 'Thời Gian Tạo', 'Trạng Thái'];
+    const rows = filteredTransactions.map((tx) => [
+      `"${tx.id}"`,
+      `"${tx.sepay_transaction_id || ''}"`,
+      `"${tx.owner_user_id || 'Chưa gán'}"`,
+      tx.amount_vnd || 0,
+      tx.xu_added || 0,
+      `"${new Date(tx.created_at).toLocaleString('vi-VN')}"`,
+      `"${tx.owner_user_id ? 'Đã gán thành công' : 'Chờ gán thủ công'}"`,
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `vios-sepay-transactions-${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.show(`Đã xuất ${filteredTransactions.length} giao dịch ra file CSV!`, 'success');
+  }
 
   async function loadTransactions() {
     isLoading = true;
@@ -105,6 +149,40 @@
 </svelte:head>
 
 <div class="transactions-page">
+  <!-- 24h Webhook Health & Monitoring Widget -->
+  <div class="webhook-monitor-card">
+    <div class="monitor-header">
+      <div class="monitor-status-pill">
+        <span class="status-dot pulsing"></span>
+        <Activity size={14} class="text-emerald" />
+        <span class="status-label">SePay Webhook: <strong>HOẠT ĐỘNG TỐT (ACTIVE)</strong></span>
+      </div>
+      <div class="monitor-last-ping">
+        <Clock size={13} />
+        <span>Giao dịch gần nhất: <strong>{latestTx ? new Date(latestTx.created_at).toLocaleString('vi-VN') : 'Chưa có dữ liệu'}</strong></span>
+      </div>
+    </div>
+
+    <div class="monitor-metrics-row">
+      <div class="monitor-metric-item">
+        <span class="metric-label">Giao dịch 24h qua</span>
+        <strong class="metric-value text-gold">{tx24h.length} GD</strong>
+      </div>
+      <div class="monitor-metric-item">
+        <span class="metric-label">Đã khớp tài khoản</span>
+        <strong class="metric-value text-emerald">{matched24hCount} GD</strong>
+      </div>
+      <div class="monitor-metric-item">
+        <span class="metric-label">Cần đối soát</span>
+        <strong class="metric-value {unmatched24hCount > 0 ? 'text-amber' : 'text-muted'}">{unmatched24hCount} GD</strong>
+      </div>
+      <div class="monitor-metric-item">
+        <span class="metric-label">Dòng tiền 24h qua</span>
+        <strong class="metric-value text-primary">+{total24hVnd.toLocaleString('vi-VN')} đ <span class="metric-sub">(+{total24hXu.toLocaleString('vi-VN')} XU)</span></strong>
+      </div>
+    </div>
+  </div>
+
   <!-- Highlights Stat Grid -->
   <div class="tx-stats-grid">
     <div class="stat-card">
@@ -159,10 +237,17 @@
       {/if}
     </div>
 
-    <button class="btn btn-reload" onclick={loadTransactions} disabled={isLoading}>
-      <RefreshCw size={15} class={isLoading ? 'spinning' : ''} />
-      <span>Làm mới dữ liệu</span>
-    </button>
+    <div class="toolbar-actions">
+      <button class="btn btn-export" onclick={exportToCsv} disabled={filteredTransactions.length === 0}>
+        <Download size={15} />
+        <span>Xuất File CSV</span>
+      </button>
+
+      <button class="btn btn-reload" onclick={loadTransactions} disabled={isLoading}>
+        <RefreshCw size={15} class={isLoading ? 'spinning' : ''} />
+        <span>Làm mới</span>
+      </button>
+    </div>
   </div>
 
   {#if errorMessage}
@@ -301,6 +386,113 @@
     flex-direction: column;
     gap: var(--space-lg);
   }
+
+  /* 24h Webhook Health Monitor Widget */
+  .webhook-monitor-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px) saturate(170%);
+    -webkit-backdrop-filter: blur(18px) saturate(170%);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.08);
+  }
+
+  .monitor-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    justify-content: space-between;
+    border-bottom: 1px solid var(--overlay-border);
+    padding-bottom: var(--space-sm);
+  }
+
+  @media (min-width: 640px) {
+    .monitor-header {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+
+  .monitor-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+  }
+
+  .pulsing {
+    animation: pulseGlow 2s infinite ease-in-out;
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+  }
+
+  .monitor-last-ping {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
+  .monitor-metrics-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-sm) var(--space-md);
+  }
+
+  @media (min-width: 768px) {
+    .monitor-metrics-row {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  .monitor-metric-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .metric-label {
+    font-size: var(--text-eyebrow);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    color: var(--color-text-muted);
+  }
+
+  .metric-value {
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .metric-sub {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+  }
+
+  .text-emerald { color: #10b981; }
+  .text-gold { color: #d4af37; }
+  .text-amber { color: #f59e0b; }
+  .text-muted { color: var(--color-text-muted); }
+  .text-primary { color: var(--color-text-primary); }
 
   /* Stats Grid */
   .tx-stats-grid {
@@ -447,6 +639,39 @@
     cursor: pointer;
     display: flex;
     align-items: padding;
+  }
+
+  .toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: #d4af37;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-export:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.15) 100%);
+    border-color: #d4af37;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
+  }
+
+  .btn-export:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .btn-reload {

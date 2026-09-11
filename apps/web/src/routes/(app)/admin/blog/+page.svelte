@@ -2,6 +2,7 @@
   import { resolve } from '$app/paths';
   import { BLOG_POSTS, BLOG_CATEGORIES } from '$lib/features/blog/blog-data';
   import type { BlogPost } from '$lib/features/blog/types';
+  import { toast } from '$lib/stores/toast';
   import {
     BookOpen,
     Sparkles,
@@ -13,15 +14,37 @@
     Layers,
     Search,
     Share2,
-    TrendingUp
+    TrendingUp,
+    PlusCircle,
+    Edit3,
+    Trash2,
+    X,
+    Save
   } from 'lucide-svelte';
 
-  const posts: readonly BlogPost[] = BLOG_POSTS;
+  let postsList = $state<BlogPost[]>([...BLOG_POSTS]);
   let searchQuery = $state('');
   let selectedCategory = $state('all');
 
+  // Modal State
+  let showModal = $state(false);
+  let isEditing = $state(false);
+  let editSlug = $state<string | null>(null);
+
+  // Form Fields
+  let formTitle = $state('');
+  let formSubtitle = $state('');
+  let formCategory = $state('tu-vi-dau-so');
+  let formSlug = $state('');
+  let formAuthorName = $state('ViOS Thiên Cơ Các');
+  let formReadTime = $state('7 phút đọc');
+  let formKeywords = $state('tử vi, số mệnh');
+  let formSummary = $state('');
+  let formFaqQuestion = $state('');
+  let formFaqAnswer = $state('');
+
   const filteredPosts = $derived(
-    posts.filter((p: BlogPost) => {
+    postsList.filter((p: BlogPost) => {
       const matchCat = selectedCategory === 'all' || p.category === selectedCategory;
       const matchSearch =
         searchQuery.trim() === '' ||
@@ -32,8 +55,119 @@
     })
   );
 
-  const totalFaqs = posts.reduce((acc: number, p: BlogPost) => acc + p.faqs.length, 0);
-  const totalKeywords = new Set(posts.flatMap((p: BlogPost) => p.keywords)).size;
+  const totalFaqs = $derived(postsList.reduce((acc: number, p: BlogPost) => acc + p.faqs.length, 0));
+  const totalKeywords = $derived(new Set(postsList.flatMap((p: BlogPost) => p.keywords)).size);
+
+  function openCreateModal() {
+    isEditing = false;
+    editSlug = null;
+    formTitle = '';
+    formSubtitle = '';
+    formCategory = 'tu-vi';
+    formSlug = '';
+    formAuthorName = 'ViOS Thiên Cơ Các';
+    formReadTime = '7 phút đọc';
+    formKeywords = 'tử vi, phong thủy, vận mệnh';
+    formSummary = '';
+    formFaqQuestion = 'Lập lá số Tử Vi tại ViOS có mất phí không?';
+    formFaqAnswer = 'Hoàn toàn miễn phí 100% với độ chính xác cao.';
+    showModal = true;
+  }
+
+  function openEditModal(post: BlogPost) {
+    isEditing = true;
+    editSlug = post.slug;
+    formTitle = post.title;
+    formSubtitle = post.subtitle;
+    formCategory = post.category;
+    formSlug = post.slug;
+    formAuthorName = post.author.name;
+    formReadTime = post.readTime;
+    formKeywords = post.keywords.join(', ');
+    formSummary = post.summary;
+    formFaqQuestion = post.faqs[0]?.question || '';
+    formFaqAnswer = post.faqs[0]?.answer || '';
+    showModal = true;
+  }
+
+  function handleDeletePost(slug: string) {
+    if (!confirm(`Bạn có chắc chắn muốn xóa bài viết "${slug}" khỏi danh sách?`)) return;
+    postsList = postsList.filter((p) => p.slug !== slug);
+    toast.show('Đã xóa bài viết khỏi cẩm nang!', 'info');
+  }
+
+  function handleSavePost() {
+    if (!formTitle.trim() || !formSlug.trim()) {
+      alert('Vui lòng nhập đầy đủ tiêu đề và slug URL bài viết!');
+      return;
+    }
+
+    const catObj = BLOG_CATEGORIES.find((c) => c.id === formCategory);
+    const categoryLabel = catObj ? catObj.label : 'Cẩm Nang';
+
+    const keywords = formKeywords.split(',').map((k) => k.trim()).filter(Boolean);
+    const faqs = formFaqQuestion.trim()
+      ? [{ question: formFaqQuestion.trim(), answer: formFaqAnswer.trim() }]
+      : [];
+
+    if (isEditing && editSlug) {
+      postsList = postsList.map((p) => {
+        if (p.slug === editSlug) {
+          return {
+            ...p,
+            title: formTitle.trim(),
+            subtitle: formSubtitle.trim(),
+            category: formCategory as any,
+            categoryLabel,
+            slug: formSlug.trim(),
+            author: { ...p.author, name: formAuthorName.trim() },
+            readTime: formReadTime.trim(),
+            keywords,
+            summary: formSummary.trim(),
+            faqs: faqs.length > 0 ? faqs : p.faqs,
+          };
+        }
+        return p;
+      });
+      toast.show(`Đã cập nhật bài viết "${formTitle}"!`, 'success');
+    } else {
+      const newPost: BlogPost = {
+        slug: formSlug.trim().toLowerCase().replace(/\s+/g, '-'),
+        title: formTitle.trim(),
+        subtitle: formSubtitle.trim() || formTitle.trim(),
+        category: formCategory as any,
+        categoryLabel,
+        publishedAt: new Date().toISOString().slice(0, 10),
+        readTime: formReadTime.trim(),
+        author: {
+          name: formAuthorName.trim(),
+          role: 'Chuyên gia Mệnh lý ViOS',
+        },
+        summary: formSummary.trim() || formSubtitle.trim(),
+        keywords,
+        tableOfContents: [
+          {
+            id: 'tong-quan',
+            title: `Tổng Quan: ${formTitle.trim()}`,
+          },
+        ],
+        contentHtml: `<p>${formSummary.trim() || 'Nội dung bài viết cẩm nang đang được đội ngũ chuyên gia biên soạn chi tiết.'}</p>`,
+        faqs,
+        cta: {
+          title: 'Khám Phá Bản Mệnh Cá Nhân Cùng AI',
+          desc: 'Lập lá số Tử Vi & Bát Tự trọn đời hoàn toàn miễn phí ngay hôm nay.',
+          actionLabel: 'Lập Lá Số Ngay',
+          actionRoute: '/charts/create',
+          badge: 'Miễn phí 100%',
+        },
+      };
+
+      postsList = [newPost, ...postsList];
+      toast.show(`Đã thêm bài viết mới "${formTitle}"!`, 'success');
+    }
+
+    showModal = false;
+  }
 </script>
 
 <svelte:head>
@@ -48,7 +182,7 @@
         <BookOpen size={20} />
       </div>
       <div>
-        <div class="stat-num">{posts.length}</div>
+        <div class="stat-num">{postsList.length}</div>
         <div class="stat-title">Tổng Bài Viết Cẩm Nang</div>
       </div>
     </div>
@@ -84,7 +218,7 @@
     </div>
   </div>
 
-  <!-- Filter & Search Bar -->
+  <!-- Filter & Action Bar -->
   <div class="blog-filter-bar">
     <div class="search-input-wrap">
       <Search size={15} class="search-icon" />
@@ -101,7 +235,7 @@
         class="cat-filter-btn {selectedCategory === 'all' ? 'active' : ''}"
         onclick={() => (selectedCategory = 'all')}
       >
-        Tất cả ({posts.length})
+        Tất cả ({postsList.length})
       </button>
       {#each BLOG_CATEGORIES as cat}
         <button
@@ -112,6 +246,11 @@
         </button>
       {/each}
     </div>
+
+    <button class="btn-create-post" onclick={openCreateModal}>
+      <PlusCircle size={16} />
+      <span>Viết Bài Mới</span>
+    </button>
   </div>
 
   <!-- Blog Posts Table -->
@@ -162,16 +301,34 @@
               </div>
             </td>
             <td class="align-right">
-              <a
-                href={resolve(`/blog/${post.slug}` as any)}
-                target="_blank"
-                rel="noreferrer"
-                class="btn-preview-link"
-                title="Xem trực tiếp trên web"
-              >
-                <span>Xem trước</span>
-                <ExternalLink size={13} />
-              </a>
+              <div class="row-actions">
+                <a
+                  href={resolve(`/blog/${post.slug}` as any)}
+                  target="_blank"
+                  rel="noreferrer"
+                  class="btn-preview-link"
+                  title="Xem trước bài viết trên web"
+                >
+                  <ExternalLink size={13} />
+                  <span>Xem</span>
+                </a>
+                <button
+                  class="btn-action-icon btn-edit"
+                  onclick={() => openEditModal(post)}
+                  title="Chỉnh sửa thông tin bài viết"
+                >
+                  <Edit3 size={13} />
+                  <span>Sửa</span>
+                </button>
+                <button
+                  class="btn-action-icon btn-delete"
+                  onclick={() => handleDeletePost(post.slug)}
+                  title="Xóa bài viết khỏi cẩm nang"
+                >
+                  <Trash2 size={13} />
+                  <span>Xóa</span>
+                </button>
+              </div>
             </td>
           </tr>
         {/each}
@@ -183,6 +340,154 @@
       </tbody>
     </table>
   </div>
+
+  <!-- Modal Soạn Thảo / Thêm Bài Mới -->
+  {#if showModal}
+    <div
+      class="modal-overlay"
+      onclick={() => (showModal = false)}
+      onkeydown={(e) => e.key === 'Escape' && (showModal = false)}
+      role="button"
+      tabindex="0"
+      aria-label="Đóng cửa sổ soạn thảo"
+    >
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div
+        class="modal-card"
+        onclick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        tabindex="-1"
+      >
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <Sparkles size={18} class="text-gold" />
+            <h3>{isEditing ? 'Chỉnh Sửa Bài Viết Cẩm Nang' : 'Soạn Thảo Bài Viết Mới'}</h3>
+          </div>
+          <button class="btn-close-modal" onclick={() => (showModal = false)} aria-label="Đóng">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="formTitle">Tiêu Đề Bài Viết (*)</label>
+              <input
+                id="formTitle"
+                type="text"
+                class="form-input"
+                bind:value={formTitle}
+                placeholder="Nhập tiêu đề thu hút, chuẩn SEO..."
+              />
+            </div>
+
+            <div class="form-group full-width">
+              <label for="formSubtitle">Phụ Đề / Trích Ngắn</label>
+              <input
+                id="formSubtitle"
+                type="text"
+                class="form-input"
+                bind:value={formSubtitle}
+                placeholder="Câu tóm lược ngắn truyền cảm hứng..."
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="formCategory">Chuyên Mục</label>
+              <select id="formCategory" class="form-input" bind:value={formCategory}>
+                {#each BLOG_CATEGORIES.filter((c) => c.id !== 'all') as cat}
+                  <option value={cat.id}>{cat.label}</option>
+                {/each}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="formSlug">Slug Đường Dẫn URL (*)</label>
+              <input
+                id="formSlug"
+                type="text"
+                class="form-input"
+                bind:value={formSlug}
+                placeholder="vd: y-nghia-14-chinh-tinh"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="formAuthorName">Tác Giả Biên Soạn</label>
+              <input
+                id="formAuthorName"
+                type="text"
+                class="form-input"
+                bind:value={formAuthorName}
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="formReadTime">Thời Gian Đọc</label>
+              <input
+                id="formReadTime"
+                type="text"
+                class="form-input"
+                bind:value={formReadTime}
+                placeholder="vd: 8 phút đọc"
+              />
+            </div>
+
+            <div class="form-group full-width">
+              <label for="formKeywords">Từ Khóa SEO (Phân cách bằng dấu phẩy)</label>
+              <input
+                id="formKeywords"
+                type="text"
+                class="form-input"
+                bind:value={formKeywords}
+                placeholder="tử vi, bát tự, phong thủy, ngũ hành"
+              />
+            </div>
+
+            <div class="form-group full-width">
+              <label for="formSummary">Nội Dung Mở Đầu / Tóm Tắt</label>
+              <textarea
+                id="formSummary"
+                rows="3"
+                class="form-input form-textarea"
+                bind:value={formSummary}
+                placeholder="Tóm tắt giá trị bài viết mang lại cho độc giả..."
+              ></textarea>
+            </div>
+
+            <div class="form-group full-width faq-section">
+              <div class="faq-header-tag">
+                <HelpCircle size={14} class="text-emerald" />
+                <span>Câu Hỏi FAQ (Google FAQ Schema)</span>
+              </div>
+              <input
+                type="text"
+                class="form-input"
+                bind:value={formFaqQuestion}
+                placeholder="Câu hỏi: Người mệnh Thổ nên chọn hướng nhà nào?"
+              />
+              <textarea
+                rows="2"
+                class="form-input form-textarea"
+                bind:value={formFaqAnswer}
+                placeholder="Câu trả lời ngắn gọn, chuẩn xác..."
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" onclick={() => (showModal = false)}>Hủy</button>
+          <button class="btn-save-post" onclick={handleSavePost}>
+            <Save size={14} />
+            <span>{isEditing ? 'Lưu Thay Đổi' : 'Xuất Bản Bài Viết'}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <!-- Editorial Guidelines Card -->
   <div class="guideline-card">
@@ -582,5 +887,256 @@
     padding: 1px 4px;
     border-radius: 3px;
     font-size: 11px;
+  }
+
+  /* Create Post Button & Actions */
+  .btn-create-post {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #fce99f 0%, #d4af37 100%);
+    color: #0f0c1b;
+    font-size: 13px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.25);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .btn-create-post:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(212, 175, 55, 0.35);
+  }
+
+  .row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .btn-action-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-edit {
+    background: rgba(139, 92, 246, 0.12);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #c084fc;
+  }
+
+  .btn-edit:hover {
+    background: rgba(139, 92, 246, 0.25);
+    transform: translateY(-1px);
+  }
+
+  .btn-delete {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+  }
+
+  .btn-delete:hover {
+    background: rgba(239, 68, 68, 0.22);
+    transform: translateY(-1px);
+  }
+
+  /* Modal Editor Styles */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(10, 8, 20, 0.75);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-md);
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--overlay-border-strong);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.25s ease-out;
+  }
+
+  .modal-header {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--overlay-border);
+  }
+
+  .modal-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .modal-title-wrap h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--color-text-primary);
+  }
+
+  .btn-close-modal {
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+  }
+
+  .btn-close-modal:hover {
+    color: var(--color-text-primary);
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group.full-width {
+    grid-column: span 2;
+  }
+
+  .form-group label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+  }
+
+  .form-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-primary);
+    border: 1px solid var(--overlay-border-strong);
+    color: var(--color-text-primary);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .form-input:focus {
+    border-color: #d4af37;
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.5;
+  }
+
+  .faq-section {
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px dashed rgba(16, 185, 129, 0.3);
+    padding: 12px;
+    border-radius: var(--radius-md);
+    gap: 8px;
+  }
+
+  .faq-header-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #10b981;
+  }
+
+  .modal-footer {
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid var(--overlay-border);
+    background: var(--overlay-ink-wash);
+  }
+
+  .btn-cancel {
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: 1px solid var(--overlay-border);
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-cancel:hover {
+    background: var(--overlay-ink-wash);
+    color: var(--color-text-primary);
+  }
+
+  .btn-save-post {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #fce99f 0%, #d4af37 100%);
+    color: #0f0c1b;
+    font-size: 13px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+  }
+
+  .btn-save-post:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(212, 175, 55, 0.35);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(16px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
 </style>

@@ -12,8 +12,29 @@
   let filterAnon = $state<'all' | 'registered' | 'anon'>('all');
   let search = $state('');
   let loading = $state(true);
+  let isSearching = $state(false);
   let errorMsg = $state('');
   let isCleaning = $state(false);
+
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function handleSearchInput(e: Event) {
+    const target = e.target as HTMLInputElement;
+    search = target.value;
+    if (searchTimeout) clearTimeout(searchTimeout);
+    isSearching = true;
+    searchTimeout = setTimeout(() => {
+      isSearching = false;
+      void loadUsers();
+    }, 350);
+  }
+
+  function clearSearch() {
+    search = '';
+    if (searchTimeout) clearTimeout(searchTimeout);
+    isSearching = false;
+    void loadUsers();
+  }
 
   let filteredUsers = $derived(users.filter(u => {
     if (filterAnon === 'registered') return !u.is_anonymous;
@@ -112,15 +133,27 @@
         <Search size={15} class="search-icon" />
         <input
           type="text"
-          bind:value={search}
+          value={search}
+          oninput={handleSearchInput}
           placeholder="Tìm theo Email, Tên hoặc User ID..."
           class="search-input"
-          onkeydown={(e) => e.key === 'Enter' && loadUsers()}
+          onkeydown={(e) => {
+            if (e.key === 'Enter') {
+              if (searchTimeout) clearTimeout(searchTimeout);
+              isSearching = false;
+              void loadUsers();
+            }
+          }}
         />
+        {#if search}
+          <button type="button" class="btn-clear-search" onclick={clearSearch} aria-label="Xóa tìm kiếm">
+            <X size={14} />
+          </button>
+        {/if}
       </div>
-      <button class="btn btn-search" onclick={loadUsers} disabled={loading}>
-        <RefreshCw size={14} class={loading ? 'spinning' : ''} />
-        <span>Tìm</span>
+      <button class="btn btn-search" onclick={loadUsers} disabled={loading || isSearching}>
+        <RefreshCw size={14} class={loading || isSearching ? 'spinning' : ''} />
+        <span>{isSearching ? 'Đang tìm...' : 'Làm mới'}</span>
       </button>
     </div>
 
@@ -303,7 +336,7 @@
 
   .search-input {
     width: 100%;
-    padding: 8px 14px 8px 34px;
+    padding: 8px 32px 8px 34px;
     border-radius: var(--radius-md);
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
@@ -313,6 +346,23 @@
     font-size: 13px;
     outline: none;
     transition: border-color 0.2s ease;
+  }
+
+  .btn-clear-search {
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    transition: color 0.2s ease;
+  }
+
+  .btn-clear-search:hover {
+    color: var(--color-text-primary);
   }
 
   .search-input:focus {

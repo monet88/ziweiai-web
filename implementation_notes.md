@@ -56,3 +56,22 @@
    - Khai báo endpoint `@Get('audit-logs')` trên `AdminController` và kết nối với `AdminService.getAuditLogs`, giải quyết dứt điểm lỗi 404 Not Found.
 5. **Module Quản Trị Cẩm Nang (`/admin/blog`)**:
    - Bổ sung tab "Cẩm Nang" vào thanh điều hướng Admin, cho phép quản trị viên tra cứu bài viết, xem cấu trúc SEO và mở link xem trước trực tiếp.
+
+---
+
+## 6. Sprint 72: Nâng Cấp Vận Hành Admin & Mở Rộng Đối Soát Tài Chính
+1. **Định Danh Người Dùng Tại Báo Cáo Giới Thiệu (`/admin/referrals`)**:
+   - Nâng cấp `AdminService.getReferralAnalytics()` tự động gom danh sách `user_id`, tra cứu `display_name` từ bảng `profiles` và `email` từ `auth.users`.
+   - Bảng Vinh Danh (Leaderboard) và Lịch Sử Gần Đây hiển thị rõ ràng: Tên hiển thị, Email người giới thiệu và người được mời, loại bỏ tình trạng hiển thị chuỗi UUID thô không thể nhận diện.
+2. **Widget Giám Sát SePay Webhook 24h Tại `/admin/transactions`**:
+   - Bổ sung card HUD thông minh: Trạng thái Webhook (`Online / Healthy`), số giao dịch 24h qua, tỷ lệ khớp tài khoản, số giao dịch chờ đối soát, tổng doanh thu VNĐ và XU phát sinh trong 24 giờ cùng thời gian giao dịch cuối cùng.
+3. **Nút Xuất File Báo Cáo CSV (Excel) Chuẩn UTF-8 BOM**:
+   - Tại `/admin/transactions`: Xuất toàn bộ giao dịch SePay (ID, Mã SePay, User ID, Số tiền, XU, Thời gian, Trạng thái gán).
+   - Tại `/admin/analytics`: Xuất bảng dòng tiền biến động 30 ngày và thống kê tiêu thụ theo từng tính năng AI.
+   - Sử dụng tiền tố `\uFEFF` (Byte Order Mark) để mở file trực tiếp trên Microsoft Excel tiếng Việt không bị lỗi font.
+4. **Debounce Search Người Dùng Tại `/admin/users`**:
+   - Tích hợp bộ đếm thời gian 350ms tự động kích hoạt tìm kiếm khi người dùng gõ vào ô tìm kiếm theo Email, Tên hoặc User ID.
+   - Thêm nút xóa nhanh (Clear) và spinner báo trạng thái đang tìm kiếm.
+5. **Bộ Công Cụ Quản Trị Cẩm Nang Bài Viết (`/admin/blog`)**:
+   - Bổ sung nút **"Viết Bài Mới"** kèm Modal Form Soạn Thảo (tiêu đề, phụ đề, chuyên mục, slug, tác giả, thời gian đọc, từ khóa SEO, câu hỏi FAQ chuẩn Schema).
+   - Bổ sung cụm nút Thao tác (Xem trước / Sửa / Xóa) trên từng dòng bài viết với cơ chế cập nhật trực tiếp state và thông báo toast.

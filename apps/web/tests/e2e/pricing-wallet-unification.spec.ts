@@ -22,6 +22,18 @@ test('unification: /pricing displays 4 packages and routes seamlessly to /wallet
   await expect(page.getByText('Bảng Phí Khai Mở Các Hệ Thuật Số')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Luận giải AI Chuyên sâu' })).toBeVisible();
 
+  // Capture light mode screenshot
+  await page.screenshot({ path: 'test-results/pricing-light.png', fullPage: true });
+
+  // Switch to dark mode and capture screenshot
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: 'test-results/pricing-dark.png', fullPage: true });
+
+  // Switch back to light mode for rest of test
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
+  await page.waitForTimeout(400);
+
   // 2. Click "Nạp Gói Này" for Gói Nâng Cao (120 XU)
   const pkgCard = page.locator('.package-card', { hasText: 'Gói Nâng Cao' });
   await pkgCard.getByRole('button', { name: 'Nạp Gói Này' }).click();

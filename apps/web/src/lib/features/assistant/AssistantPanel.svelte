@@ -8,9 +8,15 @@
    * - Hiển thị số dư XU và minh bạch phí 1 XU / lượt vấn đáp.
    * - Hỗ trợ auto-scroll, sao chép lời luận giải và giao diện Celestial Luxury.
    */
+  import { onMount } from 'svelte';
   import { getAuthStore } from '$lib/auth/auth-context';
   import { useQueryClient } from '@tanstack/svelte-query';
   import { createAssistantModel } from './assistant-model.svelte';
+  import {
+    isSpeechRecognitionSupported,
+    createSpeechRecognizer,
+    type SpeechRecognizer,
+  } from './speech-recognition';
   import {
     QUICK_PROMPT_KEYS,
     QUICK_PROMPT_LABELS,
@@ -72,6 +78,61 @@
   let transcriptContainer = $state<HTMLDivElement | null>(null);
   let copiedMessageId = $state<string | null>(null);
   let isUserScrolledUp = $state(false);
+
+  // Speech-to-Text Royal Voice Input state
+  let isVoiceListening = $state(false);
+  let voiceInterimText = $state('');
+  let speechSupported = $state(false);
+  let recognizer = $state<SpeechRecognizer | null>(null);
+
+  onMount(() => {
+    speechSupported = isSpeechRecognitionSupported();
+    recognizer = createSpeechRecognizer({
+      lang: 'vi-VN',
+      continuous: false,
+      interimResults: true,
+      onStart: () => {
+        isVoiceListening = true;
+        voiceInterimText = '';
+        toast.show('🎙️ Khâm Thiên Giám đang lắng nghe giọng nói Đương Số (vi-VN)...', 'info');
+      },
+      onResult: (transcript, isFinal) => {
+        if (isFinal) {
+          inputValue = inputValue ? `${inputValue} ${transcript}` : transcript;
+          voiceInterimText = '';
+        } else {
+          voiceInterimText = transcript;
+        }
+      },
+      onError: (errorMessage, errorType) => {
+        isVoiceListening = false;
+        voiceInterimText = '';
+        if (errorType !== 'aborted') {
+          toast.show(`⚠️ ${errorMessage}`, 'warning');
+        }
+      },
+      onEnd: () => {
+        isVoiceListening = false;
+        voiceInterimText = '';
+      },
+    });
+
+    return () => {
+      recognizer?.destroy();
+    };
+  });
+
+  function toggleVoiceInput() {
+    if (!speechSupported) {
+      toast.show('Trình duyệt hiện tại chưa hỗ trợ Web Speech API nhận diện giọng nói tiếng Việt.', 'warning');
+      return;
+    }
+    if (isVoiceListening) {
+      recognizer?.stop();
+    } else {
+      recognizer?.start();
+    }
+  }
 
   function handleScroll() {
     if (!transcriptContainer) return;
@@ -334,6 +395,33 @@
 
   <!-- Chat Composer -->
   <div class="composer-wrap">
+    {#if isVoiceListening}
+      <div class="voice-wave-indicator" role="status" aria-live="polite">
+        <div class="voice-wave-bars">
+          <span class="bar bar-1"></span>
+          <span class="bar bar-2"></span>
+          <span class="bar bar-3"></span>
+          <span class="bar bar-4"></span>
+          <span class="bar bar-5"></span>
+        </div>
+        <div class="voice-wave-text">
+          {#if voiceInterimText}
+            <span class="voice-transcribing">"{voiceInterimText}"</span>
+          {:else}
+            <span class="voice-prompt">Đang lắng nghe Đương Số... Hãy nói câu hỏi bằng tiếng Việt</span>
+          {/if}
+        </div>
+        <button
+          type="button"
+          class="btn-voice-finish"
+          onclick={() => recognizer?.stop()}
+          title="Hoàn tất thu âm"
+        >
+          Xong ✓
+        </button>
+      </div>
+    {/if}
+
     <div class="composer-inner">
       <textarea
         bind:value={inputValue}
@@ -342,6 +430,22 @@
         rows={2}
         disabled={assistant.isGenerating}
       ></textarea>
+      <button
+        type="button"
+        class="btn-voice-agent"
+        class:listening={isVoiceListening}
+        onclick={toggleVoiceInput}
+        disabled={assistant.isGenerating}
+        title={isVoiceListening ? 'Đang lắng nghe... Bấm để dừng' : 'Đàm đạo bằng giọng nói tiếng Việt (vi-VN)'}
+        aria-label={isVoiceListening ? 'Dừng lắng nghe' : 'Nói tiếng Việt để hỏi'}
+      >
+        {#if isVoiceListening}
+          <span class="voice-pulsing-glow"></span>
+          <span class="voice-btn-icon">🔴</span>
+        {:else}
+          <span class="voice-btn-icon">🎙️</span>
+        {/if}
+      </button>
       {#if assistant.isGenerating}
         <button
           type="button"
@@ -965,6 +1069,129 @@
     border-radius: 8px;
     font-size: 12px;
     color: #ff7675;
+  }
+
+  /* Voice Input Indicator & Waveform */
+  .voice-wave-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(212, 175, 55, 0.12) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 10px;
+    animation: fadeIn 0.25s ease-out;
+  }
+
+  .voice-wave-bars {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 18px;
+  }
+
+  .voice-wave-bars .bar {
+    width: 3px;
+    background: #ef4444;
+    border-radius: 3px;
+    animation: soundWave 1.2s ease-in-out infinite alternate;
+  }
+
+  .voice-wave-bars .bar-1 { height: 6px; animation-delay: 0.1s; }
+  .voice-wave-bars .bar-2 { height: 16px; animation-delay: 0.3s; }
+  .voice-wave-bars .bar-3 { height: 12px; animation-delay: 0.2s; }
+  .voice-wave-bars .bar-4 { height: 18px; animation-delay: 0.4s; }
+  .voice-wave-bars .bar-5 { height: 8px; animation-delay: 0.15s; }
+
+  @keyframes soundWave {
+    0% { height: 4px; background: #d4af37; }
+    50% { height: 18px; background: #ef4444; }
+    100% { height: 8px; background: #ffd700; }
+  }
+
+  .voice-wave-text {
+    flex: 1;
+    font-size: 13px;
+    color: #fef08a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .voice-transcribing {
+    font-style: italic;
+    color: #ffd700;
+    font-weight: 500;
+  }
+
+  .voice-prompt {
+    color: rgba(254, 240, 138, 0.85);
+  }
+
+  .btn-voice-finish {
+    background: rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-voice-finish:hover {
+    background: rgba(239, 68, 68, 0.4);
+    color: #ffffff;
+  }
+
+  .btn-voice-agent {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, rgba(22, 24, 35, 0.8) 100%);
+    border: 1.5px solid rgba(212, 175, 55, 0.4);
+    border-radius: 10px;
+    width: 46px;
+    height: 46px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+  }
+
+  .btn-voice-agent:hover:not(:disabled) {
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.3) 0%, rgba(22, 24, 35, 0.9) 100%);
+    border-color: #ffd700;
+    transform: translateY(-1px);
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+  }
+
+  .btn-voice-agent.listening {
+    border-color: #ef4444;
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.25) 0%, rgba(30, 15, 15, 0.9) 100%);
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
+  }
+
+  .voice-pulsing-glow {
+    position: absolute;
+    inset: -3px;
+    border-radius: 12px;
+    border: 2px solid rgba(239, 68, 68, 0.6);
+    animation: pulseRing 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    pointer-events: none;
+  }
+
+  @keyframes pulseRing {
+    0% { transform: scale(0.95); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 0.3; }
+    100% { transform: scale(0.95); opacity: 0.8; }
+  }
+
+  .voice-btn-icon {
+    font-size: 18px;
+    line-height: 1;
   }
 
   /* Composer */

@@ -169,3 +169,55 @@
   - `turbo build`: 6/6 packages build pass
   - `playwright smoke`: 1 passed (17.0s)
   - `flutter analyze apps/mobile`: No issues found
+
+---
+
+# Sprint 65 Implementation Notes — Speech-to-Text Royal Voice Input & Royal Dossier PDF Export
+
+## 1. Unspecified & Implicit Decisions
+
+### A. Speech-to-Text Royal Voice Input Architecture (Web Speech API)
+- **Engine Abstraction (`speech-recognition.ts`):**
+  - Tách riêng `createSpeechRecognizer` controller độc lập, quản lý vòng đời của `SpeechRecognition` / `webkitSpeechRecognition`.
+  - Cấu hình mặc định: `lang: 'vi-VN'`, `continuous: false`, `interimResults: true`.
+  - Hỗ trợ callbacks: `onStart`, `onResult(transcript, isFinal)`, `onError(errorMessage, rawError)`, `onEnd`.
+  - Tự động map các mã lỗi Web Speech API (`not-allowed`, `no-speech`, `audio-capture`, `network`) sang thông điệp tiếng Việt lịch sự, thân thiện và hướng dẫn cụ thể cho Đương Số.
+- **Visual Feedback & Royal Aesthetics in `AssistantPanel.svelte`:**
+  - Nút mic hoàng cung: Squircle viền vàng kim, chuyển sang hiệu ứng đỏ rực rỡ kèm vòng hào quang xung động (`pulseRing` animation) khi đang lắng nghe.
+  - Thanh hiển thị sóng âm `voice-wave-indicator` gồm 5 cột sóng âm chuyển động nhịp nhàng theo âm điệu tiếng Việt, kèm text transcript thời gian thực.
+  - Phục hồi an toàn khi microphone bị từ chối hoặc trình duyệt không hỗ trợ Web Speech API mà không gây crash app.
+
+### B. Royal Dossier PDF Export Cho Bài Luận Giải AI
+- **Engine Kết Xuất (`explanation-pdf-exporter.ts`):**
+  - Kế thừa mô hình client-side PDF export của `dossier-pdf-exporter.ts`: Sử dụng `jsPDF` + `html2canvas` để kết xuất toàn bộ bài luận giải AI thành tệp PDF đa trang chuẩn A4 (`210mm x 297mm`).
+  - Hàm `splitMarkdownIntoRoyalPages`: Tự động phân chia nội dung bài luận giải Markdown thành các trang A4 logic vừa vặn theo các heading `##` và đoạn văn, tránh trường hợp bài quá dài bị tràn hoặc ngắt trang đột ngột giữa chừng.
+  - Xử lý nén ảnh JPEG 0.92, dọn sạch bộ nhớ Canvas (`width = 0; height = 0`) sau mỗi trang để tránh tràn RAM trình duyệt.
+- **Giao Diện Ngự Lãm `RoyalExplanationPdfModal.svelte`:**
+  - **Trang Bìa Ngự Bút (Cover Page):** Khung hoa văn viền song long hoàng triều, tiêu đề vàng kim "BẢN SỚ TỬ VI ĐẠI THÀNH LUẬN GIẢI", tên Đương Số, tóm lược Tứ Trụ Tiên Thiên, Đại triện son đỏ "KHÂM THIÊN GIÁM NGỰ BẢO", mã số bảo chứng số hóa `VIOS-ROYAL-...`.
+  - **Các Trang Luận Giải Chi Tiết (Content Pages):** Header trang nhã, footer đánh số "Trang X / Y", phong cách giấy ngự bút hoàng cung màu `#faf6ed` cổ kính, typography tiếng Việt sắc nét.
+  - **Trang Sắc Chỉ Khâm Định (Decree & Remedies Page):** 4 nguyên tắc cải tạo vận mệnh, lời khuyên tu thân tích đức năm 2026 Bính Ngọ, triện ấn bảo chứng to tướng và mã QR số hóa dẫn về link tra cứu lá số trực tuyến.
+- **Tích hợp:**
+  - `ExplanationToolbar.svelte`: Bổ sung nút "Xuất Sớ PDF" với màu vàng kim ngọc bích.
+  - `ChartDetailScreen.svelte`: Điều khiển mở modal `RoyalExplanationPdfModal` mượt mà khi người dùng nhấn nút xuất sớ.
+
+## 2. Deviations from Specification
+- Không có sai lệch so với yêu cầu ban đầu của Sprint 65.
+
+## 3. Considered Trade-offs
+- **Trình duyệt không hỗ trợ Web Speech API (Firefox, Safari cũ):**
+  - *Phương án loại trừ:* Bắt buộc cài extensions ngoài hoặc gọi backend STT service (tốn kém chi phí máy chủ và độ trễ cao).
+  - *Lựa chọn:* Sử dụng Web Speech API native phía client; khi browser không hỗ trợ thì thông báo toast nhã nhặn và ẩn nút/vô hiệu hóa an toàn, duy trì trải nghiệm chat bàn phím mượt mà.
+- **Xuất PDF qua Window.print() vs. Direct Client-side Multi-page PDF:**
+  - *Window.print():* Phụ thuộc hoàn toàn vào cài đặt in của trình duyệt người dùng, dễ mất hình nền hoàng cung hoặc vỡ layout trên mobile.
+  - *Direct PDF Export (jsPDF + html2canvas):* Tự động đóng gói file `.pdf` chất lượng cao chuẩn A4, đầy đủ bìa, triện son, hoa văn hoàng cung và tải trực tiếp về máy người dùng không cần mở hộp thoại print.
+
+## 4. Maintenance Notes
+- Quality Gates 100% pass:
+  - `pnpm lint`: 0 error, 0 warning
+  - `pnpm typecheck`: 10/10 tasks pass
+  - `pnpm -F @ziweiai/web check`: 0 error, 0 warning
+  - `pnpm test`: 875 tests pass (520 API + 355 Web)
+  - `turbo build`: 6/6 packages build pass
+  - `playwright smoke`: 1 passed (16.3s)
+  - `flutter analyze apps/mobile`: No issues found
+

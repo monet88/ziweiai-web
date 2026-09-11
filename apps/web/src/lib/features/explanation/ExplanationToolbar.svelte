@@ -1,15 +1,21 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { Copy, Check, Download, Printer, FileText } from 'lucide-svelte';
+  import { Copy, Check, Download, Printer, FileText, ScrollText } from 'lucide-svelte';
   import { toast } from '$lib/stores/toast';
 
   interface Props {
     markdown: string;
     chartTitle?: string;
     birthInfo?: string;
+    onOpenRoyalPdfModal?: () => void;
   }
 
-  let { markdown, chartTitle = 'Lá Số Tử Vi', birthInfo = '' }: Props = $props();
+  let {
+    markdown,
+    chartTitle = 'Lá Số Tử Vi',
+    birthInfo = '',
+    onOpenRoyalPdfModal,
+  }: Props = $props();
 
   let copied = $state(false);
 
@@ -103,10 +109,23 @@
       <span class="btn-text">Tải .md</span>
     </button>
 
+    <!-- Nút Xuất Sớ PDF Hoàng Gia -->
+    {#if onOpenRoyalPdfModal}
+      <button
+        type="button"
+        class="toolbar-btn royal-pdf-btn"
+        onclick={onOpenRoyalPdfModal}
+        title="Xuất Bản Sớ Luận Giải Đa Trang chuẩn Ngự Bút Hoàng Cung (A4 PDF)"
+      >
+        <ScrollText size={14} class="text-gold" />
+        <span class="btn-text">Xuất Sớ PDF</span>
+      </button>
+    {/if}
+
     <!-- Nút In Sớ / PDF -->
     <button type="button" class="toolbar-btn primary-print" onclick={handlePrint} title="In hoặc lưu dạng PDF">
       <Printer size={14} />
-      <span class="btn-text">In sớ / Lưu PDF</span>
+      <span class="btn-text">In sớ</span>
     </button>
   </div>
 </div>
@@ -169,6 +188,20 @@
     background: rgba(212, 175, 55, 0.15);
     border-color: rgba(212, 175, 55, 0.4);
     color: #fef08a;
+    transform: translateY(-1px);
+  }
+
+  .toolbar-btn.royal-pdf-btn {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(180, 83, 9, 0.35) 100%);
+    border-color: #ffd700;
+    color: #fef08a;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.25);
+  }
+
+  .toolbar-btn.royal-pdf-btn:hover {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.45) 0%, rgba(180, 83, 9, 0.55) 100%);
+    box-shadow: 0 0 14px rgba(255, 215, 0, 0.4);
     transform: translateY(-1px);
   }
 

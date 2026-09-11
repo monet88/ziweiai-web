@@ -38,6 +38,7 @@
   import RoyalBaziDossierModal from '$lib/features/dossier/RoyalBaziDossierModal.svelte';
   import RoyalPosterModal from '$lib/features/poster/RoyalPosterModal.svelte';
   import RoyalLiuyaoPosterModal from '$lib/features/poster/RoyalLiuyaoPosterModal.svelte';
+  import RoyalExplanationPdfModal from '$lib/features/explanation/RoyalExplanationPdfModal.svelte';
   import { resolvePalaceScope } from '$lib/features/explanation/explanation-model.svelte';
   import { appendReferralQuery, sanitizeReferralCode } from '$lib/features/referral/append-referral-query';
   import { revealElements, revealHexagramLines } from '$lib/motion/reveal';
@@ -52,6 +53,7 @@
   let { chartId }: Props = $props();
   let detailRoot: HTMLDivElement | undefined = $state();
   let isPosterModalOpen = $state(false);
+  let isExplanationPdfModalOpen = $state(false);
 
   const auth = getAuthStore();
   const queryClient = useQueryClient();
@@ -414,6 +416,7 @@
               markdown={explanation.renderedMarkdown}
               chartTitle={pageTitle}
               birthInfo={summaryItems.map((i) => `${i.label}: ${i.value}`).join(' · ')}
+              onOpenRoyalPdfModal={() => (isExplanationPdfModalOpen = true)}
             />
             <article class="result surface-glass printable-content">
               <MarkdownView markdown={explanation.renderedMarkdown} />
@@ -487,6 +490,17 @@
       onClose={dossier.closeModal}
     />
   {/if}
+{/if}
+
+{#if isExplanationPdfModalOpen && explanation.renderedMarkdown && detail.snapshot}
+  <RoyalExplanationPdfModal
+    markdown={explanation.renderedMarkdown}
+    chartTitle={pageTitle}
+    birthInfo={summaryItems.map((i) => `${i.label}: ${i.value}`).join(' · ')}
+    chartId={detail.chartId}
+    userName={auth.user?.email ? auth.user.email.split('@')[0] : 'Đương Số'}
+    onClose={() => (isExplanationPdfModalOpen = false)}
+  />
 {/if}
 
 <style>

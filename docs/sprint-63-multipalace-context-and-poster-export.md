@@ -90,7 +90,19 @@
 
 ---
 
-## 4. Hành Động Tiếp Theo
-- Báo cáo với Đại Ka kết quả hoàn thành Sprint 63.
-- Tiến hành commit git sạch sẽ theo chuẩn Conventional Commits và push nhánh `feature/sprint-63-multipalace-context-and-poster-export` lên GitHub.
-- Triển khai deploy production lên Vercel (`pnpm deploy:vercel-demo`) và tiến hành live smoke verification.
+## 4. Triển Khai Production & Live Smoke Verification
+
+- **Git Branch**: `feature/sprint-63-multipalace-context-and-poster-export`
+- **Commit**: `2aff934` - `feat(sprint-63): multi-palace assistant context and royal poster export`
+- **Remote Push**: Đã push thành công lên `origin/feature/sprint-63-multipalace-context-and-poster-export`
+- **PR URL**: [Tạo PR Sprint 63 trên GitHub](https://github.com/galaxypro710-stack/ziweiai-web/pull/new/feature/sprint-63-multipalace-context-and-poster-export)
+- **Deployment URL**: `https://build-bmxk5qlhw-galaxypro710-7060s-projects.vercel.app`
+- **Alias Production**: `https://tuvitoantap.vercel.app`
+- **Deployment Status**: **READY** (● Ready)
+- **Live Smoke Verification (`scripts/smoke-vercel-demo.zsh`)**:
+  - Root page: `HTTP 200`
+  - `GET /api/health`: `HTTP 200` (`{"service":"ziweiai-api","status":"ok","version":"0.1.0"}`)
+  - `GET /api/features`: `HTTP 200` (Tất cả 10 module thuật số đều `true`)
+  - SPA Fallback Route `/charts/:id`: `HTTP 200` (index.html confirmed)
+  - Vercel demo smoke: **Passed 100%**
+

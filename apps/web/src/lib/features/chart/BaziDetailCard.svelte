@@ -1,7 +1,7 @@
 <script lang="ts">
   // BaziDetailCard: Đồ hình Tứ Trụ Bát Tự Hoàng Gia (Khâm Thiên Giám).
-  // Hiển thị trực quan 4 cột: Năm, Tháng, Ngày (Nhật Chủ), Giờ với đầy đủ Thiên Can,
-  // Địa Chi, Thập Thần, Tàng Can, Vòng Trường Sinh, Nạp Âm, Cân Bằng Ngũ Hành và Tứ Phụ Cung.
+  // Hỗ trợ hiển thị hoàn hảo trên cả Desktop (bảng 5 cột có mục tra cứu) và Mobile
+  // (bảng 4 cột dàn đều 100% màn hình, không bị tràn hay cắt xén, có micro-label từng hàng).
   import type { ChartDetailResponse } from '@ziweiai/contracts';
   import { SummaryCard } from '$lib/components/ui';
   import { formatBaziMetaItems, formatBaziPillarRows } from './chart-display';
@@ -38,6 +38,21 @@
     if (norm.includes('hỏa') || norm.includes('hoa') || norm.includes('fire')) return 'elem-fire';
     if (norm.includes('thổ') || norm.includes('tho') || norm.includes('earth')) return 'elem-earth';
     return '';
+  }
+
+  function getPillarShortName(slot: string): string {
+    switch (slot) {
+      case 'year':
+        return 'Trụ Năm';
+      case 'month':
+        return 'Trụ Tháng';
+      case 'day':
+        return 'Trụ Ngày';
+      case 'hour':
+        return 'Trụ Giờ';
+      default:
+        return 'Trụ';
+    }
   }
 </script>
 
@@ -92,7 +107,7 @@
       </div>
     </section>
 
-    <!-- 2. Bảng Tứ Trụ 4 Cột Hoàng Cung -->
+    <!-- 2. Bảng Tứ Trụ 4 Cột Hoàng Cung (Responsive Perfect: Desktop 5 Cột, Mobile 4 Cột 100% Fit) -->
     <section class="bazi-card pillars-board-card" aria-label="Đồ hình Tứ Trụ">
       <div class="card-header">
         <h3 class="card-title">✦ ĐỒ HÌNH BÁT TỰ TỨ TRỤ TIÊN THIÊN ✦</h3>
@@ -101,7 +116,7 @@
 
       <div class="table-scroll-wrapper">
         <div class="pillars-grid-table">
-          <!-- Cột nhãn hàng bên trái -->
+          <!-- Cột nhãn hàng bên trái (Chỉ hiện trên Desktop/Tablet để tối ưu không gian màn hình) -->
           <div class="grid-col label-col">
             <div class="cell col-head-cell">Mục Tra Cứu</div>
             <div class="cell">Thập Thần Can</div>
@@ -113,13 +128,16 @@
             <div class="cell nayin-row-cell">Nạp Âm Ngũ Hành</div>
           </div>
 
-          <!-- 4 Cột Trụ -->
+          <!-- 4 Cột Trụ (Dàn đều 100% trên Mobile, không bao giờ bị cắt xén hay tràn dòng) -->
           {#each baziData.pillars as pillar (pillar.slot)}
             {@const isDayMaster = pillar.slot === 'day'}
             <div class="grid-col pillar-col" class:is-day-master={isDayMaster}>
               <!-- Header Cột -->
               <div class="cell col-head-cell">
-                <div class="pillar-title">{pillar.slotName}</div>
+                <div class="pillar-title">
+                  <span class="desktop-only">{pillar.slotName}</span>
+                  <span class="mobile-only">{getPillarShortName(pillar.slot)}</span>
+                </div>
                 <div class="pillar-age">{pillar.ageRange}</div>
                 {#if isDayMaster}
                   <span class="daymaster-tag">NHẬT CHỦ</span>
@@ -127,7 +145,8 @@
               </div>
 
               <!-- Thập Thần Can -->
-              <div class="cell">
+              <div class="cell tengod-cell">
+                <span class="cell-micro-label mobile-only">Thần can</span>
                 <span class="tengod-badge {getElementClass(pillar.stemElement)}">
                   {pillar.stemTenGod}
                 </span>
@@ -135,33 +154,39 @@
 
               <!-- Thiên Can -->
               <div class="cell can-row-cell">
+                <span class="cell-micro-label mobile-only">Can</span>
                 <div class="stem-big {getElementClass(pillar.stemElement)}">{pillar.stem}</div>
                 <div class="stem-elem-sub">{pillar.stemElement}</div>
               </div>
 
               <!-- Địa Chi -->
               <div class="cell chi-row-cell">
+                <span class="cell-micro-label mobile-only">Chi</span>
                 <div class="branch-big {getElementClass(pillar.branchElement)}">{pillar.branch}</div>
                 <div class="branch-elem-sub">{pillar.branchElement}</div>
               </div>
 
               <!-- Thập Thần Chi -->
-              <div class="cell">
+              <div class="cell branch-tengod-cell">
+                <span class="cell-micro-label mobile-only">Thần chi</span>
                 <span class="branch-tengod-text">{pillar.branchTenGods}</span>
               </div>
 
               <!-- Tàng Can & Thập Thần Ẩn -->
               <div class="cell hidden-stems-row-cell">
+                <span class="cell-micro-label mobile-only">Tàng can</span>
                 <span class="hidden-stems-text">{pillar.hiddenStemsText}</span>
               </div>
 
               <!-- Vòng Trường Sinh -->
-              <div class="cell">
+              <div class="cell life-stage-cell">
+                <span class="cell-micro-label mobile-only">Trường sinh</span>
                 <span class="life-stage-badge">{pillar.lifeStage}</span>
               </div>
 
               <!-- Nạp Âm Ngũ Hành -->
               <div class="cell nayin-row-cell">
+                <span class="cell-micro-label mobile-only">Nạp âm</span>
                 <span class="nayin-text">{pillar.naYin}</span>
               </div>
             </div>
@@ -244,7 +269,7 @@
         <div class="extra-item">
           <div class="ext-header">
             <span class="ext-title">Thai Nguyên</span>
-            <span class="ext-sub">Khí chất thụ thai</span>
+            <span class="ext-sub desktop-only">Khí chất thụ thai</span>
           </div>
           <div class="ext-val">{baziData.extraPillars.taiYuan}</div>
         </div>
@@ -252,7 +277,7 @@
         <div class="extra-item">
           <div class="ext-header">
             <span class="ext-title">Thai Tức</span>
-            <span class="ext-sub">Khí huyết sinh dưỡng</span>
+            <span class="ext-sub desktop-only">Khí huyết sinh dưỡng</span>
           </div>
           <div class="ext-val">{baziData.extraPillars.taiXi}</div>
         </div>
@@ -260,7 +285,7 @@
         <div class="extra-item">
           <div class="ext-header">
             <span class="ext-title">Mệnh Cung</span>
-            <span class="ext-sub">Chí hướng & tinh thần</span>
+            <span class="ext-sub desktop-only">Chí hướng & tinh thần</span>
           </div>
           <div class="ext-val">{baziData.extraPillars.mingGong}</div>
         </div>
@@ -268,7 +293,7 @@
         <div class="extra-item">
           <div class="ext-header">
             <span class="ext-title">Thân Cung</span>
-            <span class="ext-sub">Nương tựa nửa đời sau</span>
+            <span class="ext-sub desktop-only">Nương tựa nửa đời sau</span>
           </div>
           <div class="ext-val">{baziData.extraPillars.shenGong}</div>
         </div>
@@ -326,6 +351,14 @@
     flex-direction: column;
     gap: 20px;
     width: 100%;
+  }
+
+  /* Responsive Display Utility */
+  .mobile-only {
+    display: none;
+  }
+  .desktop-only {
+    display: inline;
   }
 
   /* View Mode Bar */
@@ -537,8 +570,8 @@
 
   .pillars-grid-table {
     display: grid;
-    grid-template-columns: 140px repeat(4, minmax(130px, 1fr));
-    min-width: 660px;
+    grid-template-columns: 140px repeat(4, 1fr);
+    width: 100%;
     border: 1px solid rgba(212, 175, 55, 0.3);
     border-radius: 12px;
     overflow: hidden;
@@ -573,9 +606,10 @@
   }
 
   .grid-col.pillar-col.is-day-master {
-    background: rgba(212, 175, 55, 0.08);
-    border-left: 1px solid rgba(212, 175, 55, 0.45);
-    border-right: 1px solid rgba(212, 175, 55, 0.45);
+    background: rgba(212, 175, 55, 0.09);
+    border-left: 2px solid rgba(212, 175, 55, 0.6);
+    border-right: 2px solid rgba(212, 175, 55, 0.6);
+    box-shadow: inset 0 0 16px rgba(212, 175, 55, 0.12);
     position: relative;
   }
 
@@ -587,6 +621,7 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     min-height: 48px;
     font-size: 0.85rem;
+    position: relative;
   }
 
   .label-col .cell {
@@ -597,6 +632,16 @@
 
   .cell:last-child {
     border-bottom: none;
+  }
+
+  /* Micro Label cho Mobile */
+  .cell-micro-label {
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: rgba(212, 175, 55, 0.7);
+    margin-bottom: 2px;
+    font-weight: 600;
   }
 
   /* Col Header Cell */
@@ -629,14 +674,23 @@
     border-radius: 4px;
     margin-top: 2px;
     letter-spacing: 0.5px;
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
   }
 
   /* Thập Thần */
+  .tengod-cell {
+    flex-direction: column;
+  }
+
   .tengod-badge {
     padding: 3px 8px;
     border-radius: 6px;
     font-size: 0.8rem;
     font-weight: 600;
+  }
+
+  .branch-tengod-cell {
+    flex-direction: column;
   }
 
   .branch-tengod-text {
@@ -655,7 +709,7 @@
 
   .stem-big,
   .branch-big {
-    font-size: 1.45rem;
+    font-size: 1.55rem;
     font-weight: 800;
     line-height: 1.1;
   }
@@ -672,6 +726,7 @@
     font-size: 0.76rem;
     line-height: 1.35;
     padding: 6px;
+    flex-direction: column;
   }
 
   .hidden-stems-text {
@@ -679,6 +734,10 @@
   }
 
   /* Trường Sinh & Nạp Âm */
+  .life-stage-cell {
+    flex-direction: column;
+  }
+
   .life-stage-badge {
     padding: 2px 8px;
     border-radius: 999px;
@@ -693,6 +752,7 @@
     font-size: 0.8rem;
     font-weight: 500;
     color: #e8dbbe;
+    flex-direction: column;
   }
 
   /* 3. Ngũ Hành Phân Bổ */
@@ -828,22 +888,192 @@
   .elem-fire  { color: #f87171; background: rgba(248, 113, 113, 0.12); border-color: rgba(248, 113, 113, 0.3); }
   .elem-earth { color: #fbbf24; background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.3); }
 
-  @media (max-width: 640px) {
+  /* ========================================================================= */
+  /* MOBILE-FIRST OPTIMIZATION (< 640px)                                      */
+  /* ========================================================================= */
+  @media (max-width: 639px) {
+    .mobile-only {
+      display: inline-block;
+    }
+    .desktop-only {
+      display: none;
+    }
+
+    .bazi-royal-container {
+      gap: 14px;
+    }
+
     .bazi-card {
-      padding: 16px;
+      padding: 14px 10px;
+      border-radius: 12px;
+    }
+
+    /* 1. Header Nhật Chủ trên Mobile: xếp 3 chip Dụng/Hỷ/Kỵ thành 3 cột cân xứng */
+    .dm-header-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .dm-core-info {
+      text-align: center;
+      align-items: center;
+    }
+
+    .dm-title-line {
+      justify-content: center;
+      gap: 8px;
     }
 
     .dm-name {
-      font-size: 1.4rem;
+      font-size: 1.5rem;
     }
 
-    .grid-col.label-col {
-      width: 120px;
+    .dm-elem-pill {
+      font-size: 0.78rem;
+      padding: 3px 8px;
+    }
+
+    .strength-badge {
+      font-size: 0.78rem;
+      padding: 3px 8px;
+    }
+
+    .dm-gods-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+
+    .god-chip {
+      flex-direction: column;
+      padding: 6px 4px;
+      text-align: center;
+      gap: 2px;
+      border-radius: 8px;
+    }
+
+    .god-chip .chip-label {
+      font-size: 0.68rem;
+    }
+
+    .god-chip .chip-value {
+      font-size: 0.8rem;
+    }
+
+    /* 2. Bảng Tứ Trụ 4 Cột: Dàn đều 100% màn hình, ẩn cột nhãn cồng kềnh bên trái */
+    .table-scroll-wrapper {
+      overflow-x: visible;
+      padding: 0;
+      width: 100%;
     }
 
     .pillars-grid-table {
-      grid-template-columns: 120px repeat(4, minmax(115px, 1fr));
-      min-width: 580px;
+      grid-template-columns: repeat(4, 1fr);
+      min-width: 0;
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .grid-col.label-col {
+      display: none; /* Ẩn cột nhãn để 4 cột trụ chiếm trọn 100% viewport */
+    }
+
+    .cell {
+      padding: 6px 2px;
+      min-height: 42px;
+    }
+
+    .col-head-cell {
+      min-height: 54px;
+      padding: 6px 2px;
+    }
+
+    .pillar-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .pillar-age {
+      font-size: 0.62rem;
+    }
+
+    .daymaster-tag {
+      font-size: 0.58rem;
+      padding: 1px 4px;
+      margin-top: 1px;
+    }
+
+    .tengod-badge {
+      font-size: 0.7rem;
+      padding: 2px 4px;
+      white-space: nowrap;
+    }
+
+    .can-row-cell,
+    .chi-row-cell {
+      min-height: 62px;
+    }
+
+    .stem-big,
+    .branch-big {
+      font-size: 1.35rem;
+    }
+
+    .stem-elem-sub,
+    .branch-elem-sub {
+      font-size: 0.65rem;
+    }
+
+    .branch-tengod-text {
+      font-size: 0.68rem;
+      line-height: 1.2;
+    }
+
+    .hidden-stems-row-cell {
+      min-height: 52px;
+      font-size: 0.66rem;
+      line-height: 1.25;
+      padding: 4px 2px;
+    }
+
+    .life-stage-badge {
+      font-size: 0.68rem;
+      padding: 2px 4px;
+      white-space: nowrap;
+    }
+
+    .nayin-row-cell {
+      font-size: 0.68rem;
+      line-height: 1.25;
+      padding: 4px 2px;
+    }
+
+    /* 3. Tứ Phụ Cung trên Mobile: 2 cột x 2 hàng gọn gàng */
+    .extra-pillars-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .extra-item {
+      padding: 10px;
+      gap: 4px;
+    }
+
+    .ext-title {
+      font-size: 0.8rem;
+    }
+
+    .ext-val {
+      font-size: 0.84rem;
+      line-height: 1.25;
+    }
+
+    .elements-summary-text {
+      font-size: 0.8rem;
+      padding: 10px 12px;
     }
   }
 </style>

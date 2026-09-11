@@ -16,9 +16,12 @@ export class PaymentController {
     @Headers('Authorization') authHeader: string,
     @Body() payload: unknown,
   ) {
-    const expectedSecret = apiEnv.SEPAY_WEBHOOK_SECRET || apiEnv.SEPAY_API_KEY;
+    const expectedSecret =
+      apiEnv.SEPAY_WEBHOOK_SECRET || apiEnv.SEPAY_API_KEY || apiEnv.SEPAY_TESTMODE_API;
     if (process.env.NODE_ENV === 'production' && !expectedSecret) {
-      this.logger.error('SePay webhook secret (SEPAY_WEBHOOK_SECRET or SEPAY_API_KEY) is not configured in production');
+      this.logger.error(
+        'SePay webhook secret (SEPAY_WEBHOOK_SECRET, SEPAY_API_KEY, or SEPAY_TESTMODE_API) is not configured in production',
+      );
       throw new UnauthorizedException('Webhook configuration error');
     }
     if (expectedSecret) {

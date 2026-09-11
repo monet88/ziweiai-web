@@ -163,6 +163,7 @@ export const apiEnvSchema = z.object({
   QUOTA_FAIL_MODE: z.enum(['open', 'closed']).default('open'),
   SEPAY_WEBHOOK_SECRET: z.string().optional(),
   SEPAY_API_KEY: z.string().optional(),
+  SEPAY_TESTMODE_API: z.string().optional(),
   REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
   SENTRY_DSN: z.string().optional(),
   // Optional ops push (Telegram sendMessage URL, Slack/Discord webhook, etc.).

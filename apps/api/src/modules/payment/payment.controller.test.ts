@@ -109,11 +109,44 @@ describe('PaymentController', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('should process transaction successfully with SEPAY_TESTMODE_API', async () => {
+      const originalSecret = apiEnv.SEPAY_TESTMODE_API;
+      Object.assign(apiEnv, { SEPAY_TESTMODE_API: 'testmode-api-token-999' });
+
+      const payload = {
+        id: 123,
+        gateway: 'MBBank',
+        transactionDate: '2026-07-24 12:00:00',
+        accountNumber: '0123456789',
+        code: null,
+        content: 'TVTT 12345678',
+        transferType: 'in',
+        transferAmount: 50000,
+        accumulated: 150000,
+        referenceCode: 'REF123',
+        description: 'Test',
+      };
+
+      try {
+        const result = await controller.handleSepayWebhook('Apikey testmode-api-token-999', payload);
+        expect(result).toEqual({ success: true });
+        expect(service.processTransaction).toHaveBeenCalledWith(payload);
+      } finally {
+        Object.assign(apiEnv, { SEPAY_TESTMODE_API: originalSecret });
+      }
+    });
+
     it('should fail-closed and throw UnauthorizedException in production when secret is missing', async () => {
       const originalEnv = process.env.NODE_ENV;
       const originalSecret = apiEnv.SEPAY_WEBHOOK_SECRET;
+      const originalApiKey = apiEnv.SEPAY_API_KEY;
+      const originalTestmode = apiEnv.SEPAY_TESTMODE_API;
       process.env.NODE_ENV = 'production';
-      Object.assign(apiEnv, { SEPAY_WEBHOOK_SECRET: undefined });
+      Object.assign(apiEnv, {
+        SEPAY_WEBHOOK_SECRET: undefined,
+        SEPAY_API_KEY: undefined,
+        SEPAY_TESTMODE_API: undefined,
+      });
 
       try {
         await expect(
@@ -133,7 +166,11 @@ describe('PaymentController', () => {
         ).rejects.toThrow(UnauthorizedException);
       } finally {
         process.env.NODE_ENV = originalEnv;
-        Object.assign(apiEnv, { SEPAY_WEBHOOK_SECRET: originalSecret });
+        Object.assign(apiEnv, {
+          SEPAY_WEBHOOK_SECRET: originalSecret,
+          SEPAY_API_KEY: originalApiKey,
+          SEPAY_TESTMODE_API: originalTestmode,
+        });
       }
     });
   });

@@ -199,6 +199,9 @@ export class PaymentService {
         2000: 1500000,
       };
 
+      // Bảng tỷ giá ngoại tệ đối soát kế toán RevenueCat
+      // Nguồn tham chiếu: Tỷ giá bán chuyển khoản Vietcombank niêm yết (Version: FX_V1_2026_09_12)
+      // Cập nhật lúc: 2026-09-12T00:00:00Z
       const FX_RATES_TO_VND: Record<string, number> = {
         USD: 25400,
         EUR: 27500,

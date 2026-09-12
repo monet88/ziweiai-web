@@ -129,7 +129,7 @@ Sau đợt rà soát an ninh kinh tế XU tại Sprint 83, báo cáo kiểm toá
 
 3. **P1: RevenueCat Multi-Currency FX Accounting**:
    - Tại `payment.service.ts`:
-     + Bổ sung bảng tỷ giá ngoại tệ FX chính thức: `USD: 25,400`, `EUR: 27,500`, `GBP: 32,500`, `JPY: 170`, `SGD: 19,200`, `CAD: 18,600`, `AUD: 16,800`, `THB: 720`, `KRW: 19`.
+     + Bổ sung bảng tỷ giá ngoại tệ FX chính thức (tham chiếu Vietcombank Version FX_V1_2026_09_12): `USD: 25,400`, `EUR: 27,500`, `GBP: 32,200`, `JPY: 170`, `SGD: 19,200`, `CAD: 18,600`, `AUD: 16,800`, `THB: 740`, `KRW: 19`.
      + Trường hợp ngoại tệ lạ nằm ngoài danh mục và ngoài catalog, hệ thống đặt `amountVnd = 0` và ghi log cảnh báo, tuyệt đối không làm tròn thô thành số tiền sai.
 
 4. **P1: Kiểm Tra HTTP Status Độc Lập Cho Script Verifier**:

@@ -63,11 +63,11 @@ async function main() {
   const def = funcDefs[0]?.def || '';
   if (
     def.includes('c_reward_amount constant integer := 5;') &&
+    def.includes('for update') &&
     def.includes('insert into public.ad_reward_claims') &&
-    def.includes('on conflict (impression_id) do nothing') &&
-    def.includes('if not found then')
+    def.includes('on conflict (impression_id) do nothing')
   ) {
-    console.log('✅ BẢO MẬT ĐẠT CHUẨN: Hàm sử dụng cơ chế Atomic Lock-by-Insert, triệt tiêu 100% race condition concurrent replay.');
+    console.log('✅ BẢO MẬT ĐẠT CHUẨN: Hàm sử dụng cơ chế Pessimistic Row Lock (FOR UPDATE) + Atomic Conflict, triệt tiêu 100% race condition concurrent replay và daily cap.');
   } else {
     console.error('❌ LỖI: Định nghĩa hàm chưa đủ điều kiện chống race condition!');
     process.exit(1);

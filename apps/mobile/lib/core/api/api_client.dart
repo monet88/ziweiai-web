@@ -96,9 +96,20 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> claimAdReward() async {
+  Future<Map<String, dynamic>> claimAdReward({String? impressionId, String? adToken}) async {
     try {
-      final response = await _dio.post('/rewards/ad-reward');
+      final payload = <String, dynamic>{};
+      if (impressionId != null && impressionId.isNotEmpty) {
+        payload['impressionId'] = impressionId;
+      }
+      if (adToken != null && adToken.isNotEmpty) {
+        payload['adToken'] = adToken;
+      }
+
+      final response = await _dio.post(
+        '/rewards/ad-reward',
+        data: payload.isNotEmpty ? payload : null,
+      );
       return response.data as Map<String, dynamic>;
     } catch (e) {
       rethrow;

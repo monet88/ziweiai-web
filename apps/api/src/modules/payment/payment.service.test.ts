@@ -165,7 +165,7 @@ describe('PaymentService', () => {
   });
 
   describe('processRevenueCatTransaction', () => {
-    it('should add XU based on product mapping', async () => {
+    it('should add XU based on product mapping and record currency', async () => {
       mockSupabaseClient.single.mockResolvedValueOnce({ data: null, error: null });
 
       const payload = {
@@ -175,6 +175,7 @@ describe('PaymentService', () => {
           app_user_id: 'user_rc',
           product_id: 'xu_500_tier2',
           price: 500000,
+          currency: 'VND',
         } as any,
         api_version: '1.0',
       };
@@ -186,6 +187,34 @@ describe('PaymentService', () => {
         p_owner_user_id: 'user_rc',
         p_amount_vnd: 500000,
         p_xu_added: 500,
+        p_currency: 'VND',
+        p_original_price: 500000,
+      });
+    });
+
+    it('should accurately convert USD in-app purchase to VNĐ catalog price instead of rounding $3.99 to 4 VND', async () => {
+      const payloadUsd = {
+        event: {
+          id: 'evt_rc_usd_120',
+          type: 'INITIAL_PURCHASE',
+          app_user_id: 'user_rc_usd',
+          product_id: 'vios_xu_120',
+          price: 3.99,
+          price_in_purchased_currency: 3.99,
+          currency: 'USD',
+        } as any,
+        api_version: '1.0',
+      };
+
+      await service.processRevenueCatTransaction(payloadUsd as any);
+
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('process_revenuecat_payment', {
+        p_rc_transaction_id: 'evt_rc_usd_120',
+        p_owner_user_id: 'user_rc_usd',
+        p_amount_vnd: 100000, // Matched catalog price for 120 XU package (100k VND)
+        p_xu_added: 120,
+        p_currency: 'USD',
+        p_original_price: 3.99,
       });
     });
 
@@ -196,7 +225,8 @@ describe('PaymentService', () => {
           type: 'INITIAL_PURCHASE',
           app_user_id: 'user_royal_50',
           product_id: 'vios_xu_50',
-          price: 69000,
+          price: 50000,
+          currency: 'VND',
         } as any,
         api_version: '1.0',
       };
@@ -206,8 +236,10 @@ describe('PaymentService', () => {
       expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('process_revenuecat_payment', {
         p_rc_transaction_id: 'evt_rc_50',
         p_owner_user_id: 'user_royal_50',
-        p_amount_vnd: 69000,
+        p_amount_vnd: 50000,
         p_xu_added: 50,
+        p_currency: 'VND',
+        p_original_price: 50000,
       });
 
       const payload600 = {
@@ -216,7 +248,8 @@ describe('PaymentService', () => {
           type: 'INITIAL_PURCHASE',
           app_user_id: 'user_royal_600',
           product_id: 'vios_xu_600',
-          price: 699000,
+          price: 500000,
+          currency: 'VND',
         } as any,
         api_version: '1.0',
       };
@@ -226,8 +259,10 @@ describe('PaymentService', () => {
       expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('process_revenuecat_payment', {
         p_rc_transaction_id: 'evt_rc_600',
         p_owner_user_id: 'user_royal_600',
-        p_amount_vnd: 699000,
+        p_amount_vnd: 500000,
         p_xu_added: 600,
+        p_currency: 'VND',
+        p_original_price: 500000,
       });
     });
   });

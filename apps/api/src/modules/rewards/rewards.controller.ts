@@ -43,14 +43,14 @@ export class RewardsController {
   @Post('ad-reward')
   async claimAdReward(
     @Req() req: AuthenticatedRequest,
-    @Body() body?: { adToken?: string },
+    @Body() body?: { adToken?: string; impressionId?: string },
   ) {
     const userId = req.authenticatedUser?.userId;
     if (!userId) {
       throw new BadRequestException('User ID not found');
     }
 
-    return this.rewardsService.claimAdReward(userId, 5, body?.adToken);
+    return this.rewardsService.claimAdReward(userId, body?.adToken, body?.impressionId);
   }
 
   @Get('status')

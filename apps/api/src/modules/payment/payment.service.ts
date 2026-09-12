@@ -177,14 +177,45 @@ export class PaymentService {
       }
     }
 
-    const amountPaid = event.price_in_purchased_currency || event.price || 0;
+    const currency = (event.currency || 'USD').toUpperCase();
+    const originalPrice = typeof event.price_in_purchased_currency === 'number'
+      ? event.price_in_purchased_currency
+      : (typeof event.price === 'number' ? event.price : 0);
+
+    // Tính toán số tiền quy đổi sang VNĐ chính xác (không làm tròn thô 4.99 USD thành 5 VNĐ)
+    let amountVnd = 0;
+    if (currency === 'VND') {
+      amountVnd = Math.round(originalPrice);
+    } else {
+      // Map theo bảng giá niêm yết chuẩn nếu khớp gói XU
+      const packagePriceMap: Record<number, number> = {
+        10: 10000,
+        20: 20000,
+        50: 50000,
+        100: 100000,
+        120: 100000,
+        500: 500000,
+        600: 500000,
+        2000: 1500000,
+      };
+
+      if (packagePriceMap[xuAdded]) {
+        amountVnd = packagePriceMap[xuAdded];
+      } else if (currency === 'USD') {
+        amountVnd = Math.round(originalPrice * 25400); // Tỷ giá quy đổi chuẩn USD/VND
+      } else {
+        amountVnd = Math.round(originalPrice);
+      }
+    }
 
     // Xử lý nạp tiền RevenueCat hoàn toàn nguyên tử (atomic) qua RPC process_revenuecat_payment
     const { data: atomicResult, error: rpcError } = await this.client.rpc('process_revenuecat_payment', {
       p_rc_transaction_id: event.id,
       p_owner_user_id: userId,
-      p_amount_vnd: typeof amountPaid === 'number' ? Math.round(amountPaid) : 0,
+      p_amount_vnd: amountVnd,
       p_xu_added: xuAdded,
+      p_currency: currency,
+      p_original_price: originalPrice,
     });
 
     if (rpcError || !atomicResult) {

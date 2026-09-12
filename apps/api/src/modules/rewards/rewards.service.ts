@@ -77,17 +77,18 @@ export class RewardsService {
     return { success: added > 0, xu_added: added };
   }
 
-  async claimAdReward(userId: string, rewardAmount = 5, adToken?: string) {
-    // 1. Kiểm tra adToken cơ bản (proof from client / ad network)
-    if (process.env.NODE_ENV === 'production' && !adToken && process.env.REQUIRE_AD_PROOF === 'true') {
-      throw new BadRequestException('Mã xác thực xem quảng cáo (adToken) không hợp lệ hoặc thiếu.');
+  async claimAdReward(userId: string, adToken?: string, impressionId?: string) {
+    const effectiveImpressionId = impressionId || adToken || null;
+
+    // 1. Kiểm tra adToken/impressionId cơ bản (proof from client / ad network)
+    if (process.env.NODE_ENV === 'production' && !effectiveImpressionId && process.env.REQUIRE_AD_PROOF === 'true') {
+      throw new BadRequestException('Mã xác thực xem quảng cáo (adToken/impressionId) không hợp lệ hoặc thiếu.');
     }
 
-    // 2. Gọi RPC atomic claim_ad_reward trong DB để kiểm tra hạn mức và cộng XU nguyên tử
+    // 2. Gọi RPC atomic claim_ad_reward (service_role only, hardcoded 5 XU)
     const { data: rpcResult, error: rpcError } = await this.client.rpc('claim_ad_reward', {
       p_user_id: userId,
-      p_reward_amount: rewardAmount,
-      p_ad_token: adToken || null,
+      p_impression_id: effectiveImpressionId,
     });
 
     if (rpcError || !rpcResult) {

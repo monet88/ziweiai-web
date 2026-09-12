@@ -90,8 +90,7 @@ describe('RewardsController & RewardsService', () => {
       });
       expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('claim_ad_reward', {
         p_user_id: 'user-uuid-123',
-        p_reward_amount: 5,
-        p_ad_token: null,
+        p_impression_id: null,
       });
     });
 

@@ -242,6 +242,14 @@
 
       <h3>5.2. Tính năng Lịch Sử Nạp VietQR trên /wallet (Sprint 84 Feature)</h3>
       <p>Thêm tab <strong>"Lịch Sử Giao Dịch"</strong> trên trang <code>/wallet</code>: fetch danh sách các lần nạp VietQR/SePay từ bảng <code>transactions</code> (đã cấp quyền RLS <code>owner_user_id = auth.uid()</code>) qua API <code>GET /wallet/transactions</code> với đầy đủ ngày giờ, mã tham chiếu ngân hàng, số tiền VNĐ, số XU nhận và badge trạng thái thành công.</p>
+
+      <h3>5.3. Xử lý triệt để P0 Ad Reward Minting & P1 RevenueCat Currency Accounting</h3>
+      <ul>
+        <li><strong>P0 RPC Ad Reward Lockdown:</strong> Tạo migration <code>000034_secure_ad_reward_and_fix_accounting.sql</code>. Thu hồi toàn bộ quyền EXECUTE trên <code>claim_ad_reward</code> đối với <code>authenticated</code>, <code>anon</code>, <code>public</code>. Chỉ cấp cho <code>service_role</code>. Loại bỏ tham số số XU từ caller, khóa cứng hằng số <code>c_reward_amount = 5</code> trong database.</li>
+        <li><strong>P0 Ad Impression Anti-Replay:</strong> Tạo bảng <code>public.ad_reward_claims</code> lưu trữ <code>impression_id</code> có khóa chính để chống replay token 100%.</li>
+        <li><strong>P1 RevenueCat Currency Accounting:</strong> Bổ sung cột <code>currency</code> và <code>original_price</code> vào bảng <code>transactions</code> và RPC <code>process_revenuecat_payment</code>. Quy đổi tiền mua IAP chuẩn VNĐ (USD -> VND theo tỷ giá hoặc catalog package) thay vì làm tròn thô $4.99 thành 5 VNĐ.</li>
+        <li><strong>Xác minh độc lập Production DB:</strong> Viết script <code>scripts/verify-production-db.js</code> kiểm tra trực tiếp qua SQL: xác nhận <code>claim_ad_reward</code> chỉ có quyền <code>service_role</code>/<code>postgres</code>, kiểm tra tham số, bảng chống replay và các cột accounting.</li>
+      </ul>
     </div>
   </div>
 </body>

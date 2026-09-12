@@ -4,7 +4,7 @@
   import { NoticeBanner } from '$lib/components/ui';
   import { toast } from '$lib/stores/toast';
   import { sanitizeCsvCell } from '$lib/utils/csv-sanitizer';
-  import { ArrowLeftRight, RefreshCw, Search, CheckCircle2, AlertTriangle, Coins, ShieldCheck, UserCheck, X, Link, Download, Activity, Clock } from 'lucide-svelte';
+  import { ArrowLeftRight, RefreshCw, Search, CheckCircle2, AlertTriangle, Coins, ShieldCheck, UserCheck, X, Link, Download, Activity, Clock, Copy } from 'lucide-svelte';
 
   interface Transaction {
     id: string;
@@ -12,6 +12,7 @@
     amount_vnd: number;
     xu_added: number;
     sepay_transaction_id: string | null;
+    content?: string | null;
     created_at: string;
   }
 
@@ -20,19 +21,31 @@
   let isLoading = $state(true);
   let errorMessage = $state<string | null>(null);
   let searchQuery = $state('');
+  let statusFilter = $state<'all' | 'matched' | 'unmatched'>('all');
 
   let targetTxId = $state<string | null>(null);
   let targetUserIdInput = $state('');
   let isReconciling = $state(false);
 
+  function copyText(text: string, label: string) {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      toast.show(`Đã sao chép ${label}!`, 'success');
+    }
+  }
+
   let filteredTransactions = $derived(
     transactions.filter((tx) => {
+      if (statusFilter === 'matched' && !tx.owner_user_id) return false;
+      if (statusFilter === 'unmatched' && tx.owner_user_id) return false;
+
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       const idMatch = tx.id.toLowerCase().includes(q);
       const sepayMatch = tx.sepay_transaction_id ? tx.sepay_transaction_id.toLowerCase().includes(q) : false;
       const userMatch = tx.owner_user_id ? tx.owner_user_id.toLowerCase().includes(q) : false;
-      return idMatch || sepayMatch || userMatch;
+      const contentMatch = tx.content ? tx.content.toLowerCase().includes(q) : false;
+      return idMatch || sepayMatch || userMatch || contentMatch;
     })
   );
 
@@ -223,11 +236,40 @@
 
   <!-- Search & Action Toolbar -->
   <div class="tx-toolbar">
+    <div class="filter-pills">
+      <button
+        type="button"
+        class="filter-pill"
+        class:active={statusFilter === 'all'}
+        onclick={() => (statusFilter = 'all')}
+      >
+        Tất cả ({transactions.length})
+      </button>
+      <button
+        type="button"
+        class="filter-pill pill-matched"
+        class:active={statusFilter === 'matched'}
+        onclick={() => (statusFilter = 'matched')}
+      >
+        <CheckCircle2 size={13} />
+        <span>Đã Khớp ({transactions.filter(t => t.owner_user_id).length})</span>
+      </button>
+      <button
+        type="button"
+        class="filter-pill pill-unmatched"
+        class:active={statusFilter === 'unmatched'}
+        onclick={() => (statusFilter = 'unmatched')}
+      >
+        <AlertTriangle size={13} />
+        <span>Chờ Gán ({unmatchedCount})</span>
+      </button>
+    </div>
+
     <div class="search-box">
       <Search size={16} class="search-icon" />
       <input
         type="text"
-        placeholder="Tìm theo mã giao dịch, SePay ID hoặc User ID..."
+        placeholder="Tìm theo mã GD, SePay ID, User ID hoặc nội dung chuyển..."
         bind:value={searchQuery}
         class="search-input"
       />
@@ -287,10 +329,35 @@
           {#each filteredTransactions as tx (tx.id)}
             <tr class="tx-row" class:unmatched-row={!tx.owner_user_id}>
               <td class="primary-cell">
-                <code class="tx-code">{tx.id.slice(0, 8)}…</code>
+                <button
+                  type="button"
+                  class="tx-code-btn"
+                  title="Bấm để sao chép Full ID ({tx.id})"
+                  onclick={() => copyText(tx.id, 'ID Giao Dịch')}
+                >
+                  <code class="tx-code">{tx.id.slice(0, 8)}…</code>
+                  <Copy size={11} class="copy-icon" />
+                </button>
+                {#if tx.content}
+                  <div class="tx-memo" title={tx.content}>
+                    {tx.content}
+                  </div>
+                {/if}
               </td>
               <td class="secondary-cell">
-                <span class="sepay-id">{tx.sepay_transaction_id ?? '-'}</span>
+                {#if tx.sepay_transaction_id}
+                  <button
+                    type="button"
+                    class="sepay-id-btn"
+                    title="Bấm để sao chép Mã SePay ({tx.sepay_transaction_id})"
+                    onclick={() => copyText(tx.sepay_transaction_id!, 'Mã SePay')}
+                  >
+                    <span class="sepay-id">{tx.sepay_transaction_id}</span>
+                    <Copy size={11} class="copy-icon" />
+                  </button>
+                {:else}
+                  <span class="sepay-id">-</span>
+                {/if}
               </td>
               <td class="amount-cell">
                 <strong>{tx.amount_vnd?.toLocaleString('vi-VN')} đ</strong>
@@ -303,10 +370,14 @@
               </td>
               <td class="user-cell">
                 {#if tx.owner_user_id}
-                  <span class="user-pill" title={tx.owner_user_id}>
+                  <a
+                    href="/admin/users?search={tx.owner_user_id}"
+                    class="user-pill user-link"
+                    title="Xem hồ sơ người dùng ({tx.owner_user_id})"
+                  >
                     <UserCheck size={13} />
-                    {tx.owner_user_id.slice(0, 10)}…
-                  </span>
+                    <span>{tx.owner_user_id.slice(0, 10)}…</span>
+                  </a>
                 {:else}
                   <span class="badge badge-unmatched">
                     <AlertTriangle size={11} /> Chưa Gán
@@ -590,11 +661,58 @@
     justify-content: space-between;
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 1024px) {
     .tx-toolbar {
       flex-direction: row;
       align-items: center;
     }
+  }
+
+  .filter-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--glass-bg);
+    padding: 4px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--overlay-border);
+  }
+
+  .filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .filter-pill:hover {
+    color: var(--color-text-primary);
+    background: var(--overlay-ink-wash);
+  }
+
+  .filter-pill.active {
+    background: var(--color-accent-primary);
+    color: #000;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.25);
+  }
+
+  .filter-pill.pill-matched.active {
+    background: #10b981;
+    color: #fff;
+  }
+
+  .filter-pill.pill-unmatched.active {
+    background: #f59e0b;
+    color: #000;
   }
 
   .search-box {
@@ -754,6 +872,49 @@
     border-bottom: none;
   }
 
+  .tx-code-btn,
+  .sepay-id-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    transition: opacity 0.2s ease;
+  }
+
+  .tx-code-btn:hover,
+  .sepay-id-btn:hover {
+    opacity: 0.8;
+  }
+
+  :global(.copy-icon) {
+    opacity: 0.4;
+    transition: opacity 0.2s ease;
+  }
+
+  .tx-code-btn:hover :global(.copy-icon),
+  .sepay-id-btn:hover :global(.copy-icon) {
+    opacity: 1;
+    color: var(--color-accent-primary);
+  }
+
+  .tx-memo {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px dashed var(--overlay-border);
+  }
+
   .tx-code {
     font-family: monospace;
     font-size: 12px;
@@ -798,6 +959,18 @@
     font-size: 12px;
     font-family: monospace;
     color: var(--color-text-secondary);
+  }
+
+  .user-link {
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .user-link:hover {
+    border-color: var(--color-accent-primary);
+    color: var(--color-accent-primary);
+    background: rgba(212, 175, 55, 0.1);
   }
 
   .badge-unmatched {

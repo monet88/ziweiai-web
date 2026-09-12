@@ -31,6 +31,22 @@
     goto(url.toString(), { keepFocus: true, noScroll: true });
   }
 
+  function setPreset(days: number) {
+    const endMs = Date.now();
+    const startMs = endMs - days * 24 * 60 * 60 * 1000;
+    startDate = new Date(startMs).toISOString().slice(0, 10);
+    endDate = new Date(endMs).toISOString().slice(0, 10);
+    applyFilters();
+  }
+
+  function setThisMonth() {
+    const now = new Date();
+    const start = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+    startDate = start.toISOString().slice(0, 10);
+    endDate = now.toISOString().slice(0, 10);
+    applyFilters();
+  }
+
   function exportAnalyticsToCsv() {
     if (!analytics || !analytics.daily_stats || analytics.daily_stats.length === 0) {
       alert('Chưa có dữ liệu thống kê để xuất file');
@@ -86,6 +102,13 @@
 <div class="analytics-page">
   <!-- Filter Toolbar -->
   <div class="filter-glass-bar">
+    <div class="filter-presets">
+      <span class="preset-label">Xem nhanh:</span>
+      <button type="button" class="btn-preset" onclick={() => setPreset(7)}>7 ngày</button>
+      <button type="button" class="btn-preset" onclick={() => setPreset(30)}>30 ngày</button>
+      <button type="button" class="btn-preset" onclick={setThisMonth}>Tháng này</button>
+    </div>
+
     <div class="filter-inputs">
       <div class="filter-group">
         <label for="startDate" class="filter-label">
@@ -129,7 +152,7 @@
       <strong>Lỗi tải dữ liệu:</strong> Không thể lấy dữ liệu thống kê từ máy chủ.
     </div>
   {:else}
-    <!-- Top 3 Key KPI Cards -->
+    <!-- Top 4 Key KPI Cards -->
     <div class="stats-grid">
       <div class="stat-hud-card">
         <div class="stat-top">
@@ -144,13 +167,13 @@
 
       <div class="stat-hud-card">
         <div class="stat-top">
-          <span class="stat-label">XU Nạp (Trong Kỳ)</span>
+          <span class="stat-label">Doanh Thu Quy Đổi</span>
           <div class="stat-icon icon-gold">
-            <TrendingUp size={18} />
+            <Coins size={18} />
           </div>
         </div>
-        <div class="stat-value text-gold">+{analytics.total_xu_topup.toLocaleString('vi-VN')} XU</div>
-        <div class="stat-sub">Dòng tiền nạp qua SePay / IAP</div>
+        <div class="stat-value text-gold">{(analytics.total_xu_topup * 1000).toLocaleString('vi-VN')} đ</div>
+        <div class="stat-sub">+{analytics.total_xu_topup.toLocaleString('vi-VN')} XU nạp qua SePay</div>
       </div>
 
       <div class="stat-hud-card">
@@ -162,6 +185,19 @@
         </div>
         <div class="stat-value text-purple">-{analytics.total_xu_consumed.toLocaleString('vi-VN')} XU</div>
         <div class="stat-sub">Sử dụng cho tính năng AI luận giải</div>
+      </div>
+
+      <div class="stat-hud-card">
+        <div class="stat-top">
+          <span class="stat-label">Dòng Tiền Ròng XU</span>
+          <div class="stat-icon {analytics.total_xu_topup - analytics.total_xu_consumed >= 0 ? 'icon-emerald' : 'icon-amber'}">
+            <TrendingUp size={18} />
+          </div>
+        </div>
+        <div class="stat-value {analytics.total_xu_topup - analytics.total_xu_consumed >= 0 ? 'text-emerald' : 'text-amber'}">
+          {analytics.total_xu_topup - analytics.total_xu_consumed >= 0 ? '+' : ''}{(analytics.total_xu_topup - analytics.total_xu_consumed).toLocaleString('vi-VN')} XU
+        </div>
+        <div class="stat-sub">Số dư XU nạp ròng trong kỳ</div>
       </div>
     </div>
 
@@ -267,12 +303,46 @@
     box-shadow: var(--shadow-card);
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 1024px) {
     .filter-glass-bar {
       flex-direction: row;
       align-items: flex-end;
       justify-content: space-between;
     }
+  }
+
+  .filter-presets {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: var(--space-xs);
+  }
+
+  .preset-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-right: 2px;
+  }
+
+  .btn-preset {
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--glass-bg);
+    border: 1px solid var(--overlay-border);
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-preset:hover {
+    background: var(--color-accent-primary);
+    color: #000;
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.25);
   }
 
   .filter-inputs {
@@ -314,6 +384,7 @@
   .filter-actions {
     display: flex;
     gap: var(--space-xs);
+    flex-wrap: wrap;
   }
 
   .btn {
@@ -331,11 +402,12 @@
 
   .btn-filter {
     background: var(--color-accent-primary);
-    color: var(--color-text-on-primary);
+    color: #000;
+    font-weight: 700;
   }
 
   .btn-filter:hover {
-    background: var(--color-accent-primary-pressed);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
     transform: translateY(-1px);
   }
 
@@ -343,12 +415,18 @@
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
     border: 1px solid rgba(212, 175, 55, 0.35);
     color: #d4af37;
+    font-weight: 700;
   }
 
   .btn-export:hover:not(:disabled) {
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.15) 100%);
     border-color: #d4af37;
     transform: translateY(-1px);
+  }
+
+  .btn-export:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .btn-clear-filter {
@@ -371,7 +449,13 @@
 
   @media (min-width: 640px) {
     .stats-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .stats-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 
@@ -430,6 +514,24 @@
   .icon-purple {
     background: rgba(192, 132, 252, 0.15);
     color: #c084fc;
+  }
+
+  .icon-emerald {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+  }
+
+  .icon-amber {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+  }
+
+  .text-emerald {
+    color: #10b981;
+  }
+
+  .text-amber {
+    color: #f59e0b;
   }
 
   .stat-value {

@@ -8,10 +8,10 @@ import {
 } from './pricing-config';
 
 describe('pricing-config', () => {
-  it('defines 4 canonical royal XU packages in ascending order', () => {
-    expect(XU_PACKAGES).toHaveLength(4);
-    expect(XU_PACKAGES.map((p) => p.xu)).toEqual([20, 50, 120, 600]);
-    expect(XU_PACKAGES.map((p) => p.price)).toEqual([20000, 50000, 100000, 500000]);
+  it('defines 5 canonical royal XU packages in ascending order', () => {
+    expect(XU_PACKAGES).toHaveLength(5);
+    expect(XU_PACKAGES.map((p) => p.xu)).toEqual([10, 20, 50, 120, 600]);
+    expect(XU_PACKAGES.map((p) => p.price)).toEqual([10000, 20000, 50000, 100000, 500000]);
   });
 
   it('marks 50 XU package as popular / Bán Chạy', () => {

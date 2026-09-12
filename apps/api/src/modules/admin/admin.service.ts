@@ -111,9 +111,10 @@ export class AdminService {
   }
 
   async getAnalytics(startDate?: string, endDate?: string) {
-    const params: any = {};
-    if (startDate) params.p_start_date = startDate;
-    if (endDate) params.p_end_date = endDate;
+    const params: any = {
+      p_start_date: startDate || null,
+      p_end_date: endDate || null,
+    };
 
     try {
       const { data, error } = await this.client.rpc('get_admin_analytics', params);

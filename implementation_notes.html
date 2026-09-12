@@ -142,6 +142,53 @@
         <li><strong>Deploy Script:</strong> Luôn dùng <code>pnpm deploy:vercel-demo</code> để deploy demo/production chuẩn hóa.</li>
       </ul>
     </div>
+
+    <!-- SPRINT 80 SECTION -->
+    <header style="margin-top: 3rem;">
+      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <span class="badge badge-gold">ViOS Sprint 80</span>
+        <span class="badge badge-success">Live Payment & Analytics</span>
+        <span class="badge badge-purple">SePay Bank: ACB 6384251098</span>
+      </div>
+      <h1>Sprint 80: SePay Live Production Reconciliation & Financial Dashboard</h1>
+      <p>Implementation Notes, Living Spec, and Architectural Decisions (Karpathy Rule #5).</p>
+    </header>
+
+    <div class="card">
+      <h2>1. Unspecified & Implicit Decisions (Sprint 80)</h2>
+      <ul>
+        <li><strong>Multi-Secret Webhook Token Verification:</strong> Thay vì chỉ kiểm tra 1 biến bí mật, <code>payment.controller.ts</code> thu thập tập hợp <code>[SEPAY_WEBHOOK_SECRET, SEPAY_API_KEY, SEPAY_TESTMODE_API]</code> để chấp nhận chữ ký xác thực từ cả Sandbox lẫn Live Production mà không bị gián đoạn hay cần redeploy khi đổi key.</li>
+        <li><strong>Nullable Owner for Unmatched Transactions:</strong> Bảng <code>transactions</code> cho phép <code>owner_user_id IS NULL</code>. Nhờ đó, các giao dịch nạp tiền mà người dùng ghi sai hoặc thiếu mã <code>TVTT</code> sẽ không bị drop, mà được lưu lại với trạng thái <code>Chờ Gán</code> kèm memo ngân hàng (cột <code>content</code>) để Admin đối soát thủ công 1-click.</li>
+        <li><strong>Postgres Ambiguous Function Overload Cleanup:</strong> Xóa overload cũ của hàm <code>get_admin_analytics</code> chỉ nhận 1 tham số integer, đồng nhất hàm duy nhất nhận <code>(p_start_date timestamptz, p_end_date timestamptz)</code>, giải quyết lỗi 500 candidate ambiguity khi gọi từ NestJS.</li>
+        <li><strong>Gói Trải Nghiệm 10.000 VNĐ:</strong> Thêm gói nạp nhỏ nhất 10k (10 XU) trên UI <code>/wallet</code> nhằm phục vụ kiểm thử nạp tiền thật an toàn và giảm rào cản thanh toán cho người dùng lần đầu.</li>
+        <li><strong>Bonus XU Tiering:</strong> Tự động cộng thêm +20 XU cho gói 100k và +100 XU cho gói 500k khi đối soát SePay thành công.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>2. Deviations from Specification</h2>
+      <ul>
+        <li>Không xóa bỏ hỗ trợ <code>SEPAY_TESTMODE_API</code> mà giữ lại theo cơ chế song song (fallback), đảm bảo các bài test tự động và mô phỏng webhook tiếp tục hoạt động trơn tru.</li>
+        <li>Bổ sung 4 Thẻ KPI Tài Chính và Bộ lọc Thời gian nhanh (Presets: 7 ngày, 30 ngày, tháng này) vào <code>/admin/analytics</code> giúp Admin nắm bắt ngay tổng doanh thu VNĐ quy đổi và XU tiêu thụ.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>3. Considered Trade-offs</h2>
+      <ul>
+        <li><strong>Drop vs. Store Unmatched Transactions:</strong> Nếu drop các giao dịch sai mã, hệ thống tránh được rác, nhưng người dùng chuyển tiền thật sẽ bị mất tiền oan và gây khiếu nại. Chọn lưu với <code>owner_user_id = null</code> và hiển thị nổi bật trên UI Admin giúp xử lý hỗ trợ khách hàng nhanh chóng.</li>
+        <li><strong>Client-side Date Range Presets vs. Server-side Presets:</strong> Xử lý tính toán ngày preset ở frontend theo chuẩn UTC / local browser và gửi ISO string về server, giúp backend giữ nguyên tính idempotent và stateless.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>4. Maintenance & Operational Notes</h2>
+      <ul>
+        <li><strong>Cổng nhận Webhook SePay Live:</strong> <code>https://tuvitoantap.online/api/webhooks/sepay</code></li>
+        <li><strong>Tài khoản ngân hàng đối soát:</strong> ACB <code>6384251098</code></li>
+        <li><strong>Quy tắc cú pháp chuyển khoản:</strong> <code>TVTT &lt;USER_ID_PREFIX&gt;</code> (ví dụ: <code>TVTT a1b2c3d4</code>)</li>
+      </ul>
+    </div>
   </div>
 </body>
 </html>

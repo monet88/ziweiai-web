@@ -20,6 +20,14 @@ export interface FeatureCostItem {
 
 export const XU_PACKAGES: readonly XuPackage[] = [
   {
+    xu: 10,
+    price: 10000,
+    label: 'Gói Trải Nghiệm',
+    badge: 'Khởi Đầu',
+    desc: 'Dùng cho 2 lượt luận giải AI hoặc 3 lượt gieo quẻ',
+    unitPrice: '1.000đ / XU'
+  },
+  {
     xu: 20,
     price: 20000,
     label: 'Gói Cơ Bản',

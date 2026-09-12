@@ -40,7 +40,10 @@ describe('PaymentService', () => {
   });
 
   describe('processTransaction (SePay)', () => {
-    it('should skip if content has no TVTT code', async () => {
+    it('should record unmatched transaction if content has no TVTT code', async () => {
+      mockSupabaseClient.single.mockResolvedValueOnce({ data: null, error: null });
+      mockSupabaseClient.insert.mockResolvedValueOnce({ error: null });
+
       const payload = {
         id: 100,
         gateway: 'MB',
@@ -56,7 +59,14 @@ describe('PaymentService', () => {
       };
 
       await service.processTransaction(payload as any);
-      expect(mockSupabaseClient.from).not.toHaveBeenCalled();
+      expect(mockSupabaseClient.insert).toHaveBeenCalledWith({
+        owner_user_id: null,
+        amount_vnd: 50000,
+        xu_added: 50,
+        sepay_transaction_id: '100',
+        content: 'Chuyen tien khong qua',
+      });
+      expect(mockWalletEngine.addXU).not.toHaveBeenCalled();
     });
 
     it('should process deposit, insert transaction, and credit XU', async () => {
@@ -103,8 +113,56 @@ describe('PaymentService', () => {
         amount_vnd: 50000,
         xu_added: 50,
         sepay_transaction_id: '101',
+        content: 'TVTT 12345678 Nap 50k',
       });
       expect(mockWalletEngine.addXU).toHaveBeenCalledWith('12345678-abcd-1234-5678-123456789012', 50, 'topup');
+    });
+
+    it('should calculate bonus XU for 100k and 500k packages correctly', async () => {
+      // 100,000 VND -> 120 XU
+      mockSupabaseClient.single.mockResolvedValueOnce({ data: null, error: null });
+      mockSupabaseClient.from.mockImplementationOnce(() => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null, error: null }),
+          }),
+        }),
+      })).mockImplementationOnce(() => ({
+        select: () => ({
+          gte: () => ({
+            lte: async () => ({
+              data: [{ user_id: '12345678-abcd-1234-5678-123456789012' }],
+              error: null,
+            }),
+          }),
+        }),
+      }));
+      mockSupabaseClient.insert.mockResolvedValueOnce({ error: null });
+
+      const payload = {
+        id: 102,
+        gateway: 'ACB',
+        transactionDate: '2026-09-12',
+        accountNumber: '6384251098',
+        code: null,
+        content: 'TVTT 12345678 Nap 100k',
+        transferType: 'in',
+        transferAmount: 100000,
+        accumulated: 250000,
+        referenceCode: 'ref102',
+        description: 'test bonus',
+      };
+
+      await service.processTransaction(payload as any);
+
+      expect(mockSupabaseClient.insert).toHaveBeenCalledWith({
+        owner_user_id: '12345678-abcd-1234-5678-123456789012',
+        amount_vnd: 100000,
+        xu_added: 120,
+        sepay_transaction_id: '102',
+        content: 'TVTT 12345678 Nap 100k',
+      });
+      expect(mockWalletEngine.addXU).toHaveBeenCalledWith('12345678-abcd-1234-5678-123456789012', 120, 'topup');
     });
   });
 

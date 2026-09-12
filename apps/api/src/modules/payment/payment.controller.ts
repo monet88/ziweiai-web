@@ -16,17 +16,22 @@ export class PaymentController {
     @Headers('Authorization') authHeader: string,
     @Body() payload: unknown,
   ) {
-    const expectedSecret =
-      apiEnv.SEPAY_WEBHOOK_SECRET || apiEnv.SEPAY_API_KEY || apiEnv.SEPAY_TESTMODE_API;
-    if (process.env.NODE_ENV === 'production' && !expectedSecret) {
+    const configuredSecrets = [
+      apiEnv.SEPAY_WEBHOOK_SECRET,
+      apiEnv.SEPAY_API_KEY,
+      apiEnv.SEPAY_TESTMODE_API,
+    ].filter((s): s is string => typeof s === 'string' && s.trim().length > 0);
+
+    if (process.env.NODE_ENV === 'production' && configuredSecrets.length === 0) {
       this.logger.error(
         'SePay webhook secret (SEPAY_WEBHOOK_SECRET, SEPAY_API_KEY, or SEPAY_TESTMODE_API) is not configured in production',
       );
       throw new UnauthorizedException('Webhook configuration error');
     }
-    if (expectedSecret) {
+
+    if (configuredSecrets.length > 0) {
       const token = this.extractAuthToken(authHeader);
-      if (!token || token !== expectedSecret) {
+      if (!token || !configuredSecrets.includes(token)) {
         this.logger.warn(`Invalid or missing Authorization header for SePay webhook`);
         throw new UnauthorizedException('Invalid webhook token');
       }

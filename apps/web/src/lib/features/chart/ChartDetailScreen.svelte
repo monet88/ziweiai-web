@@ -8,7 +8,6 @@
   import { getAuthStore } from '$lib/auth/auth-context';
   import { useQueryClient } from '@tanstack/svelte-query';
   import { AppScaffold, PrimaryButton, SummaryCard, NoticeBanner, FullScreenState, EmptyStateCard } from '$lib/components/ui';
-  import { authModalStore } from '$lib/stores/auth-modal.svelte';
   import { viCopy } from '$lib/i18n/vi';
   import { createChartDetailModel } from '$lib/features/chart/chart-detail-model.svelte';
   import { createExplanationModel } from '$lib/features/explanation/explanation-model.svelte';
@@ -40,12 +39,12 @@
   import RoyalBaziPosterModal from '$lib/features/poster/RoyalBaziPosterModal.svelte';
   import RoyalLiuyaoPosterModal from '$lib/features/poster/RoyalLiuyaoPosterModal.svelte';
   import RoyalExplanationPdfModal from '$lib/features/explanation/RoyalExplanationPdfModal.svelte';
+  import AstrologicalSynthesisModal from '$lib/features/synthesis/AstrologicalSynthesisModal.svelte';
+  import EnhancedSocialShareModal from '$lib/features/poster/EnhancedSocialShareModal.svelte';
   import { resolvePalaceScope } from '$lib/features/explanation/explanation-model.svelte';
-  import { appendReferralQuery, sanitizeReferralCode } from '$lib/features/referral/append-referral-query';
   import { revealElements, revealHexagramLines } from '$lib/motion/reveal';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { supabase } from '$lib/supabase/supabase-client';
 
   interface Props {
     chartId: string;
@@ -55,6 +54,8 @@
   let detailRoot: HTMLDivElement | undefined = $state();
   let isPosterModalOpen = $state(false);
   let isExplanationPdfModalOpen = $state(false);
+  let isSynthesisModalOpen = $state(false);
+  let isEnhancedShareModalOpen = $state(false);
 
   const auth = getAuthStore();
   const queryClient = useQueryClient();
@@ -188,45 +189,8 @@
     };
   });
 
-  async function handleShare() {
-    if (auth.isAnonymous) {
-      authModalStore.open('Vui lòng đăng ký tài khoản để có thể chia sẻ lá số của bạn.');
-      return;
-    }
-    
-    let referralCode = wallet.referralCode;
-    // Avoid race: wallet query may still be loading when user taps Chia Sẻ.
-    if (!referralCode && auth.user?.id && !auth.isAnonymous) {
-      const { data } = await supabase
-        .from('profiles')
-        .select('referral_code')
-        .eq('user_id', auth.user.id)
-        .maybeSingle();
-      referralCode = sanitizeReferralCode(data?.referral_code ?? null);
-    }
-
-    const shareUrl = appendReferralQuery(
-      `${window.location.origin}/share/charts/${detail.chartId}`,
-      referralCode,
-    );
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: pageTitle,
-          text: pageDescription,
-          url: shareUrl
-        });
-        return;
-      } catch {
-        // ignore aborts
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      alert('Đã copy link chia sẻ!');
-    } catch (err) {
-      console.error('Failed to copy', err);
-    }
+  function handleShare() {
+    isEnhancedShareModalOpen = true;
   }
 </script>
 
@@ -266,6 +230,16 @@
           <span class="dossier-crown">👑</span>
           <span class="dossier-text">{detail.chartSystem === 'ba-zi' ? 'Hồ Sơ Bát Tự' : 'Hồ Sơ Hoàng Gia'}</span>
           <span class="dossier-badge">{dossier.isUnlocked ? 'Đã Mở' : '50 XU'}</span>
+        </button>
+        <button
+          type="button"
+          class="btn-royal-synthesis"
+          onclick={() => (isSynthesisModalOpen = true)}
+          title="Khai mở Đại Bản Luận Giải Tổng Hợp Tam Hợp (Thiên Đạo Tử Vi - Địa Đạo Bát Tự - Nhân Đạo Thần Số)"
+        >
+          <span class="synthesis-icon">✨</span>
+          <span class="synthesis-text">Luận Giải Tam Hợp</span>
+          <span class="synthesis-badge">VIP</span>
         </button>
       {/if}
       <PrimaryButton
@@ -512,6 +486,25 @@
   />
 {/if}
 
+{#if isSynthesisModalOpen}
+  <AstrologicalSynthesisModal
+    {chartId}
+    chartTitle={pageTitle}
+    onClose={() => (isSynthesisModalOpen = false)}
+    onOpenShareModal={() => (isEnhancedShareModalOpen = true)}
+  />
+{/if}
+
+{#if isEnhancedShareModalOpen}
+  <EnhancedSocialShareModal
+    title={pageTitle}
+    subtitle={copy.heroSubtitle}
+    path={`/charts/${chartId}`}
+    quote="Mời bạn khám phá bản đồ vận mệnh Tử Vi Hoàng Gia cùng ViOS!"
+    onClose={() => (isEnhancedShareModalOpen = false)}
+  />
+{/if}
+
 <style>
   .chart-header-actions {
     display: flex;
@@ -609,6 +602,40 @@
     font-size: 10px;
     font-weight: 800;
     padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 2px;
+  }
+
+  .btn-royal-synthesis {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    background: linear-gradient(135deg, #2e1065 0%, #17072b 100%);
+    border: 1px solid rgba(168, 85, 247, 0.6);
+    border-radius: var(--radius-md, 6px);
+    color: #f3e8ff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(168, 85, 247, 0.25);
+    transition: all 0.2s ease;
+  }
+
+  .btn-royal-synthesis:hover {
+    background: linear-gradient(135deg, #4c1d95 0%, #2e1065 100%);
+    border-color: #d8b4fe;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(168, 85, 247, 0.45);
+  }
+
+  .synthesis-badge {
+    background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 5px;
     border-radius: 4px;
     margin-left: 2px;
   }

@@ -48,9 +48,12 @@ export function formatDivinationPosterFileName(
   return `Poster-${safeTitle || 'Bao-Chung'}.png`;
 }
 
+export type PosterAspectRatio = 'story' | 'square' | 'portrait';
+
 export interface PosterExportOptions {
   scale?: number;
   backgroundColor?: string;
+  aspectRatio?: PosterAspectRatio;
 }
 
 /**

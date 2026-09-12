@@ -1,38 +1,22 @@
-# Implementation Notes — Sprint 74: Conversion Funnel Boost, In-App Notifications & User Retention
+# Implementation Notes — Sprint 75: Advanced AI Astrological Synthesis & Enhanced Social Sharing
 
 ## 1. Unspecified & Implicit Decisions
-- **In-App Notification Center:**
-  - Designed as a sliding Drawer (Celestial Luxury design) toggled by a Bell button (`NotificationBell.svelte`) in both `AppScaffold.svelte` and `+page.svelte` header.
-  - Notifications are fed by `GET /notifications/in-app` in `apps/api` (aggregating `xu_transactions` like topups, daily checkin, referral reward, feature usage) plus real-time wallet balance listeners.
-  - Read states are stored in `localStorage` (`vios_read_notifications`) to preserve unread badges without needing heavy synchronous database writes on every click.
-- **One-Click Quick Topup Modal:**
-  - Upgraded `GlobalPaywallModal.svelte` from a simple redirect prompt into a full in-place topup modal.
-  - Embedded dynamic VietQR generator (`https://qr.sepay.vn/img?acc=...&bank=...&amount=...&des=TVTT%20<SHORT_UUID>`).
-  - Implemented auto-polling and Supabase Realtime detection every 2.5s: when balance increments or reaches the required XU amount, the modal immediately displays a celebratory checkmark and lets the user proceed without leaving their page.
-- **Gamification & Daily Check-in Streak:**
-  - Implemented `DailyCheckinWidget.svelte` with a 7-day progression timeline (Days 1–6: +5 XU, Day 7 Milestone Jackpot: +10 XU).
-  - Maintained full backward compatibility with the existing `daily_checkin` RPC and added migration `000028_daily_checkin_streak.sql`.
-  - Added `@Get('rewards/status')` to return check-in status, streak count, and today's reward amount.
-  - Protected check-in interactions with Cloudflare Turnstile anti-bot verification.
+- **Synthesis Life Path Calculation**: Sử dụng thuật toán chuẩn Pythagoras tổng các chữ số ngày tháng năm sinh dương lịch, chuẩn hóa về các số 1-9 hoặc master numbers (11, 22, 33).
+- **Billing Interceptor Integration**: Sử dụng `@UseInterceptors(RequireXU(15))` trực tiếp tại `SynthesisController.generateSynthesis`. Vì vậy, trong lời gọi `AiFeatureExecutionOrchestrator.executeFeature`, chi phí `cost` được thiết lập là 0 để tránh trừ đúp 2 lần số dư của người dùng.
+- **In-Memory Cache**: Để tiết kiệm tài nguyên AI và chi phí token của hệ thống, `SynthesisService` duy trì cache theo `chartId`. Các request sau cho cùng một `chartId` sẽ nhận kết quả với flag `isCached: true` và `GET /synthesis/:chartId` hoàn toàn miễn phí xem lại cho chủ sở hữu lá số.
+- **Multi-Ratio Social Exporter**: Thiết lập 3 tỉ lệ chuẩn cho xuất ảnh Poster:
+  - Story (9:16) — 1080x1920: tối ưu Instagram Story, TikTok, Facebook Story.
+  - Square (1:1) — 1080x1080: tối ưu Facebook Feed, Zalo, Instagram Feed.
+  - Portrait (3:4) — 1080x1440: tối ưu Pinterest, Web Showcase.
+- **Viral Referral Loop**: Mọi liên kết chia sẻ mạng xã hội (Facebook, Zalo, Telegram, Web Share) đều tự động gắn tham số `?ref=<userId_or_shortCode>` kích hoạt cơ chế nhận thưởng cho cả người mời và người được mời.
 
 ## 2. Deviations from Specification
-- None. All requested features (In-App Notification Bell & Drawer, One-click Topup Modal with dynamic VietQR, and Daily Check-in Streak Widget) were implemented faithfully according to the approved plan.
+- Không có sự sai lệch nào so với yêu cầu cốt lõi. Cả hai module chính (Luận giải tam môn phái và Studio chia sẻ đa tỉ lệ) đều được triển khai toàn diện và tích hợp trơn tru vào `ChartDetailScreen`.
 
 ## 3. Considered Trade-offs
-- **Client-side vs Server-side Notification Read Tracking:**
-  - *Chosen approach:* Storing read IDs in local storage while fetching user event history from the backend ledger.
-  - *Trade-off:* Avoids needing a dedicated `notification_reads` table migration and heavy write traffic for read receipts, while providing an instant, zero-latency UX for marking items as read.
-- **In-Modal Topup vs Separate Page:**
-  - *Chosen approach:* Integrating the VietQR dynamic payment directly into `GlobalPaywallModal` with an option to open `/wallet`.
-  - *Trade-off:* Reduces friction to 0 clicks away from payment; users don't lose their context (chart configuration, divination spread, etc.).
+- **Serverless LLM Call vs Client Streaming**: Luận giải Tam Hợp yêu cầu tổng hợp sâu sắc giữa 3 trường phái học thuật cổ truyền và hiện đại nên việc trả về định dạng JSON có cấu trúc nghiêm ngặt (`AstrologicalSynthesisResponse`) thông qua Orchestrator phía backend đảm bảo an toàn, validate được kiểu dữ liệu và kiểm soát lỗi fallback tốt hơn so với stream text thô trên client.
+- **HTML Canvas / DOM Rendering vs Server-side SVG**: Sử dụng engine `royal-poster-exporter.ts` với `html2canvas` giúp client render ngay lập tức với font hoàng gia và màu sắc chân thực mà không gây tải nặng cho backend serverless.
 
 ## 4. Maintenance Notes
-- **Testing & Gates:**
-  - API vitest: 84 test suites (528 tests) passing.
-  - Web vitest: 72 test suites (389 tests) passing.
-  - Svelte check: 0 errors, 0 warnings.
-  - Typecheck: 10/10 packages passing.
-  - Web build: Passing clean static bundle.
-- **Dependencies & Environment:**
-  - Uses `env.PUBLIC_SEPAY_ACCOUNT` and default bank ACB config from `bank-config.ts`.
-  - Anti-bot Turnstile widget gracefully bypasses in dev/test if keys are absent.
+- Khi thay đổi cấu trúc của `ChartSnapshot`, cần đồng bộ trong `synthesis-prompt.builder.ts` (lưu ý truy cập `snapshot.birth.originalInput.date` và các trường `summary`).
+- Endpoint `POST /synthesis/generate` yêu cầu người dùng phải đăng nhập và có tối thiểu 15 XU.

@@ -612,6 +612,8 @@
           <span class="sep">•</span>
           <a href={resolve('/privacy')}>Chính Sách Bảo Mật</a>
           <span class="sep">•</span>
+          <a href="mailto:contact@tuvitoantap.online">Liên Hệ Hỗ Trợ</a>
+          <span class="sep">•</span>
           <a href={resolve('/wallet')}>Quy Chế Ví XU</a>
         </div>
 

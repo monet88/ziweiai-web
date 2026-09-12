@@ -113,7 +113,7 @@
           <li>Xem, sửa hoặc xóa lịch sử các lá số và quẻ bói đã tạo trong mục Lịch Sử.</li>
           <li>Hủy bỏ quyền nhận thông báo đẩy trong phần Cài đặt thiết bị.</li>
           <li>
-            <strong>Yêu cầu xóa toàn bộ tài khoản và dữ liệu:</strong> Bạn có thể gửi yêu cầu xóa tài khoản trực tiếp trong app hoặc qua email <code class="code-email">galaxypro710@gmail.com</code>. Dữ liệu của bạn sẽ được xóa vĩnh viễn khỏi hệ thống trong vòng 24 giờ làm việc.
+            <strong>Yêu cầu xóa toàn bộ tài khoản và dữ liệu:</strong> Bạn có thể gửi yêu cầu xóa tài khoản trực tiếp trong app hoặc qua email <code class="code-email">contact@tuvitoantap.online</code>. Dữ liệu của bạn sẽ được xóa vĩnh viễn khỏi hệ thống trong vòng 24 giờ làm việc.
           </li>
         </ul>
       </section>
@@ -127,7 +127,7 @@
         </p>
         <div class="contact-card">
           <p><strong>Dự án:</strong> Tử Vi Toàn Tập (ViOS)</p>
-          <p><strong>Email Hỗ Trợ:</strong> <a href="mailto:galaxypro710@gmail.com">galaxypro710@gmail.com</a></p>
+          <p><strong>Email Hỗ Trợ:</strong> <a href="mailto:contact@tuvitoantap.online">contact@tuvitoantap.online</a></p>
           <p><strong>Trang Chủ & Bản Web:</strong> <a href="https://tuvitoantap.online" target="_blank" rel="noreferrer">https://tuvitoantap.online</a></p>
         </div>
       </section>

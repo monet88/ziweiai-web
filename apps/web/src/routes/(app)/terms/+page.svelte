@@ -108,7 +108,7 @@
         </p>
         <div class="contact-card">
           <p><strong>Cơ Quan Điều Hành:</strong> Hoàng Triều Chiêm Tinh ViOS</p>
-          <p><strong>Thư Điện Tử Hỗ Trợ:</strong> <a href="mailto:galaxypro710@gmail.com">galaxypro710@gmail.com</a></p>
+          <p><strong>Thư Điện Tử Hỗ Trợ:</strong> <a href="mailto:contact@tuvitoantap.online">contact@tuvitoantap.online</a></p>
           <p><strong>Trang Chủ Trực Tuyến:</strong> <a href="https://tuvitoantap.online" target="_blank" rel="noreferrer">https://tuvitoantap.online</a></p>
         </div>
       </section>

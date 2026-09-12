@@ -1,7 +1,9 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { Copy, Check, Download, Printer, FileText, ScrollText } from 'lucide-svelte';
+  import { Copy, Check, Download, Printer, FileText, ScrollText, Headphones } from 'lucide-svelte';
   import { toast } from '$lib/stores/toast';
+  import { audioAdvisor } from '$lib/features/audio/audio-advisor.svelte';
+  import AudioAdvisorPlayer from '$lib/features/audio/AudioAdvisorPlayer.svelte';
 
   interface Props {
     markdown: string;
@@ -18,6 +20,15 @@
   }: Props = $props();
 
   let copied = $state(false);
+
+  function handlePlayAudio() {
+    if (!markdown) {
+      toast.show('Chưa có nội dung luận giải để phát âm thanh.', 'info');
+      return;
+    }
+    audioAdvisor.play(markdown, `Luận Giải ${chartTitle}`);
+    toast.show('🎧 Đang phát giọng đọc Luận Giải Hoàng Cung...', 'success');
+  }
 
   async function handleCopy() {
     if (!browser || !markdown) return;
@@ -117,6 +128,17 @@
       <span class="btn-text">Tải .md</span>
     </button>
 
+    <!-- Nút Nghe Giọng Đọc AI Hoàng Cung -->
+    <button
+      type="button"
+      class="toolbar-btn royal-audio-btn"
+      onclick={handlePlayAudio}
+      title="Lắng nghe bài luận giải bằng giọng đọc truyền cảm kết hợp chuông thiền bát nhã 432Hz"
+    >
+      <Headphones size={14} class="text-gold" />
+      <span class="btn-text">Nghe Luận Giải</span>
+    </button>
+
     <!-- Nút Xuất Sớ PDF Hoàng Gia -->
     {#if onOpenRoyalPdfModal}
       <button
@@ -137,6 +159,8 @@
     </button>
   </div>
 </div>
+
+<AudioAdvisorPlayer />
 
 <style>
   .explanation-toolbar {
@@ -210,6 +234,19 @@
   .toolbar-btn.royal-pdf-btn:hover {
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.45) 0%, rgba(180, 83, 9, 0.55) 100%);
     box-shadow: 0 0 14px rgba(255, 215, 0, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .toolbar-btn.royal-audio-btn {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.18) 0%, rgba(88, 28, 135, 0.3) 100%);
+    border-color: rgba(212, 175, 55, 0.6);
+    color: #fef08a;
+    font-weight: 600;
+  }
+
+  .toolbar-btn.royal-audio-btn:hover {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.35) 0%, rgba(107, 33, 168, 0.5) 100%);
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.35);
     transform: translateY(-1px);
   }
 

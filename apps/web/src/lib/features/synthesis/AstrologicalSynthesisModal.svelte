@@ -11,6 +11,7 @@
     Share2,
     Coins,
     Loader2,
+    Headphones,
   } from 'lucide-svelte';
   import type {
     AstrologicalSynthesisResponse,
@@ -25,6 +26,7 @@
   import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
   import { paywallStore } from '$lib/stores/paywall.svelte';
   import { toast } from '$lib/stores/toast';
+  import { audioAdvisor } from '$lib/features/audio/audio-advisor.svelte';
 
   interface Props {
     chartId: string;
@@ -109,6 +111,27 @@
     } finally {
       isGenerating = false;
     }
+  }
+
+  function handlePlaySynthesisAudio() {
+    if (!synthesis) return;
+    let textToRead = '';
+    if (activeTab === 'overview') {
+      textToRead = `Sấm Truyền Khâm Thiên Giám: ${synthesis.summary}. Điểm đồng thuận tam môn phái: ${synthesis.consensusScore} phần trăm. `;
+      for (const d of synthesis.disciplines) {
+        textToRead += `${d.discipline}: ${d.keyFindings.join('. ')}. `;
+      }
+    } else if (activeTab === 'heaven') {
+      textToRead = `${synthesis.heavenAspect.title}: ${synthesis.heavenAspect.detail}. Các sao chủ tọa: ${synthesis.heavenAspect.starsSummary.join(', ')}.`;
+    } else if (activeTab === 'earth') {
+      textToRead = `${synthesis.earthAspect.title}: ${synthesis.earthAspect.detail}. Ngũ hành tứ trụ: ${synthesis.earthAspect.elementsSummary.join(', ')}.`;
+    } else if (activeTab === 'human') {
+      textToRead = `${synthesis.humanAspect.title}: ${synthesis.humanAspect.detail}. Tóm lược số đạo: ${synthesis.humanAspect.lifePathSummary}.`;
+    } else {
+      textToRead = `Chiến Lược Cải Vận Hoàng Gia: Thời cơ chiến lược: ${synthesis.actionableStrategy.strategicTiming}. Việc nên làm: ${synthesis.actionableStrategy.doList.join('. ')}. Việc nên tránh: ${synthesis.actionableStrategy.dontList.join('. ')}. Ngũ hành cát lợi: ${synthesis.actionableStrategy.auspiciousElements.join(', ')}.`;
+    }
+    audioAdvisor.play(textToRead, `Luận Giải Tam Hợp • ${chartTitle}`);
+    toast.show('🎧 Đang phát giọng đọc Thính Luận Hoàng Triều...', 'success');
   }
 </script>
 
@@ -433,15 +456,25 @@
         Khâm Thiên Giám Ngự Bút • Bản quyền thuật số thuộc về ViOS
       </p>
       {#if synthesis}
-        <button
-          onclick={() => {
-            onClose();
-            if (onOpenShareModal) onOpenShareModal();
-          }}
-          class="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs transition-colors shadow-md shadow-amber-500/10"
-        >
-          <Share2 size={14} /> Chia Sẻ Đại Bản Luận Giải
-        </button>
+        <div class="flex items-center gap-2">
+          <button
+            onclick={handlePlaySynthesisAudio}
+            class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-purple-900/40 hover:bg-purple-800/60 text-purple-200 border border-purple-500/30 font-semibold text-xs transition-colors shadow-sm"
+            title="Lắng nghe giọng đọc truyền cảm kết hợp âm thanh thiền định"
+          >
+            <Headphones size={14} class="text-amber-400" /> Thính Luận Hoàng Triều
+          </button>
+
+          <button
+            onclick={() => {
+              onClose();
+              if (onOpenShareModal) onOpenShareModal();
+            }}
+            class="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs transition-colors shadow-md shadow-amber-500/10"
+          >
+            <Share2 size={14} /> Chia Sẻ Đại Bản Luận Giải
+          </button>
+        </div>
       {/if}
     </div>
   </div>

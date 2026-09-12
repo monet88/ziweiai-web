@@ -64,3 +64,5 @@ export * from './auth/fcm-token';
 export * from './persistence/royal-gallery';
 export * from './wallet/notifications';
 export * from './synthesis/synthesis';
+export * from './horoscope/destiny-timeline';
+export * from './wallet/referral-hub';

@@ -69,5 +69,19 @@ export class RewardsController {
 
     return this.rewardsService.getReferralHistory(userId);
   }
+
+  @Get('partner-hub')
+  async getPartnerHub(@Req() req: AuthenticatedRequest) {
+    const userId = req.authenticatedUser?.userId;
+    if (!userId) {
+      throw new BadRequestException('User ID not found');
+    }
+
+    const host = req.headers?.['host'] as string | undefined;
+    const proto = (req.headers?.['x-forwarded-proto'] as string | undefined) || 'https';
+    const origin = host ? `${proto}://${host}` : undefined;
+
+    return this.rewardsService.getPartnerHubData(userId, origin);
+  }
 }
 

@@ -13,10 +13,12 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
 import { AnnualReportService } from './services/annual-report.service';
 import { FortuneService } from './services/fortune.service';
+import { DestinyTimelineService } from './services/destiny-timeline.service';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
+import type { DestinyTimelineResponse } from '@ziweiai/contracts';
 
 /**
- * Vận theo mốc thời gian (US-016): vận ngày, vận tháng (thuần đọc) + báo cáo năm (LLM gate).
+ * Vận theo mốc thời gian (US-016): vận ngày, vận tháng (thuần đọc) + báo cáo năm (LLM gate) + timeline 12 tháng.
  *
  * Cùng prefix `/charts/:id` với các endpoint horoscope khác (decision 0011). Mọi route Bearer +
  * ownership check + chart-system guard nằm trong service. Query parse qua schema `@ziweiai/contracts`.
@@ -26,6 +28,7 @@ export class FortuneController {
   constructor(
     private readonly fortuneService: FortuneService,
     private readonly annualReportService: AnnualReportService,
+    private readonly destinyTimelineService: DestinyTimelineService,
   ) {}
 
   @Get(':chartSnapshotId/daily')
@@ -68,5 +71,17 @@ export class FortuneController {
     // Query param luôn là chuỗi → coerce sang number trước khi validate khoảng 1900..2100.
     const { year } = annualReportRequestSchema.parse({ year: Number(yearRaw) });
     return this.annualReportService.createAnnualReport(currentUser, request.ip ?? 'unknown', chartId, year);
+  }
+
+  @Get(':chartSnapshotId/destiny-timeline')
+  async getDestinyTimeline(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Req() request: AuthenticatedRequest,
+    @Param('chartSnapshotId', new ZodValidationPipe(z.uuid(), 'Mã lá số không hợp lệ.')) chartId: string,
+    @Query('year') yearRaw?: unknown,
+  ): Promise<DestinyTimelineResponse> {
+    const year = yearRaw !== undefined ? Number(yearRaw) : new Date().getFullYear();
+    const validYear = Math.max(1900, Math.min(2100, Number.isNaN(year) ? new Date().getFullYear() : year));
+    return this.destinyTimelineService.getDestinyTimeline(currentUser, request.ip ?? 'unknown', chartId, validYear);
   }
 }

@@ -6,6 +6,7 @@ import { WalletModule } from '../wallet/wallet.module';
 import { FortuneController } from './fortune.controller';
 import { AnnualReportService } from './services/annual-report.service';
 import { FortuneService } from './services/fortune.service';
+import { DestinyTimelineService } from './services/destiny-timeline.service';
 import { HoroscopeEngineAdapter } from './services/horoscope-engine.adapter';
 import { FortuneQuotaRules } from './fortune-quota.rules';
 
@@ -15,8 +16,10 @@ import { FortuneQuotaRules } from './fortune-quota.rules';
   providers: [
     FortuneService,
     AnnualReportService,
+    DestinyTimelineService,
     HoroscopeEngineAdapter,
     FortuneQuotaRules,
   ],
+  exports: [DestinyTimelineService],
 })
 export class FortuneModule {}

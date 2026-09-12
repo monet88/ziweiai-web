@@ -304,4 +304,40 @@ describe('RewardsController & RewardsService', () => {
       await expect(controller.getStatus(mockReq)).rejects.toThrow(BadRequestException);
     });
   });
+
+  describe('getPartnerHub', () => {
+    it('should return complete partner hub data with tiers and leaderboard', async () => {
+      const mockReq = {
+        authenticatedUser: { userId: 'user-uuid-123' },
+        headers: { host: 'tuvitoantap.vercel.app' },
+      } as unknown as AuthenticatedRequest;
+
+      mockProfilesRepo.findProfileByUserId = vi.fn().mockResolvedValue({
+        userId: 'user-uuid-123',
+        referralCode: 'ref_12345678',
+      });
+      mockProfilesRepo.listReferralsByReferrerId = vi.fn().mockResolvedValue([
+        { id: '1', referrerId: 'user-uuid-123', refereeId: 'ref-1', rewardXu: 10, status: 'completed', createdAt: '2026-09-01T00:00:00Z' },
+        { id: '2', referrerId: 'user-uuid-123', refereeId: 'ref-2', rewardXu: 10, status: 'completed', createdAt: '2026-09-02T00:00:00Z' },
+      ]);
+
+      const res = await controller.getPartnerHub(mockReq);
+      expect(res).toBeDefined();
+      expect(res.referralCode).toBe('ref_12345678');
+      expect(res.referralLink).toContain('ref=ref_12345678');
+      expect(res.totalReferrals).toBe(2);
+      expect(res.totalXuEarned).toBe(20);
+      expect(res.tier).toBe('dong');
+      expect(res.leaderboard).toHaveLength(10);
+      expect(res.leaderboard[0]?.rank).toBe(1);
+    });
+
+    it('should throw BadRequestException if user id is missing', async () => {
+      const mockReq = {
+        authenticatedUser: undefined,
+      } as any;
+
+      await expect(controller.getPartnerHub(mockReq)).rejects.toThrow(BadRequestException);
+    });
+  });
 });

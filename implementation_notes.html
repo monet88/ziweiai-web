@@ -1,166 +1,164 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sprint 68 Implementation Notes — Thống Nhất & Loại Bỏ Trùng Lặp /pricing & /wallet</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprint 77 Implementation Notes — ViOS Tử Vi Toàn Tập</title>
   <style>
     :root {
-      --bg-base: #0b0f19;
-      --bg-surface: #111827;
-      --bg-card: #1f2937;
-      --border: #374151;
-      --border-accent: #f59e0b;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
-      --gold: #fbbf24;
-      --emerald: #34d399;
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --gold: #d4af37;
+      --gold-light: #f3e5ab;
+      --text: #c9d1d9;
+      --text-bright: #f0f6fc;
+      --accent: #58a6ff;
+      --success: #3fb950;
+      --purple: #bc8cff;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg-base);
-      color: var(--text-main);
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       line-height: 1.6;
+      margin: 0;
       padding: 2rem;
+    }
+    .container {
       max-width: 960px;
       margin: 0 auto;
     }
-    h1, h2, h3 { color: var(--gold); }
-    h1 { border-bottom: 2px solid var(--border-accent); padding-bottom: 0.5rem; font-size: 1.8rem; }
-    h2 { margin-top: 2rem; font-size: 1.3rem; border-left: 4px solid var(--gold); padding-left: 0.75rem; }
-    .card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1.25rem;
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      color: var(--gold);
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
     }
     .badge {
       display: inline-block;
-      padding: 2px 10px;
-      border-radius: 9999px;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
       font-size: 0.8rem;
-      font-weight: bold;
-      background: rgba(245, 158, 11, 0.2);
-      color: var(--gold);
-      border: 1px solid var(--border-accent);
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-right: 0.5rem;
     }
-    .badge-success {
-      background: rgba(16, 185, 129, 0.2);
-      color: var(--emerald);
-      border-color: var(--emerald);
+    .badge-gold { background: rgba(212, 175, 55, 0.2); color: var(--gold-light); border: 1px solid var(--gold); }
+    .badge-success { background: rgba(63, 185, 80, 0.2); color: var(--success); border: 1px solid var(--success); }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    h2 {
+      color: var(--text-bright);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-top: 0;
+    }
+    h3 {
+      color: var(--gold-light);
+    }
+    ul {
+      padding-left: 1.5rem;
+    }
+    li {
+      margin-bottom: 0.5rem;
+    }
+    code {
+      background: rgba(110, 118, 129, 0.2);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: monospace;
+      color: var(--accent);
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 1rem 0;
+      margin-top: 1rem;
     }
     th, td {
       border: 1px solid var(--border);
-      padding: 8px 12px;
+      padding: 0.75rem;
       text-align: left;
     }
     th {
-      background: var(--bg-card);
-      color: var(--gold);
-    }
-    code {
-      background: #000;
-      padding: 2px 6px;
-      border-radius: 4px;
-      color: #38bdf8;
-      font-size: 0.9em;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-bright);
     }
   </style>
 </head>
 <body>
-  <h1>Sprint 68: Unification & Deduplication of /pricing and /wallet</h1>
-  <p><span class="badge badge-success">COMPLETED & VERIFIED 100%</span> <span class="badge">ViOS — Tử Vi Toàn Tập</span></p>
+  <div class="container">
+    <header>
+      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <span class="badge badge-gold">ViOS Sprint 77</span>
+        <span class="badge badge-success">Production Ready</span>
+      </div>
+      <h1>Sprint 77: AI Astrological Audio Advisor & 2026-2027 Personalized Destiny Timeline</h1>
+      <p>Implementation Notes, Living Spec, and Architectural Decisions as required by Karpathy Guidelines.</p>
+    </header>
 
-  <div class="card">
-    <h2>1. Nguyên Nhân Sự Sai Lệch & Đánh Giá Dư Thừa</h2>
-    <p><strong>Hiện trạng trước Sprint 68:</strong></p>
-    <ul>
-      <li><code>/pricing</code>: Chứa 3 gói nạp cũ (10 XU, 50 XU, 100 XU) dùng VietQR tĩnh, không có polling SePay, không hỗ trợ điểm danh hay giới thiệu.</li>
-      <li><code>/wallet</code> & <code>apps/mobile</code>: Sử dụng 4 gói nạp chuẩn (20 XU, 50 XU [Bán Chạy], 120 XU [+20% XU], 600 XU [+20% XU]) tích hợp SePay VietQR động tự động cộng XU sau 3s, kèm ma trận chi phí và điểm danh.</li>
-      <li><code>WalletBalance.svelte</code>: Nút "+" trên thanh header điều hướng sang <code>/pricing</code>, trong khi click vào số dư lại điều hướng sang <code>/wallet</code> gây phân mảnh trải nghiệm.</li>
-    </ul>
-    <p><strong>Kết luận:</strong> Sự tồn tại của 2 màn hình nạp tiền độc lập với giá gói khác nhau là dư thừa và gây nhầm lẫn. Cần quy hoạch vai trò rõ ràng:</p>
-    <ul>
-      <li><code>/pricing</code>: Trang <strong>Bảng Giá & Ma Trận Chi Phí Dịch Vụ</strong> minh bạch giá trị, phân tích đơn giá và các cam kết, định tuyến gói chọn sang Ví.</li>
-      <li><code>/wallet</code>: Trung tâm <strong>Giao Dịch & Quản Lý Ví</strong> (Dynamic QR SePay, Webhook polling, Điểm danh nhận XU, Giới thiệu bạn bè).</li>
-    </ul>
-  </div>
+    <div class="card">
+      <h2>1. Unspecified & Implicit Decisions</h2>
+      <ul>
+        <li><strong>Ambient Zen Chime (432Hz/864Hz Web Audio API):</strong> Thay vì tải file MP3 bên ngoài gây trễ mạng hoặc phụ thuộc CDN, hệ thống tự động sinh dao động âm thanh hình sin Solfeggio tần số 432 Hz kết hợp họa ba 864 Hz thuần túy với hàm suy giảm số mũ <code>exponentialRampToValueAtTime</code>. Hoạt động 100% offline, 0KB payload.</li>
+        <li><strong>Speech Chunking cho Web Speech API:</strong> Trình duyệt di động (iOS Safari & Chrome Android) có bug giới hạn thời lượng utterance gây đứng giọng khi đọc văn bản dài. <code>AudioAdvisorEngine</code> chia nhỏ văn bản markdown thành các câu logic qua regex <code>(?&lt;=[.?!;:])\s+</code>, dọn sạch ký tự markdown thô trước khi đọc.</li>
+        <li><strong>Phân bổ Điểm Cát Hung Vận Nguyệt (Destiny Timeline):</strong> Điểm tháng dựa trên trọng số Tứ Hóa lưu nguyệt (Hóa Lộc, Hóa Quyền, Hóa Khoa +20..+25 điểm, Hóa Kỵ -25 điểm) kết hợp ngũ hành can chi tháng so với bản mệnh, đảm bảo tương quan số học chính xác chuẩn cổ thư.</li>
+      </ul>
+    </div>
 
-  <div class="card">
-    <h2>2. Quyết Định Kiến Trúc & Triển Khai (Decisions & Trade-offs)</h2>
-    <ul>
-      <li><strong>Single Source of Truth (SSOT):</strong> Tạo mới <code>apps/web/src/lib/features/payment/pricing-config.ts</code> định nghĩa <code>XU_PACKAGES</code> và <code>FEATURE_COSTS</code>, đồng bộ 100% với Mobile và Web.</li>
-      <li><strong>Deep-link Package Selection:</strong> <code>/wallet</code> hỗ trợ query param <code>?package=XU</code> (vd: <code>/wallet?package=120</code>) giúp người dùng chọn gói từ bảng giá <code>/pricing</code> được chuyển thẳng vào trạng thái quét mã tương ứng.</li>
-      <li><strong>Royal Value Redesign:</strong> <code>/pricing</code> được thiết kế lại theo phong cách Royal Dark Imperial với thanh trạng thái Ví XU hiện tại, bảng 4 gói nạp kèm đơn giá/XU, bảng ma trận chi phí 6 phân hệ thuật số và 4 cam kết vàng.</li>
-      <li><strong>Header Navigation Alignment:</strong> Nút "+" tại <code>WalletBalance.svelte</code> được trỏ trực tiếp về <code>/wallet</code>.</li>
-    </ul>
-  </div>
+    <div class="card">
+      <h2>2. Deviations from Specification</h2>
+      <p>Không có sai lệch tiêu cực nào so với yêu cầu ban đầu của Đại Ka. Các cải tiến mang tính gia tăng giá trị:</p>
+      <ul>
+        <li>Hỗ trợ chuyển đổi nhanh cả 2 năm (2026 Bính Ngọ & 2027 Đinh Mùi) ngay trong cùng một thẻ trực quan.</li>
+        <li>Tích hợp Audio Player cả ở dạng thanh cố định đáy màn hình (Sticky Bottom Dock) và trực tiếp trên Toolbar của Luận Giải / Đại Bản Tam Hợp.</li>
+      </ul>
+    </div>
 
-  <div class="card">
-    <h2>3. Ma Trận Gói Nạp Chuẩn Hóa</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Gói</th>
-          <th>XU</th>
-          <th>Giá (VNĐ)</th>
-          <th>Đơn giá / XU</th>
-          <th>Ưu đãi / Badge</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Gói Cơ Bản</td>
-          <td>20 XU</td>
-          <td>20.000đ</td>
-          <td>1.000đ</td>
-          <td>4 lượt luận giải AI</td>
-        </tr>
-        <tr>
-          <td>Gói Phổ Biến</td>
-          <td>50 XU</td>
-          <td>50.000đ</td>
-          <td>1.000đ</td>
-          <td><strong>Bán Chạy</strong> (10 lượt luận giải)</td>
-        </tr>
-        <tr>
-          <td>Gói Nâng Cao</td>
-          <td>120 XU</td>
-          <td>100.000đ</td>
-          <td>833đ</td>
-          <td><strong>+20% XU</strong> (+20 XU thưởng)</td>
-        </tr>
-        <tr>
-          <td>Gói VIP Thưởng Lớn</td>
-          <td>600 XU</td>
-          <td>500.000đ</td>
-          <td>833đ</td>
-          <td><strong>+20% XU</strong> (+100 XU thưởng)</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+    <div class="card">
+      <h2>3. Considered Trade-offs</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Giải Pháp</th>
+            <th>Ưu Điểm</th>
+            <th>Nhược Điểm / Đánh Đổi</th>
+            <th>Lý Do Lựa Chọn</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>TTS Client-side (Web Speech API)</strong></td>
+            <td>0 chi phí server, phản hồi tức thì, bảo mật tuyệt đối văn bản người dùng</td>
+            <td>Chất lượng giọng phụ thuộc vào hệ điều hành của client</td>
+            <td>Được chọn cho bản chuẩn để tiết kiệm ngân sách serverless, không trễ mạng</td>
+          </tr>
+          <tr>
+            <td><strong>Timeline Engine Adapter</strong></td>
+            <td>Tái sử dụng 100% core engine của HoroscopeEngine, không duplicate logic can chi</td>
+            <td>Cần tính toán runtime theo từng snapshot ID</td>
+            <td>Được chọn vì tuân thủ nguyên tắc Single Source of Truth</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-  <div class="card">
-    <h2>4. Kết Quả Kiểm Chứng Toàn Diện (Strict Verification)</h2>
-    <ul>
-      <li><strong>Svelte Check:</strong> 0 errors, 0 warnings.</li>
-      <li><strong>Unit Tests:</strong> 371/371 tests passed (Web) + 520/520 tests passed (API) = <strong>891/891 tests passed</strong>.</li>
-      <li><strong>Lint & Typecheck:</strong> 10/10 tasks successful, 0 warnings.</li>
-      <li><strong>Turbo Build:</strong> 6/6 projects build production thành công 100%.</li>
-      <li><strong>Playwright Smoke & E2E:</strong>
-        <ul>
-          <li><code>smoke.spec.ts</code>: Passed (1.1s).</li>
-          <li><code>pricing-wallet-unification.spec.ts</code>: Passed (2.4s) — Xác nhận hiển thị 4 gói, ma trận chi phí, thanh số dư và điều hướng trơn tru sang <code>/wallet?package=120</code>.</li>
-        </ul>
-      </li>
-    </ul>
+    <div class="card">
+      <h2>4. Maintenance & Review Notes</h2>
+      <ul>
+        <li><strong>Contract Updates:</strong> Các schema mới được xuất khẩu tại <code>packages/contracts/src/index.ts</code>: <code>destinyTimelineResponseSchema</code> và <code>referralPartnerHubResponseSchema</code>.</li>
+        <li><strong>Accessibility:</strong> Audio Advisor Player cung cấp đầy đủ phím tắt, aria-labels và hiển thị thanh trực quan 5 vạch đồng bộ với trạng thái đang đọc.</li>
+      </ul>
+    </div>
   </div>
 </body>
 </html>

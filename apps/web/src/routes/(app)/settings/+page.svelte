@@ -17,7 +17,9 @@
     Shield,
     Sparkles,
     LogOut,
+    Trophy,
   } from 'lucide-svelte';
+  import ReferralPartnerHubModal from '$lib/features/referral/ReferralPartnerHubModal.svelte';
 
   const auth = getAuthStore();
   const queryClient = useQueryClient();
@@ -26,6 +28,7 @@
   let isDeleting = $state(false);
   let isSigningOut = $state(false);
   let showConfirmModal = $state(false);
+  let showPartnerHubModal = $state(false);
   let copied = $state(false);
 
   const referralLink = $derived.by(() => {
@@ -181,11 +184,29 @@
                 {/if}
               </button>
             </div>
+
+            <div class="partner-hub-action-row">
+              <button
+                type="button"
+                class="btn-partner-hub"
+                onclick={() => (showPartnerHubModal = true)}
+              >
+                <Trophy class="btn-icon text-gold" />
+                <span>Mở Trung Tâm Đối Tác & Bảng Xếp Hạng Sứ Giả</span>
+              </button>
+            </div>
           {:else}
             <p class="loading-text">Đang nạp mã giới thiệu...</p>
           {/if}
         </div>
       </section>
+    {/if}
+
+    {#if showPartnerHubModal}
+      <ReferralPartnerHubModal
+        token={auth.getAccessToken() || undefined}
+        onClose={() => (showPartnerHubModal = false)}
+      />
     {/if}
 
     <!-- Danger Zone Card -->
@@ -686,5 +707,77 @@
   @keyframes popIn {
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
+  }
+
+  .copy-field {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .copy-input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--color-border-hairline);
+    color: var(--color-text-primary);
+    font-family: monospace;
+    font-size: 13px;
+  }
+
+  .btn-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-hairline);
+    color: var(--color-text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast);
+    white-space: nowrap;
+  }
+
+  .btn-copy:hover {
+    background: var(--overlay-ink-wash);
+    border-color: var(--color-border-strong);
+  }
+
+  .partner-hub-action-row {
+    margin-top: 14px;
+  }
+
+  .btn-partner-hub {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(180, 83, 9, 0.25) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    color: #fef08a;
+    font-weight: 700;
+    font-size: 13.5px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(212, 175, 55, 0.2);
+    transition: all 0.2s ease;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-partner-hub:hover {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.3) 0%, rgba(180, 83, 9, 0.45) 100%);
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.35);
+    transform: translateY(-1px);
+  }
+
+  :global([data-theme="light"]) .btn-partner-hub {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-color: #d97706;
+    color: #78350f;
   }
 </style>

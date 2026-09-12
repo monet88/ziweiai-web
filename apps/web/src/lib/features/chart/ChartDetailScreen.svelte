@@ -31,6 +31,7 @@
   import DailyFortuneCard from '$lib/features/fortune/DailyFortuneCard.svelte';
   import MonthlyFortuneCard from '$lib/features/fortune/MonthlyFortuneCard.svelte';
   import AnnualReportButton from '$lib/features/fortune/AnnualReportButton.svelte';
+  import DestinyTimelineCard from '$lib/features/timeline/DestinyTimelineCard.svelte';
   import { createWalletModel } from '$lib/features/payment/wallet-model.svelte';
   import { createDossierModel } from '$lib/features/dossier/dossier-model.svelte';
   import DeluxePdfDossierModal from '$lib/features/dossier/DeluxePdfDossierModal.svelte';
@@ -323,6 +324,7 @@
             <MonthlyFortuneCard {auth} chartId={detail.chartId} />
           </div>
           {#if detail.isOwner}
+            <DestinyTimelineCard chartId={detail.chartId} token={auth.getAccessToken() || undefined} />
             <AnnualReportButton {auth} chartId={detail.chartId} initialReport={detail.latestAnnualReport} />
           {/if}
         </section>

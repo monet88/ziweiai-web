@@ -112,7 +112,16 @@
   }
 </script>
 
-<div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="synthesis-modal-title"
+  tabindex="-1"
+  onkeydown={(e) => {
+    if (e.key === 'Escape') onClose();
+  }}
+>
   <div class="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl bg-stone-950 border border-amber-500/40 shadow-2xl shadow-amber-950/50 text-stone-100 overflow-hidden">
     <!-- Header Hoàng Gia -->
     <div class="flex items-center justify-between px-5 py-4 border-b border-stone-800 bg-gradient-to-r from-stone-900 via-stone-950 to-stone-900">
@@ -124,7 +133,7 @@
           <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/20">
             Khâm Thiên Giám Ngự Chế • Đỉnh Cao ViOS
           </div>
-          <h3 class="font-serif text-lg sm:text-xl font-bold text-amber-100">
+          <h3 id="synthesis-modal-title" class="font-serif text-lg sm:text-xl font-bold text-amber-100">
             Đại Bản Luận Giải Tổng Hợp Tam Hợp • {chartTitle}
           </h3>
         </div>

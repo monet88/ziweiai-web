@@ -1,5 +1,3 @@
-import html2canvas from 'html2canvas';
-
 export function slugifyVietnamese(text: string): string {
   if (!text) return '';
   return text
@@ -65,6 +63,9 @@ export async function exportPosterToPng(
 ): Promise<Blob> {
   const scale = options?.scale ?? 2;
   const backgroundColor = options?.backgroundColor ?? '#0c0a09';
+
+  const html2canvasModule = await import('html2canvas');
+  const html2canvas = html2canvasModule.default || html2canvasModule;
 
   const canvas = await html2canvas(element, {
     scale,

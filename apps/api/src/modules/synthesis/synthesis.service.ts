@@ -8,16 +8,45 @@ import { ChartsRepository } from '../../database/repositories/charts.repository'
 import { AiFeatureExecutionOrchestrator } from '../../providers/ai/ai-feature-execution.orchestrator';
 import { buildSynthesisPrompt, calculateQuickLifePath } from './synthesis-prompt.builder';
 
+interface SynthesisCacheEntry {
+  response: AstrologicalSynthesisResponse;
+  expiresAt: number;
+}
+
+const MAX_SYNTHESIS_CACHE_ENTRIES = 200;
+const SYNTHESIS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 giờ
+
 @Injectable()
 export class SynthesisService {
   private readonly logger = new Logger(SynthesisService.name);
-  // In-memory cache cho synthesis theo chartId để tránh tính toán lại
-  private readonly synthesisCache = new Map<string, AstrologicalSynthesisResponse>();
+  // In-memory bounded cache với TTL cho synthesis theo chartId
+  private readonly synthesisCache = new Map<string, SynthesisCacheEntry>();
 
   constructor(
     private readonly chartsRepository: ChartsRepository,
     private readonly aiOrchestrator: AiFeatureExecutionOrchestrator,
   ) {}
+
+  private getFromCache(chartId: string): AstrologicalSynthesisResponse | null {
+    const entry = this.synthesisCache.get(chartId);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      this.synthesisCache.delete(chartId);
+      return null;
+    }
+    return { ...entry.response, metadata: { ...entry.response.metadata, isCached: true } };
+  }
+
+  private setToCache(chartId: string, response: AstrologicalSynthesisResponse): void {
+    if (this.synthesisCache.size >= MAX_SYNTHESIS_CACHE_ENTRIES) {
+      const oldestKey = this.synthesisCache.keys().next().value;
+      if (oldestKey) this.synthesisCache.delete(oldestKey);
+    }
+    this.synthesisCache.set(chartId, {
+      response,
+      expiresAt: Date.now() + SYNTHESIS_CACHE_TTL_MS,
+    });
+  }
 
   /**
    * Lấy kết quả luận giải tổng hợp đã có sẵn (hoặc null nếu chưa tạo)
@@ -26,9 +55,9 @@ export class SynthesisService {
     chartId: string,
     userId: string,
   ): Promise<AstrologicalSynthesisResponse | null> {
-    const cached = this.synthesisCache.get(chartId);
+    const cached = this.getFromCache(chartId);
     if (cached) {
-      return { ...cached, metadata: { ...cached.metadata, isCached: true } };
+      return cached;
     }
 
     // Kiểm tra lá số
@@ -52,9 +81,9 @@ export class SynthesisService {
     userId: string,
   ): Promise<AstrologicalSynthesisResponse> {
     // 1. Kiểm tra cache trước để bảo vệ quyền lợi XU của người dùng
-    const cached = this.synthesisCache.get(request.chartId);
+    const cached = this.getFromCache(request.chartId);
     if (cached) {
-      return { ...cached, metadata: { ...cached.metadata, isCached: true } };
+      return cached;
     }
 
     // 2. Tìm snapshot lá số
@@ -101,7 +130,7 @@ export class SynthesisService {
     const result = this.parseOrFallback(aiRawText, request, snapshot);
 
     // 6. Lưu vào cache
-    this.synthesisCache.set(request.chartId, result);
+    this.setToCache(request.chartId, result);
 
     return result;
   }

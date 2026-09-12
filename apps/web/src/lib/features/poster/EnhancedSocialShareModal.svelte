@@ -131,7 +131,16 @@
   }
 </script>
 
-<div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="social-share-title"
+  tabindex="-1"
+  onkeydown={(e) => {
+    if (e.key === 'Escape') onClose();
+  }}
+>
   <!-- Card Modal -->
   <div class="relative w-full max-w-2xl max-h-[92vh] flex flex-col rounded-2xl bg-stone-950 border border-amber-500/30 shadow-2xl shadow-amber-950/40 text-stone-100 overflow-hidden">
     <!-- Header -->
@@ -141,7 +150,7 @@
           <Sparkles size={18} />
         </div>
         <div>
-          <h3 class="font-serif text-lg font-bold text-amber-200 tracking-wide">
+          <h3 id="social-share-title" class="font-serif text-lg font-bold text-amber-200 tracking-wide">
             Chia Sẻ Hoàng Triều • Lan Tỏa Vận Số
           </h3>
           <p class="text-xs text-stone-400">Tự động gắn mã giới thiệu nhận hoa hồng XU</p>
@@ -241,24 +250,28 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           <button
             onclick={handleShareFacebook}
+            aria-label="Chia sẻ lên Facebook"
             class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#1877F2]/15 hover:bg-[#1877F2]/25 border border-[#1877F2]/40 text-[#1877F2] font-semibold text-xs transition-colors"
           >
             <span class="font-bold">f</span> Facebook
           </button>
           <button
             onclick={handleShareZalo}
+            aria-label="Chia sẻ lên Zalo"
             class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#0068FF]/15 hover:bg-[#0068FF]/25 border border-[#0068FF]/40 text-[#0068FF] font-semibold text-xs transition-colors"
           >
             <span class="font-bold">Z</span> Zalo
           </button>
           <button
             onclick={handleShareTelegram}
+            aria-label="Chia sẻ lên Telegram"
             class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#229ED9]/15 hover:bg-[#229ED9]/25 border border-[#229ED9]/40 text-[#229ED9] font-semibold text-xs transition-colors"
           >
             <span class="font-bold">✈</span> Telegram
           </button>
           <button
             onclick={handleNativeShare}
+            aria-label="Mở tùy chọn chia sẻ khác hoặc Web Share"
             class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-purple-300 font-semibold text-xs transition-colors"
           >
             <Share2 size={14} /> Khác

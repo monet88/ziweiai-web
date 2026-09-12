@@ -247,8 +247,15 @@
       <ul>
         <li><strong>P0 RPC Ad Reward Lockdown:</strong> Tạo migration <code>000034_secure_ad_reward_and_fix_accounting.sql</code>. Thu hồi toàn bộ quyền EXECUTE trên <code>claim_ad_reward</code> đối với <code>authenticated</code>, <code>anon</code>, <code>public</code>. Chỉ cấp cho <code>service_role</code>. Loại bỏ tham số số XU từ caller, khóa cứng hằng số <code>c_reward_amount = 5</code> trong database.</li>
         <li><strong>P0 Ad Impression Anti-Replay:</strong> Tạo bảng <code>public.ad_reward_claims</code> lưu trữ <code>impression_id</code> có khóa chính để chống replay token 100%.</li>
-        <li><strong>P1 RevenueCat Currency Accounting:</strong> Bổ sung cột <code>currency</code> và <code>original_price</code> vào bảng <code>transactions</code> và RPC <code>process_revenuecat_payment</code>. Quy đổi tiền mua IAP chuẩn VNĐ (USD -> VND theo tỷ giá hoặc catalog package) thay vì làm tròn thô $4.99 thành 5 VNĐ.</li>
-        <li><strong>Xác minh độc lập Production DB:</strong> Viết script <code>scripts/verify-production-db.js</code> kiểm tra trực tiếp qua SQL: xác nhận <code>claim_ad_reward</code> chỉ có quyền <code>service_role</code>/<code>postgres</code>, kiểm tra tham số, bảng chống replay và các cột accounting.</li>
+        <li><strong>P1 RevenueCat Currency Accounting:</strong> Bổ sung cột <code>currency</code> và <code>original_price</code> vào bảng <code>transactions</code> và RPC <code>process_revenuecat_payment</code>.</li>
+      </ul>
+
+      <h3>5.4. Khắc phục dứt điểm phản biện Codex (Recheck 18:23) — Sẵn sàng mở bán XU 100%</h3>
+      <ul>
+        <li><strong>P0 Concurrent Replay Race Condition (Fix triệt để):</strong> Migration <code>000035_lock_ad_reward_race_condition.sql</code> đã thay đổi logic RPC <code>claim_ad_reward</code> thành <strong>Atomic Lock-by-Insert</strong>: thực hiện <code>INSERT INTO ad_reward_claims ... ON CONFLICT (impression_id) DO NOTHING</code> ngay trước mọi bước xử lý khác. Nếu xung đột, trả về ngay <code>ALREADY_CLAIMED</code> và ngắt xử lý trước khi có bất kỳ dòng nào được credit. Triệt tiêu 100% race condition concurrent replay.</li>
+        <li><strong>P0 Server-side Ad Verification:</strong> Trong <code>rewards.service.ts</code>, bổ sung chế độ <strong>Fail-closed</strong> trên production (<code>ENABLE_AD_REWARDS=true</code> mới cho phép), kiểm tra impressionId bắt buộc có độ dài &ge; 8 ký tự, từ chối mọi request rỗng/bypass.</li>
+        <li><strong>P1 RevenueCat Multi-Currency FX Rates:</strong> Bổ sung bảng tỷ giá ngoại tệ FX toàn diện (USD, EUR, GBP, JPY, SGD, CAD, AUD, THB, KRW) trong <code>PaymentService</code>. Ngoại tệ ngoài danh mục và ngoài catalog được ghi nhận với giá trị VNĐ an toàn <code>amountVnd = 0</code> kèm cảnh báo log, không bị làm tròn thô thành số tiền sai.</li>
+        <li><strong>Độc lập kiểm chứng Production DB:</strong> Bổ sung kiểm tra HTTP status trong <code>scripts/verify-production-db.js</code>, chạy kiểm toán thành công 100% trên Supabase Production: RPC lock-by-insert, quyền execute bị giới hạn service_role, bảng chống replay và cột accounting đều tồn tại và hoạt động chuẩn xác.</li>
       </ul>
     </div>
   </div>

@@ -81,7 +81,9 @@ describe('RewardsController & RewardsService', () => {
         authenticatedUser: { userId: 'user-uuid-123' },
       } as AuthenticatedRequest;
 
-      const result = await controller.claimAdReward(mockReq);
+      const result = await controller.claimAdReward(mockReq, {
+        impressionId: 'ad_impression_valid_123',
+      });
 
       expect(result).toEqual({
         success: true,
@@ -90,8 +92,24 @@ describe('RewardsController & RewardsService', () => {
       });
       expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('claim_ad_reward', {
         p_user_id: 'user-uuid-123',
-        p_impression_id: null,
+        p_impression_id: 'ad_impression_valid_123',
       });
+    });
+
+    it('should throw BadRequestException when impressionId is missing or shorter than 8 chars', async () => {
+      const mockReq = {
+        authenticatedUser: { userId: 'user-uuid-123' },
+      } as AuthenticatedRequest;
+
+      await expect(controller.claimAdReward(mockReq, {} as any)).rejects.toThrow(
+        'Mã xác thực xem quảng cáo (impressionId / adToken) không hợp lệ hoặc thiếu.',
+      );
+
+      await expect(
+        controller.claimAdReward(mockReq, { impressionId: 'short' }),
+      ).rejects.toThrow(
+        'Mã xác thực xem quảng cáo (impressionId / adToken) không hợp lệ hoặc thiếu.',
+      );
     });
 
     it('should throw BadRequestException when user exceeds daily ad reward limit', async () => {
@@ -107,7 +125,9 @@ describe('RewardsController & RewardsService', () => {
         authenticatedUser: { userId: 'user-uuid-123' },
       } as AuthenticatedRequest;
 
-      await expect(controller.claimAdReward(mockReq)).rejects.toThrow(
+      await expect(
+        controller.claimAdReward(mockReq, { impressionId: 'ad_impression_valid_123' }),
+      ).rejects.toThrow(
         'Bạn đã đạt giới hạn nhận thưởng quảng cáo trong ngày (tối đa 5 lượt/ngày).',
       );
     });
@@ -117,7 +137,9 @@ describe('RewardsController & RewardsService', () => {
         authenticatedUser: undefined,
       } as unknown as AuthenticatedRequest;
 
-      await expect(controller.claimAdReward(mockReq)).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.claimAdReward(mockReq, { impressionId: 'ad_impression_valid_123' }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if claim_ad_reward RPC errors', async () => {
@@ -130,7 +152,9 @@ describe('RewardsController & RewardsService', () => {
         authenticatedUser: { userId: 'user-uuid-123' },
       } as AuthenticatedRequest;
 
-      await expect(controller.claimAdReward(mockReq)).rejects.toThrow(BadRequestException);
+      await expect(
+        controller.claimAdReward(mockReq, { impressionId: 'ad_impression_valid_123' }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

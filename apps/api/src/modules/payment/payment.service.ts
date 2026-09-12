@@ -199,12 +199,25 @@ export class PaymentService {
         2000: 1500000,
       };
 
+      const FX_RATES_TO_VND: Record<string, number> = {
+        USD: 25400,
+        EUR: 27500,
+        GBP: 32200,
+        JPY: 170,
+        SGD: 19200,
+        CAD: 18600,
+        AUD: 16800,
+        THB: 740,
+        KRW: 19,
+      };
+
       if (packagePriceMap[xuAdded]) {
         amountVnd = packagePriceMap[xuAdded];
-      } else if (currency === 'USD') {
-        amountVnd = Math.round(originalPrice * 25400); // Tỷ giá quy đổi chuẩn USD/VND
+      } else if (FX_RATES_TO_VND[currency]) {
+        amountVnd = Math.round(originalPrice * FX_RATES_TO_VND[currency]);
       } else {
-        amountVnd = Math.round(originalPrice);
+        this.logger.warn(`Unmapped currency ${currency} for RevenueCat payment. Setting amount_vnd to 0.`);
+        amountVnd = 0; // Tuyệt đối không làm tròn ngoại tệ lạ thành VNĐ
       }
     }
 

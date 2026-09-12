@@ -78,14 +78,21 @@ export class RewardsService {
   }
 
   async claimAdReward(userId: string, adToken?: string, impressionId?: string) {
-    const effectiveImpressionId = impressionId || adToken || null;
-
-    // 1. Kiểm tra adToken/impressionId cơ bản (proof from client / ad network)
-    if (process.env.NODE_ENV === 'production' && !effectiveImpressionId && process.env.REQUIRE_AD_PROOF === 'true') {
-      throw new BadRequestException('Mã xác thực xem quảng cáo (adToken/impressionId) không hợp lệ hoặc thiếu.');
+    // 1. Kiểm tra cờ kích hoạt tính năng: Fail-closed an toàn nếu chưa có Ad Network SSV production
+    if (process.env.ENABLE_AD_REWARDS !== 'true' && process.env.NODE_ENV === 'production') {
+      throw new BadRequestException(
+        'Tính năng nhận XU qua quảng cáo đang được nâng cấp Server-Side Verification (AdMob SSV). Vui lòng điểm danh hằng ngày hoặc nạp XU qua VietQR.',
+      );
     }
 
-    // 2. Gọi RPC atomic claim_ad_reward (service_role only, hardcoded 5 XU)
+    const effectiveImpressionId = (impressionId || adToken || '').trim();
+
+    // 2. Bắt buộc có impressionId hợp lệ (không chấp nhận rỗng hoặc bypass)
+    if (!effectiveImpressionId || effectiveImpressionId.length < 8) {
+      throw new BadRequestException('Mã xác thực xem quảng cáo (impressionId / adToken) không hợp lệ hoặc thiếu.');
+    }
+
+    // 3. Gọi RPC atomic claim_ad_reward (service_role only, hardcoded 5 XU, atomic lock-by-insert)
     const { data: rpcResult, error: rpcError } = await this.client.rpc('claim_ad_reward', {
       p_user_id: userId,
       p_impression_id: effectiveImpressionId,

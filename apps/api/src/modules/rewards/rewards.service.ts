@@ -7,6 +7,8 @@ import { WalletEngineService } from '../wallet/wallet-engine.service';
 import { sanitizeReferralCode } from '../share/append-referral-query';
 import { apiEnv } from '../../config/env';
 
+import { AdMobVerifierService } from './admob-verifier.service';
+
 export const DAILY_REFERRAL_LIMIT = 5; // Tối đa 5 lượt thưởng ref / ngày = 50 XU/ngày cho 1 tài khoản giới thiệu
 
 @Injectable()
@@ -17,6 +19,7 @@ export class RewardsService {
     @Inject(SUPABASE_CLIENT) private readonly client: SupabaseClient,
     private readonly profilesRepository: ProfilesRepository,
     private readonly walletEngineService: WalletEngineService,
+    private readonly admobVerifierService: AdMobVerifierService,
   ) {}
 
   async dailyCheckin(userId: string, referralCode?: string) {
@@ -107,6 +110,61 @@ export class RewardsService {
       throw new BadRequestException(rpcResult.message || 'Không thể nhận thưởng quảng cáo lúc này.');
     }
 
+    return {
+      success: true,
+      xu_added: rpcResult.xu_added,
+      new_balance: rpcResult.new_balance,
+    };
+  }
+
+  /**
+   * Xử lý callback Server-Side Verification (AdMob SSV) trực tiếp từ máy chủ Google
+   */
+  async handleAdMobSsv(rawQueryString: string, queryParams: Record<string, any>) {
+    const verification = await this.admobVerifierService.verifySsvCallback(
+      rawQueryString,
+      queryParams,
+    );
+
+    if (!verification.isValid) {
+      this.logger.warn(`AdMob SSV verification rejected: ${verification.error}`);
+      throw new BadRequestException(verification.error || 'Chữ ký số AdMob SSV không hợp lệ');
+    }
+
+    const userId = verification.userId;
+    const impressionId = verification.transactionId;
+
+    if (!userId) {
+      this.logger.warn('AdMob SSV callback missing custom_data (userId)');
+      throw new BadRequestException('custom_data (userId) không tìm thấy trong callback');
+    }
+
+    if (!impressionId || impressionId.length < 8) {
+      this.logger.warn(`AdMob SSV callback invalid transaction_id: ${impressionId}`);
+      throw new BadRequestException('transaction_id không hợp lệ');
+    }
+
+    // Gọi RPC claim_ad_reward nguyên tử với Pessimistic Row Lock
+    const { data: rpcResult, error: rpcError } = await this.client.rpc('claim_ad_reward', {
+      p_user_id: userId,
+      p_impression_id: impressionId,
+    });
+
+    if (rpcError || !rpcResult) {
+      this.logger.error(`claim_ad_reward RPC failed for user ${userId} via AdMob SSV`, rpcError);
+      throw new BadRequestException('Lỗi hệ thống khi xử lý nhận thưởng quảng cáo qua SSV.');
+    }
+
+    if (!rpcResult.success) {
+      this.logger.warn(`AdMob SSV reward rejected for user ${userId}: ${rpcResult.message}`);
+      return {
+        success: false,
+        status: rpcResult.status,
+        message: rpcResult.message,
+      };
+    }
+
+    this.logger.log(`AdMob SSV verified and credited 5 XU to user ${userId} (impression: ${impressionId})`);
     return {
       success: true,
       xu_added: rpcResult.xu_added,

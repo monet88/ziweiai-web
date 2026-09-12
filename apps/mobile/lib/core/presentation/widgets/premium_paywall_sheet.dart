@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../features/wallet/providers/wallet_provider.dart';
 import '../../../features/subscription/providers/subscription_provider.dart';
 import '../../../core/services/admob_service.dart';
@@ -38,8 +39,10 @@ class _PremiumPaywallSheetState extends ConsumerState<PremiumPaywallSheet> {
     try {
       final admobService = ref.read(admobServiceProvider);
       final apiClient = ref.read(apiClientProvider);
+      final currentUserId = Supabase.instance.client.auth.currentUser?.id;
 
       await admobService.showRewardedAd(
+        userId: currentUserId,
         onUserEarnedReward: (reward) async {
           debugPrint('[PremiumPaywallSheet] User earned reward, claiming...');
           try {

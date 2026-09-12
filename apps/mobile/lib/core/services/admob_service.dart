@@ -71,6 +71,7 @@ class AdMobService {
 
   /// Show Rewarded Video Ad
   Future<bool> showRewardedAd({
+    String? userId,
     required Function(RewardItem reward) onUserEarnedReward,
     VoidCallback? onAdDismissed,
     Function(String error)? onAdFailedToShow,
@@ -80,6 +81,7 @@ class AdMobService {
       await loadRewardedAd(
         onLoaded: () {
           showRewardedAd(
+            userId: userId,
             onUserEarnedReward: onUserEarnedReward,
             onAdDismissed: onAdDismissed,
             onAdFailedToShow: onAdFailedToShow,
@@ -88,6 +90,13 @@ class AdMobService {
         onFailed: (err) => onAdFailedToShow?.call(err),
       );
       return false;
+    }
+
+    if (userId != null && userId.isNotEmpty) {
+      debugPrint('[AdMob] Setting ServerSideVerificationOptions with customData: $userId');
+      _rewardedAd!.setServerSideOptions(
+        ServerSideVerificationOptions(customData: userId),
+      );
     }
 
     bool earnedReward = false;

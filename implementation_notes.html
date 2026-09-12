@@ -262,6 +262,13 @@
         <li><strong>P1 Chuẩn hóa Tỷ Giá Kế Toán FX:</strong> Bổ sung metadata nguồn tham chiếu Vietcombank niêm yết chính thức, định danh phiên bản <code>Version: FX_V1_2026_09_12</code>, timestamp <code>2026-09-12T00:00:00Z</code> trong <code>PaymentService</code>. Đồng bộ tuyệt đối giữa code và spec (<code>GBP: 32,200</code> và <code>THB: 740</code>).</li>
         <li><strong>Đồng bộ Client Mobile Flutter:</strong> Cập nhật hàm <code>claimAdReward({String? impressionId, String? adToken})</code> trong <code>api_client.dart</code> của Flutter, hỗ trợ gửi payload lên backend, tương thích ngược 100% và sẵn sàng cho kiến trúc AdMob SSV.</li>
       </ul>
+      <h3>5.6. Vận hành Thương Mại Bán XU, AdMob SSV Engine & Mobile CI/CD (Sprint 86)</h3>
+      <ul>
+        <li><strong>Kiểm toán Kế toán VietQR & SePay (Phase 1):</strong> Viết script <code>scripts/reconcile-sepay-transactions.js</code> đối soát tự động doanh thu ngân hàng, phân loại chính xác giao dịch matched/unmatched, bảo đảm an ninh tài chính cho giai đoạn mở bán XU thương mại.</li>
+        <li><strong>Google AdMob SSV Verifier Engine (Phase 2):</strong> Triển khai <code>AdMobVerifierService</code> và endpoint <code>GET /api/rewards/admob-ssv</code> xác thực chữ ký số <strong>ECDSA SHA-256</strong> bằng khóa công khai chính thức từ Google (<code>https://www.gstatic.com/admob/reward/verifier-keys.json</code>) kèm cơ chế cache 24h và auto-refresh khi Google xoay khóa. Khớp lệnh an toàn với RPC <code>claim_ad_reward</code> chống replay và race condition.</li>
+        <li><strong>Tích hợp Client Mobile Flutter SSV (Phase 3):</strong> Cập nhật <code>AdMobService.showRewardedAd</code> hỗ trợ cấu hình <code>ServerSideVerificationOptions(customData: userId)</code> trên <code>wallet_screen.dart</code> và <code>premium_paywall_sheet.dart</code>, cho phép Google AdMob Server truyền định danh tài khoản an toàn về backend.</li>
+        <li><strong>Thiết lập CI/CD Kho Mobile & Dọn dẹp Monorepo (Phase 4):</strong> Tạo workflow GitHub Actions <code>.github/workflows/flutter-ci.yml</code> cho repo <code>ziweiai-mobile</code> tự động kiểm tra cú pháp, chạy 148 tests và đóng gói APK release; dọn dẹp các file scratch tạm thời trong monorepo.</li>
+      </ul>
     </div>
   </div>
 </body>

@@ -62,10 +62,22 @@ describe('RewardsController & RewardsService', () => {
       verifyToken: vi.fn().mockResolvedValue({ success: true }),
     };
 
+    const mockAdMobVerifierService = {
+      verifySsvCallback: vi.fn().mockResolvedValue({
+        isValid: true,
+        userId: 'user-uuid-123',
+        transactionId: 'ad_impression_ssv_999',
+        rewardAmount: 5,
+        rewardItem: 'XU',
+      }),
+      getGooglePublicKeys: vi.fn(),
+    };
+
     service = new RewardsService(
       mockSupabaseClient,
       mockProfilesRepo,
       mockWalletEngineService,
+      mockAdMobVerifierService as any,
     );
     controller = new RewardsController(service, mockTurnstileService as any);
   });
@@ -381,6 +393,61 @@ describe('RewardsController & RewardsService', () => {
       } as any;
 
       await expect(controller.getPartnerHub(mockReq)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('handleAdMobSsv', () => {
+    it('should successfully verify AdMob SSV and credit reward', async () => {
+      mockSupabaseClient.rpc.mockResolvedValueOnce({
+        data: { success: true, xu_added: 5, new_balance: 50 },
+        error: null,
+      });
+
+      const mockReq = {
+        url: '/rewards/admob-ssv?custom_data=user-uuid-123&transaction_id=tx_12345678&signature=sig&key_id=123',
+        originalUrl: '/rewards/admob-ssv?custom_data=user-uuid-123&transaction_id=tx_12345678&signature=sig&key_id=123',
+        query: {
+          custom_data: 'user-uuid-123',
+          transaction_id: 'tx_12345678',
+          signature: 'sig',
+          key_id: '123',
+        },
+      } as any;
+
+      const result = await controller.handleAdMobSsv(mockReq);
+
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(result.xu_added).toBe(5);
+      expect(result.new_balance).toBe(50);
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('claim_ad_reward', {
+        p_user_id: 'user-uuid-123',
+        p_impression_id: 'ad_impression_ssv_999',
+      });
+    });
+
+    it('should throw BadRequestException when signature verification fails', async () => {
+      const failingVerifierService = {
+        verifySsvCallback: vi.fn().mockResolvedValue({
+          isValid: false,
+          error: 'Chữ ký số ECDSA không hợp lệ',
+        }),
+      };
+
+      const customService = new RewardsService(
+        mockSupabaseClient,
+        mockProfilesRepo,
+        mockWalletEngineService,
+        failingVerifierService as any,
+      );
+      const customController = new RewardsController(customService, {} as any);
+
+      const mockReq = {
+        url: '/rewards/admob-ssv?custom_data=bad&signature=invalid',
+        query: { custom_data: 'bad', signature: 'invalid' },
+      } as any;
+
+      await expect(customController.handleAdMobSsv(mockReq)).rejects.toThrow(BadRequestException);
     });
   });
 });

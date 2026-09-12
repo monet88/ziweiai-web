@@ -7,11 +7,13 @@ import { WalletModule } from '../wallet/wallet.module';
 
 import { TurnstileModule } from '../../common/turnstile/turnstile.module';
 
+import { AdMobVerifierService } from './admob-verifier.service';
+
 @Module({
   imports: [DatabaseModule, AuthModule, WalletModule, TurnstileModule],
   controllers: [RewardsController],
-  providers: [RewardsService],
-  exports: [RewardsService],
+  providers: [RewardsService, AdMobVerifierService],
+  exports: [RewardsService, AdMobVerifierService],
 })
 export class RewardsModule {}
 

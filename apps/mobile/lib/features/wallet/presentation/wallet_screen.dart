@@ -195,8 +195,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen>
     try {
       final admobService = ref.read(admobServiceProvider);
       final apiClient = ref.read(apiClientProvider);
+      final currentUserId = Supabase.instance.client.auth.currentUser?.id;
 
       await admobService.showRewardedAd(
+        userId: currentUserId,
         onUserEarnedReward: (reward) async {
           debugPrint('[WalletScreen] User watched ad, claiming backend reward...');
           try {

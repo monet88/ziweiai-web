@@ -1,8 +1,10 @@
 import { Controller, Post, Get, UseGuards, Req, Body, BadRequestException } from '@nestjs/common';
+import type { Request } from 'express';
 import { RewardsService } from './rewards.service';
 import { SupabaseAuthGuard } from '../auth/guards/supabase-auth.guard';
 import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
 import { TurnstileService } from '../../common/turnstile/turnstile.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('rewards')
 @UseGuards(SupabaseAuthGuard)
@@ -11,6 +13,19 @@ export class RewardsController {
     private readonly rewardsService: RewardsService,
     private readonly turnstileService: TurnstileService,
   ) {}
+
+  /**
+   * Google AdMob Server-Side Verification (SSV) Callback
+   * Endpoint tiếp nhận request GET trực tiếp từ máy chủ Google AdMob
+   */
+  @Public()
+  @Get('admob-ssv')
+  async handleAdMobSsv(@Req() req: Request) {
+    const rawUrl = req.originalUrl || req.url || '';
+    const rawQuery = rawUrl.includes('?') ? rawUrl.split('?')[1] : '';
+    const queryParams = (req.query || {}) as Record<string, any>;
+    return this.rewardsService.handleAdMobSsv(rawQuery, queryParams);
+  }
 
   @Post('checkin')
   async checkin(

@@ -44,7 +44,8 @@
 
   const selectedBank: SepayBankAccount = getDefaultBank(
     env.PUBLIC_SEPAY_ACCOUNT,
-    env.PUBLIC_SEPAY_BANK
+    env.PUBLIC_SEPAY_BANK,
+    env.PUBLIC_SEPAY_ACCOUNT_NAME
   );
 
   const packages = XU_PACKAGES;

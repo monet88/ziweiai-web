@@ -30,17 +30,27 @@ export const SEPAY_BANK_ACB: SepayBankAccount = {
 
 export const SEPAY_BANKS: SepayBankAccount[] = [SEPAY_BANK_TPBANK, SEPAY_BANK_ACB];
 
+export const LEGACY_TEST_ACCOUNT = '6384251098';
+
 export function getDefaultBank(
   accountOverride?: string,
   bankOverride?: string,
   accountNameOverride?: string
 ): SepayBankAccount {
   const base = SEPAY_BANK_TPBANK;
+
+  // Sanitization guard: If accountOverride is the legacy testmode account '6384251098',
+  // or empty/undefined, always fallback to canonical TPBank account 36889338888.
+  const isLegacyTestAccount = accountOverride === LEGACY_TEST_ACCOUNT;
+  const safeAccount = (accountOverride && !isLegacyTestAccount) ? accountOverride : base.accountNo;
+  const safeBank = bankOverride || base.bankCode;
+  const safeName = accountNameOverride || base.accountName;
+
   return {
     ...base,
-    accountNo: accountOverride || base.accountNo,
-    bankCode: bankOverride || base.bankCode,
-    accountName: accountNameOverride || base.accountName
+    accountNo: safeAccount,
+    bankCode: safeBank,
+    accountName: safeName
   };
 }
 

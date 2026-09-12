@@ -38,4 +38,11 @@ describe('bank-config', () => {
     expect(custom.bankCode).toBe('ACB');
     expect(custom.accountName).toBe('TEST OVERRIDE');
   });
+
+  it('rejects legacy ACB test account 6384251098 and falls back to TPBank official account', () => {
+    const guarded = getDefaultBank('6384251098', 'TPBank', 'LE VAN TINH');
+    expect(guarded.accountNo).toBe('36889338888');
+    expect(guarded.bankCode).toBe('TPBank');
+    expect(guarded.accountName).toBe('LE VAN TINH');
+  });
 });

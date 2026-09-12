@@ -185,7 +185,9 @@
       <h2>4. Maintenance & Operational Notes</h2>
       <ul>
         <li><strong>Cổng nhận Webhook SePay Live:</strong> <code>https://tuvitoantap.online/api/webhooks/sepay</code></li>
-        <li><strong>Tài khoản ngân hàng đối soát:</strong> ACB <code>6384251098</code></li>
+        <li><strong>Tài khoản ngân hàng thụ hưởng chính thức:</strong> TPBank <code>36889338888</code> (Chủ tài khoản: <code>LE VAN TINH</code>)</li>
+        <li><strong>Bảo mật & Tương thích:</strong> Đã triển khai Sanitization Guard chặn hoàn toàn STK testmode cũ (<code>6384251098</code>) phòng trường hợp browser client hoặc CDN cache cũ, tự động ép về tài khoản chính thức TPBank.</li>
+        <li><strong>Xác thực Webhook:</strong> Hỗ trợ chữ ký số chuẩn HMAC-SHA256 (<code>x-sepay-signature</code> & <code>x-sepay-timestamp</code> với dung sai ±5 phút chống Replay Attack) cùng fallback Authorization Header.</li>
         <li><strong>Quy tắc cú pháp chuyển khoản:</strong> <code>TVTT &lt;USER_ID_PREFIX&gt;</code> (ví dụ: <code>TVTT a1b2c3d4</code>)</li>
       </ul>
     </div>

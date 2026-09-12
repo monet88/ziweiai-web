@@ -7,7 +7,7 @@ import type { AuthenticatedUser } from '@ziweiai/contracts';
 
 describe('AdminController', () => {
   let controller: AdminController;
-  let service: jest.Mocked<AdminService>;
+  let service: any;
 
   beforeEach(async () => {
     const mockService = {
@@ -53,7 +53,6 @@ describe('AdminController', () => {
     const mockAdmin: AuthenticatedUser = {
       userId: 'admin-id',
       email: 'admin@ziweiai.com',
-      isAnonymous: false,
     };
     const res = await controller.topupUser('u_123', { amount: 50 }, mockAdmin);
     expect(res).toEqual({ success: true, userId: 'u_123', amount: 50 });
@@ -89,7 +88,6 @@ describe('AdminController', () => {
     const mockAdmin: AuthenticatedUser = {
       userId: 'admin-id',
       email: 'admin@ziweiai.com',
-      isAnonymous: false,
     };
     const res = await controller.banUser('u_123', mockAdmin);
     expect(res).toEqual({ success: true });

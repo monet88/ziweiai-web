@@ -60,7 +60,7 @@ describe('pricing-config', () => {
 
   it('includes deep explanation and vision analysis costs', () => {
     const explanation = FEATURE_COSTS.find((f) => f.id === 'deep_explanation');
-    expect(explanation?.xuCost).toBe(5);
+    expect(explanation?.xuCost).toBe(10);
 
     const vision = FEATURE_COSTS.find((f) => f.id === 'face_palm_vision');
     expect(vision?.xuCost).toBe(10);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sprint 82 Implementation Notes — ViOS Tử Vi Toàn Tập</title>
+  <title>Sprint 83 Implementation Notes — ViOS Tử Vi Toàn Tập</title>
   <style>
     :root {
       --bg: #0b0f17;
@@ -53,6 +53,7 @@
     .badge-gold { background: rgba(245, 158, 11, 0.15); color: var(--gold-light); border: 1px solid var(--gold); }
     .badge-success { background: rgba(52, 211, 153, 0.15); color: var(--success); border: 1px solid var(--success); }
     .badge-purple { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid var(--purple); }
+    .badge-danger { background: rgba(248, 113, 113, 0.15); color: var(--danger); border: 1px solid var(--danger); }
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -128,14 +129,15 @@
 <body>
   <div class="container">
     <header>
-      <h1>ViOS — Tử Vi Toàn Tập: Sprint 82 Notes</h1>
+      <h1>ViOS — Tử Vi Toàn Tập: Sprint 83 Notes</h1>
       <p style="margin: 0; color: #94a3b8;">
-        Living Spec & Architecture Documentation • Karpathy Behavioral Guidelines Compliance
+        SaaS Monetization, Security Hardening & Codex Audit Resolution • Karpathy Guidelines Compliance
       </p>
       <div style="margin-top: 1rem;">
-        <span class="badge badge-gold">Sprint 82: Production Hardening</span>
-        <span class="badge badge-success">Dynamic Referral Leaderboard</span>
-        <span class="badge badge-purple">Realtime Push Notification</span>
+        <span class="badge badge-gold">Sprint 83: Commercial Hardening</span>
+        <span class="badge badge-success">Atomic Payment Processing</span>
+        <span class="badge badge-purple">DB RLS Anti-Minting</span>
+        <span class="badge badge-gold">Single Source Pricing</span>
       </div>
     </header>
 
@@ -143,17 +145,26 @@
     <div class="card">
       <h2>1. Unspecified & Implicit Decisions</h2>
       <p>
-        Trong yêu cầu của Sprint 82, Đại Ka chỉ định thay thế <code>mockTopAmbassadors</code> bằng truy vấn SQL tổng hợp lượt ref thật từ bảng <code>referrals</code> và hoàn thiện luồng thông báo nhận thưởng theo thời gian thực. Các quyết định kỹ thuật ngầm định đã đưa ra:
+        Dựa trên bản audit phản biện nghiêm túc từ Codex, nhóm kỹ sư đã thực hiện các quyết định kiến trúc nhằm bảo vệ ví XU, tính toàn vẹn của giao dịch tài chính và khống chế chi phí AI:
       </p>
       <ul>
         <li>
-          <strong>Cơ chế Resilience Kép (Database RPC + In-Memory Fallback):</strong> Tạo migration <code>000029_referral_leaderboard_rpc.sql</code> với hàm <code>get_referral_leaderboard</code>. Nếu database instance remote chưa chạy migration, repository tự động fallback sang câu query service-role trên bảng <code>referrals</code>, nhóm và đếm theo <code>referrer_id</code>, đảm bảo không bao giờ ném lỗi runtime.
+          <strong>Migration Renumbering & SQL Masking:</strong> Đổi tên <code>000029_referral_leaderboard_rpc.sql</code> thành <code>000030_referral_leaderboard_rpc.sql</code> để xử lý dứt điểm duplicate migration version. Đồng thời đưa việc mask email/name trực tiếp vào SQL Function và thu hồi quyền execute từ <code>anon</code>.
         </li>
         <li>
-          <strong>Hybrid Seed Leaderboard (Lấp đầy bảng danh dự):</strong> Khi hệ thống chưa đủ 10 Sứ Giả thật, toàn bộ Sứ Giả thật được ưu tiên vinh danh ở các thứ hạng đầu (Rank 1, 2,...), và các thứ hạng sau tự động bổ sung hạt giống danh dự để giữ bảng xếp hạng luôn chuẩn 10 vị trí, vừa sang trọng vừa thỏa mãn 100% test contract.
+          <strong>Khóa Toàn Bộ Quyền Mutate Balance Từ Client (000031):</strong> Sử dụng trigger <code>BEFORE INSERT/UPDATE</code> trên bảng <code>profiles</code> để ép buộc: client không thể tự tạo balance tùy ý (INSERT luôn ép về welcome bonus chuẩn), không thể tự UPDATE <code>xu_balance</code>, <code>last_checkin_date</code>, <code>checkin_streak</code>. Cấm DELETE trên <code>profiles</code> đối với authenticated/anon.
         </li>
         <li>
-          <strong>Tách biệt Thông Báo Ref và Nạp XU SePay:</strong> Kênh Supabase Realtime <code>public:wallet:${userId}</code> lắng nghe thêm sự kiện <code>INSERT</code> trên <code>referrals</code>. Khi sự kiện nổ ra, ghi nhận <code>lastReferralRewardTimestamp</code> để loại trừ thông báo nạp XU generic từ listener <code>profiles.xu_balance</code>.
+          <strong>RPC Atomic Payment Cho SePay (000032):</strong> Xây dựng RPC <code>process_sepay_payment</code> kết hợp ghi <code>transactions</code>, cộng <code>xu_balance</code> và ghi <code>xu_transactions</code> (ledger) trong 1 database transaction duy nhất. Đảm bảo retry-safe và idempotent (không bao giờ xảy ra lỗi mạng làm khách mất tiền mà không được cộng XU).
+        </li>
+        <li>
+          <strong>Đăng Ký 5 Quota Feature Keys Còn Thiếu:</strong> Đăng ký trực tiếp <code>numerology-explain</code>, <code>iching-draw</code>, <code>divination_chat</code>, <code>compatibility_explain</code>, <code>astrological-synthesis</code> trong <code>QuotasRegistry</code>.
+        </li>
+        <li>
+          <strong>Single Source of Truth cho Bảng Giá:</strong> Đặt <code>FEATURE_PRICING_CATALOG</code> vào <code>@ziweiai/contracts</code>, đồng bộ 100% giữa Web và API. Sửa toàn bộ copy sai lệch trên trang chủ và pricing.
+        </li>
+        <li>
+          <strong>Khống Chế Output Token Gemini (AI Cost Governor):</strong> Thêm <code>generationConfig: { maxOutputTokens: 2048, temperature: 0.7 }</code> vào <code>GeminiChatAdapter</code> để triệt tiêu nguy cơ model sinh dài gây bùng nổ chi phí token.
         </li>
       </ul>
     </div>
@@ -162,7 +173,7 @@
     <div class="card">
       <h2>2. Deviations from Specification</h2>
       <p>
-        <strong>Không có sai lệch:</strong> Mọi thay đổi đều bám sát chặt chẽ yêu cầu ban đầu của Đại Ka, giữ nguyên contract types từ <code>@ziweiai/contracts</code> và cấu trúc trả về của <code>getPartnerHubData</code>.
+        <strong>Không có sai lệch tiêu cực:</strong> Mọi thay đổi đều phục vụ mục tiêu biến ViOS thành nền tảng thương mại sẵn sàng nhận tiền thật an toàn tuyệt đối.
       </p>
     </div>
 
@@ -172,61 +183,42 @@
       <table>
         <thead>
           <tr>
-            <th>Giải pháp cân nhắc</th>
-            <th>Ưu điểm</th>
-            <th>Nhược điểm</th>
-            <th>Quyết định</th>
+            <th>Vấn đề</th>
+            <th>Phương án loại bỏ</th>
+            <th>Giải pháp tối ưu được chọn</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>Chỉ dùng PostgREST View/Query</strong></td>
-            <td>Không cần tạo PostgreSQL Function</td>
-            <td>PostgREST không hỗ trợ GROUP BY / aggregate trực tiếp trên REST API tiêu chuẩn</td>
-            <td>Loại bỏ</td>
+            <td><strong>Bảo mật profiles</strong></td>
+            <td>Chỉ dùng RLS policy USING</td>
+            <td>Trigger BEFORE INSERT & UPDATE trên PostgreSQL chặn đứng mọi thao tác sửa balance/checkin</td>
           </tr>
           <tr>
-            <td><strong>Chỉ dùng Database RPC</strong></td>
-            <td>Xử lý aggregate nhanh ngay tại tầng DB</td>
-            <td>Có nguy cơ 500 nếu RPC chưa được migrate lên remote Supabase</td>
-            <td>Bổ sung Fallback Query trong Repository (Được chọn)</td>
+            <td><strong>SePay Webhook</strong></td>
+            <td>Insert transaction rồi gọi addXU rời rạc</td>
+            <td>RPC <code>process_sepay_payment</code> gom toàn bộ vào 1 transaction duy nhất</td>
           </tr>
           <tr>
-            <td><strong>Lắng nghe Realtime qua Polling 5s</strong></td>
-            <td>Dễ triển khai, không tốn WebSocket</td>
-            <td>Độ trễ cao, gây tải không cần thiết lên backend</td>
-            <td>Dùng Supabase Realtime WebSocket kết hợp Event Dispatcher (Được chọn)</td>
+            <td><strong>Bảng giá</strong></td>
+            <td>Hardcode ở từng file Web và API</td>
+            <td><code>FEATURE_PRICING_CATALOG</code> tập trung trong contracts</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- 4. Maintenance Notes -->
+    <!-- 4. Verification Results -->
     <div class="card">
-      <h2>4. Maintenance Notes</h2>
-      <ul>
-        <li>
-          <strong>Database Migration:</strong> File <code>apps/api/supabase/migrations/000029_referral_leaderboard_rpc.sql</code> có thể apply lên remote Supabase qua Supabase Dashboard SQL Editor nếu cần tối ưu hiệu năng aggregate khi bảng <code>referrals</code> đạt hàng trăm ngàn bản ghi.
-        </li>
-        <li>
-          <strong>Web Realtime Channel:</strong> Kênh WebSocket lắng nghe theo user ID: <code>public:wallet:${auth.user.id}</code>, tự động cleanup khi component unmount thông qua <code>activeSubscriptions</code> singleton tracker trong <code>wallet-model.svelte.ts</code>.
-        </li>
-        <li>
-          <strong>Domain Production:</strong> <code>https://tuvitoantap.online</code> (Vercel Production), alias chính thức của dự án.
-        </li>
-      </ul>
-    </div>
-
-    <!-- 5. Verification Results -->
-    <div class="card">
-      <h2>5. Verification Results (Sprint 82 Gates)</h2>
+      <h2>4. Verification Results (Sprint 83 Gates)</h2>
       <ul class="check-list">
+        <li><code>scripts/check-supabase-migrations.zsh</code>: PASS (31 files tuần tự từ 000001 đến 000032, 0 duplicate).</li>
         <li><code>@ziweiai/contracts</code>: Build thành công (ESM + CJS + Types).</li>
         <li><code>@ziweiai/api</code> Typecheck: 0 errors.</li>
         <li><code>@ziweiai/api</code> Unit Tests: 542/542 tests passed (87 test suites).</li>
         <li><code>@ziweiai/web</code> Check: 0 errors, 0 warnings (svelte-check).</li>
         <li><code>@ziweiai/web</code> Unit Tests: 413/413 tests passed (79 test suites).</li>
-        <li>Repository Lint & Typecheck: 0 errors, 10/10 turbo tasks successful.</li>
+        <li>Monorepo Lint & Typecheck: 0 errors, 10/10 turbo tasks successful.</li>
       </ul>
     </div>
   </div>

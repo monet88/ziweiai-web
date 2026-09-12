@@ -91,7 +91,29 @@ export class PaymentService {
 
     const userId = matchedUsers[0].user_id;
 
-    // Record transaction
+    // 1. Ưu tiên xử lý atomic qua RPC process_sepay_payment
+    try {
+      const { data: atomicResult, error: rpcError } = await this.client.rpc('process_sepay_payment', {
+        p_sepay_transaction_id: payload.id.toString(),
+        p_owner_user_id: userId,
+        p_amount_vnd: payload.transferAmount,
+        p_xu_added: xuAdded,
+        p_content: payload.content || null,
+      });
+
+      if (!rpcError && atomicResult) {
+        if (atomicResult.status === 'already_processed') {
+          this.logger.log(`Transaction ${payload.id} already processed by atomic RPC. Skipping.`);
+          return;
+        }
+        this.logger.log(`Successfully processed transaction ${payload.id} atomically. Added ${xuAdded} XU to user ${userId}.`);
+        return;
+      }
+    } catch (rpcErr) {
+      this.logger.warn(`Atomic payment RPC failed, using fallback: ${rpcErr}`);
+    }
+
+    // 2. Fallback ghi transaction và cộng XU nếu RPC chưa khả dụng
     const { error: txError } = await this.client
       .from('transactions')
       .insert({

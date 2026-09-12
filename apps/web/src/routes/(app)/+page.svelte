@@ -107,10 +107,10 @@
     {
       route: '/face' as const,
       flag: 'face' as keyof FeaturesResponse,
-      badge: '50 XU • AI VISION SCAN',
+      badge: '10 XU • AI VISION SCAN',
       badgeColor: 'gold',
       tier: 'xu',
-      price: '50 XU',
+      price: '10 XU',
       icon: Eye,
       title: viCopy.dashboard.toolFaceTitle,
       desc: viCopy.dashboard.toolFaceDescription,
@@ -119,10 +119,10 @@
     {
       route: '/palm' as const,
       flag: 'palm' as keyof FeaturesResponse,
-      badge: '50 XU • BIOMETRICS SCAN',
+      badge: '10 XU • BIOMETRICS SCAN',
       badgeColor: 'gold',
       tier: 'xu',
-      price: '50 XU',
+      price: '10 XU',
       icon: Hand,
       title: viCopy.dashboard.toolPalmTitle,
       desc: viCopy.dashboard.toolPalmDescription,
@@ -131,11 +131,11 @@
     {
       route: '/tarot' as const,
       flag: 'tarot' as keyof FeaturesResponse,
-      badge: 'MIỄN PHÍ • 78 LÁ BÀI',
-      badgeColor: 'emerald',
-      tier: 'free',
-      price: 'MIỄN PHÍ',
-      icon: Layers,
+      badge: '3 XU • 78 LÁ BÀI',
+      badgeColor: 'gold',
+      tier: 'xu',
+      price: '3 XU',
+      icon: Sparkles,
       title: viCopy.dashboard.toolTarotTitle,
       desc: viCopy.dashboard.toolTarotDescription,
       highlight: false
@@ -214,18 +214,18 @@
 
 <svelte:head>
   <title>ViOS — Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia</title>
-  <meta name="description" content="ViOS Tử Vi Toàn Tập — Nền tảng thuật số AI hoàng triều đỉnh cao: Lập lá số Tử Vi chính tông, Bát Tự Tứ Trụ, Thần Số Học, Kinh Dịch Lục Hào, Xem Tướng Mặt & Chỉ Tay AI. Trải nghiệm miễn phí 100% & Nhận 50 XU mỗi ngày!" />
+  <meta name="description" content="ViOS Tử Vi Toàn Tập — Nền tảng thuật số AI hoàng triều đỉnh cao: Lập lá số Tử Vi chính tông, Bát Tự Tứ Trụ, Thần Số Học, Kinh Dịch Lục Hào, Xem Tướng Mặt & Chỉ Tay AI. Trải nghiệm miễn phí 100% & Điểm danh nhận thưởng XU mỗi ngày!" />
   <link rel="canonical" href="https://tuvitoantap.online/" />
   
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://tuvitoantap.online/" />
   <meta property="og:title" content="ViOS — Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia" />
-  <meta property="og:description" content="Khám phá vận mệnh cùng ViOS: Lập lá số Tử Vi, Tứ Trụ Bát Tự, Thần Số Học, Kinh Dịch, Nhân Tướng AI. Trải nghiệm miễn phí 100% & Điểm danh nhận 50 XU mỗi ngày!" />
+  <meta property="og:description" content="Khám phá vận mệnh cùng ViOS: Lập lá số Tử Vi, Tứ Trụ Bát Tự, Thần Số Học, Kinh Dịch, Nhân Tướng AI. Trải nghiệm miễn phí 100% & Điểm danh nhận thưởng XU mỗi ngày!" />
   <meta property="og:image" content="https://tuvitoantap.online/og-image.png" />
   
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="ViOS — Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia" />
-  <meta name="twitter:description" content="Khám phá vận mệnh cùng ViOS: Lập lá số Tử Vi, Tứ Trụ Bát Tự, Thần Số Học, Kinh Dịch, Nhân Tướng AI. Trải nghiệm miễn phí 100% & Điểm danh nhận 50 XU mỗi ngày!" />
+  <meta name="twitter:description" content="Khám phá vận mệnh cùng ViOS: Lập lá số Tử Vi, Tứ Trụ Bát Tự, Thần Số Học, Kinh Dịch, Nhân Tướng AI. Trải nghiệm miễn phí 100% & Điểm danh nhận thưởng XU mỗi ngày!" />
   <meta name="twitter:image" content="https://tuvitoantap.online/og-image.png" />
 </svelte:head>
 
@@ -452,7 +452,7 @@
 
         <div class="royal-content">
           <div class="royal-main-text">
-            <h2 class="royal-title">Thiệp Khởi Vận — Điểm Danh Nhận 50 XU Mỗi Ngày</h2>
+            <h2 class="royal-title">Thiệp Khởi Vận — Điểm Danh Nhận Thưởng XU Mỗi Ngày</h2>
             <p class="royal-sub">
               Nạp XU tự động siêu tốc qua VietQR 1-chạm hoặc quét mã thẻ. Tặng ngay <strong>+20% XU</strong> cho lần nạp đầu tiên để mở khóa luận giải chi tiết 12 cung và đại vận 10 năm.
             </p>

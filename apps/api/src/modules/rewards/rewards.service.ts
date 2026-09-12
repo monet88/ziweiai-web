@@ -89,7 +89,12 @@ export class RewardsService {
       .eq('transaction_type', 'ad_reward')
       .gte('created_at', startOfTodayIso);
 
-    if (!countError && typeof count === 'number' && count >= 5) {
+    if (countError) {
+      this.logger.error(`Failed to verify ad reward quota for user ${userId}`, countError);
+      throw new BadRequestException('Không thể xác minh hạn mức thưởng quảng cáo lúc này.');
+    }
+
+    if (typeof count === 'number' && count >= 5) {
       throw new BadRequestException('Bạn đã đạt giới hạn nhận thưởng quảng cáo trong ngày (tối đa 5 lượt/ngày).');
     }
 

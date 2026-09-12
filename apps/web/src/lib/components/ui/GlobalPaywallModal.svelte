@@ -31,7 +31,10 @@
   const auth = getAuthStore();
   const wallet = getWalletStore();
 
-  const selectedBank: SepayBankAccount = getDefaultBank(env.PUBLIC_SEPAY_ACCOUNT);
+  const selectedBank: SepayBankAccount = getDefaultBank(
+    env.PUBLIC_SEPAY_ACCOUNT,
+    env.PUBLIC_SEPAY_BANK
+  );
   const packages = XU_PACKAGES;
 
   // Chọn gói phù hợp với số XU cần (mặc định gói 50k hoặc 100k)

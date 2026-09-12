@@ -14,7 +14,7 @@ async function createServer(): Promise<(req: unknown, res: unknown) => void> {
   // Production Vercel never runs main.ts — init Sentry here or captureException is a no-op sink.
   sentryModule.initSentry(apiEnv.SENTRY_DSN);
 
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
 
   app.useGlobalFilters(new ApiErrorFilter());
   app.enableCors({

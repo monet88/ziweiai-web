@@ -42,7 +42,10 @@
   const auth = getAuthStore();
   const walletModel = getWalletStore();
 
-  const selectedBank: SepayBankAccount = getDefaultBank(env.PUBLIC_SEPAY_ACCOUNT);
+  const selectedBank: SepayBankAccount = getDefaultBank(
+    env.PUBLIC_SEPAY_ACCOUNT,
+    env.PUBLIC_SEPAY_BANK
+  );
 
   const packages = XU_PACKAGES;
 

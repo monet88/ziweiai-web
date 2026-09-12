@@ -162,7 +162,18 @@ export const apiEnvSchema = z.object({
   // Khi store ngoài mất kết nối: open = cho qua + log warn (mặc định, ưu tiên ổn định —
   // quota là chống lạm dụng, không phải hàng rào bảo mật); closed = chặn (ném quota error).
   QUOTA_FAIL_MODE: z.enum(['open', 'closed']).default('open'),
-  SEPAY_WEBHOOK_SECRET: z.string().optional(),
+
+  // SePay Webhook Authentication (supports API Key, Secret Key, and HMAC-SHA256)
+  SEPAY_WEBHOOK_SECRET: z.preprocess(
+    (val) =>
+      (typeof val === 'string' && val.trim().length > 0
+        ? val.trim()
+        : process.env.SEPAY_SECRET_KEY ||
+          process.env.SEPAY_SERECT_KEY ||
+          process.env.SEPAY_API_KEY ||
+          undefined),
+    z.string().optional(),
+  ),
   SEPAY_API_KEY: z.string().optional(),
   SEPAY_TESTMODE_API: z.string().optional(),
   REVENUECAT_WEBHOOK_SECRET: z.string().optional(),

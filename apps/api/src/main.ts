@@ -7,7 +7,7 @@ import { initSentry } from './observability/init-sentry';
 async function bootstrap() {
   initSentry(apiEnv.SENTRY_DSN);
 
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
 
   app.useGlobalFilters(new ApiErrorFilter());
   app.enableCors({

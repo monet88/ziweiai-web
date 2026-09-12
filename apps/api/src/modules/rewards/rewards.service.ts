@@ -77,38 +77,32 @@ export class RewardsService {
     return { success: added > 0, xu_added: added };
   }
 
-  async claimAdReward(userId: string, rewardAmount = 5) {
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const startOfTodayIso = today.toISOString();
-
-    const { count, error: countError } = await this.client
-      .from('xu_transactions')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('transaction_type', 'ad_reward')
-      .gte('created_at', startOfTodayIso);
-
-    if (countError) {
-      this.logger.error(`Failed to verify ad reward quota for user ${userId}`, countError);
-      throw new BadRequestException('Không thể xác minh hạn mức thưởng quảng cáo lúc này.');
+  async claimAdReward(userId: string, rewardAmount = 5, adToken?: string) {
+    // 1. Kiểm tra adToken cơ bản (proof from client / ad network)
+    if (process.env.NODE_ENV === 'production' && !adToken && process.env.REQUIRE_AD_PROOF === 'true') {
+      throw new BadRequestException('Mã xác thực xem quảng cáo (adToken) không hợp lệ hoặc thiếu.');
     }
 
-    if (typeof count === 'number' && count >= 5) {
-      throw new BadRequestException('Bạn đã đạt giới hạn nhận thưởng quảng cáo trong ngày (tối đa 5 lượt/ngày).');
+    // 2. Gọi RPC atomic claim_ad_reward trong DB để kiểm tra hạn mức và cộng XU nguyên tử
+    const { data: rpcResult, error: rpcError } = await this.client.rpc('claim_ad_reward', {
+      p_user_id: userId,
+      p_reward_amount: rewardAmount,
+      p_ad_token: adToken || null,
+    });
+
+    if (rpcError || !rpcResult) {
+      this.logger.error(`claim_ad_reward RPC failed for user ${userId}`, rpcError);
+      throw new BadRequestException('Lỗi hệ thống khi xử lý nhận thưởng quảng cáo.');
     }
 
-    const success = await this.walletEngineService.addXU(userId, rewardAmount, 'ad_reward');
-    if (!success) {
-      this.logger.error(`Failed to credit ad reward for user ${userId}`);
-      throw new BadRequestException('Failed to process ad reward');
+    if (!rpcResult.success) {
+      throw new BadRequestException(rpcResult.message || 'Không thể nhận thưởng quảng cáo lúc này.');
     }
 
-    const newBalance = await this.walletEngineService.getBalance(userId);
     return {
       success: true,
-      xu_added: rewardAmount,
-      new_balance: newBalance,
+      xu_added: rpcResult.xu_added,
+      new_balance: rpcResult.new_balance,
     };
   }
 

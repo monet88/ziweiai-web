@@ -13,6 +13,7 @@ import { Observable, from, throwError } from 'rxjs';
 import { switchMap, catchError } from 'rxjs/operators';
 import { ProfilesRepository } from '../../database/repositories/profiles.repository';
 import { WalletEngineService } from '../../modules/wallet/wallet-engine.service';
+import { apiEnv } from '../../config/env';
 
 export function RequireXU(costOrFn: number | ((req: any) => number)): Type<NestInterceptor> {
   @Injectable()
@@ -40,7 +41,7 @@ export function RequireXU(costOrFn: number | ((req: any) => number)): Type<NestI
       }
 
       // Bypass check if configured (e.g. env var)
-      if (process.env.AI_EXPLANATION_FREE_FOR_ALL === 'true') {
+      if (apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
         return next.handle();
       }
 

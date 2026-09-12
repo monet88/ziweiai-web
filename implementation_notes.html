@@ -221,6 +221,28 @@
         <li>Monorepo Lint & Typecheck: 0 errors, 10/10 turbo tasks successful.</li>
       </ul>
     </div>
+
+    <!-- 5. Sprint 84 Commercial Launch & Remediation Hardening -->
+    <div class="card">
+      <h2>5. Sprint 84: Blocker Remediation & Commercial Launch Operations</h2>
+      <span class="badge badge-gold">Sprint 84</span>
+      <span class="badge badge-success">Audit Remediated</span>
+      <span class="badge badge-purple">Go For Paid Launch</span>
+
+      <h3>5.1. Khắc phục triệt để các blocker từ Codex</h3>
+      <ul>
+        <li><strong>Lỗ hổng Trigger SECURITY DEFINER (Fix #1):</strong> Tạo migration <code>000033_commercial_launch_security_hardening.sql</code> sửa lại <code>protect_profile_economic_columns()</code>, sử dụng JWT role (<code>auth.role()</code> và <code>request.jwt.claim.role</code>) thay vì <code>current_user</code>. Cưỡng chế revert mọi nỗ lực update <code>xu_balance</code> từ client role (<code>authenticated</code> / <code>anon</code>).</li>
+        <li><strong>Payment Fallback 2 bước (Fix #2):</strong> Bỏ hoàn toàn fallback 2 bước ghi transaction rồi cộng XU trong <code>PaymentService</code>. Cả SePay và RevenueCat đều chạy 100% qua RPC atomic (<code>process_sepay_payment</code> và <code>process_revenuecat_payment</code>). Fail-closed ném 500 để webhook provider retry.</li>
+        <li><strong>Xóa Double Charge XU (Fix #3):</strong> Thiết lập Single Authority rõ ràng: Controller dùng <code>RequireXU</code> interceptor (fail-fast 402 và auto refund) thì Service truyền <code>cost: 0</code> vào <code>AiFeatureExecutionOrchestrator</code>. Đồng bộ cách đọc cờ <code>apiEnv.AI_EXPLANATION_FREE_FOR_ALL</code>.</li>
+        <li><strong>Ad Reward Atomic & Proof (Fix #4):</strong> Tạo RPC <code>claim_ad_reward</code> khóa hàng, kiểm tra daily limit < 5, cộng XU và ghi ledger trong 1 transaction duy nhất. Hỗ trợ xác thực <code>adToken</code>.</li>
+        <li><strong>Single Source of Truth Catalog Giá (Fix #5):</strong> Đồng bộ <code>draws-tarot.service.ts</code> sang <code>FEATURE_PRICING.TAROT_LENORMAND</code> (3 XU) và <code>annual-report.service.ts</code> sang <code>FEATURE_PRICING.ANNUAL_REPORT</code> (15 XU).</li>
+        <li><strong>AI Budget & Input Token Cap (Fix #6):</strong> Thêm trần <code>MAX_PROMPT_INPUT_CHARS: 16000</code> (~4000 tokens) chống DoS token. Cập nhật bảng giá Google 2026 cho Gemini 2.5 Flash ($0.30 input / $2.50 output / 1M tokens) với biên lợi nhuận gộp >94%. Viết hướng dẫn GCP Budget Alert.</li>
+        <li><strong>Live Metadata cũ (Fix #7):</strong> Sửa metadata trong <code>app.html</code> thành 5 XU điểm danh mỗi ngày.</li>
+      </ul>
+
+      <h3>5.2. Tính năng Lịch Sử Nạp VietQR trên /wallet (Sprint 84 Feature)</h3>
+      <p>Thêm tab <strong>"Lịch Sử Giao Dịch"</strong> trên trang <code>/wallet</code>: fetch danh sách các lần nạp VietQR/SePay từ bảng <code>transactions</code> (đã cấp quyền RLS <code>owner_user_id = auth.uid()</code>) qua API <code>GET /wallet/transactions</code> với đầy đủ ngày giờ, mã tham chiếu ngân hàng, số tiền VNĐ, số XU nhận và badge trạng thái thành công.</p>
+    </div>
   </div>
 </body>
 </html>

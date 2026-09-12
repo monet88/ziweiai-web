@@ -5,6 +5,7 @@ import {
   type AuthenticatedUser,
   type TarotDraw,
   type TarotSpread,
+  FEATURE_PRICING,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
@@ -65,9 +66,9 @@ export class DrawsTarotService {
       quotaFeatureKey: 'tarot-draw',
       quotaErrorMessage: 'Đã vượt hạn mức rút Tarot.',
       explanationKind: 'tarot-reading',
-      cost: 2,
+      cost: FEATURE_PRICING.TAROT_LENORMAND,
       paymentErrorMessage: 'Tính năng gieo quẻ Tarot yêu cầu đăng nhập và có XU. Vui lòng đăng nhập hoặc nạp XU.',
-      paymentInsufficientFundsMessage: 'Tính năng rút Tarot yêu cầu 2 XU. Số dư XU của bạn không đủ, vui lòng nạp thêm XU.',
+      paymentInsufficientFundsMessage: `Tính năng rút Tarot yêu cầu ${FEATURE_PRICING.TAROT_LENORMAND} XU. Số dư XU của bạn không đủ, vui lòng nạp thêm XU.`,
       promptOverride,
       generateFallback: () => this.generateDeterministicNarrative(normalizedQuestion, cards, spread),
     });

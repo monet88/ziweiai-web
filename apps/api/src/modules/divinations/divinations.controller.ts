@@ -7,6 +7,7 @@ import {
   type CreateDivinationResponse,
   type DivinationChatResponse,
   type CompatibilityExplainResponse,
+  FEATURE_PRICING,
 } from '@ziweiai/contracts';
 import { z } from 'zod';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -39,7 +40,7 @@ export class DivinationsController {
   }
 
   @Post('chat')
-  @UseInterceptors(RequireXU(1))
+  @UseInterceptors(RequireXU(FEATURE_PRICING.CONVERSATION_MESSAGE))
   async chat(
     @CurrentUser() currentUser: AuthenticatedUser,
     @Req() request: AuthenticatedRequest,
@@ -53,7 +54,7 @@ export class DivinationsController {
   }
 
   @Post('compatibility/explain')
-  @UseInterceptors(RequireXU(15))
+  @UseInterceptors(RequireXU(FEATURE_PRICING.SYNTHESIS_REPORT))
   async explainCompatibility(
     @CurrentUser() currentUser: AuthenticatedUser,
     @Req() request: AuthenticatedRequest,

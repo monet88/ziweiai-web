@@ -34,6 +34,13 @@ export class LlmExchange {
       throw new ProviderUnavailableError(adapter.notConfiguredMessage);
     }
 
+    const MAX_PROMPT_INPUT_CHARS = 16000;
+    if (params.prompt && params.prompt.length > MAX_PROMPT_INPUT_CHARS) {
+      throw new ProviderUnavailableError(
+        `Nội dung đầu vào vượt quá giới hạn an toàn (${params.prompt.length} > ${MAX_PROMPT_INPUT_CHARS} ký tự). Vui lòng rút gọn câu hỏi.`,
+      );
+    }
+
     try {
       const model = adapter.resolveModel(params.modelOverride);
       const timeoutMs = params.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;

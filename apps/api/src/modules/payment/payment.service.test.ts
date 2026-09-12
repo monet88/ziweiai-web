@@ -20,6 +20,7 @@ describe('PaymentService', () => {
       eq: vi.fn().mockReturnThis(),
       single: vi.fn().mockReturnThis(),
       insert: vi.fn().mockReturnThis(),
+      rpc: vi.fn().mockResolvedValue({ data: { status: 'success' }, error: null }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -108,14 +109,13 @@ describe('PaymentService', () => {
 
       await service.processTransaction(payload as any);
 
-      expect(mockSupabaseClient.insert).toHaveBeenCalledWith({
-        owner_user_id: '12345678-abcd-1234-5678-123456789012',
-        amount_vnd: 50000,
-        xu_added: 50,
-        sepay_transaction_id: '101',
-        content: 'TVTT 12345678 Nap 50k',
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('process_sepay_payment', {
+        p_sepay_transaction_id: '101',
+        p_owner_user_id: '12345678-abcd-1234-5678-123456789012',
+        p_amount_vnd: 50000,
+        p_xu_added: 50,
+        p_content: 'TVTT 12345678 Nap 50k',
       });
-      expect(mockWalletEngine.addXU).toHaveBeenCalledWith('12345678-abcd-1234-5678-123456789012', 50, 'topup');
     });
 
     it('should calculate bonus XU for 100k and 500k packages correctly', async () => {
@@ -137,7 +137,6 @@ describe('PaymentService', () => {
           }),
         }),
       }));
-      mockSupabaseClient.insert.mockResolvedValueOnce({ error: null });
 
       const payload = {
         id: 102,
@@ -155,21 +154,19 @@ describe('PaymentService', () => {
 
       await service.processTransaction(payload as any);
 
-      expect(mockSupabaseClient.insert).toHaveBeenCalledWith({
-        owner_user_id: '12345678-abcd-1234-5678-123456789012',
-        amount_vnd: 100000,
-        xu_added: 120,
-        sepay_transaction_id: '102',
-        content: 'TVTT 12345678 Nap 100k',
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('process_sepay_payment', {
+        p_sepay_transaction_id: '102',
+        p_owner_user_id: '12345678-abcd-1234-5678-123456789012',
+        p_amount_vnd: 100000,
+        p_xu_added: 120,
+        p_content: 'TVTT 12345678 Nap 100k',
       });
-      expect(mockWalletEngine.addXU).toHaveBeenCalledWith('12345678-abcd-1234-5678-123456789012', 120, 'topup');
     });
   });
 
   describe('processRevenueCatTransaction', () => {
     it('should add XU based on product mapping', async () => {
       mockSupabaseClient.single.mockResolvedValueOnce({ data: null, error: null });
-      mockSupabaseClient.insert.mockResolvedValueOnce({ error: null });
 
       const payload = {
         event: {
@@ -184,13 +181,12 @@ describe('PaymentService', () => {
 
       await service.processRevenueCatTransaction(payload as any);
 
-      expect(mockSupabaseClient.insert).toHaveBeenCalledWith({
-        owner_user_id: 'user_rc',
-        amount_vnd: 500000,
-        xu_added: 500,
-        revenuecat_transaction_id: 'evt_rc_1',
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('process_revenuecat_payment', {
+        p_rc_transaction_id: 'evt_rc_1',
+        p_owner_user_id: 'user_rc',
+        p_amount_vnd: 500000,
+        p_xu_added: 500,
       });
-      expect(mockWalletEngine.addXU).toHaveBeenCalledWith('user_rc', 500, 'topup');
     });
 
     it('should correctly determine XU for vios_xu_50 and vios_xu_600 packages', async () => {
@@ -207,13 +203,12 @@ describe('PaymentService', () => {
 
       await service.processRevenueCatTransaction(payload50 as any);
 
-      expect(mockSupabaseClient.insert).toHaveBeenCalledWith({
-        owner_user_id: 'user_royal_50',
-        amount_vnd: 69000,
-        xu_added: 50,
-        revenuecat_transaction_id: 'evt_rc_50',
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('process_revenuecat_payment', {
+        p_rc_transaction_id: 'evt_rc_50',
+        p_owner_user_id: 'user_royal_50',
+        p_amount_vnd: 69000,
+        p_xu_added: 50,
       });
-      expect(mockWalletEngine.addXU).toHaveBeenCalledWith('user_royal_50', 50, 'topup');
 
       const payload600 = {
         event: {
@@ -228,13 +223,12 @@ describe('PaymentService', () => {
 
       await service.processRevenueCatTransaction(payload600 as any);
 
-      expect(mockSupabaseClient.insert).toHaveBeenCalledWith({
-        owner_user_id: 'user_royal_600',
-        amount_vnd: 699000,
-        xu_added: 600,
-        revenuecat_transaction_id: 'evt_rc_600',
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('process_revenuecat_payment', {
+        p_rc_transaction_id: 'evt_rc_600',
+        p_owner_user_id: 'user_royal_600',
+        p_amount_vnd: 699000,
+        p_xu_added: 600,
       });
-      expect(mockWalletEngine.addXU).toHaveBeenCalledWith('user_royal_600', 600, 'topup');
     });
   });
 });

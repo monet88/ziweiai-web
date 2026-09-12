@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, InternalServerErrorException, Inject } from '@nestjs/common';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../database/supabase-client';
 import { SepayWebhookPayload, RevenueCatWebhookPayload } from '@ziweiai/contracts';
@@ -91,53 +91,26 @@ export class PaymentService {
 
     const userId = matchedUsers[0].user_id;
 
-    // 1. Ưu tiên xử lý atomic qua RPC process_sepay_payment
-    try {
-      const { data: atomicResult, error: rpcError } = await this.client.rpc('process_sepay_payment', {
-        p_sepay_transaction_id: payload.id.toString(),
-        p_owner_user_id: userId,
-        p_amount_vnd: payload.transferAmount,
-        p_xu_added: xuAdded,
-        p_content: payload.content || null,
-      });
+    // Xử lý nạp tiền hoàn toàn nguyên tử (atomic) qua RPC process_sepay_payment
+    const { data: atomicResult, error: rpcError } = await this.client.rpc('process_sepay_payment', {
+      p_sepay_transaction_id: payload.id.toString(),
+      p_owner_user_id: userId,
+      p_amount_vnd: payload.transferAmount,
+      p_xu_added: xuAdded,
+      p_content: payload.content || null,
+    });
 
-      if (!rpcError && atomicResult) {
-        if (atomicResult.status === 'already_processed') {
-          this.logger.log(`Transaction ${payload.id} already processed by atomic RPC. Skipping.`);
-          return;
-        }
-        this.logger.log(`Successfully processed transaction ${payload.id} atomically. Added ${xuAdded} XU to user ${userId}.`);
-        return;
-      }
-    } catch (rpcErr) {
-      this.logger.warn(`Atomic payment RPC failed, using fallback: ${rpcErr}`);
+    if (rpcError || !atomicResult) {
+      this.logger.error(`Atomic payment RPC failed for transaction ${payload.id}: ${rpcError?.message || 'Unknown error'}`);
+      throw new InternalServerErrorException('Lỗi xử lý giao dịch nạp XU atomic. Webhook sẽ tự động thử lại.');
     }
 
-    // 2. Fallback ghi transaction và cộng XU nếu RPC chưa khả dụng
-    const { error: txError } = await this.client
-      .from('transactions')
-      .insert({
-        owner_user_id: userId,
-        amount_vnd: payload.transferAmount,
-        xu_added: xuAdded,
-        sepay_transaction_id: payload.id.toString(),
-        content: payload.content || null,
-      });
-
-    if (txError) {
-      this.logger.error(`Failed to insert transaction ${payload.id}`, txError);
-      throw new BadRequestException('Database error');
+    if (atomicResult.status === 'already_processed') {
+      this.logger.log(`Transaction ${payload.id} already processed by atomic RPC. Skipping.`);
+      return;
     }
 
-    // Add XU & log ledger
-    const success = await this.walletEngine.addXU(userId, xuAdded, 'topup');
-
-    if (!success) {
-      this.logger.error(`Failed to add XU for user ${userId}`);
-      throw new BadRequestException('Database error');
-    }
-
-    this.logger.log(`Successfully processed transaction ${payload.id}. Added ${xuAdded} XU to user ${userId}.`);
+    this.logger.log(`Successfully processed transaction ${payload.id} atomically. Added ${xuAdded} XU to user ${userId}.`);
   }
 
   private async recordUnmatchedTransaction(payload: SepayWebhookPayload, xuAdded: number): Promise<void> {
@@ -206,27 +179,43 @@ export class PaymentService {
 
     const amountPaid = event.price_in_purchased_currency || event.price || 0;
 
-    const { error: txError } = await this.client
+    // Xử lý nạp tiền RevenueCat hoàn toàn nguyên tử (atomic) qua RPC process_revenuecat_payment
+    const { data: atomicResult, error: rpcError } = await this.client.rpc('process_revenuecat_payment', {
+      p_rc_transaction_id: event.id,
+      p_owner_user_id: userId,
+      p_amount_vnd: typeof amountPaid === 'number' ? Math.round(amountPaid) : 0,
+      p_xu_added: xuAdded,
+    });
+
+    if (rpcError || !atomicResult) {
+      this.logger.error(`Atomic RevenueCat RPC failed for transaction ${event.id}: ${rpcError?.message || 'Unknown error'}`);
+      throw new InternalServerErrorException('Lỗi xử lý giao dịch RevenueCat atomic. Webhook sẽ tự động thử lại.');
+    }
+
+    if (atomicResult.status === 'already_processed') {
+      this.logger.log(`RevenueCat transaction ${event.id} already processed by atomic RPC. Skipping.`);
+      return;
+    }
+
+    this.logger.log(`Successfully processed RevenueCat transaction ${event.id} atomically. Added ${xuAdded} XU to user ${userId}.`);
+  }
+
+  /**
+   * Lấy lịch sử giao dịch nạp tiền VietQR / SePay của người dùng
+   */
+  async getUserTransactions(userId: string): Promise<any[]> {
+    const { data, error } = await this.client
       .from('transactions')
-      .insert({
-        owner_user_id: userId,
-        amount_vnd: amountPaid,
-        xu_added: xuAdded,
-        revenuecat_transaction_id: event.id,
-      });
+      .select('id, amount_vnd, xu_added, sepay_transaction_id, content, created_at')
+      .eq('owner_user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50);
 
-    if (txError) {
-      this.logger.error(`Failed to insert transaction ${event.id}`, txError);
-      throw new BadRequestException('Database error');
+    if (error) {
+      this.logger.error(`Failed to fetch transactions for user ${userId}:`, error);
+      throw new InternalServerErrorException('Không thể tải lịch sử giao dịch lúc này.');
     }
 
-    const success = await this.walletEngine.addXU(userId, xuAdded, 'topup');
-
-    if (!success) {
-      this.logger.error(`Failed to add XU for user ${userId}`);
-      throw new BadRequestException('Database error');
-    }
-
-    this.logger.log(`Successfully processed RevenueCat transaction ${event.id}. Added ${xuAdded} XU to user ${userId}.`);
+    return data || [];
   }
 }

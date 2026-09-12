@@ -165,7 +165,7 @@ describe('AnnualReportService', () => {
       status: HttpStatus.GATEWAY_TIMEOUT,
     });
 
-    expect(walletEngine.deductXU).toHaveBeenCalledWith(user.userId, 1, 'ai_usage');
-    expect((walletEngine as any).addXU).toHaveBeenCalledWith(user.userId, 1, 'ai_refund');
+    expect(walletEngine.deductXU).toHaveBeenCalledWith(user.userId, 15, 'ai_usage');
+    expect((walletEngine as any).addXU).toHaveBeenCalledWith(user.userId, 15, 'ai_refund');
   });
 });

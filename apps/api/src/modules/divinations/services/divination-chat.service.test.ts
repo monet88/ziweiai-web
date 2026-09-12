@@ -10,7 +10,6 @@ describe('DivinationChatService', () => {
   const mockUser: AuthenticatedUser = {
     userId: 'user-uuid-1',
     email: 'user@example.com',
-    role: 'user',
   };
 
   beforeEach(() => {
@@ -32,7 +31,7 @@ describe('DivinationChatService', () => {
       expect(orchestrator.executeFeature).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'user-uuid-1',
-          cost: 1,
+          cost: 0,
           quotaFeatureKey: 'divination_chat',
         }),
       );
@@ -53,7 +52,7 @@ describe('DivinationChatService', () => {
       expect(orchestrator.executeFeature).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'user-uuid-1',
-          cost: 15,
+          cost: 0,
           quotaFeatureKey: 'compatibility_explain',
         }),
       );

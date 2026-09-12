@@ -78,6 +78,22 @@ export function createWalletModel(auth: AuthStore) {
     enabled: !!auth.user?.id && !auth.isAnonymous,
   }));
 
+  const transactionsQueryKey = () => ['wallet_transactions', auth.user?.id];
+  const transactionsQuery = createQuery(() => ({
+    queryKey: transactionsQueryKey(),
+    queryFn: async () => {
+      if (!auth.user?.id || auth.isAnonymous) return [];
+      const { fetchJson } = await import('$lib/api-client/fetch-json');
+      const { transactionListResponseSchema } = await import('@ziweiai/contracts');
+      const res = await fetchJson('/wallet/transactions', transactionListResponseSchema, {
+        method: 'GET',
+        token: auth.session?.access_token,
+      });
+      return res.data || [];
+    },
+    enabled: !!auth.user?.id && !auth.isAnonymous,
+  }));
+
   function subscribe() {
     if (!auth.user?.id || auth.isAnonymous) return;
     activeSubscriptions++;
@@ -173,6 +189,12 @@ export function createWalletModel(auth: AuthStore) {
     get referrals() {
       return referralsQuery.data ?? [];
     },
+    get transactions() {
+      return transactionsQuery.data ?? [];
+    },
+    get isTransactionsLoading() {
+      return transactionsQuery.isPending;
+    },
     get canCheckin() {
       const lastCheckin = query.data?.last_checkin_date;
       if (!lastCheckin) return true;
@@ -225,6 +247,7 @@ export function createWalletModel(auth: AuthStore) {
       return result;
     },
     refresh() {
+      queryClient.invalidateQueries({ queryKey: transactionsQueryKey() });
       return queryClient.invalidateQueries({ queryKey: queryKey() });
     },
     subscribe,

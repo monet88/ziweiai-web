@@ -33,7 +33,8 @@
     Zap,
     CheckCircle2,
     Lock,
-    Trophy
+    Trophy,
+    History
   } from 'lucide-svelte';
 
   import {
@@ -67,6 +68,7 @@
   }));
 
   let selectedPackage = $state<XuPackage>(getDefaultPackage());
+  let activeTab = $state<'packages' | 'history'>('packages');
 
   // Check URL query param ?package=
   $effect(() => {
@@ -224,8 +226,35 @@
       </div>
     </section>
 
-    <!-- Main Content 2-Column Grid -->
-    <div class="wallet-grid">
+    <!-- Navigation Tabs: Nạp XU & Lịch Sử Giao Dịch -->
+    <div class="wallet-nav-tabs">
+      <button
+        type="button"
+        class="tab-btn"
+        class:active={activeTab === 'packages'}
+        onclick={() => (activeTab = 'packages')}
+      >
+        <Coins size={18} />
+        <span>Nạp XU VietQR</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        class:active={activeTab === 'history'}
+        onclick={() => (activeTab = 'history')}
+      >
+        <History size={18} />
+        <span>Lịch Sử Giao Dịch</span>
+        {#if walletModel.transactions.length > 0}
+          <span class="tab-badge">{walletModel.transactions.length}</span>
+        {/if}
+      </button>
+    </div>
+
+    {#if activeTab === 'packages'}
+      <!-- Main Content 2-Column Grid (Nạp XU) -->
+      <div class="wallet-grid">
       <!-- Left Column: Packages, Costs, Referral -->
       <div class="left-pane">
         {#if auth.isAnonymous}
@@ -548,6 +577,104 @@
         </div>
       </aside>
     </div>
+    {:else}
+      <!-- Tab 2: Lịch Sử Giao Dịch Nạp XU -->
+      <section class="history-view-card glass-panel">
+        <div class="history-header">
+          <div class="history-title-box">
+            <h2><History size={20} class="text-gold" /> Lịch Sử Nạp XU VietQR & Ngân Hàng</h2>
+            <span class="sub-tag">Cập nhật tự động theo thời gian thực</span>
+          </div>
+
+          <button
+            type="button"
+            class="btn-refresh-history"
+            disabled={refreshing}
+            onclick={handleRefresh}
+          >
+            <RefreshCw size={14} class={refreshing ? 'spin-icon' : ''} />
+            <span>{refreshing ? 'Đang làm mới...' : 'Làm mới'}</span>
+          </button>
+        </div>
+
+        {#if auth.isAnonymous}
+          <div class="history-anon-notice">
+            <AlertCircle size={28} class="text-amber" />
+            <div class="notice-content">
+              <h3>Tài khoản chưa đăng nhập</h3>
+              <p>Lịch sử nạp tiền chỉ được lưu giữ cho tài khoản đã đăng ký Email. Hãy đăng nhập để quản lý dòng tiền của bạn.</p>
+            </div>
+            <a href="/sign-in" class="btn-anon-login">Đăng nhập</a>
+          </div>
+        {:else if walletModel.isTransactionsLoading}
+          <div class="history-loading-skeleton">
+            <div class="skeleton-row"></div>
+            <div class="skeleton-row"></div>
+            <div class="skeleton-row"></div>
+          </div>
+        {:else if walletModel.transactions.length === 0}
+          <div class="history-empty-state">
+            <div class="empty-icon-circle">
+              <Coins size={36} class="text-muted-gold" />
+            </div>
+            <h3>Chưa có giao dịch nạp tiền nào</h3>
+            <p>Mọi giao dịch quét mã VietQR tự động sẽ được lưu lại và hiển thị chi tiết tại đây.</p>
+            <PrimaryButton onclick={() => (activeTab = 'packages')}>
+              <Coins size={14} /> Nạp XU Ngay
+            </PrimaryButton>
+          </div>
+        {:else}
+          <div class="transactions-table-wrapper">
+            <table class="transactions-table">
+              <thead>
+                <tr>
+                  <th>Thời gian</th>
+                  <th>Mã giao dịch</th>
+                  <th>Cổng thanh toán</th>
+                  <th>Số tiền</th>
+                  <th>Số XU nhận</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each walletModel.transactions as tx (tx.id)}
+                  <tr>
+                    <td class="cell-time">
+                      {new Date(tx.created_at).toLocaleString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      })}
+                    </td>
+                    <td class="cell-code">
+                      <code>{tx.gateway_transaction_id || tx.id.substring(0, 8)}</code>
+                    </td>
+                    <td class="cell-gateway">
+                      <span class="gateway-badge {tx.gateway || 'sepay'}">
+                        {tx.gateway === 'sepay' ? 'VietQR (SePay)' : (tx.gateway === 'revenuecat' ? 'Apple / Google' : 'Ngân Hàng')}
+                      </span>
+                    </td>
+                    <td class="cell-amount">
+                      <strong>{(tx.amount || 0).toLocaleString('vi-VN')} VNĐ</strong>
+                    </td>
+                    <td class="cell-xu">
+                      <span class="xu-plus-tag">+{tx.coin_amount} XU</span>
+                    </td>
+                    <td class="cell-status">
+                      <span class="status-badge success">
+                        <CheckCircle2 size={12} /> Thành công
+                      </span>
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      </section>
+    {/if}
   </div>
 
   <XuSuccessModal
@@ -579,6 +706,199 @@
     flex-direction: column;
     gap: 28px;
     width: 100%;
+  }
+
+  /* Wallet Navigation Tabs */
+  .wallet-nav-tabs {
+    display: flex;
+    gap: 12px;
+    border-bottom: 1px solid var(--color-border-hairline, rgba(255, 255, 255, 0.08));
+    padding-bottom: 4px;
+  }
+
+  .tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text-muted, #94a3b8);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .tab-btn:hover {
+    color: var(--color-text-primary, #f8fafc);
+    background: rgba(245, 158, 11, 0.05);
+  }
+
+  .tab-btn.active {
+    color: var(--gold, #f59e0b);
+    border-bottom-color: var(--gold, #f59e0b);
+    background: rgba(245, 158, 11, 0.08);
+  }
+
+  .tab-badge {
+    background: var(--gold, #f59e0b);
+    color: #000;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+
+  /* History Card & Table */
+  .history-view-card {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .history-title-box h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text-primary, #f8fafc);
+  }
+
+  .btn-refresh-history {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border-hairline, rgba(255, 255, 255, 0.1));
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text-secondary, #cbd5e1);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-refresh-history:hover {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: var(--gold, #f59e0b);
+    color: var(--gold, #f59e0b);
+  }
+
+  .history-anon-notice {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+
+  .history-empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .empty-icon-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(245, 158, 11, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .transactions-table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--color-border-hairline, rgba(255, 255, 255, 0.08));
+  }
+
+  .transactions-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+  }
+
+  .transactions-table th {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 12px 16px;
+    font-weight: 600;
+    color: var(--color-text-muted, #94a3b8);
+    border-bottom: 1px solid var(--color-border-hairline, rgba(255, 255, 255, 0.08));
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .transactions-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--color-border-hairline, rgba(255, 255, 255, 0.05));
+    color: var(--color-text-secondary, #cbd5e1);
+  }
+
+  .transactions-table tr:hover td {
+    background: rgba(245, 158, 11, 0.03);
+  }
+
+  .cell-code code {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.82rem;
+    color: var(--color-accent, #38bdf8);
+  }
+
+  .gateway-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(56, 189, 248, 0.1);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+  }
+
+  .xu-plus-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--gold, #f59e0b);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  .status-badge.success {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    color: #34d399;
+    font-size: 0.82rem;
   }
 
   /* Glassmorphism Panel Base (Theme Adaptive) */

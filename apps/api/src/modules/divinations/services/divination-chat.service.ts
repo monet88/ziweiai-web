@@ -7,6 +7,7 @@ import {
   type CompatibilityExplainRequest,
   type CompatibilityExplainResponse,
   compatibilityExplainResponseSchema,
+  FEATURE_PRICING,
 } from '@ziweiai/contracts';
 import { AiFeatureExecutionOrchestrator } from '../../../providers/ai/ai-feature-execution.orchestrator';
 
@@ -22,20 +23,14 @@ export class DivinationChatService {
     input: DivinationChatRequest,
   ): Promise<DivinationChatResponse> {
     const isAnonymous = user.email === null;
-    const topic = input.topic ? `[Chủ Đề: ${input.topic}]` : '';
 
-    const prompt = `Bạn là Khâm Thiên Giám Ngự Bút — bậc thầy thuật số, phong thủy và chiêm bái hoàng gia Á Đông.
-Hãy trả lời câu hỏi vấn an của thân chủ với phong thái uyên bác, trang trọng cổ kính nhưng thấu tình đạt lý và mang tính ứng dụng thực tế cao:
-${topic}
-Câu hỏi của thân chủ: "${input.question}"
+    const prompt = `Bạn là Khâm Thiên Giám Ngự Bút — chuyên gia bói toán và vấn an số mệnh hoàng gia.
+Người dùng đang có thắc mắc về chủ đề: "${input.topic || 'Vấn an chung'}".
+Câu hỏi cụ thể của người dùng: "${input.question}".
 
-Yêu cầu định dạng:
-- Sử dụng tiếng Việt chuẩn phong thủy hoàng gia.
-- Cấu trúc gồm 3 phần rõ ràng:
-  1. Huyền Cơ Chiếu Rọi (Nhận định căn nguyên sự việc theo lý số Âm Dương Ngũ Hành).
-  2. Điểm Tựa Vận Mệnh (Phân tích cơ hội, thách thức và lời khuyên hành động cụ thể).
-  3. Ngự Ý Trao Gửi (Lời chúc hoặc phương pháp tụ khí phong thủy hóa giải).
-- Tuyệt đối không dùng ký tự chữ Hán thô.`;
+Hãy đưa ra lời vấn an sâu sắc, thấu đáo, chuẩn mực thuật số phương Đông (Kinh Dịch, Âm Dương Ngũ Hành).
+Phong thái điềm đạm, ngôn từ nhã nhặn, tôn trọng, mang tính định hướng tích cực và giải tỏa lo âu.
+Tuyệt đối không phán xét tiêu cực cực đoan, không dùng chữ Hán thô.`;
 
     const answer = await this.orchestrator.executeFeature({
       userId: user.userId,
@@ -44,7 +39,8 @@ Yêu cầu định dạng:
       quotaFeatureKey: 'divination_chat',
       quotaErrorMessage: 'Bạn đã đạt giới hạn vấn an hôm nay.',
       explanationKind: 'divination_chat',
-      cost: 1,
+      // Phí XU đã được trừ an toàn ở tầng Controller qua RequireXU interceptor (fail-fast 402, auto refund)
+      cost: 0,
       paymentErrorMessage: 'Lỗi trừ XU cho lượt vấn an Khâm Thiên Giám.',
       paymentInsufficientFundsMessage: 'Số dư không đủ (Cần 1 XU cho mỗi lượt vấn an). Vui lòng nạp thêm.',
       promptOverride: prompt,
@@ -53,7 +49,7 @@ Yêu cầu định dạng:
 
     return divinationChatResponseSchema.parse({
       answer,
-      costXu: 1,
+      costXu: FEATURE_PRICING.CONVERSATION_MESSAGE,
     });
   }
 
@@ -85,7 +81,8 @@ Yêu cầu định dạng:
       quotaFeatureKey: 'compatibility_explain',
       quotaErrorMessage: 'Bạn đã đạt giới hạn luận giải hợp hôn hôm nay.',
       explanationKind: 'compatibility_explain',
-      cost: 15,
+      // Phí XU đã được trừ an toàn ở tầng Controller qua RequireXU interceptor (fail-fast 402, auto refund)
+      cost: 0,
       paymentErrorMessage: 'Lỗi trừ XU cho lượt luận giải Duyên Định Cung Đình.',
       paymentInsufficientFundsMessage: 'Số dư không đủ (Cần 15 XU để thỉnh Khâm Thiên Giám luận giải hợp hôn). Vui lòng nạp thêm.',
       promptOverride: prompt,
@@ -94,7 +91,7 @@ Yêu cầu định dạng:
 
     return compatibilityExplainResponseSchema.parse({
       explanation,
-      costXu: 15,
+      costXu: FEATURE_PRICING.SYNTHESIS_REPORT,
     });
   }
 

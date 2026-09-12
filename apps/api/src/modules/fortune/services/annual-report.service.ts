@@ -5,6 +5,7 @@ import {
   type AnnualReportResponse,
   type AuthenticatedUser,
   type ChartSnapshot,
+  FEATURE_PRICING,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { assertChartSnapshotEligibleForAi } from '../../../common/entitlement/ai-snapshot-eligibility';
@@ -65,15 +66,16 @@ export class AnnualReportService {
     // ===== GATES (chỉ áp khi sinh mới) — fail-closed cả hai cờ =====
     assertAnnualReportEnabled(this.logger);
 
-    // GATE 3: Trừ XU cho tính năng premium (Báo cáo năm). Tốn 1 XU.
+    // GATE 3: Trừ XU cho tính năng premium (Báo cáo năm).
     let didDeductXu = false;
+    const cost = FEATURE_PRICING.ANNUAL_REPORT;
     if (!apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
-      const success = await this.walletEngine.deductXU(user.userId, 1, 'ai_usage');
+      const success = await this.walletEngine.deductXU(user.userId, cost, 'ai_usage');
       if (!success) {
         throw new ApiErrorHttpException(
           HttpStatus.PAYMENT_REQUIRED,
           'PAYMENT_REQUIRED',
-          'Tính năng Báo cáo năm yêu cầu 1 XU. Vui lòng nạp thêm XU để tiếp tục.'
+          `Tính năng Báo cáo năm yêu cầu ${cost} XU. Vui lòng nạp thêm XU để tiếp tục.`
         );
       }
       didDeductXu = true;
@@ -84,8 +86,8 @@ export class AnnualReportService {
     } catch (error) {
       if (didDeductXu) {
         try {
-          await this.walletEngine.addXU(user.userId, 1, 'ai_refund');
-          this.logger.log(`Refunded 1 XU to user due to quota error`, { userId: user.userId, chartId });
+          await this.walletEngine.addXU(user.userId, cost, 'ai_refund');
+          this.logger.log(`Refunded ${cost} XU to user due to quota error`, { userId: user.userId, chartId });
         } catch (e) {
           this.logger.error('Failed to refund XU on quota error', e);
         }
@@ -111,8 +113,8 @@ export class AnnualReportService {
     } catch (error) {
       if (didDeductXu) {
         try {
-          await this.walletEngine.addXU(user.userId, 1, 'ai_refund');
-          this.logger.log(`Refunded 1 XU to user due to annual-report provider failure`, { userId: user.userId, chartId });
+          await this.walletEngine.addXU(user.userId, cost, 'ai_refund');
+          this.logger.log(`Refunded ${cost} XU to user due to annual-report provider failure`, { userId: user.userId, chartId });
         } catch (e) {
           this.logger.error('Failed to refund XU on provider error', e);
         }

@@ -1,7 +1,14 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { ExecutionContext, CallHandler, HttpException } from '@nestjs/common';
 import { of, throwError, lastValueFrom } from 'rxjs';
 import { RequireXU } from './billing.interceptor';
+import { apiEnv } from '../../config/env';
+
+vi.mock('../../config/env', () => ({
+  apiEnv: {
+    AI_EXPLANATION_FREE_FOR_ALL: false,
+  },
+}));
 
 describe('RequireXU Interceptor', () => {
   const mockUser = { userId: 'user-test-123' };
@@ -18,7 +25,7 @@ describe('RequireXU Interceptor', () => {
     const interceptor = new InterceptorClass(profilesRepo as any, walletEngine as any);
 
     const callHandler: CallHandler = { handle: () => of({ success: true }) };
-    const result = await lastValueFrom(interceptor.intercept(mockContext, callHandler));
+    const result = await lastValueFrom(interceptor.intercept(mockContext, callHandler) as Observable<any>);
 
     expect(result).toEqual({ success: true });
     expect(walletEngine.deductXU).not.toHaveBeenCalled();
@@ -37,9 +44,9 @@ describe('RequireXU Interceptor', () => {
       handle: () => throwError(() => new Error('AI Vision model timeout')),
     };
 
-    await expect(lastValueFrom(interceptor.intercept(mockContext, callHandler))).rejects.toThrow(
-      'AI Vision model timeout',
-    );
+    await expect(
+      lastValueFrom(interceptor.intercept(mockContext, callHandler) as Observable<any>),
+    ).rejects.toThrow('AI Vision model timeout');
 
     expect(walletEngine.deductXU).toHaveBeenCalledWith('user-test-123', 10, 'ai_usage');
     expect(walletEngine.addXU).toHaveBeenCalledWith('user-test-123', 10, 'ai_refund');
@@ -53,9 +60,9 @@ describe('RequireXU Interceptor', () => {
 
     const callHandler: CallHandler = { handle: () => of({ success: true }) };
 
-    await expect(lastValueFrom(interceptor.intercept(mockContext, callHandler))).rejects.toThrow(
-      HttpException,
-    );
+    await expect(
+      lastValueFrom(interceptor.intercept(mockContext, callHandler) as Observable<any>),
+    ).rejects.toThrow(HttpException);
     expect(walletEngine.deductXU).not.toHaveBeenCalled();
   });
 });

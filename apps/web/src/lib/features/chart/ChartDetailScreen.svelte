@@ -42,6 +42,8 @@
   import RoyalExplanationPdfModal from '$lib/features/explanation/RoyalExplanationPdfModal.svelte';
   import AstrologicalSynthesisModal from '$lib/features/synthesis/AstrologicalSynthesisModal.svelte';
   import EnhancedSocialShareModal from '$lib/features/poster/EnhancedSocialShareModal.svelte';
+  import PalaceDeepDiveModal from './PalaceDeepDiveModal.svelte';
+  import AstrologicalJournalModal from '../journal/AstrologicalJournalModal.svelte';
   import { resolvePalaceScope } from '$lib/features/explanation/explanation-model.svelte';
   import { revealElements, revealHexagramLines } from '$lib/motion/reveal';
   import { goto } from '$app/navigation';
@@ -57,6 +59,8 @@
   let isExplanationPdfModalOpen = $state(false);
   let isSynthesisModalOpen = $state(false);
   let isEnhancedShareModalOpen = $state(false);
+  let isPalaceDeepDiveOpen = $state(false);
+  let isJournalModalOpen = $state(false);
 
   const auth = getAuthStore();
   const queryClient = useQueryClient();
@@ -242,6 +246,15 @@
           <span class="synthesis-text">Luận Giải Tam Hợp</span>
           <span class="synthesis-badge">VIP</span>
         </button>
+        <button
+          type="button"
+          class="btn-royal-journal"
+          onclick={() => (isJournalModalOpen = true)}
+          title="Nhật Ký Vận Mệnh ViOS - Ghi chép chiêm nghiệm & đo lường chỉ số hòa hợp năng lượng"
+        >
+          <span class="journal-icon">📔</span>
+          <span class="journal-text">Nhật Ký</span>
+        </button>
       {/if}
       <PrimaryButton
         label="Chia Sẻ"
@@ -292,6 +305,22 @@
                 </dl>
               {/snippet}
             </PalaceGrid>
+            {#if detail.selectedPalace}
+              <div class="palace-deepdive-bar">
+                <div class="palace-bar-info">
+                  <span class="palace-bar-badge">Cung Vị:</span>
+                  <span class="palace-bar-name">Cung {detail.selectedPalace.name} ({detail.selectedPalace.stemBranch})</span>
+                </div>
+                <button
+                  type="button"
+                  class="btn-palace-deepdive-action"
+                  onclick={() => (isPalaceDeepDiveOpen = true)}
+                >
+                  <span>🔍</span>
+                  <span>Khám Phá Cung 360°</span>
+                </button>
+              </div>
+            {/if}
             <ZiweiHoroscopePanel model={horoscope} />
           </div>
         </section>
@@ -504,6 +533,23 @@
     path={`/charts/${chartId}`}
     quote="Mời bạn khám phá bản đồ vận mệnh Tử Vi Hoàng Gia cùng ViOS!"
     onClose={() => (isEnhancedShareModalOpen = false)}
+  />
+{/if}
+
+{#if isPalaceDeepDiveOpen && detail.selectedPalace}
+  <PalaceDeepDiveModal
+    palace={detail.selectedPalace}
+    allPalaces={detail.palaces}
+    open={isPalaceDeepDiveOpen}
+    onClose={() => (isPalaceDeepDiveOpen = false)}
+  />
+{/if}
+
+{#if isJournalModalOpen}
+  <AstrologicalJournalModal
+    token={auth.getAccessToken() || undefined}
+    open={isJournalModalOpen}
+    onClose={() => (isJournalModalOpen = false)}
   />
 {/if}
 
@@ -897,6 +943,69 @@
   }
 
   /* Chế độ In Sớ / Xuất PDF (@media print) */
+  .btn-royal-journal {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #fef08a;
+    background: linear-gradient(135deg, rgba(161, 98, 7, 0.4) 0%, rgba(113, 63, 18, 0.6) 100%);
+    border: 1px solid rgba(234, 179, 8, 0.5);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-royal-journal:hover {
+    background: linear-gradient(135deg, rgba(202, 138, 4, 0.5) 0%, rgba(133, 77, 14, 0.7) 100%);
+    border-color: rgba(250, 204, 21, 0.8);
+    transform: translateY(-1px);
+  }
+  .palace-deepdive-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    margin-top: 0.75rem;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(217, 119, 6, 0.35);
+    border-radius: 0.75rem;
+  }
+  .palace-bar-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .palace-bar-badge {
+    font-size: 0.75rem;
+    color: #a1a1aa;
+  }
+  .palace-bar-name {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #fef08a;
+  }
+  .btn-palace-deepdive-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #18181b;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-palace-deepdive-action:hover {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    transform: scale(1.03);
+  }
+
   @media print {
     :global(html),
     :global(body) {

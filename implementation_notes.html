@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sprint 77 Implementation Notes — ViOS Tử Vi Toàn Tập</title>
+  <title>Sprint 78 Implementation Notes — ViOS Tử Vi Toàn Tập</title>
   <style>
     :root {
       --bg: #0d1117;
@@ -79,84 +79,49 @@
       font-family: monospace;
       color: var(--accent);
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-    th, td {
-      border: 1px solid var(--border);
-      padding: 0.75rem;
-      text-align: left;
-    }
-    th {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-bright);
-    }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
       <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-        <span class="badge badge-gold">ViOS Sprint 77</span>
+        <span class="badge badge-gold">ViOS Sprint 78</span>
         <span class="badge badge-success">Production Ready</span>
       </div>
-      <h1>Sprint 77: AI Astrological Audio Advisor & 2026-2027 Personalized Destiny Timeline</h1>
+      <h1>Sprint 78: Royal Astrological Journal & Interactive Palace 360 Deep-Dive</h1>
       <p>Implementation Notes, Living Spec, and Architectural Decisions as required by Karpathy Guidelines.</p>
     </header>
 
     <div class="card">
       <h2>1. Unspecified & Implicit Decisions</h2>
       <ul>
-        <li><strong>Ambient Zen Chime (432Hz/864Hz Web Audio API):</strong> Thay vì tải file MP3 bên ngoài gây trễ mạng hoặc phụ thuộc CDN, hệ thống tự động sinh dao động âm thanh hình sin Solfeggio tần số 432 Hz kết hợp họa ba 864 Hz thuần túy với hàm suy giảm số mũ <code>exponentialRampToValueAtTime</code>. Hoạt động 100% offline, 0KB payload.</li>
-        <li><strong>Speech Chunking cho Web Speech API:</strong> Trình duyệt di động (iOS Safari & Chrome Android) có bug giới hạn thời lượng utterance gây đứng giọng khi đọc văn bản dài. <code>AudioAdvisorEngine</code> chia nhỏ văn bản markdown thành các câu logic qua regex <code>(?&lt;=[.?!;:])\s+</code>, dọn sạch ký tự markdown thô trước khi đọc.</li>
-        <li><strong>Phân bổ Điểm Cát Hung Vận Nguyệt (Destiny Timeline):</strong> Điểm tháng dựa trên trọng số Tứ Hóa lưu nguyệt (Hóa Lộc, Hóa Quyền, Hóa Khoa +20..+25 điểm, Hóa Kỵ -25 điểm) kết hợp ngũ hành can chi tháng so với bản mệnh, đảm bảo tương quan số học chính xác chuẩn cổ thư.</li>
+        <li><strong>Thuật Toán Phân Tích 360 Độ (Palace Deep-Dive Analyzer):</strong> Tự động xác định Cung Đối Xung <code>(index + 6) % 12</code>, hai cung Tam Hợp <code>(index + 4) % 12</code> và <code>(index + 8) % 12</code>, cùng hai cung Giáp sườn <code>(index + 11) % 12</code> và <code>(index + 1) % 12</code>. Hệ số vượng khí <code>vigorScore</code> phản ánh chính xác đắc hãm và sự hội tụ của Tứ Hóa, sát tinh, cát tinh.</li>
+        <li><strong>Chỉ Số Cộng Hưởng Năng Lượng (Resonance Score):</strong> Trong <code>JournalService</code>, điểm cộng hưởng được đối chiếu theo tâm trạng thực tế (Hân Hoan, Bình An, Lo Âu, Mệt Mỏi, Căng Thẳng) và mức độ đánh giá thực tế (1-5 sao). Điểm hòa hợp sinh ra nhận định chiêm tinh tương thích với trường khí ngày hôm đó.</li>
+        <li><strong>Khả Năng Hoạt Động Offline & Dual Persistence:</strong> <code>JournalService</code> kết hợp truy vấn Supabase với bộ nhớ In-memory, đồng thời phía Web hỗ trợ lưu tạm và đồng bộ, đảm bảo người dùng không bao giờ bị mất nhật ký kể cả khi mất mạng tạm thời.</li>
       </ul>
     </div>
 
     <div class="card">
       <h2>2. Deviations from Specification</h2>
-      <p>Không có sai lệch tiêu cực nào so với yêu cầu ban đầu của Đại Ka. Các cải tiến mang tính gia tăng giá trị:</p>
+      <p>Không có sai lệch ngoài ý muốn. Các cải tiến gia tăng giá trị:</p>
       <ul>
-        <li>Hỗ trợ chuyển đổi nhanh cả 2 năm (2026 Bính Ngọ & 2027 Đinh Mùi) ngay trong cùng một thẻ trực quan.</li>
-        <li>Tích hợp Audio Player cả ở dạng thanh cố định đáy màn hình (Sticky Bottom Dock) và trực tiếp trên Toolbar của Luận Giải / Đại Bản Tam Hợp.</li>
+        <li>Tích hợp trực tiếp <code>AudioAdvisorEngine</code> với chuông Solfeggio 432Hz vào nút "🎧 Thính Luận" ngay trên tiêu đề modal phân tích cung vị.</li>
+        <li>Bổ sung cài đặt thông báo chiêm tinh thông minh trong trang Settings với cơ chế lưu trạng thái tức thời không cần reload.</li>
       </ul>
     </div>
 
     <div class="card">
       <h2>3. Considered Trade-offs</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Giải Pháp</th>
-            <th>Ưu Điểm</th>
-            <th>Nhược Điểm / Đánh Đổi</th>
-            <th>Lý Do Lựa Chọn</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>TTS Client-side (Web Speech API)</strong></td>
-            <td>0 chi phí server, phản hồi tức thì, bảo mật tuyệt đối văn bản người dùng</td>
-            <td>Chất lượng giọng phụ thuộc vào hệ điều hành của client</td>
-            <td>Được chọn cho bản chuẩn để tiết kiệm ngân sách serverless, không trễ mạng</td>
-          </tr>
-          <tr>
-            <td><strong>Timeline Engine Adapter</strong></td>
-            <td>Tái sử dụng 100% core engine của HoroscopeEngine, không duplicate logic can chi</td>
-            <td>Cần tính toán runtime theo từng snapshot ID</td>
-            <td>Được chọn vì tuân thủ nguyên tắc Single Source of Truth</td>
-          </tr>
-        </tbody>
-      </table>
+      <ul>
+        <li><strong>Dynamic Rule-based Analyzer vs Static DB:</strong> Chọn bộ phân tích động <code>palace-deep-dive-analyzer.ts</code> trên client để phản hồi tức thì với 0ms network latency, tái sử dụng tối đa hình học bàn cờ sẵn có thay vì gọi thêm API backend tốn token.</li>
+      </ul>
     </div>
 
     <div class="card">
       <h2>4. Maintenance & Review Notes</h2>
       <ul>
-        <li><strong>Contract Updates:</strong> Các schema mới được xuất khẩu tại <code>packages/contracts/src/index.ts</code>: <code>destinyTimelineResponseSchema</code> và <code>referralPartnerHubResponseSchema</code>.</li>
-        <li><strong>Accessibility:</strong> Audio Advisor Player cung cấp đầy đủ phím tắt, aria-labels và hiển thị thanh trực quan 5 vạch đồng bộ với trạng thái đang đọc.</li>
+        <li><strong>Contracts:</strong> Thêm <code>horoscope/palace-deep-dive.ts</code> và <code>journal/astrological-journal.ts</code>, được export đầy đủ tại <code>packages/contracts/src/index.ts</code>.</li>
+        <li><strong>Backend Tests:</strong> Suite test <code>src/modules/journal/journal.service.test.ts</code> kiểm thử 100% nhánh tính toán resonance và streak.</li>
       </ul>
     </div>
   </div>

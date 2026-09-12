@@ -131,6 +131,10 @@ class AudioAdvisorEngine {
     return null;
   }
 
+  playText(rawMarkdown: string, customTitle?: string) {
+    this.play(rawMarkdown, customTitle);
+  }
+
   play(rawMarkdown: string, customTitle = 'Luận Giải Hoàng Cung') {
     if (!browser || !('speechSynthesis' in window)) {
       alert('Trình duyệt của bạn không hỗ trợ tính năng phát âm thanh Text-To-Speech.');

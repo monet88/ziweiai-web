@@ -18,8 +18,11 @@
     Sparkles,
     LogOut,
     Trophy,
+    Bell,
+    BookOpen,
   } from 'lucide-svelte';
   import ReferralPartnerHubModal from '$lib/features/referral/ReferralPartnerHubModal.svelte';
+  import AstrologicalJournalModal from '$lib/features/journal/AstrologicalJournalModal.svelte';
 
   const auth = getAuthStore();
   const queryClient = useQueryClient();
@@ -29,7 +32,35 @@
   let isSigningOut = $state(false);
   let showConfirmModal = $state(false);
   let showPartnerHubModal = $state(false);
+  let showJournalModal = $state(false);
   let copied = $state(false);
+
+  // Cài đặt thông báo chiêm tinh
+  let notifyDailyMorning = $state(true);
+  let notifySocVong = $state(true);
+  let notifyHungStar = $state(true);
+
+  $effect(() => {
+    if (typeof window !== 'undefined') {
+      notifyDailyMorning = localStorage.getItem('vios_notify_morning') !== 'false';
+      notifySocVong = localStorage.getItem('vios_notify_socvong') !== 'false';
+      notifyHungStar = localStorage.getItem('vios_notify_hungstar') !== 'false';
+    }
+  });
+
+  function toggleNotify(key: 'morning' | 'socvong' | 'hungstar') {
+    if (typeof window === 'undefined') return;
+    if (key === 'morning') {
+      notifyDailyMorning = !notifyDailyMorning;
+      localStorage.setItem('vios_notify_morning', String(notifyDailyMorning));
+    } else if (key === 'socvong') {
+      notifySocVong = !notifySocVong;
+      localStorage.setItem('vios_notify_socvong', String(notifySocVong));
+    } else if (key === 'hungstar') {
+      notifyHungStar = !notifyHungStar;
+      localStorage.setItem('vios_notify_hungstar', String(notifyHungStar));
+    }
+  }
 
   const referralLink = $derived.by(() => {
     if (!walletModel.referralCode) return '';
@@ -206,6 +237,72 @@
       <ReferralPartnerHubModal
         token={auth.getAccessToken() || undefined}
         onClose={() => (showPartnerHubModal = false)}
+      />
+    {/if}
+
+    <!-- Astrological Alerts & Journal Card -->
+    <section class="card surface-glass">
+      <header class="card-head">
+        <div class="card-icon-title">
+          <Bell class="section-icon text-amber" />
+          <h2 class="card-title">Nhắc Nhở & Nhật Ký Vận Mệnh</h2>
+        </div>
+      </header>
+      <div class="card-body">
+        <p class="description">
+          Tùy biến cảnh báo giờ hoàng đạo, ngày sóc vọng và ghi chép chiêm nghiệm hàng ngày đối chiếu với khí vận vũ trụ.
+        </p>
+
+        <!-- Journal Button -->
+        <div class="action-row" style="margin-bottom: 1.25rem;">
+          <button
+            type="button"
+            class="btn-gold-partner"
+            onclick={() => (showJournalModal = true)}
+          >
+            <BookOpen class="btn-icon text-gold" />
+            <span>Mở Nhật Ký Vận Mệnh & Đo Chỉ Số Năng Lượng</span>
+          </button>
+        </div>
+
+        <!-- Notification Toggles -->
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08);">
+          <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8125rem; color: #e4e4e7; cursor: pointer;">
+            <span>☀️ Khí Vận Nhật Khóa (07:00 sáng)</span>
+            <input
+              type="checkbox"
+              checked={notifyDailyMorning}
+              onchange={() => toggleNotify('morning')}
+              style="cursor: pointer; accent-color: #f59e0b;"
+            />
+          </label>
+          <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8125rem; color: #e4e4e7; cursor: pointer;">
+            <span>🌕 Cảnh Báo Ngày Sóc Vọng (Mùng 1 & Rằm)</span>
+            <input
+              type="checkbox"
+              checked={notifySocVong}
+              onchange={() => toggleNotify('socvong')}
+              style="cursor: pointer; accent-color: #f59e0b;"
+            />
+          </label>
+          <label style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8125rem; color: #e4e4e7; cursor: pointer;">
+            <span>⚠️ Cảnh Báo Ngày Có Sao Hung Chiếu Mệnh</span>
+            <input
+              type="checkbox"
+              checked={notifyHungStar}
+              onchange={() => toggleNotify('hungstar')}
+              style="cursor: pointer; accent-color: #f59e0b;"
+            />
+          </label>
+        </div>
+      </div>
+    </section>
+
+    {#if showJournalModal}
+      <AstrologicalJournalModal
+        token={auth.getAccessToken() || undefined}
+        open={showJournalModal}
+        onClose={() => (showJournalModal = false)}
       />
     {/if}
 

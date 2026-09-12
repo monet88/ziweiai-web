@@ -66,3 +66,5 @@ export * from './wallet/notifications';
 export * from './synthesis/synthesis';
 export * from './horoscope/destiny-timeline';
 export * from './wallet/referral-hub';
+export * from './horoscope/palace-deep-dive';
+export * from './journal/astrological-journal';

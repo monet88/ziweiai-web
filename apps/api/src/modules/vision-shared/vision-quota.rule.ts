@@ -9,8 +9,8 @@ export class VisionQuotaRule implements OnModuleInit {
   onModuleInit(): void {
     this.registry.register({
       featureKey: 'vision-analysis',
-      dailyLimit: apiEnv.API_EXPLANATIONS_PER_DAY_PER_USER, // Using explanation limit as default for vision
-      dailyErrorMessage: 'Daily explanation quota exceeded.',
+      dailyLimit: apiEnv.API_VISION_REQUESTS_PER_DAY_PER_USER,
+      dailyErrorMessage: 'Daily vision analysis quota exceeded.',
     });
   }
 }

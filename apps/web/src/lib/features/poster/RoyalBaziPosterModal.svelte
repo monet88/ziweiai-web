@@ -405,7 +405,7 @@
               <span>Bản quyền số hóa bởi ViOS Tử Vi Toàn Tập</span>
             </div>
             <div class="footer-center">
-              <span>https://tuvitoantap.vercel.app</span>
+              <span>https://tuvitoantap.online</span>
             </div>
             <div class="footer-right">
               <span class="footer-code-label">Mã chứng thư:</span>

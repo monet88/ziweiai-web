@@ -70,7 +70,8 @@ export const apiEnvSchema = z.object({
   // app cũ — không còn dùng sau khi migrate sang SvelteKit). Khớp với .env.example.
   API_CORS_ORIGINS: z
     .string()
-    .default('http://localhost:5173,http://localhost:4173,http://localhost:3000,https://tuvitoantap.vercel.app'),
+    .default('http://localhost:5173,http://localhost:4173,http://localhost:3000,https://tuvitoantap.vercel.app,https://tuvitoantap.online,https://www.tuvitoantap.online'),
+  PUBLIC_ORIGIN: z.string().default('https://tuvitoantap.online'),
   API_REQUESTS_PER_MINUTE_PER_IP: z.coerce.number().int().positive().default(60),
   API_REQUESTS_PER_MINUTE_PER_USER: z.coerce.number().int().positive().default(30),
   API_CHARTS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(20),

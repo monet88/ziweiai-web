@@ -174,7 +174,7 @@ export function buildMysticalOgTree(input: {
               paddingTop: 22,
             },
             [
-              el('span', { fontSize: 22, color: '#cfc7ba' }, 'Xem luận giải AI tại tuvitoantap.vercel.app'),
+              el('span', { fontSize: 22, color: '#cfc7ba' }, 'Xem luận giải AI tại tuvitoantap.online'),
               el(
                 'div',
                 {
@@ -323,7 +323,7 @@ export function buildReferralOgTree(input: {
               paddingTop: 22,
             },
             [
-              el('span', { fontSize: 22, color: '#cfc7ba' }, 'Xem luận giải AI tại tuvitoantap.vercel.app'),
+              el('span', { fontSize: 22, color: '#cfc7ba' }, 'Xem luận giải AI tại tuvitoantap.online'),
               el(
                 'div',
                 {

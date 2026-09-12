@@ -28,7 +28,7 @@
     if (typeof window !== 'undefined' && window.location?.href) {
       return window.location.href;
     }
-    return `https://tuvitoantap.vercel.app/blog/${slug}`;
+    return `https://tuvitoantap.online/blog/${slug}`;
   }
 
   function shareFacebook(): void {
@@ -98,14 +98,14 @@
                 name: 'ViOS — Tử Vi Toàn Tập',
                 logo: {
                   '@type': 'ImageObject',
-                  url: 'https://tuvitoantap.vercel.app/icon-192.svg',
+                  url: 'https://tuvitoantap.online/icon-192.svg',
                 },
               },
               mainEntityOfPage: {
                 '@type': 'WebPage',
-                '@id': `https://tuvitoantap.vercel.app/blog/${post.slug}`,
+                '@id': `https://tuvitoantap.online/blog/${post.slug}`,
               },
-              image: 'https://tuvitoantap.vercel.app/og-image.png',
+              image: 'https://tuvitoantap.online/og-image.png',
             },
             {
               '@type': 'BreadcrumbList',
@@ -114,19 +114,19 @@
                   '@type': 'ListItem',
                   position: 1,
                   name: 'Trang Chủ',
-                  item: 'https://tuvitoantap.vercel.app/',
+                  item: 'https://tuvitoantap.online/',
                 },
                 {
                   '@type': 'ListItem',
                   position: 2,
                   name: 'Cẩm Nang Mệnh Lý',
-                  item: 'https://tuvitoantap.vercel.app/blog',
+                  item: 'https://tuvitoantap.online/blog',
                 },
                 {
                   '@type': 'ListItem',
                   position: 3,
                   name: post.title,
-                  item: `https://tuvitoantap.vercel.app/blog/${post.slug}`,
+                  item: `https://tuvitoantap.online/blog/${post.slug}`,
                 },
               ],
             },
@@ -156,14 +156,14 @@
   <meta name="description" content={post ? post.summary : 'Khám phá tri thức mệnh lý và thuật số hoàng gia cùng ViOS.'} />
   {#if post}
     <meta name="keywords" content={post.keywords.join(', ')} />
-    <link rel="canonical" href={`https://tuvitoantap.vercel.app/blog/${post.slug}`} />
+    <link rel="canonical" href={`https://tuvitoantap.online/blog/${post.slug}`} />
 
     <!-- Open Graph -->
     <meta property="og:type" content="article" />
-    <meta property="og:url" content={`https://tuvitoantap.vercel.app/blog/${post.slug}`} />
+    <meta property="og:url" content={`https://tuvitoantap.online/blog/${post.slug}`} />
     <meta property="og:title" content={`${post.title} | ViOS`} />
     <meta property="og:description" content={post.summary} />
-    <meta property="og:image" content="https://tuvitoantap.vercel.app/og-image.png" />
+    <meta property="og:image" content="https://tuvitoantap.online/og-image.png" />
     <meta property="article:published_time" content={post.publishedAt} />
     <meta property="article:author" content={post.author.name} />
     <meta property="article:section" content={post.categoryLabel} />
@@ -172,7 +172,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={`${post.title} | ViOS`} />
     <meta name="twitter:description" content={post.summary} />
-    <meta name="twitter:image" content="https://tuvitoantap.vercel.app/og-image.png" />
+    <meta name="twitter:image" content="https://tuvitoantap.online/og-image.png" />
 
     <!-- Schema.org Article & FAQPage JSON-LD -->
     {#if schemaOrgJson}

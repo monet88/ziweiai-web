@@ -26,18 +26,18 @@
 <svelte:head>
   <title>Cẩm Nang Mệnh Lý & Thuật Số Chuẩn Xác | ViOS Blog</title>
   <meta name="description" content="Khám phá kho tàng kiến thức thuật số hoàng gia: Luận giải 14 chính tinh Tử Vi, Bát Tự Tứ Trụ cân bằng Dụng Thần, Kinh Dịch Lục Hào chiêm bốc, và Nhân Tướng Học AI." />
-  <link rel="canonical" href="https://tuvitoantap.vercel.app/blog" />
+  <link rel="canonical" href="https://tuvitoantap.online/blog" />
   
   <meta property="og:type" content="blog" />
-  <meta property="og:url" content="https://tuvitoantap.vercel.app/blog" />
+  <meta property="og:url" content="https://tuvitoantap.online/blog" />
   <meta property="og:title" content="Cẩm Nang Mệnh Lý & Thuật Số Chuẩn Xác | ViOS Blog" />
   <meta property="og:description" content="Khám phá kho tàng kiến thức thuật số hoàng gia: Luận giải 14 chính tinh Tử Vi, Bát Tự Tứ Trụ, Kinh Dịch Lục Hào, Nhân Tướng Học AI." />
-  <meta property="og:image" content="https://tuvitoantap.vercel.app/og-image.png" />
+  <meta property="og:image" content="https://tuvitoantap.online/og-image.png" />
   
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Cẩm Nang Mệnh Lý & Thuật Số Chuẩn Xác | ViOS Blog" />
   <meta name="twitter:description" content="Khám phá kho tàng kiến thức thuật số hoàng gia: Luận giải 14 chính tinh Tử Vi, Bát Tự Tứ Trụ, Kinh Dịch Lục Hào, Nhân Tướng Học AI." />
-  <meta name="twitter:image" content="https://tuvitoantap.vercel.app/og-image.png" />
+  <meta name="twitter:image" content="https://tuvitoantap.online/og-image.png" />
 
   <script type="application/ld+json">
     {
@@ -48,13 +48,13 @@
           "@type": "ListItem",
           "position": 1,
           "name": "Trang Chủ",
-          "item": "https://tuvitoantap.vercel.app/"
+          "item": "https://tuvitoantap.online/"
         },
         {
           "@type": "ListItem",
           "position": 2,
           "name": "Cẩm Nang Mệnh Lý",
-          "item": "https://tuvitoantap.vercel.app/blog"
+          "item": "https://tuvitoantap.online/blog"
         }
       ]
     }

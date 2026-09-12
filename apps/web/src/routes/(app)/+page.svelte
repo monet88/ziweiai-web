@@ -215,18 +215,18 @@
 <svelte:head>
   <title>ViOS — Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia</title>
   <meta name="description" content="ViOS Tử Vi Toàn Tập — Nền tảng thuật số AI hoàng triều đỉnh cao: Lập lá số Tử Vi chính tông, Bát Tự Tứ Trụ, Thần Số Học, Kinh Dịch Lục Hào, Xem Tướng Mặt & Chỉ Tay AI. Trải nghiệm miễn phí 100% & Nhận 50 XU mỗi ngày!" />
-  <link rel="canonical" href="https://tuvitoantap.vercel.app/" />
+  <link rel="canonical" href="https://tuvitoantap.online/" />
   
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://tuvitoantap.vercel.app/" />
+  <meta property="og:url" content="https://tuvitoantap.online/" />
   <meta property="og:title" content="ViOS — Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia" />
   <meta property="og:description" content="Khám phá vận mệnh cùng ViOS: Lập lá số Tử Vi, Tứ Trụ Bát Tự, Thần Số Học, Kinh Dịch, Nhân Tướng AI. Trải nghiệm miễn phí 100% & Điểm danh nhận 50 XU mỗi ngày!" />
-  <meta property="og:image" content="https://tuvitoantap.vercel.app/og-image.png" />
+  <meta property="og:image" content="https://tuvitoantap.online/og-image.png" />
   
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="ViOS — Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia" />
   <meta name="twitter:description" content="Khám phá vận mệnh cùng ViOS: Lập lá số Tử Vi, Tứ Trụ Bát Tự, Thần Số Học, Kinh Dịch, Nhân Tướng AI. Trải nghiệm miễn phí 100% & Điểm danh nhận 50 XU mỗi ngày!" />
-  <meta name="twitter:image" content="https://tuvitoantap.vercel.app/og-image.png" />
+  <meta name="twitter:image" content="https://tuvitoantap.online/og-image.png" />
 </svelte:head>
 
 <main class="celestial-page">

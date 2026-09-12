@@ -5,6 +5,7 @@ import { SUPABASE_CLIENT } from '../../database/supabase-client';
 import { ProfilesRepository } from '../../database/repositories/profiles.repository';
 import { WalletEngineService } from '../wallet/wallet-engine.service';
 import { sanitizeReferralCode } from '../share/append-referral-query';
+import { apiEnv } from '../../config/env';
 
 export const DAILY_REFERRAL_LIMIT = 5; // Tối đa 5 lượt thưởng ref / ngày = 50 XU/ngày cho 1 tài khoản giới thiệu
 
@@ -153,7 +154,7 @@ export class RewardsService {
     return this.profilesRepository.listReferralsByReferrerId(userId);
   }
 
-  async getPartnerHubData(userId: string, origin = 'https://tuvitoantap.vercel.app') {
+  async getPartnerHubData(userId: string, origin = apiEnv.PUBLIC_ORIGIN) {
     const profile = await this.profilesRepository.findProfileByUserId(userId);
     const referralCode = profile?.referralCode || `ref_${userId.slice(0, 8)}`;
     const referralLink = `${origin}/?ref=${referralCode}`;

@@ -174,7 +174,7 @@ export const GET: RequestHandler = async ({ params }) => {
           style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 22px;"
         >
           <span style="font-size: 22px; color: #cfc7ba;">
-            Xem luận giải AI tại tuvitoantap.vercel.app
+            Xem luận giải AI tại tuvitoantap.online
           </span>
           <div style="display: flex; padding: 12px 26px; border-radius: 999px; background: #d4af37;">
             <span style="font-size: 22px; font-weight: 700; color: #14110c;">Mở lá số</span>

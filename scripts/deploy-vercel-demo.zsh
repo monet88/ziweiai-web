@@ -61,4 +61,5 @@ fi
 echo "Resolved deployment URL: ${deployment_url}"
 
 npx --yes vercel@latest alias set "${deployment_url}" "${DOMAIN}" --token "${VERCEL_GALAXY}"
+npx --yes vercel@latest alias set "${deployment_url}" "tuvitoantap.online" --token "${VERCEL_GALAXY}" || true
 npx --yes vercel@latest inspect "https://${DOMAIN}" --token "${VERCEL_GALAXY}"

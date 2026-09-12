@@ -18,7 +18,7 @@ const chartIdPipe = new ZodValidationPipe(z.uuid(), 'Mã lá số không hợp l
 const BOT_USER_AGENTS =
   /(bot|facebookexternalhit|zalo|discordbot|telegrambot|slackbot|vkShare|whatsapp|skype|twitterbot|linkedinbot|pinterest|applebot|yandex)/i;
 
-const PUBLIC_ORIGIN = 'https://tuvitoantap.vercel.app';
+const PUBLIC_ORIGIN = apiEnv.PUBLIC_ORIGIN;
 
 // jsDelivr fontsource Inter subsets (GitHub raw path 404s).
 const INTER_FONT_URLS = [

@@ -129,7 +129,7 @@
         <div class="contact-card">
           <p><strong>Dự án:</strong> Tử Vi Toàn Tập (ViOS)</p>
           <p><strong>Email Hỗ Trợ:</strong> <a href="mailto:galaxypro710@gmail.com">galaxypro710@gmail.com</a></p>
-          <p><strong>Trang Chủ & Bản Web:</strong> <a href="https://tuvitoantap.vercel.app" target="_blank" rel="noreferrer">https://tuvitoantap.vercel.app</a></p>
+          <p><strong>Trang Chủ & Bản Web:</strong> <a href="https://tuvitoantap.online" target="_blank" rel="noreferrer">https://tuvitoantap.online</a></p>
         </div>
       </section>
     </article>

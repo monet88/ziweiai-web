@@ -24,7 +24,8 @@
   let isCopied = $state(false);
   let isRendering = $state(false);
 
-  let shareUrl = $derived(`https://tuvitoantap.vercel.app/share/ref/${referralCode}`);
+  let origin = $derived(typeof window !== 'undefined' ? window.location.origin : 'https://tuvitoantap.online');
+  let shareUrl = $derived(`${origin}/share/ref/${referralCode}`);
 
   $effect(() => {
     if (isOpen && browser && canvasRef) {
@@ -221,7 +222,7 @@
 
     ctx.font = `400 ${9.5 * scale}px "Space Grotesk", sans-serif`;
     ctx.fillStyle = '#94a3b8';
-    ctx.fillText('tuvitoantap.vercel.app  •  ViOS AI Platform', width / 2, footerY + 20 * scale);
+    ctx.fillText('tuvitoantap.online  •  ViOS AI Platform', width / 2, footerY + 20 * scale);
   }
 
   async function handleDownloadImage() {

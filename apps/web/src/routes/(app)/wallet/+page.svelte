@@ -90,6 +90,9 @@
     }, 2000);
   }
 
+  const siteOrigin = browser ? window.location.origin : 'https://tuvitoantap.online';
+  const referralShareUrl = $derived(walletModel.referralCode ? `${siteOrigin}/share/ref/${walletModel.referralCode}` : '');
+
   async function handleRefresh() {
     refreshing = true;
     try {
@@ -297,13 +300,13 @@
               <input
                 type="text"
                 readonly
-                value={`https://tuvitoantap.vercel.app/share/ref/${walletModel.referralCode}`}
+                value={referralShareUrl}
                 class="ref-input"
               />
               <button
                 type="button"
                 class="btn-copy-ref"
-                onclick={() => copyToClipboard(`https://tuvitoantap.vercel.app/share/ref/${walletModel.referralCode}`, 'refLink')}
+                onclick={() => copyToClipboard(referralShareUrl, 'refLink')}
               >
                 {#if copiedField === 'refLink'}
                   <Check size={14} /> Đã Copy
@@ -319,21 +322,21 @@
               <button
                 type="button"
                 class="btn-share-social zalo"
-                onclick={() => shareOnZalo(`https://tuvitoantap.vercel.app/share/ref/${walletModel.referralCode}`)}
+                onclick={() => shareOnZalo(referralShareUrl)}
               >
                 Zalo
               </button>
               <button
                 type="button"
                 class="btn-share-social facebook"
-                onclick={() => shareOnFacebook(`https://tuvitoantap.vercel.app/share/ref/${walletModel.referralCode}`)}
+                onclick={() => shareOnFacebook(referralShareUrl)}
               >
                 Facebook
               </button>
               <button
                 type="button"
                 class="btn-share-social telegram"
-                onclick={() => shareOnTelegram(`https://tuvitoantap.vercel.app/share/ref/${walletModel.referralCode}`, 'Tham gia ViOS ngay để nhận XU thưởng Tử Vi & Chiêm Tinh AI!')}
+                onclick={() => shareOnTelegram(referralShareUrl, 'Tham gia ViOS ngay để nhận XU thưởng Tử Vi & Chiêm Tinh AI!')}
               >
                 Telegram
               </button>

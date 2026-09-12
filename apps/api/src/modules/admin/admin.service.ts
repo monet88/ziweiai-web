@@ -84,6 +84,21 @@ export class AdminService {
     return { success: true, userId, amount };
   }
 
+  async banUser(userId: string, isBanned: boolean, actorEmail?: string) {
+    if (this.adminRepo) {
+      return this.adminRepo.adminBanUser(userId, isBanned, actorEmail);
+    }
+    const { error } = await this.client
+      .from('profiles')
+      .update({ is_banned: isBanned, updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
+    if (error) {
+      this.logger.error(`Failed to update ban status for user ${userId}`, error);
+      throw new BadRequestException('Could not update ban status');
+    }
+    return true;
+  }
+
   async cleanupAnonUsers() {
     this.logger.log('Cleaning up anonymous/unused profiles...');
     const { data: profiles, error } = await this.client

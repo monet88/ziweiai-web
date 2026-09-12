@@ -46,6 +46,26 @@ export class AdminController {
     return this.adminService.topupUser(userId, body.amount, currentUser?.email || undefined);
   }
 
+  @Post('users/:userId/ban')
+  @UseGuards(SuperAdminGuard)
+  async banUser(
+    @Param('userId') userId: string,
+    @CurrentUser() currentUser?: AuthenticatedUser,
+  ) {
+    const success = await this.adminService.banUser(userId, true, currentUser?.email || undefined);
+    return { success };
+  }
+
+  @Post('users/:userId/unban')
+  @UseGuards(SuperAdminGuard)
+  async unbanUser(
+    @Param('userId') userId: string,
+    @CurrentUser() currentUser?: AuthenticatedUser,
+  ) {
+    const success = await this.adminService.banUser(userId, false, currentUser?.email || undefined);
+    return { success };
+  }
+
   @Post('users/cleanup-anon')
   @UseGuards(SuperAdminGuard)
   async cleanupAnonUsers() {
@@ -79,6 +99,16 @@ export class AdminController {
     }
 
     return this.adminService.updateConfig(parseResult.data.key, parseResult.data.value);
+  }
+
+  @Post('configs/:key')
+  @UseGuards(SuperAdminGuard)
+  async updateConfigByKey(
+    @Param('key') key: string,
+    @Body() body: any,
+  ) {
+    const value = body?.value !== undefined ? body.value : body;
+    return this.adminService.updateConfig(key, value);
   }
 
   @Post('reconcile')

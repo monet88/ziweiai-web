@@ -83,4 +83,30 @@ describe('AdminController', () => {
     const res = await controller.getAuditLogs('1', '50');
     expect(res).toEqual({ logs: [{ id: '1', action: 'TOPUP_XU' }], count: 1, page: 1, limit: 50 });
   });
+
+  it('should ban user and log admin email', async () => {
+    (service as any).banUser = vi.fn().mockResolvedValue(true);
+    const mockAdmin: AuthenticatedUser = {
+      userId: 'admin-id',
+      email: 'admin@ziweiai.com',
+      isAnonymous: false,
+    };
+    const res = await controller.banUser('u_123', mockAdmin);
+    expect(res).toEqual({ success: true });
+    expect((service as any).banUser).toHaveBeenCalledWith('u_123', true, 'admin@ziweiai.com');
+  });
+
+  it('should unban user', async () => {
+    (service as any).banUser = vi.fn().mockResolvedValue(true);
+    const res = await controller.unbanUser('u_123');
+    expect(res).toEqual({ success: true });
+    expect((service as any).banUser).toHaveBeenCalledWith('u_123', false, undefined);
+  });
+
+  it('should update config by key param', async () => {
+    (service as any).updateConfig = vi.fn().mockResolvedValue({ success: true, key: 'myKey', value: 999 });
+    const res = await controller.updateConfigByKey('myKey', { value: 999 });
+    expect(res).toEqual({ success: true, key: 'myKey', value: 999 });
+    expect((service as any).updateConfig).toHaveBeenCalledWith('myKey', 999);
+  });
 });

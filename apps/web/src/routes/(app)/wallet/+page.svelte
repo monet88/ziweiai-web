@@ -8,6 +8,7 @@
   import XuSuccessModal from '$lib/features/payment/XuSuccessModal.svelte';
   import { onMount } from 'svelte';
   import ViralReferralCardModal from '$lib/features/referral/ViralReferralCardModal.svelte';
+  import ReferralPartnerHubModal from '$lib/features/referral/ReferralPartnerHubModal.svelte';
   import TurnstileWidget from '$lib/components/security/TurnstileWidget.svelte';
   import { page } from '$app/state';
   import {
@@ -31,7 +32,8 @@
     CreditCard,
     Zap,
     CheckCircle2,
-    Lock
+    Lock,
+    Trophy
   } from 'lucide-svelte';
 
   import {
@@ -83,6 +85,7 @@
   let refreshing = $state(false);
   let copiedField = $state<string | null>(null);
   let showViralModal = $state(false);
+  let showPartnerHubModal = $state(false);
   let turnstileWidget = $state<any>(null);
 
   function copyToClipboard(text: string, fieldName: string) {
@@ -349,15 +352,25 @@
             <p class="loading-text">Đang tải mã giới thiệu...</p>
           {/if}
 
-          <!-- Nút Tạo Thiệp Mời Celestial Luxury -->
-          <button
-            type="button"
-            class="btn-open-viral-card"
-            onclick={() => (showViralModal = true)}
-          >
-            <Sparkles size={16} class="gold-icon" />
-            <span>Tạo Thiệp Mời Celestial Luxury (QR + Ảnh Đẹp)</span>
-          </button>
+          <!-- Các Nút Hành Động Referral: Thiệp Mời & Partner Hub -->
+          <div class="referral-action-buttons">
+            <button
+              type="button"
+              class="btn-open-viral-card"
+              onclick={() => (showViralModal = true)}
+            >
+              <Sparkles size={16} class="gold-icon" />
+              <span>Tạo Thiệp Mời Celestial Luxury</span>
+            </button>
+            <button
+              type="button"
+              class="btn-open-partner-hub"
+              onclick={() => (showPartnerHubModal = true)}
+            >
+              <Trophy size={16} class="hub-icon" />
+              <span>Cấp Bậc & Bảng Vàng Đối Tác</span>
+            </button>
+          </div>
 
           <!-- 2 thẻ KPI thống kê Referral -->
           <div class="referral-stats-grid">
@@ -549,6 +562,13 @@
     referralCode={walletModel.referralCode || shortUuid || 'VIP8888'}
     onClose={() => (showViralModal = false)}
   />
+
+  {#if showPartnerHubModal}
+    <ReferralPartnerHubModal
+      token={auth.getAccessToken() || undefined}
+      onClose={() => (showPartnerHubModal = false)}
+    />
+  {/if}
 
   <TurnstileWidget bind:this={turnstileWidget} action="wallet_checkin" />
 </AppScaffold>
@@ -1082,14 +1102,28 @@
   .btn-share-social.facebook:hover { background: #1877f2; border-color: #1877f2; color: #fff; }
   .btn-share-social.telegram:hover { background: #229ed9; border-color: #229ed9; color: #fff; }
 
-  .btn-open-viral-card {
+  .referral-action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  @media (max-width: 640px) {
+    .referral-action-buttons {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .btn-open-viral-card,
+  .btn-open-partner-hub {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     width: 100%;
-    margin-top: 12px;
-    padding: 10px 16px;
+    margin-top: 0;
+    padding: 10px 14px;
     border-radius: var(--radius-md, 12px);
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(124, 58, 237, 0.16));
     border: 1px solid rgba(245, 158, 11, 0.4);
@@ -1109,8 +1143,26 @@
     color: #fef08a;
   }
 
+  .btn-open-partner-hub {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(245, 158, 11, 0.16));
+    border-color: rgba(59, 130, 246, 0.4);
+    color: #93c5fd;
+  }
+
+  .btn-open-partner-hub:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(245, 158, 11, 0.26));
+    border-color: #60a5fa;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.2);
+    color: #bfdbfe;
+  }
+
   :global(.gold-icon) {
     color: #f59e0b;
+  }
+
+  :global(.hub-icon) {
+    color: #60a5fa;
   }
 
   .referral-stats-grid {

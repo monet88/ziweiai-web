@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sprint 79 Implementation Notes — ViOS Tử Vi Toàn Tập</title>
+  <title>Sprint 81 Implementation Notes — ViOS Tử Vi Toàn Tập</title>
   <style>
     :root {
-      --bg: #0d1117;
-      --card-bg: #161b22;
-      --border: #30363d;
-      --gold: #d4af37;
-      --gold-light: #f3e5ab;
-      --text: #c9d1d9;
-      --text-bright: #f0f6fc;
-      --accent: #58a6ff;
-      --success: #3fb950;
-      --purple: #bc8cff;
-      --danger: #f85149;
+      --bg: #0b0f17;
+      --card-bg: #131b26;
+      --border: #26354a;
+      --gold: #f59e0b;
+      --gold-light: #fde68a;
+      --text: #cbd5e1;
+      --text-bright: #f8fafc;
+      --accent: #38bdf8;
+      --success: #34d399;
+      --purple: #c084fc;
+      --danger: #f87171;
     }
     body {
       background: var(--bg);
@@ -27,7 +27,7 @@
       padding: 2rem;
     }
     .container {
-      max-width: 960px;
+      max-width: 980px;
       margin: 0 auto;
     }
     header {
@@ -37,158 +37,179 @@
     }
     h1 {
       color: var(--gold);
-      font-size: 2rem;
+      font-size: 2.2rem;
       margin-bottom: 0.5rem;
     }
     .badge {
       display: inline-block;
-      padding: 0.25rem 0.6rem;
+      padding: 0.3rem 0.75rem;
       border-radius: 999px;
       font-size: 0.8rem;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       margin-right: 0.5rem;
+      letter-spacing: 0.05em;
     }
-    .badge-gold { background: rgba(212, 175, 55, 0.2); color: var(--gold-light); border: 1px solid var(--gold); }
-    .badge-success { background: rgba(63, 185, 80, 0.2); color: var(--success); border: 1px solid var(--success); }
-    .badge-purple { background: rgba(188, 140, 255, 0.2); color: var(--purple); border: 1px solid var(--purple); }
+    .badge-gold { background: rgba(245, 158, 11, 0.15); color: var(--gold-light); border: 1px solid var(--gold); }
+    .badge-success { background: rgba(52, 211, 153, 0.15); color: var(--success); border: 1px solid var(--success); }
+    .badge-purple { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid var(--purple); }
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
+      border-radius: 10px;
+      padding: 1.75rem;
+      margin-bottom: 1.75rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
     h2 {
       color: var(--text-bright);
       border-bottom: 1px solid var(--border);
       padding-bottom: 0.5rem;
       margin-top: 0;
+      font-size: 1.4rem;
     }
     h3 {
       color: var(--gold-light);
+      margin-top: 1rem;
     }
     ul {
       padding-left: 1.5rem;
     }
     li {
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.6rem;
     }
     code {
-      background: rgba(110, 118, 129, 0.2);
+      background: rgba(56, 189, 248, 0.15);
       padding: 0.2rem 0.4rem;
       border-radius: 4px;
-      font-family: monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       color: var(--accent);
+      font-size: 0.9em;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      color: var(--success);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+    th {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-bright);
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-        <span class="badge badge-gold">ViOS Sprint 79</span>
-        <span class="badge badge-success">Production Launch Ready</span>
-        <span class="badge badge-purple">Domain: tuvitoantap.online</span>
+      <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+        <span class="badge badge-gold">ViOS Sprint 81</span>
+        <span class="badge badge-success">Growth & Monetization</span>
+        <span class="badge badge-purple">Production Ready</span>
       </div>
-      <h1>Sprint 79: Production Launch Hardening & Custom Domain Transition</h1>
+      <h1>Sprint 81: Growth, Monetization & Full User Journey Verification</h1>
       <p>Implementation Notes, Living Spec, and Architectural Decisions as required by Karpathy Guidelines.</p>
-    </header>
-
-    <div class="card">
-      <h2>1. Unspecified & Implicit Decisions</h2>
-      <ul>
-        <li><strong>Custom Domain Dual Alignment:</strong> Cấu hình hệ thống để hỗ trợ song song cả domain chính <code>https://tuvitoantap.online</code> (và <code>https://www.tuvitoantap.online</code>) lẫn fallback demo <code>https://tuvitoantap.vercel.app</code>. Đảm bảo zero-downtime khi DNS đang trong quá trình propagations.</li>
-        <li><strong>Automated Sitemap Generator:</strong> Xây dựng script <code>scripts/generate-sitemap.ts</code> chạy trực tiếp với <code>tsx</code> và tích hợp vào <code>pnpm build:sitemap</code> cũng như hook vào build pipeline để luôn sinh mới sitemap tự động chứa 21 static routes chính và 4 dynamic blog slugs chuẩn SEO.</li>
-        <li><strong>Edge CDN Cache-Control Architecture:</strong> Định nghĩa chính sách phân tầng cache trong <code>vercel.json</code>:
-          <ul>
-            <li>Static immutable assets (fonts, tarot cards, icons): <code>public, max-age=31536000, immutable</code>.</li>
-            <li>Static web metadata (manifest, favicons): <code>public, max-age=86400, stale-while-revalidate=604800</code>.</li>
-            <li>SEO search engine docs (<code>robots.txt</code>, <code>sitemap.xml</code>): <code>public, max-age=3600, stale-while-revalidate=86400</code>.</li>
-          </ul>
-        </li>
-        <li><strong>Vision AI Token Guardrail:</strong> Siết chặt quota bảo vệ token dump xuống <code>API_VISION_REQUESTS_PER_DAY_PER_USER = 5</code> (thay vì 50), yêu cầu định danh email, chặn hoàn toàn anonymous bot spam.</li>
-      </ul>
-    </div>
-
-    <div class="card">
-      <h2>2. Deviations from Specification</h2>
-      <p>Không có sai lệch tiêu cực. Các bổ sung tối ưu hóa hiệu năng và an toàn:</p>
-      <ul>
-        <li><strong>Preconnect & DNS-Prefetch:</strong> Thêm thẻ <code>&lt;link rel="preconnect"&gt;</code> và <code>&lt;link rel="dns-prefetch"&gt;</code> cho Supabase Auth API và Cloudflare Turnstile CDN trong <code>app.html</code> giúp giảm 150-250ms latency cho initial load và auth handshake.</li>
-        <li><strong>Vercel Domain Deployment Resilience:</strong> Trong <code>scripts/deploy-vercel-demo.zsh</code>, lệnh gán alias cho <code>tuvitoantap.online</code> được bọc với <code>|| true</code> để quá trình deploy Vercel demo không bị ngắt quãng nếu người dùng chưa kịp verify DNS trên Dashboard.</li>
-      </ul>
-    </div>
-
-    <div class="card">
-      <h2>3. Considered Trade-offs</h2>
-      <ul>
-        <li><strong>Dynamic Sitemap Route vs Static Pre-generated XML:</strong>
-          <br><em>Phương án chọn:</em> Sinh tĩnh <code>apps/web/static/sitemap.xml</code> trước khi build bằng TypeScript script.
-          <br><em>Lý do:</em> 0ms serverless invocation latency, tương thích 100% với static CDN edge caching, Googlebot cào cực nhanh mà không tiêu tốn function execution compute trên Vercel.
-        </li>
-        <li><strong>Strict Host Header Checking vs Flexible Origin Fallback:</strong>
-          <br><em>Phương án chọn:</em> Ưu tiên <code>window.location.origin</code> phía client, kết hợp fallback <code>PUBLIC_SITE_URL || 'https://tuvitoantap.online'</code> phía server.
-          <br><em>Lý do:</em> Hoạt động trơn tru cả ở localhost:5173, Vercel preview URL (<code>*.vercel.app</code>) và custom domain thật (<code>tuvitoantap.online</code>).
-        </li>
-      </ul>
-    </div>
-
-    <div class="card">
-      <h2>4. Maintenance & Review Notes</h2>
-      <ul>
-        <li><strong>Environment Variables:</strong> <code>API_CORS_ORIGINS</code> trong <code>apps/api/src/config/env.ts</code> đã bao gồm cả <code>tuvitoantap.online</code> và <code>www.tuvitoantap.online</code>.</li>
-        <li><strong>Vision Hardening:</strong> Biến <code>API_VISION_REQUESTS_PER_DAY_PER_USER</code> điều khiển giới hạn vision toàn app, dễ dàng điều chỉnh qua env khi cần mở rộng quota.</li>
-        <li><strong>Deploy Script:</strong> Luôn dùng <code>pnpm deploy:vercel-demo</code> để deploy demo/production chuẩn hóa.</li>
-      </ul>
-    </div>
-
-    <!-- SPRINT 80 SECTION -->
-    <header style="margin-top: 3rem;">
-      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-        <span class="badge badge-gold">ViOS Sprint 80</span>
-        <span class="badge badge-success">Live Payment & Analytics</span>
-        <span class="badge badge-purple">SePay Bank: ACB 6384251098</span>
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        <span>Validation Gates: 100% Passed (Web: 413 unit tests | API: 542 unit tests | E2E: 4/4 Core Flows)</span>
       </div>
-      <h1>Sprint 80: SePay Live Production Reconciliation & Financial Dashboard</h1>
-      <p>Implementation Notes, Living Spec, and Architectural Decisions (Karpathy Rule #5).</p>
     </header>
 
     <div class="card">
-      <h2>1. Unspecified & Implicit Decisions (Sprint 80)</h2>
+      <h2>1. Tối Ưu Hóa Phễu Viral Referral & Trung Tâm Đối Tác (Partner Hub)</h2>
       <ul>
-        <li><strong>Multi-Secret Webhook Token Verification:</strong> Thay vì chỉ kiểm tra 1 biến bí mật, <code>payment.controller.ts</code> thu thập tập hợp <code>[SEPAY_WEBHOOK_SECRET, SEPAY_API_KEY, SEPAY_TESTMODE_API]</code> để chấp nhận chữ ký xác thực từ cả Sandbox lẫn Live Production mà không bị gián đoạn hay cần redeploy khi đổi key.</li>
-        <li><strong>Nullable Owner for Unmatched Transactions:</strong> Bảng <code>transactions</code> cho phép <code>owner_user_id IS NULL</code>. Nhờ đó, các giao dịch nạp tiền mà người dùng ghi sai hoặc thiếu mã <code>TVTT</code> sẽ không bị drop, mà được lưu lại với trạng thái <code>Chờ Gán</code> kèm memo ngân hàng (cột <code>content</code>) để Admin đối soát thủ công 1-click.</li>
-        <li><strong>Postgres Ambiguous Function Overload Cleanup:</strong> Xóa overload cũ của hàm <code>get_admin_analytics</code> chỉ nhận 1 tham số integer, đồng nhất hàm duy nhất nhận <code>(p_start_date timestamptz, p_end_date timestamptz)</code>, giải quyết lỗi 500 candidate ambiguity khi gọi từ NestJS.</li>
-        <li><strong>Gói Trải Nghiệm 10.000 VNĐ:</strong> Thêm gói nạp nhỏ nhất 10k (10 XU) trên UI <code>/wallet</code> nhằm phục vụ kiểm thử nạp tiền thật an toàn và giảm rào cản thanh toán cho người dùng lần đầu.</li>
-        <li><strong>Bonus XU Tiering:</strong> Tự động cộng thêm +20 XU cho gói 100k và +100 XU cho gói 500k khi đối soát SePay thành công.</li>
+        <li><strong>Vị trí tích hợp:</strong> Trang ví XU và điểm danh <code>apps/web/src/routes/(app)/wallet/+page.svelte</code>.</li>
+        <li><strong>Nâng cấp UX:</strong> Bổ sung nút hành động <code>btn-open-partner-hub</code> (icon Trophy) "Cấp Bậc & Bảng Vàng Đối Tác" song song với nút tạo thiệp mời Celestial Luxury, mở trực tiếp modal <code>ReferralPartnerHubModal</code>.</li>
+        <li><strong>Khuyến khích tăng trưởng:</strong> Người dùng dễ dàng theo dõi 5 cấp bậc đại sứ (Đại Sứ Khởi Đầu, Đồng, Bạc, Vàng, Kim Cương) và xem trực tiếp mã giới thiệu cùng link chia sẻ có tham số <code>?ref=MÃ</code>.</li>
       </ul>
     </div>
 
     <div class="card">
-      <h2>2. Deviations from Specification</h2>
+      <h2>2. Tính Năng Xuất Báo Cáo Hoàng Gia 19 Trang (Deluxe PDF Dossier)</h2>
       <ul>
-        <li>Không xóa bỏ hỗ trợ <code>SEPAY_TESTMODE_API</code> mà giữ lại theo cơ chế song song (fallback), đảm bảo các bài test tự động và mô phỏng webhook tiếp tục hoạt động trơn tru.</li>
-        <li>Bổ sung 4 Thẻ KPI Tài Chính và Bộ lọc Thời gian nhanh (Presets: 7 ngày, 30 ngày, tháng này) vào <code>/admin/analytics</code> giúp Admin nắm bắt ngay tổng doanh thu VNĐ quy đổi và XU tiêu thụ.</li>
+        <li><strong>Cấu trúc báo cáo:</strong> 19 trang in A4 vector chuẩn Khâm Thiên Giám (Bìa hoàng gia, Thiên Bàn 12 Cung, Thập Nhị Cung Chuyên Luận, Thập Niên Đại Vận I & II, Lưu Niên 2026, Triện Son & QR bảo chứng xác thực số).</li>
+        <li><strong>Định giá & Mở khóa:</strong> Phí 50 XU mở khóa vĩnh viễn cho từng lá số (IndexedDB cache 0ms + Supabase Persistence).</li>
+        <li><strong>Luồng Paywall 1-Chạm:</strong> Khi tài khoản thiếu XU (&lt; 50 XU), bấm nút "Hồ Sơ Hoàng Gia" sẽ tự động hiển thị <code>GlobalPaywallModal</code> kèm mã VietQR Live (TPBank <code>36889338888</code> - LE VAN TINH) đúng gói 50 XU (50.000đ).</li>
+        <li><strong>Tính năng xuất bản:</strong> Hỗ trợ in trực tiếp khổ A4 (<code>@media print</code> bảo toàn vector không vỡ nét) và tải tệp PDF độc lập.</li>
       </ul>
     </div>
 
     <div class="card">
-      <h2>3. Considered Trade-offs</h2>
+      <h2>3. Bộ Kiểm Thử Tự Động Hóa End-to-End (E2E Suite)</h2>
+      <p>Đã tạo bộ kiểm thử Playwright toàn diện tại <code>apps/web/tests/e2e/core-user-journey-sprint81.spec.ts</code> với 4 kịch bản trọng điểm:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Kịch Bản</th>
+            <th>Mục Tiêu Kiểm Thử</th>
+            <th>Thời Gian Thực Thi</th>
+            <th>Trạng Thái</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Test 1</strong></td>
+            <td>Lập lá số Tử Vi mới &rarr; Kiểm tra nút Hồ Sơ Hoàng Gia &rarr; Bật Paywall VietQR khi thiếu 50 XU</td>
+            <td>5.7s</td>
+            <td><span style="color: var(--success); font-weight: bold;">PASSED</span></td>
+          </tr>
+          <tr>
+            <td><strong>Test 2</strong></td>
+            <td>Ví XU: Cổng thanh toán TPBank Live 36889338888, kiểm tra chặn STK testmode cũ (6384251098)</td>
+            <td>0.5s</td>
+            <td><span style="color: var(--success); font-weight: bold;">PASSED</span></td>
+          </tr>
+          <tr>
+            <td><strong>Test 3</strong></td>
+            <td>Viral Referral: Nút tạo thiệp mời Celestial Luxury & Modal Cấp Bậc Đối Tác (Partner Hub)</td>
+            <td>1.7s</td>
+            <td><span style="color: var(--success); font-weight: bold;">PASSED</span></td>
+          </tr>
+          <tr>
+            <td><strong>Test 4</strong></td>
+            <td>Mở khóa Hồ Sơ Hoàng Gia 19 Trang & Modal Deluxe PDF (In ấn A4, Tải PDF, Đóng Esc)</td>
+            <td>3.4s</td>
+            <td><span style="color: var(--success); font-weight: bold;">PASSED</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>4. Verification & Validation Gates</h2>
       <ul>
-        <li><strong>Drop vs. Store Unmatched Transactions:</strong> Nếu drop các giao dịch sai mã, hệ thống tránh được rác, nhưng người dùng chuyển tiền thật sẽ bị mất tiền oan và gây khiếu nại. Chọn lưu với <code>owner_user_id = null</code> và hiển thị nổi bật trên UI Admin giúp xử lý hỗ trợ khách hàng nhanh chóng.</li>
-        <li><strong>Client-side Date Range Presets vs. Server-side Presets:</strong> Xử lý tính toán ngày preset ở frontend theo chuẩn UTC / local browser và gửi ISO string về server, giúp backend giữ nguyên tính idempotent và stateless.</li>
+        <li><strong>Contracts:</strong> <code>pnpm -F @ziweiai/contracts build</code> &rarr; Sạch sẽ.</li>
+        <li><strong>Web Check:</strong> <code>pnpm -F @ziweiai/web check</code> &rarr; 0 errors, 0 warnings.</li>
+        <li><strong>Web Unit Tests:</strong> <code>pnpm -F @ziweiai/web test</code> &rarr; 79/79 files passed (413 tests).</li>
+        <li><strong>API Typecheck:</strong> <code>pnpm -F @ziweiai/api typecheck</code> &rarr; 0 errors.</li>
+        <li><strong>API Unit Tests:</strong> <code>pnpm -F @ziweiai/api test</code> &rarr; 87/87 files passed (542 tests).</li>
+        <li><strong>E2E Integration:</strong> <code>core-user-journey-sprint81.spec.ts</code> &rarr; 4/4 passed (19.3s).</li>
       </ul>
     </div>
 
     <div class="card">
-      <h2>4. Maintenance & Operational Notes</h2>
+      <h2>5. Maintenance & Security Notes</h2>
       <ul>
-        <li><strong>Cổng nhận Webhook SePay Live:</strong> <code>https://tuvitoantap.online/api/webhooks/sepay</code></li>
-        <li><strong>Tài khoản ngân hàng thụ hưởng chính thức:</strong> TPBank <code>36889338888</code> (Chủ tài khoản: <code>LE VAN TINH</code>)</li>
-        <li><strong>Bảo mật & Tương thích:</strong> Đã triển khai Sanitization Guard chặn hoàn toàn STK testmode cũ (<code>6384251098</code>) phòng trường hợp browser client hoặc CDN cache cũ, tự động ép về tài khoản chính thức TPBank.</li>
-        <li><strong>Xác thực Webhook:</strong> Hỗ trợ chữ ký số chuẩn HMAC-SHA256 (<code>x-sepay-signature</code> & <code>x-sepay-timestamp</code> với dung sai ±5 phút chống Replay Attack) cùng fallback Authorization Header.</li>
-        <li><strong>Quy tắc cú pháp chuyển khoản:</strong> <code>TVTT &lt;USER_ID_PREFIX&gt;</code> (ví dụ: <code>TVTT a1b2c3d4</code>)</li>
+        <li>Tuyệt đối không lưu giữ bí mật API keys hay token ngân hàng trong code client.</li>
+        <li>Các biến môi trường nhạy cảm được cô lập tại <code>.env.local</code> và đồng bộ an toàn trên Vercel Environment Variables.</li>
+        <li>Mọi giao dịch nạp XU qua SePay đều được xác thực chữ ký HMAC-SHA256 kèm timestamp chống replay attack trong 300 giây.</li>
       </ul>
     </div>
   </div>

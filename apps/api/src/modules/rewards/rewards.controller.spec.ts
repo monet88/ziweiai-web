@@ -50,6 +50,7 @@ describe('RewardsController & RewardsService', () => {
 
     mockProfilesRepo = {
       listReferralsByReferrerId: vi.fn(),
+      getReferralLeaderboard: vi.fn().mockResolvedValue([]),
     } as unknown as ProfilesRepository;
 
     mockWalletEngineService = {
@@ -320,6 +321,14 @@ describe('RewardsController & RewardsService', () => {
         { id: '1', referrerId: 'user-uuid-123', refereeId: 'ref-1', rewardXu: 10, status: 'completed', createdAt: '2026-09-01T00:00:00Z' },
         { id: '2', referrerId: 'user-uuid-123', refereeId: 'ref-2', rewardXu: 10, status: 'completed', createdAt: '2026-09-02T00:00:00Z' },
       ]);
+      mockProfilesRepo.getReferralLeaderboard = vi.fn().mockResolvedValue([
+        {
+          referrerId: 'user-top-1',
+          maskedName: 'vip***@gmail.com',
+          referralCount: 99,
+          rewardXuEarned: 990,
+        },
+      ]);
 
       const res = await controller.getPartnerHub(mockReq);
       expect(res).toBeDefined();
@@ -330,6 +339,11 @@ describe('RewardsController & RewardsService', () => {
       expect(res.tier).toBe('dong');
       expect(res.leaderboard).toHaveLength(10);
       expect(res.leaderboard[0]?.rank).toBe(1);
+      expect(res.leaderboard[0]?.maskedName).toBe('vip***@gmail.com');
+      expect(res.leaderboard[0]?.referralCount).toBe(99);
+      expect(res.leaderboard[0]?.rewardXuEarned).toBe(990);
+      expect(res.leaderboard[0]?.tier).toBe('kim_cuong');
+      expect(res.leaderboard[0]?.badge).toBe('👑 Quán Quân Lan Tỏa');
     });
 
     it('should throw BadRequestException if user id is missing', async () => {

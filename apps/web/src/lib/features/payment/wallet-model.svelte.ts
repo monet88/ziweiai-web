@@ -6,6 +6,7 @@ import { z } from 'zod';
 // Singleton for Realtime channel to avoid duplicate connections
 let channel: ReturnType<typeof supabase.channel> | null = null;
 let activeSubscriptions = 0;
+let lastReferralRewardTimestamp = 0;
 
 export function createWalletModel(auth: AuthStore) {
   const queryClient = useQueryClient();
@@ -42,9 +43,12 @@ export function createWalletModel(auth: AuthStore) {
       if (previousBalance !== null && current > previousBalance) {
         const added = current - previousBalance;
         lastTopupEvent = { added, newBalance: current };
-        import('$lib/stores/toast').then(({ toast }) => {
-          toast.show(`🎉 Nạp XU thành công! +${added} XU đã được cộng vào ví.`, 'success');
-        });
+        const now = Date.now();
+        if (now - lastReferralRewardTimestamp > 3000) {
+          import('$lib/stores/toast').then(({ toast }) => {
+            toast.show(`🎉 Nạp XU thành công! +${added} XU đã được cộng vào ví.`, 'success');
+          });
+        }
       }
       previousBalance = current;
     }
@@ -82,7 +86,7 @@ export function createWalletModel(auth: AuthStore) {
       if (channel) supabase.removeChannel(channel);
       
       channel = supabase
-        .channel(`public:profiles:${auth.user.id}`)
+        .channel(`public:wallet:${auth.user.id}`)
         .on(
           'postgres_changes',
           {
@@ -94,12 +98,17 @@ export function createWalletModel(auth: AuthStore) {
           (payload) => {
             const newBalance = payload.new.xu_balance;
             const newCheckinDate = payload.new.last_checkin_date;
+            const now = Date.now();
+            const isRecentReferral = (now - lastReferralRewardTimestamp) < 3000;
+
             if (newBalance !== undefined && previousBalance !== null && newBalance > previousBalance) {
               const added = newBalance - previousBalance;
               lastTopupEvent = { added, newBalance };
-              import('$lib/stores/toast').then(({ toast }) => {
-                toast.show(`🎉 Nạp XU thành công! +${added} XU đã được cộng vào ví.`, 'success');
-              });
+              if (!isRecentReferral) {
+                import('$lib/stores/toast').then(({ toast }) => {
+                  toast.show(`🎉 Nạp XU thành công! +${added} XU đã được cộng vào ví.`, 'success');
+                });
+              }
               previousBalance = newBalance;
             }
             queryClient.setQueryData(queryKey(), (oldData: any) => {
@@ -110,6 +119,29 @@ export function createWalletModel(auth: AuthStore) {
                 last_checkin_date: newCheckinDate !== undefined ? newCheckinDate : oldData.last_checkin_date
               };
             });
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'referrals',
+            filter: `referrer_id=eq.${auth.user.id}`,
+          },
+          (payload) => {
+            lastReferralRewardTimestamp = Date.now();
+            const rewardXu = payload.new?.reward_xu ?? 10;
+            import('$lib/stores/toast').then(({ toast }) => {
+              toast.show(`🎉 Đạo hữu vừa nhận thưởng giới thiệu bạn bè: +${rewardXu} XU vào ví!`, 'success');
+            });
+            // Tự động làm mới số dư, lịch sử giới thiệu & partner hub
+            queryClient.invalidateQueries({ queryKey: queryKey() });
+            queryClient.invalidateQueries({ queryKey: referralsQueryKey() });
+            queryClient.invalidateQueries({ queryKey: ['partner_hub', auth.user?.id] });
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('ziwei:referral_received', { detail: payload.new }));
+            }
           }
         )
         .subscribe();

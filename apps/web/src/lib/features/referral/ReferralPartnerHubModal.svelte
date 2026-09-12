@@ -31,18 +31,40 @@
   let errorMessage = $state<string | null>(null);
   let copied = $state(false);
 
-  onMount(async () => {
+  async function loadHubData(silent = false) {
+    if (!silent) isLoading = true;
     try {
       hubData = await fetchJson('/rewards/partner-hub', referralPartnerHubResponseSchema, {
         method: 'GET',
         token,
       });
+      errorMessage = null;
     } catch (err: any) {
       console.error('Failed to load partner hub data:', err);
-      errorMessage = err.message || 'Không thể nạp dữ liệu Trung Tâm Đối Tác.';
+      if (!silent) {
+        errorMessage = err.message || 'Không thể nạp dữ liệu Trung Tâm Đối Tác.';
+      }
     } finally {
-      isLoading = false;
+      if (!silent) isLoading = false;
     }
+  }
+
+  onMount(() => {
+    loadHubData();
+
+    function handleRealtimeUpdate() {
+      loadHubData(true);
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('ziwei:referral_received', handleRealtimeUpdate);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('ziwei:referral_received', handleRealtimeUpdate);
+      }
+    };
   });
 
   function copyLink() {

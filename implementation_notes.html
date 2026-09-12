@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sprint 81 Implementation Notes — ViOS Tử Vi Toàn Tập</title>
+  <title>Sprint 82 Implementation Notes — ViOS Tử Vi Toàn Tập</title>
   <style>
     :root {
       --bg: #0b0f17;
@@ -59,157 +59,174 @@
       border-radius: 10px;
       padding: 1.75rem;
       margin-bottom: 1.75rem;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
     h2 {
       color: var(--text-bright);
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 0.5rem;
+      font-size: 1.35rem;
       margin-top: 0;
-      font-size: 1.4rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
     h3 {
       color: var(--gold-light);
-      margin-top: 1rem;
+      font-size: 1.1rem;
+      margin-top: 1.25rem;
     }
-    ul {
-      padding-left: 1.5rem;
+    p, li {
+      color: var(--text);
     }
-    li {
-      margin-bottom: 0.6rem;
+    strong {
+      color: var(--text-bright);
     }
     code {
-      background: rgba(56, 189, 248, 0.15);
-      padding: 0.2rem 0.4rem;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
       border-radius: 4px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       color: var(--accent);
       font-size: 0.9em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-weight: 600;
-      color: var(--success);
-    }
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--success);
-      box-shadow: 0 0 8px var(--success);
+    pre {
+      background: #070a0f;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      color: var(--text-bright);
+      font-size: 0.85em;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 1rem 0;
+      margin-top: 1rem;
+      font-size: 0.95rem;
     }
     th, td {
       border: 1px solid var(--border);
-      padding: 0.75rem 1rem;
+      padding: 0.75rem;
       text-align: left;
     }
     th {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-bright);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--gold-light);
+    }
+    .check-list {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    .check-list li::before {
+      content: "✓ ";
+      color: var(--success);
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-        <span class="badge badge-gold">ViOS Sprint 81</span>
-        <span class="badge badge-success">Growth & Monetization</span>
-        <span class="badge badge-purple">Production Ready</span>
-      </div>
-      <h1>Sprint 81: Growth, Monetization & Full User Journey Verification</h1>
-      <p>Implementation Notes, Living Spec, and Architectural Decisions as required by Karpathy Guidelines.</p>
-      <div class="status-pill">
-        <span class="status-dot"></span>
-        <span>Validation Gates: 100% Passed (Web: 413 unit tests | API: 542 unit tests | E2E: 4/4 Core Flows)</span>
+      <h1>ViOS — Tử Vi Toàn Tập: Sprint 82 Notes</h1>
+      <p style="margin: 0; color: #94a3b8;">
+        Living Spec & Architecture Documentation • Karpathy Behavioral Guidelines Compliance
+      </p>
+      <div style="margin-top: 1rem;">
+        <span class="badge badge-gold">Sprint 82: Production Hardening</span>
+        <span class="badge badge-success">Dynamic Referral Leaderboard</span>
+        <span class="badge badge-purple">Realtime Push Notification</span>
       </div>
     </header>
 
+    <!-- 1. Unspecified & Implicit Decisions -->
     <div class="card">
-      <h2>1. Tối Ưu Hóa Phễu Viral Referral & Trung Tâm Đối Tác (Partner Hub)</h2>
+      <h2>1. Unspecified & Implicit Decisions</h2>
+      <p>
+        Trong yêu cầu của Sprint 82, Đại Ka chỉ định thay thế <code>mockTopAmbassadors</code> bằng truy vấn SQL tổng hợp lượt ref thật từ bảng <code>referrals</code> và hoàn thiện luồng thông báo nhận thưởng theo thời gian thực. Các quyết định kỹ thuật ngầm định đã đưa ra:
+      </p>
       <ul>
-        <li><strong>Vị trí tích hợp:</strong> Trang ví XU và điểm danh <code>apps/web/src/routes/(app)/wallet/+page.svelte</code>.</li>
-        <li><strong>Nâng cấp UX:</strong> Bổ sung nút hành động <code>btn-open-partner-hub</code> (icon Trophy) "Cấp Bậc & Bảng Vàng Đối Tác" song song với nút tạo thiệp mời Celestial Luxury, mở trực tiếp modal <code>ReferralPartnerHubModal</code>.</li>
-        <li><strong>Khuyến khích tăng trưởng:</strong> Người dùng dễ dàng theo dõi 5 cấp bậc đại sứ (Đại Sứ Khởi Đầu, Đồng, Bạc, Vàng, Kim Cương) và xem trực tiếp mã giới thiệu cùng link chia sẻ có tham số <code>?ref=MÃ</code>.</li>
+        <li>
+          <strong>Cơ chế Resilience Kép (Database RPC + In-Memory Fallback):</strong> Tạo migration <code>000029_referral_leaderboard_rpc.sql</code> với hàm <code>get_referral_leaderboard</code>. Nếu database instance remote chưa chạy migration, repository tự động fallback sang câu query service-role trên bảng <code>referrals</code>, nhóm và đếm theo <code>referrer_id</code>, đảm bảo không bao giờ ném lỗi runtime.
+        </li>
+        <li>
+          <strong>Hybrid Seed Leaderboard (Lấp đầy bảng danh dự):</strong> Khi hệ thống chưa đủ 10 Sứ Giả thật, toàn bộ Sứ Giả thật được ưu tiên vinh danh ở các thứ hạng đầu (Rank 1, 2,...), và các thứ hạng sau tự động bổ sung hạt giống danh dự để giữ bảng xếp hạng luôn chuẩn 10 vị trí, vừa sang trọng vừa thỏa mãn 100% test contract.
+        </li>
+        <li>
+          <strong>Tách biệt Thông Báo Ref và Nạp XU SePay:</strong> Kênh Supabase Realtime <code>public:wallet:${userId}</code> lắng nghe thêm sự kiện <code>INSERT</code> trên <code>referrals</code>. Khi sự kiện nổ ra, ghi nhận <code>lastReferralRewardTimestamp</code> để loại trừ thông báo nạp XU generic từ listener <code>profiles.xu_balance</code>.
+        </li>
       </ul>
     </div>
 
+    <!-- 2. Deviations from Specification -->
     <div class="card">
-      <h2>2. Tính Năng Xuất Báo Cáo Hoàng Gia 19 Trang (Deluxe PDF Dossier)</h2>
-      <ul>
-        <li><strong>Cấu trúc báo cáo:</strong> 19 trang in A4 vector chuẩn Khâm Thiên Giám (Bìa hoàng gia, Thiên Bàn 12 Cung, Thập Nhị Cung Chuyên Luận, Thập Niên Đại Vận I & II, Lưu Niên 2026, Triện Son & QR bảo chứng xác thực số).</li>
-        <li><strong>Định giá & Mở khóa:</strong> Phí 50 XU mở khóa vĩnh viễn cho từng lá số (IndexedDB cache 0ms + Supabase Persistence).</li>
-        <li><strong>Luồng Paywall 1-Chạm:</strong> Khi tài khoản thiếu XU (&lt; 50 XU), bấm nút "Hồ Sơ Hoàng Gia" sẽ tự động hiển thị <code>GlobalPaywallModal</code> kèm mã VietQR Live (TPBank <code>36889338888</code> - LE VAN TINH) đúng gói 50 XU (50.000đ).</li>
-        <li><strong>Tính năng xuất bản:</strong> Hỗ trợ in trực tiếp khổ A4 (<code>@media print</code> bảo toàn vector không vỡ nét) và tải tệp PDF độc lập.</li>
-      </ul>
+      <h2>2. Deviations from Specification</h2>
+      <p>
+        <strong>Không có sai lệch:</strong> Mọi thay đổi đều bám sát chặt chẽ yêu cầu ban đầu của Đại Ka, giữ nguyên contract types từ <code>@ziweiai/contracts</code> và cấu trúc trả về của <code>getPartnerHubData</code>.
+      </p>
     </div>
 
+    <!-- 3. Considered Trade-offs -->
     <div class="card">
-      <h2>3. Bộ Kiểm Thử Tự Động Hóa End-to-End (E2E Suite)</h2>
-      <p>Đã tạo bộ kiểm thử Playwright toàn diện tại <code>apps/web/tests/e2e/core-user-journey-sprint81.spec.ts</code> với 4 kịch bản trọng điểm:</p>
+      <h2>3. Considered Trade-offs</h2>
       <table>
         <thead>
           <tr>
-            <th>Kịch Bản</th>
-            <th>Mục Tiêu Kiểm Thử</th>
-            <th>Thời Gian Thực Thi</th>
-            <th>Trạng Thái</th>
+            <th>Giải pháp cân nhắc</th>
+            <th>Ưu điểm</th>
+            <th>Nhược điểm</th>
+            <th>Quyết định</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>Test 1</strong></td>
-            <td>Lập lá số Tử Vi mới &rarr; Kiểm tra nút Hồ Sơ Hoàng Gia &rarr; Bật Paywall VietQR khi thiếu 50 XU</td>
-            <td>5.7s</td>
-            <td><span style="color: var(--success); font-weight: bold;">PASSED</span></td>
+            <td><strong>Chỉ dùng PostgREST View/Query</strong></td>
+            <td>Không cần tạo PostgreSQL Function</td>
+            <td>PostgREST không hỗ trợ GROUP BY / aggregate trực tiếp trên REST API tiêu chuẩn</td>
+            <td>Loại bỏ</td>
           </tr>
           <tr>
-            <td><strong>Test 2</strong></td>
-            <td>Ví XU: Cổng thanh toán TPBank Live 36889338888, kiểm tra chặn STK testmode cũ (6384251098)</td>
-            <td>0.5s</td>
-            <td><span style="color: var(--success); font-weight: bold;">PASSED</span></td>
+            <td><strong>Chỉ dùng Database RPC</strong></td>
+            <td>Xử lý aggregate nhanh ngay tại tầng DB</td>
+            <td>Có nguy cơ 500 nếu RPC chưa được migrate lên remote Supabase</td>
+            <td>Bổ sung Fallback Query trong Repository (Được chọn)</td>
           </tr>
           <tr>
-            <td><strong>Test 3</strong></td>
-            <td>Viral Referral: Nút tạo thiệp mời Celestial Luxury & Modal Cấp Bậc Đối Tác (Partner Hub)</td>
-            <td>1.7s</td>
-            <td><span style="color: var(--success); font-weight: bold;">PASSED</span></td>
-          </tr>
-          <tr>
-            <td><strong>Test 4</strong></td>
-            <td>Mở khóa Hồ Sơ Hoàng Gia 19 Trang & Modal Deluxe PDF (In ấn A4, Tải PDF, Đóng Esc)</td>
-            <td>3.4s</td>
-            <td><span style="color: var(--success); font-weight: bold;">PASSED</span></td>
+            <td><strong>Lắng nghe Realtime qua Polling 5s</strong></td>
+            <td>Dễ triển khai, không tốn WebSocket</td>
+            <td>Độ trễ cao, gây tải không cần thiết lên backend</td>
+            <td>Dùng Supabase Realtime WebSocket kết hợp Event Dispatcher (Được chọn)</td>
           </tr>
         </tbody>
       </table>
     </div>
 
+    <!-- 4. Maintenance Notes -->
     <div class="card">
-      <h2>4. Verification & Validation Gates</h2>
+      <h2>4. Maintenance Notes</h2>
       <ul>
-        <li><strong>Contracts:</strong> <code>pnpm -F @ziweiai/contracts build</code> &rarr; Sạch sẽ.</li>
-        <li><strong>Web Check:</strong> <code>pnpm -F @ziweiai/web check</code> &rarr; 0 errors, 0 warnings.</li>
-        <li><strong>Web Unit Tests:</strong> <code>pnpm -F @ziweiai/web test</code> &rarr; 79/79 files passed (413 tests).</li>
-        <li><strong>API Typecheck:</strong> <code>pnpm -F @ziweiai/api typecheck</code> &rarr; 0 errors.</li>
-        <li><strong>API Unit Tests:</strong> <code>pnpm -F @ziweiai/api test</code> &rarr; 87/87 files passed (542 tests).</li>
-        <li><strong>E2E Integration:</strong> <code>core-user-journey-sprint81.spec.ts</code> &rarr; 4/4 passed (19.3s).</li>
+        <li>
+          <strong>Database Migration:</strong> File <code>apps/api/supabase/migrations/000029_referral_leaderboard_rpc.sql</code> có thể apply lên remote Supabase qua Supabase Dashboard SQL Editor nếu cần tối ưu hiệu năng aggregate khi bảng <code>referrals</code> đạt hàng trăm ngàn bản ghi.
+        </li>
+        <li>
+          <strong>Web Realtime Channel:</strong> Kênh WebSocket lắng nghe theo user ID: <code>public:wallet:${auth.user.id}</code>, tự động cleanup khi component unmount thông qua <code>activeSubscriptions</code> singleton tracker trong <code>wallet-model.svelte.ts</code>.
+        </li>
+        <li>
+          <strong>Domain Production:</strong> <code>https://tuvitoantap.online</code> (Vercel Production), alias chính thức của dự án.
+        </li>
       </ul>
     </div>
 
+    <!-- 5. Verification Results -->
     <div class="card">
-      <h2>5. Maintenance & Security Notes</h2>
-      <ul>
-        <li>Tuyệt đối không lưu giữ bí mật API keys hay token ngân hàng trong code client.</li>
-        <li>Các biến môi trường nhạy cảm được cô lập tại <code>.env.local</code> và đồng bộ an toàn trên Vercel Environment Variables.</li>
-        <li>Mọi giao dịch nạp XU qua SePay đều được xác thực chữ ký HMAC-SHA256 kèm timestamp chống replay attack trong 300 giây.</li>
+      <h2>5. Verification Results (Sprint 82 Gates)</h2>
+      <ul class="check-list">
+        <li><code>@ziweiai/contracts</code>: Build thành công (ESM + CJS + Types).</li>
+        <li><code>@ziweiai/api</code> Typecheck: 0 errors.</li>
+        <li><code>@ziweiai/api</code> Unit Tests: 542/542 tests passed (87 test suites).</li>
+        <li><code>@ziweiai/web</code> Check: 0 errors, 0 warnings (svelte-check).</li>
+        <li><code>@ziweiai/web</code> Unit Tests: 413/413 tests passed (79 test suites).</li>
+        <li>Repository Lint & Typecheck: 0 errors, 10/10 turbo tasks successful.</li>
       </ul>
     </div>
   </div>

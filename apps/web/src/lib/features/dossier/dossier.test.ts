@@ -75,18 +75,57 @@ describe('Dossier Interpretations Generator', () => {
     expect(payload.yearly2026.thaiTuePalace).toContain('Ngọ');
   });
 
-  it('handles fallback defaults gracefully when fields are missing', () => {
-    const minimalSnapshot: any = {
-      summary: {},
-      birth: {},
-      palaces: [],
+  it('correctly translates key-based snapshot (ASCII keys) into Vietnamese', () => {
+    const keyBasedSnapshot: any = {
+      summary: {
+        solarDate: '1998-03-16',
+        lunarDate: { year: 1998, month: 2, day: 18, isLeapMonth: false },
+        fiveElementsClassKey: 'water2nd',
+        bodyPalaceNameKey: 'soulPalace',
+        lifeMasterKey: 'ziweiMaj',
+        bodyMasterKey: 'tianxiangMaj',
+        timeEarthlyBranchKey: 'siEarthly',
+      },
+      birth: {
+        name: 'galaxypro710',
+        gender: 'female',
+        resolvedDateTime: { date: { year: 1998, month: 3, day: 16 } },
+      },
+      palaces: [
+        {
+          nameKey: 'soulPalace',
+          earthlyBranchKey: 'siEarthly',
+          heavenlyStemKey: 'jiHeavenly',
+          isBodyPalace: true,
+          majorStars: [
+            { nameKey: 'taiyangMaj', brightnessKey: 'de' },
+            { nameKey: 'taiyinMaj', brightnessKey: 'bu' },
+          ],
+          minorStars: [{ nameKey: 'lucunMin' }],
+          adjectiveStars: [],
+        },
+      ],
     };
 
-    const payload = buildDossierData(minimalSnapshot);
-    expect(payload.userName).toBe('Đương Số Hoàng Triều');
-    expect(payload.genderText).toBe('Bản Mệnh');
-    expect(payload.palaces).toHaveLength(0);
-    expect(payload.yearly2026.analysis).toBeDefined();
+    const payload = buildDossierData(keyBasedSnapshot);
+    expect(payload.userName).toBe('galaxypro710');
+    expect(payload.genderText).toBe('Nữ Mạng');
+    expect(payload.fiveElementsClassText).toBe('Thủy Nhị Cục');
+    expect(payload.bodyPalaceText).toBe('Mệnh');
+    expect(payload.masterStarText).toBe('Tử Vi');
+    expect(payload.bodyMasterStarText).toBe('Thiên Tướng');
+    expect(payload.baziYear).toBe('Mậu Dần');
+    expect(payload.baziHour).toBe('Giờ Tỵ');
+
+    const palace = payload.palaces[0];
+    expect(palace.name).toBe('Mệnh');
+    expect(palace.earthlyBranch).toBe('Tỵ');
+    expect(palace.heavenlyStem).toBe('Kỷ');
+    expect(palace.earthlyBranchKey).toBe('siEarthly');
+    expect(palace.majorStars[0].name).toBe('Thái Dương');
+    expect(palace.majorStars[0].brightness).toBe('Đắc');
+    expect(palace.majorStars[1].name).toBe('Thái Âm');
+    expect(palace.goodStars).toContain('Lộc Tồn');
   });
 });
 

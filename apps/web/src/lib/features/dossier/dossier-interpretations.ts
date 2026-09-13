@@ -1,12 +1,16 @@
 import type { ChartSnapshot } from '@ziweiai/contracts';
 import { translateBaziKey } from '@ziweiai/contracts';
 import { formatStructuredLunarDate } from '$lib/features/chart/chart-display';
+import { tryTranslateZiweiKey } from '$lib/i18n/ziwei-terms-vi';
+import { normalizeLegacyDisplayName } from '$lib/text/cjk';
 
 export interface PalaceDossierData {
   index: number;
   name: string;
   earthlyBranch: string;
   heavenlyStem: string;
+  earthlyBranchKey: string;
+  heavenlyStemKey: string;
   isBody: boolean;
   majorStars: { name: string; brightness?: string; mutagen?: string }[];
   goodStars: string[];
@@ -70,6 +74,7 @@ const PALACE_PURPOSE_MAP: Record<string, { role: string; focus: string }> = {
   'Huynh Đệ': { role: 'Cung Tình Thân', focus: 'Mối quan hệ ruột thịt anh em, bạn bè tri kỷ và nền tảng hỗ trợ hậu thuẫn' },
   'Phu Thê': { role: 'Cung Duyên Nợ', focus: 'Nhân duyên phối ngẫu, hôn nhân gia đạo, tình cảm sắt son và thời điểm kết tóc' },
   'Tử Tức': { role: 'Cung Hậu Duệ', focus: 'Con cái, truyền thừa phúc trạch dòng dõi, phúc phận về già và giáo dưỡng gia phong' },
+  'Tử Nữ': { role: 'Cung Hậu Duệ', focus: 'Con cái, truyền thừa phúc trạch dòng dõi, phúc phận về già và giáo dưỡng gia phong' },
   'Tài Bạch': { role: 'Cung Kim Ngân', focus: 'Dòng tiền, của cải tài lộc, năng lực quản lý tài chính và phương thức tích lũy phú quý' },
   'Tật Ách': { role: 'Cung Khang Kiện', focus: 'Tạng phủ ngũ hành, sức khỏe thể chất, nguy cơ tai ương tiềm ẩn và phép dưỡng sinh' },
   'Thiên Di': { role: 'Cung Xuất Ngoại', focus: 'Giao tế xã hội, hành trang xuất hành, vị thế ngoài xã hội và vận số phương xa' },
@@ -81,12 +86,39 @@ const PALACE_PURPOSE_MAP: Record<string, { role: string; focus: string }> = {
   'Phụ Mẫu': { role: 'Cung Sinh Thành', focus: 'Ân đức cha mẹ, dưỡng dục thuở thiếu thời, phúc trạch song thân và gia đạo gốc tích' },
 };
 
+function getStemChiBySolarYear(year: number): string {
+  const CAN = ['Canh', 'Tân', 'Nhâm', 'Quý', 'Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ'];
+  const CHI = ['Thân', 'Dậu', 'Tuất', 'Hợi', 'Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi'];
+  const stem = CAN[year % 10] ?? '';
+  const branch = CHI[year % 12] ?? '';
+  return `${stem} ${branch}`.trim();
+}
+
+function resolveStarName(s: any): string {
+  if (s.displayName) {
+    return normalizeLegacyDisplayName(s.displayName);
+  }
+  if (s.nameKey) {
+    const tr = tryTranslateZiweiKey(s.nameKey);
+    if (tr) return tr;
+  }
+  if (s.name) {
+    const tr = tryTranslateZiweiKey(s.name);
+    if (tr) return tr;
+    return normalizeLegacyDisplayName(s.name);
+  }
+  return s.nameKey || '';
+}
+
 export function buildDossierData(snapshot: ChartSnapshot, userNameInput?: string): DossierInterpretationPayload {
   const summary: any = snapshot.summary || {};
   const birth: any = snapshot.birth || {};
 
   const name = userNameInput || birth.name || 'Đương Số Hoàng Triều';
-  const gender = birth.gender === 'male' ? 'Nam Mạng' : (birth.gender === 'female' ? 'Nữ Mạng' : 'Bản Mệnh');
+  const gender =
+    birth.gender === 'male' || summary.genderKey === 'male' || summary.gender === 'male'
+      ? 'Nam Mạng'
+      : (birth.gender === 'female' || summary.genderKey === 'female' || summary.gender === 'female' ? 'Nữ Mạng' : 'Bản Mệnh');
 
   const resolvedDate = birth.resolvedDateTime?.date;
   const solarDate =
@@ -97,12 +129,38 @@ export function buildDossierData(snapshot: ChartSnapshot, userNameInput?: string
   const rawLunar = summary.lunarDate || birth.lunarDate;
   const lunarDate = (rawLunar ? formatStructuredLunarDate(rawLunar) : '') || 'N/A';
 
-  const fiveElements = summary.destinyElement || summary.fiveElements || 'Chưa định';
-  const fiveElementsClass = summary.fiveElementsClass || 'N/A';
-  const destinyYinYang = summary.destinyYinYang || 'Âm Dương Thuận Lý';
-  const bodyPalace = summary.bodyPalace || 'Cung Mệnh';
-  const masterStar = summary.destinyMaster || summary.masterStar || 'Tử Vi';
-  const bodyMasterStar = summary.bodyMaster || summary.bodyMasterStar || 'Thiên Tướng';
+  const fiveElements =
+    summary.destinyElement ||
+    (summary.destinyElementKey ? tryTranslateZiweiKey(summary.destinyElementKey) : null) ||
+    summary.fiveElements ||
+    'Chưa định';
+
+  const fiveElementsClass =
+    (summary.fiveElementsClassKey ? tryTranslateZiweiKey(summary.fiveElementsClassKey) : null) ||
+    summary.fiveElementsClass ||
+    'N/A';
+
+  const destinyYinYang =
+    summary.destinyYinYang ||
+    (summary.destinyYinYangKey ? tryTranslateZiweiKey(summary.destinyYinYangKey) : null) ||
+    'Âm Dương Thuận Lý';
+
+  const bodyPalace =
+    (summary.bodyPalaceNameKey ? tryTranslateZiweiKey(summary.bodyPalaceNameKey) : null) ||
+    summary.bodyPalace ||
+    'Cung Mệnh';
+
+  const masterStar =
+    (summary.lifeMasterKey ? tryTranslateZiweiKey(summary.lifeMasterKey) : null) ||
+    summary.destinyMaster ||
+    summary.masterStar ||
+    'Tử Vi';
+
+  const bodyMasterStar =
+    (summary.bodyMasterKey ? tryTranslateZiweiKey(summary.bodyMasterKey) : null) ||
+    summary.bodyMaster ||
+    summary.bodyMasterStar ||
+    'Thiên Tướng';
 
   const extractPillar = (p: any) => {
     if (!p) return 'N/A';
@@ -112,40 +170,76 @@ export function buildDossierData(snapshot: ChartSnapshot, userNameInput?: string
 
   const baziPillars = snapshot.bazi?.pillars;
   const rawYear = extractPillar(summary.yearPillar);
-  const baziYear = rawYear !== 'N/A'
-    ? rawYear
-    : (baziPillars?.[0] ? `${translateBaziKey(baziPillars[0].heavenlyStemKey)} ${translateBaziKey(baziPillars[0].earthlyBranchKey)}` : 'N/A');
+  const birthYear = resolvedDate?.year || (typeof rawLunar === 'object' ? rawLunar?.year : null);
+
+  const baziYear =
+    rawYear !== 'N/A'
+      ? rawYear
+      : baziPillars?.[0]
+        ? `${translateBaziKey(baziPillars[0].heavenlyStemKey)} ${translateBaziKey(baziPillars[0].earthlyBranchKey)}`
+        : birthYear
+          ? getStemChiBySolarYear(birthYear)
+          : 'N/A';
 
   const rawMonth = extractPillar(summary.monthPillar);
-  const baziMonth = rawMonth !== 'N/A'
-    ? rawMonth
-    : (baziPillars?.[1] ? `${translateBaziKey(baziPillars[1].heavenlyStemKey)} ${translateBaziKey(baziPillars[1].earthlyBranchKey)}` : 'N/A');
+  const baziMonth =
+    rawMonth !== 'N/A'
+      ? rawMonth
+      : baziPillars?.[1]
+        ? `${translateBaziKey(baziPillars[1].heavenlyStemKey)} ${translateBaziKey(baziPillars[1].earthlyBranchKey)}`
+        : 'N/A';
 
   const rawDay = extractPillar(summary.dayPillar);
-  const baziDay = rawDay !== 'N/A'
-    ? rawDay
-    : (baziPillars?.[2] ? `${translateBaziKey(baziPillars[2].heavenlyStemKey)} ${translateBaziKey(baziPillars[2].earthlyBranchKey)}` : 'N/A');
+  const baziDay =
+    rawDay !== 'N/A'
+      ? rawDay
+      : baziPillars?.[2]
+        ? `${translateBaziKey(baziPillars[2].heavenlyStemKey)} ${translateBaziKey(baziPillars[2].earthlyBranchKey)}`
+        : 'N/A';
 
   const rawHour = extractPillar(summary.hourPillar);
-  const baziHour = rawHour !== 'N/A'
-    ? rawHour
-    : (baziPillars?.[3] ? `${translateBaziKey(baziPillars[3].heavenlyStemKey)} ${translateBaziKey(baziPillars[3].earthlyBranchKey)}` : 'N/A');
+  const hourBranchFromSummary = summary.timeEarthlyBranchKey
+    ? tryTranslateZiweiKey(summary.timeEarthlyBranchKey)
+    : null;
+
+  const baziHour =
+    rawHour !== 'N/A'
+      ? rawHour
+      : baziPillars?.[3]
+        ? `${translateBaziKey(baziPillars[3].heavenlyStemKey)} ${translateBaziKey(baziPillars[3].earthlyBranchKey)}`
+        : hourBranchFromSummary
+          ? `Giờ ${hourBranchFromSummary}`
+          : 'N/A';
 
   // Map 12 Palaces
   const palaces: PalaceDossierData[] = (snapshot.palaces || []).map((p: any, idx: number) => {
-    const palaceName = p.displayName || p.name || `Cung ${idx + 1}`;
-    const branch = (p.earthlyBranchKey || '').replace(/^earthlyBranch_?/, '').replace(/^.*_/, '');
-    const stem = (p.heavenlyStemKey || '').replace(/^heavenlyStem_?/, '').replace(/^.*_/, '');
+    const rawBranchKey = p.earthlyBranchKey || '';
+    const rawStemKey = p.heavenlyStemKey || '';
+    const translatedName = p.nameKey ? tryTranslateZiweiKey(p.nameKey) : null;
+    const palaceName =
+      (p.displayName ? normalizeLegacyDisplayName(p.displayName) : null) ||
+      translatedName ||
+      p.name ||
+      `Cung ${idx + 1}`;
+
+    const branch =
+      (rawBranchKey ? tryTranslateZiweiKey(rawBranchKey) : null) ||
+      rawBranchKey.replace(/^earthlyBranch_?/, '').replace(/^.*_/, '');
+
+    const stem =
+      (rawStemKey ? tryTranslateZiweiKey(rawStemKey) : null) ||
+      rawStemKey.replace(/^heavenlyStem_?/, '').replace(/^.*_/, '');
+
     const isBody = Boolean(p.isBodyPalace);
 
     const majorStars: { name: string; brightness?: string; mutagen?: string }[] = (p.majorStars || []).map((s: any) => ({
-      name: s.displayName || s.name || s.nameKey,
-      brightness: s.brightnessKey ? BRIGHTNESS_MAP[s.brightnessKey] || s.brightnessKey : undefined,
-      mutagen: s.mutagenKey ? MUTAGEN_MAP[s.mutagenKey] || s.mutagenKey : undefined,
+      name: resolveStarName(s),
+      brightness: s.brightnessKey ? BRIGHTNESS_MAP[s.brightnessKey] || tryTranslateZiweiKey(s.brightnessKey) || s.brightnessKey : undefined,
+      mutagen: s.mutagenKey || s.mutagen ? MUTAGEN_MAP[s.mutagenKey || s.mutagen] || tryTranslateZiweiKey(s.mutagenKey || s.mutagen) || s.mutagenKey : undefined,
     }));
 
-    const minorStars = (p.minorStars || []).map((s: any) => s.displayName || s.name || s.nameKey);
-    const adjectiveStars = (p.adjectiveStars || []).map((s: any) => s.displayName || s.name || s.nameKey);
+    const minorStars = (p.minorStars || []).map(resolveStarName);
+    const adjectiveStars = (p.adjectiveStars || []).map(resolveStarName);
 
     const goodStars: string[] = [];
     const badStars: string[] = [];
@@ -184,6 +278,8 @@ export function buildDossierData(snapshot: ChartSnapshot, userNameInput?: string
       name: palaceName,
       earthlyBranch: branch,
       heavenlyStem: stem,
+      earthlyBranchKey: rawBranchKey,
+      heavenlyStemKey: rawStemKey,
       isBody,
       majorStars,
       goodStars,

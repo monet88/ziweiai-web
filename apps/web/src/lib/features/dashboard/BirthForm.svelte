@@ -776,6 +776,17 @@
 
   :global([data-theme="light"]) :global(.celestial-card .label) {
     color: #78350f !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+
+  :global([data-theme="light"]) .solar-hint {
+    color: #78350f !important;
+    font-weight: 500 !important;
+  }
+
+  :global([data-theme="light"]) .solar-hint span {
+    color: #b45309 !important;
   }
 
   :global([data-theme="light"]) :global(.celestial-card .select-chevron) {
@@ -786,6 +797,7 @@
     background: #ffffff !important;
     color: #1c1917 !important;
     font-size: 16px !important;
+    padding: 10px 14px !important;
   }
 
   /* Light Theme Cảnh Báo Giờ Sinh Tương Phản Cao */

@@ -44,26 +44,12 @@
     chenEarthly: 'grid-row: 2; grid-column: 1;',
   };
 
-  // Tra cứu cung theo index 0-11
-  const palaceByIndex = $derived(
-    Object.fromEntries(data.palaces.map((p) => [p.index, p])) as Record<number, typeof data.palaces[number] | undefined>,
+  // Tra cứu cung theo earthlyBranchKey
+  const palaceByBranch = $derived(
+    Object.fromEntries(
+      data.palaces.map((p) => [p.earthlyBranchKey, p]),
+    ) as Record<string, typeof data.palaces[number] | undefined>,
   );
-
-  // Khớp branch key sang index
-  const BRANCH_KEY_TO_INDEX: Record<string, number> = {
-    ziEarthly: 0,
-    chouEarthly: 1,
-    yinEarthly: 2,
-    maoEarthly: 3,
-    chenEarthly: 4,
-    siEarthly: 5,
-    wuEarthly: 6,
-    weiEarthly: 7,
-    shenEarthly: 8,
-    youEarthly: 9,
-    xuEarthly: 10,
-    haiEarthly: 11,
-  };
 
   onMount(() => {
     if (!browser) return;
@@ -234,8 +220,7 @@
           <section class="poster-board-section">
             <div class="palace-grid-4x4">
               {#each Object.entries(BRANCH_GRID_STYLE) as [branchKey, gridStyle] (branchKey)}
-                {@const pIdx = BRANCH_KEY_TO_INDEX[branchKey]}
-                {@const palace = palaceByIndex[pIdx]}
+                {@const palace = palaceByBranch[branchKey]}
                 <div class="palace-tile" style={gridStyle}>
                   {#if palace}
                     <div class="tile-header">
@@ -607,10 +592,10 @@
   .palace-grid-4x4 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(4, 130px);
-    gap: 4px;
+    grid-template-rows: repeat(4, 136px);
+    gap: 5px;
     background: rgba(212, 175, 55, 0.15);
-    padding: 4px;
+    padding: 5px;
     border-radius: 6px;
     border: 1px solid rgba(212, 175, 55, 0.3);
   }
@@ -619,7 +604,7 @@
     background: rgba(18, 14, 10, 0.95);
     border: 1px solid rgba(212, 175, 55, 0.2);
     border-radius: 4px;
-    padding: 6px 8px;
+    padding: 5px 6px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -631,7 +616,7 @@
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding-bottom: 3px;
+    padding-bottom: 2px;
   }
 
   .tile-name-group {
@@ -641,13 +626,13 @@
   }
 
   .tile-palace-name {
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     font-weight: 700;
     color: #ffd700;
   }
 
   .tile-body-badge {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     background: #059669;
     color: #ffffff;
     padding: 0 4px;
@@ -656,49 +641,51 @@
   }
 
   .tile-branch-can {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     color: #9ca3af;
   }
 
   .tile-major-stars {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    margin: 4px 0;
+    gap: 1.5px;
+    margin: 2px 0;
   }
 
   .major-star-item {
     display: flex;
     align-items: center;
-    gap: 3px;
-    font-size: 0.74rem;
+    gap: 2.5px;
+    font-size: 0.72rem;
     font-weight: 600;
     color: #fbbf24;
+    line-height: 1.25;
   }
 
   .star-bright {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     color: #f87171;
   }
 
   .star-mutagen {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     color: #34d399;
     font-weight: 700;
   }
 
   .no-major {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     color: #6b7280;
     font-style: italic;
   }
 
   .tile-minor-stars {
-    font-size: 0.65rem;
+    font-size: 0.63rem;
     display: flex;
     flex-direction: column;
     gap: 1px;
     overflow: hidden;
+    line-height: 1.25;
   }
 
   .good-group {
@@ -712,7 +699,7 @@
   .tile-footer {
     display: flex;
     justify-content: space-between;
-    font-size: 0.65rem;
+    font-size: 0.64rem;
     color: #9ca3af;
     border-top: 1px dashed rgba(255, 255, 255, 0.08);
     padding-top: 2px;

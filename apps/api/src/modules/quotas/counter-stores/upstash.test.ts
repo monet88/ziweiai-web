@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Logger } from '@nestjs/common';
 import { UpstashRestQuotaCounterStore } from './upstash';
 import { createQuotaCounterStore } from './index';
@@ -138,12 +138,58 @@ describe('UpstashRestQuotaCounterStore', () => {
     expect(res3).toEqual({ count: 3, allowed: false });
   });
 
-  it('createQuotaCounterStore: falls back to memory when upstash driver selected without credentials', () => {
+  it('createQuotaCounterStore: falls back to memory when upstash driver selected without credentials in dev', () => {
     const store = createQuotaCounterStore({
       QUOTA_STORE_DRIVER: 'upstash',
       QUOTA_FAIL_MODE: 'open',
     } as never);
     expect(store).toBeDefined();
+  });
+
+  describe('createQuotaCounterStore in production', () => {
+    const originalEnv = process.env.NODE_ENV;
+    const originalFlag = process.env.ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD;
+
+    beforeEach(() => {
+      process.env.NODE_ENV = 'production';
+      delete process.env.ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD;
+    });
+
+    afterEach(() => {
+      process.env.NODE_ENV = originalEnv;
+      if (originalFlag !== undefined) {
+        process.env.ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD = originalFlag;
+      } else {
+        delete process.env.ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD;
+      }
+    });
+
+    it('throws error when memory driver is used in production without break-glass flag', () => {
+      expect(() =>
+        createQuotaCounterStore({
+          QUOTA_STORE_DRIVER: 'memory',
+          QUOTA_FAIL_MODE: 'closed',
+        } as never),
+      ).toThrowError(/CRITICAL: QUOTA_STORE_DRIVER=memory is strictly forbidden in production/);
+    });
+
+    it('allows memory driver in production when break-glass flag ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD=true is set', () => {
+      process.env.ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD = 'true';
+      const store = createQuotaCounterStore({
+        QUOTA_STORE_DRIVER: 'memory',
+        QUOTA_FAIL_MODE: 'closed',
+      } as never);
+      expect(store).toBeDefined();
+    });
+
+    it('throws error when upstash driver is selected in production without credentials', () => {
+      expect(() =>
+        createQuotaCounterStore({
+          QUOTA_STORE_DRIVER: 'upstash',
+          QUOTA_FAIL_MODE: 'closed',
+        } as never),
+      ).toThrowError(/CRITICAL: QUOTA_STORE_DRIVER=upstash requires QUOTA_UPSTASH_REST_URL and QUOTA_UPSTASH_REST_TOKEN in production/);
+    });
   });
 });
 

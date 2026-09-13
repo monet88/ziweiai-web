@@ -41,19 +41,14 @@ export class RewardsController {
       (req?.headers?.['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
       req?.socket?.remoteAddress;
 
-    const isMobileClient = req.headers?.['x-client-platform'] === 'mobile';
-
-    // Chỉ bắt buộc giải Turnstile CAPTCHA trên Web Browser client
-    if (!isMobileClient) {
-      const turnstileResult = await this.turnstileService.verifyToken(
-        body?.turnstileToken,
-        clientIp,
+    const turnstileResult = await this.turnstileService.verifyToken(
+      body?.turnstileToken,
+      clientIp,
+    );
+    if (!turnstileResult.success) {
+      throw new BadRequestException(
+        'Xác thực chống bot không thành công (Turnstile verification failed).',
       );
-      if (!turnstileResult.success) {
-        throw new BadRequestException(
-          'Xác thực chống bot không thành công (Turnstile verification failed).',
-        );
-      }
     }
 
     const result = await this.rewardsService.dailyCheckin(userId, body?.referralCode);

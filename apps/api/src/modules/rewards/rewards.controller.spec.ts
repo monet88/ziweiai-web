@@ -255,6 +255,24 @@ describe('RewardsController & RewardsService', () => {
         failingController.checkin(mockReq, { referralCode: 'REF123', turnstileToken: 'bot-token' }),
       ).rejects.toThrow('Xác thực chống bot không thành công (Turnstile verification failed).');
     });
+
+    it('should reject checkin even if x-client-platform header is spoofed as mobile when Turnstile verification fails', async () => {
+      const mockFailingTurnstile = {
+        verifyToken: vi.fn().mockResolvedValue({ success: false }),
+      };
+      const failingController = new RewardsController(service, mockFailingTurnstile as any);
+
+      const mockReq = {
+        authenticatedUser: { userId: 'bot-user-uuid' },
+        headers: { 'x-client-platform': 'mobile' },
+        socket: {},
+      } as unknown as AuthenticatedRequest;
+
+      await expect(
+        failingController.checkin(mockReq, { referralCode: 'REF123', turnstileToken: 'bot-token' }),
+      ).rejects.toThrow('Xác thực chống bot không thành công (Turnstile verification failed).');
+      expect(mockFailingTurnstile.verifyToken).toHaveBeenCalledWith('bot-token', undefined);
+    });
   });
 
   describe('getReferrals', () => {

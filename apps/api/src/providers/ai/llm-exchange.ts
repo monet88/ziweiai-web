@@ -26,7 +26,7 @@ export class LlmExchange {
     const today = new Date().toISOString().slice(0, 10);
     const limit = apiEnv.AI_GLOBAL_DAILY_REQUEST_LIMIT;
 
-    // 1. Kiểm tra qua Upstash REST nếu có cấu hình (chia sẻ toàn cục qua mọi Vercel instance/lambda)
+    // 1. Kiểm tra qua Upstash REST (chia sẻ toàn cục qua mọi Vercel instance/lambda)
     if (apiEnv.QUOTA_UPSTASH_REST_URL && apiEnv.QUOTA_UPSTASH_REST_TOKEN) {
       try {
         const restUrl = apiEnv.QUOTA_UPSTASH_REST_URL.replace(/\/+$/, '');
@@ -57,10 +57,31 @@ export class LlmExchange {
           }
           return;
         }
+
+        // Lỗi HTTP non-OK từ Upstash
+        logger.error(`Upstash counter returned HTTP ${res.status}: ${res.statusText}`);
+        if (process.env.NODE_ENV === 'production') {
+          throw new ProviderUnavailableError(
+            'Dịch vụ AI tạm thời không khả dụng do hệ thống kiểm soát ngân sách toàn cục gặp sự cố. Vui lòng thử lại sau.',
+          );
+        }
       } catch (err) {
         if (err instanceof ProviderUnavailableError) throw err;
-        logger.warn(`Upstash global counter check failed, fallback to process static counter: ${err}`);
+        logger.error(`Upstash global counter check failed: ${err}`);
+        if (process.env.NODE_ENV === 'production') {
+          throw new ProviderUnavailableError(
+            'Dịch vụ AI tạm thời không khả dụng do hệ thống kiểm soát ngân sách toàn cục gặp sự cố. Vui lòng thử lại sau.',
+          );
+        }
+        logger.warn(`Fallback to process static counter in non-production: ${err}`);
       }
+    } else if (process.env.NODE_ENV === 'production') {
+      logger.error(
+        'CRITICAL: QUOTA_UPSTASH_REST_URL and QUOTA_UPSTASH_REST_TOKEN are required in production for global AI budget circuit breaker. Failing closed.',
+      );
+      throw new ProviderUnavailableError(
+        'Dịch vụ AI chưa được cấu hình bộ kiểm soát ngân sách toàn cục trên môi trường production.',
+      );
     }
 
     // 2. Static process-level counter (chia sẻ giữa 100% provider instances trong runtime)

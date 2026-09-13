@@ -129,17 +129,55 @@
 <body>
   <div class="container">
     <header>
-      <h1>ViOS — Tử Vi Toàn Tập: Sprint 83 Notes</h1>
+      <h1>ViOS — Tử Vi Toàn Tập: Sprint 89 Implementation Notes</h1>
       <p style="margin: 0; color: #94a3b8;">
-        SaaS Monetization, Security Hardening & Codex Audit Resolution • Karpathy Guidelines Compliance
+        Commercial Paid Launch Hardening & Codex Phase 4 Counter-Audit Resolution • Karpathy Guidelines Compliance
       </p>
       <div style="margin-top: 1rem;">
-        <span class="badge badge-gold">Sprint 83: Commercial Hardening</span>
-        <span class="badge badge-success">Atomic Payment Processing</span>
-        <span class="badge badge-purple">DB RLS Anti-Minting</span>
-        <span class="badge badge-gold">Single Source Pricing</span>
+        <span class="badge badge-gold">Sprint 89: Commercial Paid Launch</span>
+        <span class="badge badge-success">P0 Header CAPTCHA Bypass Fixed</span>
+        <span class="badge badge-purple">P1 AI Circuit Breaker Fail-Closed</span>
+        <span class="badge badge-danger">P1 Quota Store Memory Forbidden in Prod</span>
+        <span class="badge badge-gold">P2 Migration 000041 Safe Canonicalize</span>
       </div>
     </header>
+
+    <!-- Sprint 89: Codex Phase 4 Resolution -->
+    <div class="card" style="border-left: 4px solid var(--gold);">
+      <h2>🏆 Sprint 89: Codex Phase 4 Audit Resolution (GO for Commercial Launch)</h2>
+      <p>
+        Sau khi nhận bản phản biện đối kháng độc lập từ Codex tại HEAD <code>785ade9</code> (báo cáo <code>plans/reports/security-260913-1255-phase4-recheck.md</code>), toàn bộ 4 phát hiện P0, P1, P2 đã được giải quyết dứt điểm 100%:
+      </p>
+      <ul>
+        <li>
+          <strong>[P0] Loại Bỏ Lỗ Hổng Bypass Turnstile Qua Header Mobile (<code>RewardsController.checkin</code>):</strong>
+          Xóa hoàn toàn logic <code>isMobileClient = req.headers['x-client-platform'] === 'mobile'</code>. Bắt buộc 100% request gọi vào <code>/rewards/checkin</code> phải qua xác thực <code>TurnstileService.verifyToken</code>. Đã bổ sung test case chứng minh attacker dù giả mạo header mobile thì khi CAPTCHA thất bại vẫn bị reject 100%.
+        </li>
+        <li>
+          <strong>[P1] Hardening Fail-Closed Cho Global AI Spend Circuit Breaker (<code>LlmExchange</code>):</strong>
+          Trên môi trường <code>production</code>, nếu thiếu cấu hình Upstash URL/Token hoặc nếu Upstash gặp lỗi HTTP 5xx/mạng gián đoạn, hệ thống lập tức ném <code>ProviderUnavailableError</code> và chặn đứng không cho phép gọi outbound LLM. Tuyệt đối không fallback sang in-memory counter của Vercel lambda instance. Đã có 3 targeted unit tests kiểm chứng.
+        </li>
+        <li>
+          <strong>[P1] Cấm Tuyệt Đối Quota Driver Memory Ở Production Nếu Thiếu Cờ Break-Glass (<code>createQuotaCounterStore</code>):</strong>
+          Nếu <code>NODE_ENV === 'production'</code> và chọn driver <code>memory</code>, hệ thống ném lỗi bootstrap ngay lập tức trừ khi có flag minh thị <code>ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD=true</code>. Đã viết unit tests kiểm chứng hành vi này.
+        </li>
+        <li>
+          <strong>[P2] Migration 000041: Canonicalization & Deduplication An Toàn Tuyệt Đối:</strong>
+          Viết migration mới <code>000041_fix_welcome_bonus_canonicalization_and_dedup.sql</code>:
+          1) <code>DROP INDEX IF EXISTS</code> trước khi cập nhật;
+          2) <code>UPDATE</code> chuẩn hóa với hàm <code>normalize_email_address</code>;
+          3) <code>DELETE</code> duplicate an toàn bằng CTE với <code>ROW_NUMBER() OVER (PARTITION BY normalized_email ORDER BY claimed_at ASC, user_id ASC) > 1</code>;
+          4) Tái lập <code>CREATE UNIQUE INDEX</code>. Đảm bảo migration an toàn tuyệt đối và idempotent trên mọi database.
+        </li>
+      </ul>
+      <div style="background: rgba(52, 211, 153, 0.1); border: 1px solid var(--success); border-radius: 6px; padding: 1rem; margin-top: 1rem;">
+        <strong style="color: var(--success);">Xác Minh Nghiêm Ngặt (Karpathy Guideline #6):</strong>
+        <br>• Monorepo Tests: <strong>976 / 976 tests passed</strong> (89 files API, 79 files Web).
+        <br>• Monorepo Typecheck: <strong>10 / 10 packages clean</strong>.
+        <br>• Linter: <strong>0 errors, 0 warnings</strong> (với <code>--max-warnings=0</code>).
+        <br>• Mobile Flutter: <strong>148 / 148 tests passed</strong>, <code>flutter analyze</code>: <strong>0 issues</strong>.
+      </div>
+    </div>
 
     <!-- 1. Unspecified & Implicit Decisions -->
     <div class="card">

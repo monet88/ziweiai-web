@@ -41,12 +41,14 @@ export function createQuotaCounterStore(env: ApiEnv = apiEnv): QuotaCounterStore
       throw new Error('QUOTA_STORE_DRIVER=redis not implemented yet — use "upstash" or "memory"');
     case 'memory':
     default: {
-      if (
-        process.env.NODE_ENV === 'production' &&
-        process.env.ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD !== 'true'
-      ) {
+      if (process.env.NODE_ENV === 'production') {
+        if (process.env.ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD !== 'true') {
+          throw new Error(
+            '[quotas] CRITICAL: QUOTA_STORE_DRIVER=memory is strictly forbidden in production unless ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD=true is explicitly set as a break-glass policy.',
+          );
+        }
         Logger.warn(
-          '⚠️ [quotas] SECURITY WARNING: Running with QUOTA_STORE_DRIVER=memory in production is subject to resets across serverless cold-starts. For distributed persistent quotas, configure QUOTA_STORE_DRIVER=upstash, or explicitly set ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD=true.',
+          '⚠️ [quotas] SECURITY WARNING: Running with QUOTA_STORE_DRIVER=memory in production (break-glass flag ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD=true is enabled).',
         );
       }
       logDriver('memory');

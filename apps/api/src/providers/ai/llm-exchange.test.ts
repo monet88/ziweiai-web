@@ -148,6 +148,89 @@ describe('LlmExchange.run', () => {
     await expect(exchange.run({ adapter, prompt: 'p', emptyMessage: 'empty' })).rejects.toThrow('stub unavailable');
     vi.unstubAllGlobals();
   });
+
+  describe('Global AI Circuit Breaker Fail-Closed in Production', () => {
+    const originalEnv = process.env.NODE_ENV;
+
+    it('fails closed when Upstash returns HTTP 500 error in production', async () => {
+      process.env.NODE_ENV = 'production';
+      const { apiEnv } = await import('../../config/env');
+      (apiEnv as any).QUOTA_UPSTASH_REST_URL = 'https://mock-upstash.local';
+      (apiEnv as any).QUOTA_UPSTASH_REST_TOKEN = 'mock-token';
+
+      const buildRequestSpy = vi.fn();
+      const adapter = buildStubAdapter({ buildRequest: buildRequestSpy });
+
+      // Mock fetch để Upstash pipeline trả HTTP 500
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(JSON.stringify({ error: 'Server Error' }), { status: 500 })),
+      );
+
+      const exchange = new LlmExchange();
+      await expect(exchange.run({ adapter, prompt: 'p', emptyMessage: 'empty' })).rejects.toThrow(
+        'Dịch vụ AI tạm thời không khả dụng do hệ thống kiểm soát ngân sách toàn cục gặp sự cố',
+      );
+
+      // Đảm bảo không hề gọi adapter.buildRequest (chặn trước khi gọi LLM)
+      expect(buildRequestSpy).not.toHaveBeenCalled();
+
+      process.env.NODE_ENV = originalEnv;
+      (apiEnv as any).QUOTA_UPSTASH_REST_URL = undefined;
+      (apiEnv as any).QUOTA_UPSTASH_REST_TOKEN = undefined;
+      vi.unstubAllGlobals();
+    });
+
+    it('fails closed when Upstash network throws error in production', async () => {
+      process.env.NODE_ENV = 'production';
+      const { apiEnv } = await import('../../config/env');
+      (apiEnv as any).QUOTA_UPSTASH_REST_URL = 'https://mock-upstash.local';
+      (apiEnv as any).QUOTA_UPSTASH_REST_TOKEN = 'mock-token';
+
+      const buildRequestSpy = vi.fn();
+      const adapter = buildStubAdapter({ buildRequest: buildRequestSpy });
+
+      // Mock fetch ném timeout error
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          throw new Error('Connection refused to Upstash');
+        }),
+      );
+
+      const exchange = new LlmExchange();
+      await expect(exchange.run({ adapter, prompt: 'p', emptyMessage: 'empty' })).rejects.toThrow(
+        'Dịch vụ AI tạm thời không khả dụng do hệ thống kiểm soát ngân sách toàn cục gặp sự cố',
+      );
+
+      expect(buildRequestSpy).not.toHaveBeenCalled();
+
+      process.env.NODE_ENV = originalEnv;
+      (apiEnv as any).QUOTA_UPSTASH_REST_URL = undefined;
+      (apiEnv as any).QUOTA_UPSTASH_REST_TOKEN = undefined;
+      vi.unstubAllGlobals();
+    });
+
+    it('fails closed when Upstash credentials are not configured in production', async () => {
+      process.env.NODE_ENV = 'production';
+      const { apiEnv } = await import('../../config/env');
+      (apiEnv as any).QUOTA_UPSTASH_REST_URL = undefined;
+      (apiEnv as any).QUOTA_UPSTASH_REST_TOKEN = undefined;
+
+      const buildRequestSpy = vi.fn();
+      const adapter = buildStubAdapter({ buildRequest: buildRequestSpy });
+
+      const exchange = new LlmExchange();
+      await expect(exchange.run({ adapter, prompt: 'p', emptyMessage: 'empty' })).rejects.toThrow(
+        'Dịch vụ AI chưa được cấu hình bộ kiểm soát ngân sách toàn cục trên môi trường production.',
+      );
+
+      expect(buildRequestSpy).not.toHaveBeenCalled();
+
+      process.env.NODE_ENV = originalEnv;
+      vi.unstubAllGlobals();
+    });
+  });
 });
 
 describe('assertNoCjk', () => {

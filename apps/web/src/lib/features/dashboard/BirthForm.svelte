@@ -66,6 +66,12 @@
       model.setField('isUnknownTime', false);
       model.setField('hour', estHour);
       model.setField('minute', estMin);
+      if (typeof window !== 'undefined' && window.history?.replaceState) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('estimatedHour');
+        url.searchParams.delete('estimatedMinute');
+        window.history.replaceState({}, '', url.pathname + (url.search || ''));
+      }
     }
   });
 

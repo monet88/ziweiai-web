@@ -646,17 +646,73 @@
     background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
     color: #ffffff;
   }
-  :global([data-theme="light"]) .annual-overview-text { color: #374151; }
+  :global([data-theme="light"]) .annual-overview-text {
+    color: #1f2937;
+    background: #fdfbf7;
+    border: 1px solid rgba(180, 83, 9, 0.18);
+    border-left: 4px solid #b45309;
+  }
   :global([data-theme="light"]) .summary-pill { background: #f9fafb; border-color: #e5e7eb; }
+  :global([data-theme="light"]) .pill-label { color: #4b5563; }
   :global([data-theme="light"]) .pill-value { color: #111827; }
   :global([data-theme="light"]) .chart-bars-track { background: #f9fafb; border-color: #e5e7eb; }
   :global([data-theme="light"]) .bar-tube { background: #f3f4f6; border-color: #e5e7eb; }
   :global([data-theme="light"]) .month-num { color: #1f2937; }
+  :global([data-theme="light"]) .gan-zhi-tag { color: #4b5563; font-weight: 600; }
+  
+  /* Điểm số trên cột - màu đậm rõ nét trên nền sáng */
+  :global([data-theme="light"]) .score-pill.dai_cat { color: #92400e; font-weight: 800; }
+  :global([data-theme="light"]) .score-pill.cat { color: #047857; font-weight: 800; }
+  :global([data-theme="light"]) .score-pill.binh_hoa { color: #3730a3; font-weight: 800; }
+  :global([data-theme="light"]) .score-pill.tieu_hung,
+  :global([data-theme="light"]) .score-pill.dai_hung { color: #b91c1c; font-weight: 800; }
+
   :global([data-theme="light"]) .month-detail-panel {
     background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
     border-color: rgba(180, 83, 9, 0.3);
   }
+  :global([data-theme="light"]) .lunar-badge { color: #92400e; font-weight: 800; }
   :global([data-theme="light"]) .detail-title { color: #111827; }
-  :global([data-theme="light"]) .advice-box { background: #ffffff; }
-  :global([data-theme="light"]) .advice-text { color: #374151; }
+  :global([data-theme="light"]) .text-gold { color: #92400e; font-weight: 700; }
+
+  /* Tag điểm nhấn & lời khuyên tháng */
+  :global([data-theme="light"]) .tag-highlight {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
+    font-weight: 600;
+  }
+  :global([data-theme="light"]) .btn-audio-month {
+    background: #f5f3ff;
+    border-color: #c4b5fd;
+    color: #6d28d9;
+  }
+  :global([data-theme="light"]) .btn-audio-month:hover {
+    background: #ede9fe;
+    border-color: #a855f7;
+    color: #581c87;
+  }
+  :global([data-theme="light"]) .badge-level.level-dai-cat,
+  :global([data-theme="light"]) .badge-level.level-cat {
+    background: #ecfdf5;
+    border-color: #6ee7b7;
+    color: #047857;
+  }
+  :global([data-theme="light"]) .badge-level.level-binh-hoa {
+    background: #eef2ff;
+    border-color: #a5b4fc;
+    color: #3730a3;
+  }
+  :global([data-theme="light"]) .badge-level.level-tieu-hung,
+  :global([data-theme="light"]) .badge-level.level-dai-hung {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #b91c1c;
+  }
+  :global([data-theme="light"]) .advice-box {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 4px solid #d97706;
+  }
+  :global([data-theme="light"]) .advice-text { color: #1f2937; }
 </style>

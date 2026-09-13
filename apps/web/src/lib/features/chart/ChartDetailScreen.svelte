@@ -133,8 +133,14 @@
   const explanationBlocked = $derived(detail.snapshot?.calculationConfidence.blocksExactReading ?? false);
 
   const explanationButtonLabel = $derived(
-    detail.selectedPalace ? copy.generatePalaceExplanation : copy.generateOverviewExplanation,
+    detail.selectedPalace ? `Luận giải Cung ${detail.selectedPalace.name}` : copy.generateOverviewExplanation,
   );
+
+  $effect(() => {
+    if (explanation.hasResult) {
+      void wallet.refresh();
+    }
+  });
 
   // Phase 11 Ticket 3: dynamic document title / description from chart system + birth extras.
   const systemTitleByKey: Record<string, string> = {
@@ -374,16 +380,31 @@
       {/if}
 
       <section class="explanation-section" data-reveal aria-labelledby="explanation-title">
-        <h2 class="section-title" id="explanation-title">{copy.explanationTitle}</h2>
+        <div class="explanation-section-header">
+          <h2 class="section-title" id="explanation-title">{copy.explanationTitle}</h2>
+          <span class="pricing-badge-chip">⚡ 10 XU / lượt (Lượt đầu miễn phí)</span>
+        </div>
         {#if detail.isOwner}
-          <p class="hint">{explanationHint}</p>
+          <p class="hint">
+            {explanationHint}
+            {#if !detail.selectedPalace}
+              <span class="hint-monetization"> — Chạm vào một cung để xem chuyên sâu (10 XU/cung)</span>
+            {/if}
+          </p>
           <div class="explanation-actions-row">
             <PrimaryButton
-              label={explanation.hasResult ? copy.regenerateExplanation : explanationButtonLabel}
+              label={explanation.hasResult ? `${copy.regenerateExplanation} (10 XU)` : `${explanationButtonLabel} (10 XU)`}
               loading={explanation.isPending}
               disabled={explanationBlocked}
               onclick={explanation.generate}
             />
+            <div class="wallet-balance-indicator">
+              <span class="wallet-icon">🪙</span>
+              <span class="wallet-text">Ví: <strong>{wallet.balance} XU</strong></span>
+              {#if wallet.balance < 10}
+                <a href="/pricing" class="topup-pill">+ Nạp XU</a>
+              {/if}
+            </div>
             {#if explanation.isPending}
               <button
                 type="button"
@@ -802,12 +823,65 @@
     line-height: 1.5;
   }
 
+  .explanation-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .pricing-badge-chip {
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    color: #c7d2fe;
+    letter-spacing: 0.3px;
+  }
+
+  .hint-monetization {
+    color: #fbbf24;
+    font-weight: 600;
+  }
+
   .explanation-actions-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     flex-wrap: wrap;
     margin-bottom: var(--space-md, 16px);
+  }
+
+  .wallet-balance-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #9ca3af;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .wallet-balance-indicator .topup-pill {
+    color: #fbbf24;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 2px 8px;
+    background: rgba(251, 191, 36, 0.15);
+    border-radius: 6px;
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    transition: all 0.2s ease;
+  }
+
+  .wallet-balance-indicator .topup-pill:hover {
+    background: rgba(251, 191, 36, 0.3);
+    color: #fef08a;
   }
 
   .btn-abort-stream {
@@ -940,6 +1014,28 @@
 
   :global([data-theme="light"]) .live-streaming-cursor {
     color: #b45309;
+  }
+
+  :global([data-theme="light"]) .pricing-badge-chip {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: #3730a3;
+  }
+
+  :global([data-theme="light"]) .hint-monetization {
+    color: #92400e;
+  }
+
+  :global([data-theme="light"]) .wallet-balance-indicator {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+    color: #4b5563;
+  }
+
+  :global([data-theme="light"]) .wallet-balance-indicator .topup-pill {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #92400e;
   }
 
   @media (min-width: 1080px) {

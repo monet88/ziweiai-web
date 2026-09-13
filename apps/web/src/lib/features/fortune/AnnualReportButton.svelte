@@ -12,6 +12,7 @@ import { createAnnualReport } from '$lib/api-client/charts';;
   import { viCopy } from '$lib/i18n/vi';
   import { currentYear } from './fortune-dates';
   import AnnualReportModal from './AnnualReportModal.svelte';
+  import { getWalletStore } from '$lib/features/payment/wallet-context';
 
   import { toast } from '$lib/stores/toast';
 
@@ -22,6 +23,13 @@ import { createAnnualReport } from '$lib/api-client/charts';;
   }
 
   let { auth, chartId, initialReport = null }: Props = $props();
+
+  let walletStore = $state<any>(null);
+  try {
+    walletStore = getWalletStore();
+  } catch {
+    // Fallback if rendered outside wallet context
+  }
 
   const copy = viCopy.fortune.annual;
 
@@ -40,6 +48,9 @@ import { createAnnualReport } from '$lib/api-client/charts';;
     },
     onSuccess: (data): void => {
       isModalOpen = true;
+      if (walletStore) {
+        void walletStore.refresh();
+      }
       toast.show(`Đã khởi tạo thành công Báo cáo Vận hạn năm ${data.year}!`, 'success');
     },
   }));
@@ -61,6 +72,8 @@ import { createAnnualReport } from '$lib/api-client/charts';;
     </h3>
     {#if activeReport}
       <span class="annual__ready-badge">✦ Đã lập báo cáo năm {activeReport.year}</span>
+    {:else}
+      <span class="annual__pricing-chip">💎 CAO CẤP • 15 XU</span>
     {/if}
   </div>
 
@@ -79,13 +92,36 @@ import { createAnnualReport } from '$lib/api-client/charts';;
         class="btn-recreate-report"
         disabled={mutation.isPending}
         onclick={() => mutation.mutate()}
-        title="Lập lại báo cáo vận hạn mới"
+        title="Lập lại báo cáo vận hạn mới (15 XU)"
       >
-        <span>{mutation.isPending ? 'Đang khởi tạo...' : '🔄 Lập lại'}</span>
+        <span>{mutation.isPending ? 'Đang khởi tạo...' : '🔄 Lập lại (15 XU)'}</span>
       </button>
     </div>
   {:else}
-    <PrimaryButton label={copy.generateCta} loading={mutation.isPending} onclick={() => mutation.mutate()} />
+    <div class="annual__features-box">
+      <p class="annual__feature-item">✦ <strong>Tổng hợp 12 lưu nguyệt:</strong> Cát hung, can chi và cung nguyệt hạn từng tháng.</p>
+      <p class="annual__feature-item">✦ <strong>Lời khuyên Khâm Thiên Giám:</strong> Định hướng hành động và hóa giải vận hạn cả năm.</p>
+    </div>
+
+    <div class="annual__cta-wrap">
+      <PrimaryButton
+        label={`📅 Lập Báo Cáo Năm ${currentYear()} (15 XU)`}
+        loading={mutation.isPending}
+        onclick={() => mutation.mutate()}
+      />
+
+      {#if walletStore}
+        <div class="annual__wallet-indicator">
+          <span class="wallet-icon">🪙</span>
+          <span class="wallet-label">Ví: <strong>{walletStore.balance ?? 0} XU</strong></span>
+          {#if (walletStore.balance ?? 0) < 15}
+            <a href="/pricing" class="annual__topup-link">+ Nạp thêm {15 - (walletStore.balance ?? 0)} XU</a>
+          {:else}
+            <span class="annual__ready-status">✓ Đủ điều kiện</span>
+          {/if}
+        </div>
+      {/if}
+    </div>
   {/if}
 
   {#if mutation.isPending}
@@ -226,6 +262,79 @@ import { createAnnualReport } from '$lib/api-client/charts';;
     font-size: 14px;
   }
 
+  .annual__pricing-chip {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    color: #fef08a;
+    letter-spacing: 0.5px;
+  }
+
+  .annual__features-box {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 4px 0 8px 0;
+  }
+
+  .annual__feature-item {
+    margin: 0;
+    font-size: 12.5px;
+    color: #d1d5db;
+    line-height: 1.45;
+  }
+
+  .annual__cta-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .annual__wallet-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: #9ca3af;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .annual__topup-link {
+    color: #fbbf24;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 2px 8px;
+    background: rgba(251, 191, 36, 0.15);
+    border-radius: 6px;
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    transition: all 0.2s ease;
+  }
+
+  .annual__topup-link:hover {
+    background: rgba(251, 191, 36, 0.3);
+    color: #fef08a;
+  }
+
+  .annual__ready-status {
+    color: #34d399;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
   /* Dual-Theme: Light Mode */
   :global([data-theme="light"]) .annual {
     background: #ffffff;
@@ -240,6 +349,37 @@ import { createAnnualReport } from '$lib/api-client/charts';;
 
   :global([data-theme="light"]) .annual__title {
     color: #78350f;
+  }
+
+  :global([data-theme="light"]) .annual__pricing-chip {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+  }
+
+  :global([data-theme="light"]) .annual__features-box {
+    background: #fdfbf7;
+    border-color: rgba(180, 83, 9, 0.15);
+  }
+
+  :global([data-theme="light"]) .annual__feature-item {
+    color: #374151;
+  }
+
+  :global([data-theme="light"]) .annual__wallet-indicator {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+    color: #4b5563;
+  }
+
+  :global([data-theme="light"]) .annual__topup-link {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #92400e;
+  }
+
+  :global([data-theme="light"]) .annual__ready-status {
+    color: #047857;
   }
 
   :global([data-theme="light"]) .annual__ready-badge {

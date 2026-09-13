@@ -75,14 +75,21 @@
     }
   });
 
+  const isZiweiMissingBirthTime = $derived(
+    model.draft.chartSystem === 'zi-wei-dou-shu' && model.draft.isUnknownTime,
+  );
+
   const submitButtonText = $derived.by(() => {
+    if (isZiweiMissingBirthTime) {
+      return 'ƯỚC LƯỢNG GIỜ SINH ĐỂ LẬP TỬ VI';
+    }
     switch (model.draft.chartSystem) {
       case 'zi-wei-dou-shu':
         return 'KHỞI TẠO THIÊN BÀN 12 CUNG';
       case 'ba-zi':
-        return 'LẬP LÁ SỐ BÁT TỰ TỨ TRỤ';
+        return model.draft.isUnknownTime ? 'LẬP BÁT TỰ TAM TRỤ (KHUYẾT GIỜ)' : 'LẬP LÁ SỐ BÁT TỰ TỨ TRỤ';
       case 'mangpai':
-        return 'LẬP BÁT TỰ MANH PHÁI';
+        return model.draft.isUnknownTime ? 'LẬP BÁT TỰ MANH PHÁI TAM TRỤ' : 'LẬP BÁT TỰ MANH PHÁI';
       case 'mei-hua-yi-shu':
         return 'KHỞI QUẺ MAI HOA DỊCH SỐ';
       case 'liu-yao':
@@ -102,6 +109,10 @@
 
   function handleSubmit(event: Event): void {
     event.preventDefault();
+    if (isZiweiMissingBirthTime) {
+      isEstimatorOpen = true;
+      return;
+    }
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       try {
         navigator.vibrate(50);
@@ -231,14 +242,25 @@
                   Thiếu mốc giờ sinh cụ thể có thể hạn chế độ sâu của bài luận giải học thuật.
                 {/if}
               </p>
-              <button
-                type="button"
-                class="btn-estimate-trigger"
-                onclick={() => (isEstimatorOpen = true)}
-              >
-                <Sparkles size={14} class="btn-sparkle" />
-                <span>Tra cứu & Ước lượng 12 Canh Giờ Sinh Dân Gian</span>
-              </button>
+              <div class="alert-actions">
+                <button
+                  type="button"
+                  class="btn-estimate-trigger"
+                  onclick={() => (isEstimatorOpen = true)}
+                >
+                  <Sparkles size={14} class="btn-sparkle" />
+                  <span>Tra cứu & Ước lượng 12 Canh Giờ Sinh Dân Gian</span>
+                </button>
+                {#if model.draft.chartSystem === 'zi-wei-dou-shu'}
+                  <button
+                    type="button"
+                    class="btn-switch-system"
+                    onclick={() => model.setField('chartSystem', 'ba-zi')}
+                  >
+                    <span>Hoặc chuyển sang Lập Bát Tự (xem Tam Trụ)</span>
+                  </button>
+                {/if}
+              </div>
             </div>
           </div>
         </div>
@@ -522,10 +544,10 @@
     display: flex;
     gap: 14px;
     padding: 16px;
-    background: linear-gradient(135deg, rgba(212, 168, 83, 0.08) 0%, rgba(20, 16, 28, 0.8) 100%);
-    border: 1px solid rgba(212, 168, 83, 0.35);
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, rgba(212, 168, 83, 0.12) 0%, rgba(26, 20, 38, 0.95) 100%);
+    border: 1px solid rgba(212, 168, 83, 0.5);
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   }
 
   .alert-icon-col {
@@ -537,7 +559,7 @@
   :global(.alert-clock-icon) {
     width: 20px;
     height: 20px;
-    color: #e6b44a;
+    color: #ffd700;
     flex-shrink: 0;
   }
 
@@ -550,49 +572,77 @@
 
   .alert-title {
     margin: 0;
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     font-weight: 700;
-    color: #f7eed8;
+    color: #ffd700;
     letter-spacing: -0.01em;
   }
 
   .alert-text {
     margin: 0;
-    font-size: 0.84rem;
-    color: #bfae99;
-    line-height: 1.5;
+    font-size: 0.88rem;
+    color: #fdf8ea;
+    line-height: 1.55;
   }
 
   .alert-text strong {
-    color: #f7eed8;
+    color: #ffd700;
+    font-weight: 700;
+  }
+
+  .alert-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
   }
 
   .btn-estimate-trigger {
-    margin-top: 6px;
     align-self: flex-start;
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    padding: 9px 15px;
+    border-radius: 8px;
+    background: rgba(212, 168, 83, 0.25);
+    border: 1px solid #ffd700;
+    color: #ffd700;
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-estimate-trigger:hover {
+    background: rgba(212, 168, 83, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(212, 168, 83, 0.3);
+  }
+
+  .btn-switch-system {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 8px 14px;
     border-radius: 8px;
-    background: rgba(212, 168, 83, 0.15);
-    border: 1px solid rgba(212, 168, 83, 0.45);
-    color: #e6b44a;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(212, 168, 83, 0.35);
+    color: #e2d8b8;
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
   }
 
-  .btn-estimate-trigger:hover {
-    background: rgba(212, 168, 83, 0.28);
-    border-color: #e6b44a;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(212, 168, 83, 0.2);
+  .btn-switch-system:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffd700;
+    border-color: #ffd700;
   }
 
   :global(.btn-sparkle) {
-    color: #e6b44a;
+    color: currentColor;
   }
 
   .submit-btn-text {
@@ -624,8 +674,9 @@
     border: 1px solid rgba(212, 175, 55, 0.3) !important;
     border-radius: 12px !important;
     color: #f7eed8 !important;
-    padding: 11px 14px !important;
-    font-size: 14px !important;
+    padding: 12px 14px !important;
+    font-size: 16px !important;
+    line-height: 1.4 !important;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
@@ -644,7 +695,7 @@
 
   :global(.celestial-card .label) {
     color: #dfd4b8 !important;
-    font-size: 12px !important;
+    font-size: 13px !important;
     font-weight: 600 !important;
     letter-spacing: 0.03em !important;
   }
@@ -658,7 +709,8 @@
   :global(.celestial-card .select option) {
     background: #140f28 !important;
     color: #f7eed8 !important;
-    padding: 8px 12px !important;
+    font-size: 16px !important;
+    padding: 10px 14px !important;
   }
 
   /* Đồng bộ Theme Light Hoàng Gia */
@@ -707,6 +759,7 @@
     background: rgba(255, 255, 255, 0.95) !important;
     border-color: rgba(212, 175, 55, 0.35) !important;
     color: #1c1917 !important;
+    font-size: 16px !important;
   }
 
   :global([data-theme="light"]) :global(.celestial-card .select:hover),
@@ -732,6 +785,55 @@
   :global([data-theme="light"]) :global(.celestial-card .select option) {
     background: #ffffff !important;
     color: #1c1917 !important;
+    font-size: 16px !important;
+  }
+
+  /* Light Theme Cảnh Báo Giờ Sinh Tương Phản Cao */
+  :global([data-theme="light"]) .unknown-time-alert {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+    border: 1px solid #f59e0b !important;
+    box-shadow: 0 4px 18px rgba(217, 119, 6, 0.15) !important;
+  }
+
+  :global([data-theme="light"]) :global(.alert-clock-icon) {
+    color: #b45309 !important;
+  }
+
+  :global([data-theme="light"]) .alert-title {
+    color: #92400e !important;
+  }
+
+  :global([data-theme="light"]) .alert-text {
+    color: #78350f !important;
+  }
+
+  :global([data-theme="light"]) .alert-text strong {
+    color: #92400e !important;
+  }
+
+  :global([data-theme="light"]) .btn-estimate-trigger {
+    background: #d97706 !important;
+    border-color: #b45309 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25) !important;
+  }
+
+  :global([data-theme="light"]) .btn-estimate-trigger:hover {
+    background: #b45309 !important;
+    border-color: #78350f !important;
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35) !important;
+  }
+
+  :global([data-theme="light"]) .btn-switch-system {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: #d97706 !important;
+    color: #92400e !important;
+  }
+
+  :global([data-theme="light"]) .btn-switch-system:hover {
+    background: #fef3c7 !important;
+    border-color: #b45309 !important;
+    color: #78350f !important;
   }
 </style>
 

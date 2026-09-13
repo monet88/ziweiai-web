@@ -250,7 +250,7 @@
     z-index: 1051;
     width: 92vw;
     max-width: 820px;
-    max-height: 88vh;
+    max-height: 92vh;
     display: flex;
     flex-direction: column;
     background: var(--color-bg-surface, #1e1b18);
@@ -261,6 +261,7 @@
   }
 
   .modal-header {
+    flex-shrink: 0;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -319,9 +320,11 @@
   }
 
   .modal-body {
-    padding: 20px 24px;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
-    max-height: 58vh;
+    -webkit-overflow-scrolling: touch;
+    padding: 20px 24px;
   }
 
   .canh-gio-grid {
@@ -415,6 +418,7 @@
   }
 
   .modal-footer {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -466,5 +470,127 @@
       width: 100%;
       text-align: center;
     }
+  }
+
+  /* Tối ưu riêng biệt cho màn hình chiều dọc thấp (như viewport 560px zoom 125%) */
+  @media (max-height: 650px) {
+    .modal-dialog {
+      max-height: 94vh;
+    }
+    .modal-header {
+      padding: 10px 18px;
+    }
+    .header-icon-wrap {
+      width: 32px;
+      height: 32px;
+    }
+    .modal-title {
+      font-size: 1rem;
+    }
+    .modal-subtitle {
+      display: none;
+    }
+    .modal-body {
+      padding: 10px 16px;
+    }
+    .canh-gio-card {
+      padding: 10px 12px;
+    }
+    .canh-gio-clue {
+      margin-bottom: 6px;
+      font-size: 0.76rem;
+    }
+    .modal-footer {
+      padding: 8px 18px;
+    }
+    .footer-tip {
+      font-size: 0.74rem;
+    }
+  }
+
+  /* Đồng bộ Theme Light cho Modal Ước Lượng */
+  :global([data-theme="light"]) .modal-dialog {
+    background: #ffffff !important;
+    border-color: rgba(212, 175, 55, 0.5) !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2), 0 0 35px rgba(212, 175, 55, 0.2) !important;
+  }
+
+  :global([data-theme="light"]) .modal-header {
+    background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%) !important;
+    border-bottom-color: rgba(212, 175, 55, 0.25) !important;
+  }
+
+  :global([data-theme="light"]) .modal-title {
+    color: #1c1917 !important;
+  }
+
+  :global([data-theme="light"]) .modal-subtitle {
+    color: #57534e !important;
+  }
+
+  :global([data-theme="light"]) .header-icon-wrap {
+    background: #fef3c7 !important;
+    border-color: #f59e0b !important;
+    color: #b45309 !important;
+  }
+
+  :global([data-theme="light"]) .canh-gio-card {
+    background: #fafaf9 !important;
+    border-color: rgba(212, 175, 55, 0.3) !important;
+  }
+
+  :global([data-theme="light"]) .canh-gio-card:hover {
+    background: #fffbeb !important;
+    border-color: #d97706 !important;
+    box-shadow: 0 4px 14px rgba(217, 119, 6, 0.15) !important;
+  }
+
+  :global([data-theme="light"]) .canh-gio-name {
+    color: #1c1917 !important;
+  }
+
+  :global([data-theme="light"]) .canh-gio-clue {
+    color: #57534e !important;
+  }
+
+  :global([data-theme="light"]) .range-pill {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+  }
+
+  :global([data-theme="light"]) .canh-gio-badge {
+    color: #b45309 !important;
+  }
+
+  :global([data-theme="light"]) .action-hint {
+    color: #b45309 !important;
+  }
+
+  :global([data-theme="light"]) .modal-footer {
+    background: #fafaf9 !important;
+    border-top-color: rgba(212, 175, 55, 0.25) !important;
+  }
+
+  :global([data-theme="light"]) .footer-tip {
+    color: #78716c !important;
+  }
+
+  :global([data-theme="light"]) .btn-cancel {
+    background: #f5f5f4 !important;
+    border-color: #d6d3d1 !important;
+    color: #1c1917 !important;
+  }
+
+  :global([data-theme="light"]) .btn-cancel:hover {
+    background: #e7e5e4 !important;
+  }
+
+  :global([data-theme="light"]) .btn-close {
+    color: #78716c !important;
+  }
+
+  :global([data-theme="light"]) .btn-close:hover {
+    color: #1c1917 !important;
+    background: #f5f5f4 !important;
   }
 </style>

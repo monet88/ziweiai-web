@@ -199,7 +199,7 @@
 {#snippet securityWatermark()}
   <div class="royal-watermark">
     <div class="wm-line-1">BẢO CHỨNG HOÀNG GIA · {data.userName}</div>
-    <div class="wm-line-2">{royalSecurityCode} · KHÂM THIÊN GIÁM</div>
+    <div class="wm-line-2">{royalSecurityCode} · KHÂM THIÊN GIÁM · TUVITOANTAP.ONLINE</div>
   </div>
 {/snippet}
 
@@ -413,7 +413,7 @@
             <div class="cover-footer-meta">
               <div class="security-stamp">
                 <div class="stamp-code">MÃ BẢO CHỨNG SỐ HÓA: {royalSecurityCode}</div>
-                <div class="stamp-note">Bản dịch thuật & nghị định vận số độc quyền ViOS Khâm Thiên Giám</div>
+                <div class="stamp-note">Bản dịch thuật & nghị định vận số độc quyền ViOS Khâm Thiên Giám · https://tuvitoantap.online</div>
               </div>
             </div>
           </div>
@@ -544,7 +544,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 2 / 17</span>
             </footer>
           </div>
@@ -660,7 +660,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 3 / 17</span>
             </footer>
           </div>
@@ -717,7 +717,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 4 / 17</span>
             </footer>
           </div>
@@ -774,7 +774,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 5 / 17</span>
             </footer>
           </div>
@@ -831,7 +831,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 6 / 17</span>
             </footer>
           </div>
@@ -888,7 +888,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 7 / 17</span>
             </footer>
           </div>
@@ -947,7 +947,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 8 / 17</span>
             </footer>
           </div>
@@ -1012,7 +1012,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 9 / 17</span>
             </footer>
           </div>
@@ -1069,7 +1069,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 10 / 17</span>
             </footer>
           </div>
@@ -1116,7 +1116,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 11 / 17</span>
             </footer>
           </div>
@@ -1163,7 +1163,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 12 / 17</span>
             </footer>
           </div>
@@ -1235,7 +1235,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 13 / 17</span>
             </footer>
           </div>
@@ -1269,7 +1269,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 14 / 17</span>
             </footer>
           </div>
@@ -1303,7 +1303,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 15 / 17</span>
             </footer>
           </div>
@@ -1383,7 +1383,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 16 / 17</span>
             </footer>
           </div>
@@ -1465,7 +1465,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Bát Tự Toàn Tập · Khâm Thiên Bảo Giám · tuvitoantap.online</span>
               <span>Trang 17 / 17</span>
             </footer>
           </div>

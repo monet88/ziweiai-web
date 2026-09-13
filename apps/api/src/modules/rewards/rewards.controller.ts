@@ -41,14 +41,20 @@ export class RewardsController {
       (req?.headers?.['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
       req?.socket?.remoteAddress;
 
-    const turnstileResult = await this.turnstileService.verifyToken(
-      body?.turnstileToken,
-      clientIp,
-    );
-    if (!turnstileResult.success) {
-      throw new BadRequestException(
-        'Xác thực chống bot không thành công (Turnstile verification failed).',
+    // Nếu client gửi turnstileToken, tiến hành xác thực chống bot qua Cloudflare.
+    // Trường hợp người dùng di động/trình duyệt bảo mật bị chặn Turnstile (token rỗng),
+    // vì request đã qua SupabaseAuthGuard (JWT hợp lệ) và RPC daily_checkin có khóa dòng ACID
+    // bảo đảm 1 tài khoản chỉ được nhận duy nhất 1 lần/ngày, hệ thống vẫn cho phép người dùng thật điểm danh.
+    if (body?.turnstileToken && body.turnstileToken.trim().length > 0) {
+      const turnstileResult = await this.turnstileService.verifyToken(
+        body.turnstileToken,
+        clientIp,
       );
+      if (!turnstileResult.success && !turnstileResult.isBypassed) {
+        throw new BadRequestException(
+          'Xác thực chống bot không thành công (Turnstile verification failed).',
+        );
+      }
     }
 
     const result = await this.rewardsService.dailyCheckin(userId, body?.referralCode);

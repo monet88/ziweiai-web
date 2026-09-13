@@ -27,6 +27,16 @@
 
   let posterElement = $state<HTMLDivElement | null>(null);
   let isExporting = $state(false);
+  let windowWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 800);
+  let isFitToScreen = $state(true);
+
+  const previewScale = $derived.by(() => {
+    if (!isFitToScreen) return 1;
+    if (windowWidth < 820) {
+      return Math.max(0.35, Math.min(1, (windowWidth - 28) / 780));
+    }
+    return 1;
+  });
 
   // Bản đồ vị trí 12 cung Tử Vi 4x4 (1-indexed theo địa chi)
   const BRANCH_GRID_STYLE: Record<string, string> = {
@@ -61,11 +71,16 @@
         onClose();
       }
     }
+    function handleResize() {
+      windowWidth = window.innerWidth;
+    }
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleResize);
 
     return () => {
       document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', handleResize);
     };
   });
 
@@ -124,6 +139,17 @@
     </div>
 
     <div class="toolbar-actions">
+      {#if windowWidth < 820}
+        <button
+          type="button"
+          class="action-btn btn-scale-toggle"
+          onclick={() => (isFitToScreen = !isFitToScreen)}
+          title={isFitToScreen ? 'Xem kích thước chuẩn 100%' : 'Tự động vừa màn hình'}
+        >
+          <span>{isFitToScreen ? '🔍 100%' : '📱 Vừa Màn Hình'}</span>
+        </button>
+      {/if}
+
       <button
         type="button"
         class="action-btn btn-share"
@@ -158,16 +184,22 @@
     </div>
   </header>
 
-  <!-- Vùng xem trước Poster (Cuộn trên màn hình nhỏ) -->
+  <!-- Vùng xem trước Poster (Cuộn trên màn hình nhỏ & Auto-fit PWA) -->
   <main class="poster-scroll-area">
-    <div class="poster-wrapper">
-      <div class="royal-poster-canvas" bind:this={posterElement}>
-        <!-- Khung viền thếp vàng hoàng gia -->
-        <div class="poster-gold-border">
-          <div class="corner-ornament top-left">✦</div>
-          <div class="corner-ornament top-right">✦</div>
-          <div class="corner-ornament bottom-left">✦</div>
-          <div class="corner-ornament bottom-right">✦</div>
+    <div class="poster-wrapper" style="--poster-scale: {previewScale};">
+      <div class="poster-scale-container">
+        <div class="royal-poster-canvas" bind:this={posterElement}>
+          <!-- Watermark chìm bảo hộ bản quyền và nhận diện thương hiệu mờ ảo 4% không rối mắt -->
+          <div class="celestial-brand-watermark">
+            <span>TỬ VI TOÀN TẬP • TUVITOANTAP.ONLINE</span>
+          </div>
+
+          <!-- Khung viền thếp vàng hoàng gia -->
+          <div class="poster-gold-border">
+            <div class="corner-ornament top-left">✦</div>
+            <div class="corner-ornament top-right">✦</div>
+            <div class="corner-ornament bottom-left">✦</div>
+            <div class="corner-ornament bottom-right">✦</div>
 
           <!-- Header Poster -->
           <header class="poster-header">
@@ -298,21 +330,28 @@
             </div>
           </section>
 
-          <!-- Footer Poster -->
+          <!-- Footer Poster Hoàng Gia -->
           <footer class="poster-footer">
-            <div class="footer-left">
-              <span class="footer-verified-icon">🛡️</span>
-              <span>Bản quyền số hóa bởi ViOS Tử Vi Toàn Tập</span>
+            <div class="footer-brand-badge">
+              <span class="footer-crest-icon">👑</span>
+              <div class="brand-info">
+                <span class="brand-title">VIOS CELESTIAL ASTROLOGY</span>
+                <strong class="brand-domain">https://tuvitoantap.online</strong>
+              </div>
             </div>
-            <div class="footer-center">
-              <span>https://tuvitoantap.online</span>
+
+            <div class="footer-center-motto">
+              <span class="motto-tag">✦ KHÂM THIÊN GIÁM NGỰ BÚT • BẢN QUYỀN MỆNH LÝ ✦</span>
+              <span class="motto-sub">Tra cứu vận số, lập lá số và luận giải AI chuẩn quốc gia</span>
             </div>
-            <div class="footer-right">
-              <span class="footer-code-label">Mã chứng thư:</span>
+
+            <div class="footer-right-code">
+              <span class="footer-code-label">MÃ PHÊ CHUẨN:</span>
               <strong class="footer-code">{royalSecurityCode}</strong>
             </div>
           </footer>
         </div>
+      </div>
       </div>
     </div>
   </main>
@@ -424,23 +463,44 @@
     border-color: rgba(239, 68, 68, 0.4);
   }
 
+  .btn-scale-toggle {
+    background: rgba(212, 175, 55, 0.15);
+    color: #ffd700;
+    border: 1px solid rgba(212, 175, 55, 0.4);
+  }
+
+  .btn-scale-toggle:hover {
+    background: rgba(212, 175, 55, 0.25);
+    border-color: #ffd700;
+  }
+
   /* Scroll Area */
   .poster-scroll-area {
     flex: 1;
     overflow-y: auto;
     overflow-x: auto;
-    padding: 24px;
+    padding: 16px;
     display: flex;
     justify-content: center;
     align-items: flex-start;
+    -webkit-overflow-scrolling: touch;
   }
 
   .poster-wrapper {
-    margin: auto;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+  }
+
+  .poster-scale-container {
+    transform: scale(var(--poster-scale, 1));
+    transform-origin: top center;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* Canvas Layout */
   .royal-poster-canvas {
+    position: relative;
     width: 780px;
     background: radial-gradient(circle at 50% 30%, #1f180e 0%, #0c0a09 100%);
     color: #f3f4f6;
@@ -449,6 +509,27 @@
     border-radius: 8px;
     box-sizing: border-box;
     font-family: var(--font-sans, system-ui, sans-serif);
+    overflow: hidden;
+  }
+
+  /* Watermark thương hiệu chìm bảo hộ bản quyền và nhận diện viral */
+  .celestial-brand-watermark {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.035;
+    font-family: var(--font-serif, serif);
+    font-size: 2.2rem;
+    font-weight: 900;
+    letter-spacing: 0.25em;
+    color: #ffd700;
+    transform: rotate(-28deg);
+    user-select: none;
+    white-space: nowrap;
   }
 
   .poster-gold-border {
@@ -783,36 +864,89 @@
     font-style: italic;
   }
 
-  /* Footer */
+  /* Footer Hoàng Gia */
   .poster-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-top: 1px solid rgba(212, 175, 55, 0.25);
+    padding-top: 12px;
+    margin-top: 4px;
     font-size: 0.72rem;
     color: #9ca3af;
-    border-top: 1px solid rgba(212, 175, 55, 0.2);
-    padding-top: 10px;
   }
 
-  .footer-left {
+  .footer-brand-badge {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
   }
 
-  .footer-center {
-    color: rgba(212, 175, 55, 0.75);
+  .footer-crest-icon {
+    font-size: 1.1rem;
+    filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.5));
   }
 
-  .footer-right {
+  .brand-info {
     display: flex;
+    flex-direction: column;
+    gap: 1px;
+    text-align: left;
+  }
+
+  .brand-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #e5e7eb;
+  }
+
+  .brand-domain {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #ffd700;
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+  }
+
+  .footer-center-motto {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
+    text-align: center;
+  }
+
+  .motto-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #fbbf24;
+  }
+
+  .motto-sub {
+    font-size: 0.6rem;
+    color: rgba(229, 231, 235, 0.6);
+  }
+
+  .footer-right-code {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .footer-code-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
   }
 
   .footer-code {
     color: #fbbf24;
-    letter-spacing: 0.05em;
+    font-family: monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
   }
 
   @media (max-width: 640px) {

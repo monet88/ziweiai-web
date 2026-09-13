@@ -132,7 +132,7 @@
 </script>
 
 <div
-  class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+  class="share-modal-backdrop"
   role="dialog"
   aria-modal="true"
   aria-labelledby="social-share-title"
@@ -142,23 +142,23 @@
   }}
 >
   <!-- Card Modal -->
-  <div class="relative w-full max-w-2xl max-h-[92vh] flex flex-col rounded-2xl bg-stone-950 border border-amber-500/30 shadow-2xl shadow-amber-950/40 text-stone-100 overflow-hidden">
+  <div class="share-modal-card">
     <!-- Header -->
-    <div class="flex items-center justify-between px-5 py-4 border-b border-stone-800/80 bg-gradient-to-r from-stone-900 via-stone-950 to-stone-900">
-      <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+    <div class="share-modal-header">
+      <div class="header-brand">
+        <div class="header-icon-box">
           <Sparkles size={18} />
         </div>
         <div>
-          <h3 id="social-share-title" class="font-serif text-lg font-bold text-amber-200 tracking-wide">
+          <h3 id="social-share-title" class="header-title">
             Chia Sẻ Hoàng Triều • Lan Tỏa Vận Số
           </h3>
-          <p class="text-xs text-stone-400">Tự động gắn mã giới thiệu nhận hoa hồng XU</p>
+          <p class="header-subtitle">Tự động gắn mã giới thiệu nhận hoa hồng XU</p>
         </div>
       </div>
       <button
         onclick={onClose}
-        class="p-1.5 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition-colors"
+        class="btn-close-modal"
         aria-label="Đóng modal"
       >
         <X size={20} />
@@ -166,27 +166,30 @@
     </div>
 
     <!-- Body cuộn -->
-    <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+    <div class="share-modal-body">
       <!-- Selector chọn tỉ lệ -->
-      <div class="space-y-2">
-        <div class="text-xs font-semibold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">
-          <Layers size={14} class="text-amber-400" /> Chọn Định Dạng Kích Thước:
+      <div class="ratio-section">
+        <div class="section-label">
+          <Layers size={14} class="accent-icon" /> Chọn Định Dạng Kích Thước:
         </div>
-        <div class="grid grid-cols-3 gap-2">
+        <div class="ratio-grid">
           <button
-            class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-medium transition-all {selectedRatio === 'story' ? 'bg-amber-500/20 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10' : 'bg-stone-900 border-stone-800 text-stone-400 hover:bg-stone-800'}"
+            class="ratio-btn"
+            class:active={selectedRatio === 'story'}
             onclick={() => (selectedRatio = 'story')}
           >
             <Smartphone size={15} /> Story (9:16)
           </button>
           <button
-            class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-medium transition-all {selectedRatio === 'square' ? 'bg-amber-500/20 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10' : 'bg-stone-900 border-stone-800 text-stone-400 hover:bg-stone-800'}"
+            class="ratio-btn"
+            class:active={selectedRatio === 'square'}
             onclick={() => (selectedRatio = 'square')}
           >
             <Square size={15} /> Vuông (1:1)
           </button>
           <button
-            class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-medium transition-all {selectedRatio === 'portrait' ? 'bg-amber-500/20 border-amber-500 text-amber-200 shadow-md shadow-amber-500/10' : 'bg-stone-900 border-stone-800 text-stone-400 hover:bg-stone-800'}"
+            class="ratio-btn"
+            class:active={selectedRatio === 'portrait'}
             onclick={() => (selectedRatio = 'portrait')}
           >
             <Layers size={15} /> Cổ Điển (3:4)
@@ -195,47 +198,47 @@
       </div>
 
       <!-- Preview Poster Container -->
-      <div class="flex justify-center bg-stone-900/50 p-4 rounded-xl border border-stone-800/60 overflow-hidden">
+      <div class="poster-preview-stage">
         <div
           bind:this={posterRef}
-          class="relative bg-gradient-to-b from-stone-900 via-stone-950 to-[#0c0a09] border border-amber-500/40 rounded-xl p-5 sm:p-6 shadow-2xl flex flex-col justify-between items-center text-center transition-all overflow-hidden"
+          class="share-poster-box"
           style="
             width: {selectedRatio === 'story' ? '280px' : selectedRatio === 'square' ? '300px' : '300px'};
             height: {selectedRatio === 'story' ? '497px' : selectedRatio === 'square' ? '300px' : '400px'};
           "
         >
           <!-- Họa tiết góc hoàng cung -->
-          <div class="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-amber-500/60 rounded-tl-sm pointer-events-none"></div>
-          <div class="absolute top-2 right-2 w-5 h-5 border-t-2 border-r-2 border-amber-500/60 rounded-tr-sm pointer-events-none"></div>
-          <div class="absolute bottom-2 left-2 w-5 h-5 border-b-2 border-l-2 border-amber-500/60 rounded-bl-sm pointer-events-none"></div>
-          <div class="absolute bottom-2 right-2 w-5 h-5 border-b-2 border-r-2 border-amber-500/60 rounded-br-sm pointer-events-none"></div>
+          <div class="corner-ornament top-left">✦</div>
+          <div class="corner-ornament top-right">✦</div>
+          <div class="corner-ornament bottom-left">✦</div>
+          <div class="corner-ornament bottom-right">✦</div>
 
           <!-- Poster Header -->
-          <div class="space-y-1">
-            <span class="inline-block px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full">
+          <div class="card-header-inner">
+            <span class="card-crest-tag">
               Khâm Thiên Giám Ngự Chế
             </span>
-            <h4 class="font-serif text-sm sm:text-base font-bold text-amber-100 leading-tight">
+            <h4 class="card-title">
               {title}
             </h4>
-            <p class="text-[10px] text-stone-400">{subtitle}</p>
+            <p class="card-subtitle">{subtitle}</p>
           </div>
 
           <!-- Poster Body Center (Ấn triện hoặc câu đối) -->
-          <div class="my-auto py-2 px-3 border border-amber-500/20 bg-amber-950/20 rounded-lg max-w-[90%]">
-            <p class="font-serif text-xs text-amber-200/90 italic leading-relaxed line-clamp-3">
+          <div class="card-quote-box">
+            <p class="card-quote-text">
               "{quote}"
             </p>
           </div>
 
           <!-- Poster Footer & QR -->
-          <div class="w-full pt-2 border-t border-amber-500/20 flex items-center justify-between">
-            <div class="text-left space-y-0.5">
-              <p class="text-[9px] font-semibold text-amber-300/90 tracking-wide">ViOS • Tử Vi Toàn Tập</p>
-              <p class="text-[8px] text-stone-400">Quét mã xem bản luận giải chi tiết</p>
+          <div class="card-footer-inner">
+            <div class="card-footer-brand">
+              <p class="brand-line-1">👑 ViOS • Tử Vi Toàn Tập</p>
+              <p class="brand-line-2">🌐 tuvitoantap.online</p>
             </div>
             <!-- Mock QR Hoàng gia -->
-            <div class="w-10 h-10 bg-stone-900 border border-amber-400/50 rounded flex items-center justify-center text-amber-400 shadow-inner">
+            <div class="qr-box">
               <QrCode size={24} />
             </div>
           </div>
@@ -243,36 +246,36 @@
       </div>
 
       <!-- Khối Chia Sẻ Nhanh Mạng Xã Hội -->
-      <div class="space-y-3">
-        <div class="text-xs font-semibold text-stone-300 uppercase tracking-wider flex items-center gap-1.5">
-          <Share2 size={14} class="text-amber-400" /> Chia Sẻ Trực Tiếp 1-Chạm:
+      <div class="social-actions-section">
+        <div class="section-label">
+          <Share2 size={14} class="accent-icon" /> Chia Sẻ Trực Tiếp 1-Chạm:
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div class="social-btn-grid">
           <button
             onclick={handleShareFacebook}
             aria-label="Chia sẻ lên Facebook"
-            class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#1877F2]/15 hover:bg-[#1877F2]/25 border border-[#1877F2]/40 text-[#1877F2] font-semibold text-xs transition-colors"
+            class="social-btn btn-fb"
           >
-            <span class="font-bold">f</span> Facebook
+            <span class="btn-brand-icon">f</span> Facebook
           </button>
           <button
             onclick={handleShareZalo}
             aria-label="Chia sẻ lên Zalo"
-            class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#0068FF]/15 hover:bg-[#0068FF]/25 border border-[#0068FF]/40 text-[#0068FF] font-semibold text-xs transition-colors"
+            class="social-btn btn-zalo"
           >
-            <span class="font-bold">Z</span> Zalo
+            <span class="btn-brand-icon">Z</span> Zalo
           </button>
           <button
             onclick={handleShareTelegram}
             aria-label="Chia sẻ lên Telegram"
-            class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#229ED9]/15 hover:bg-[#229ED9]/25 border border-[#229ED9]/40 text-[#229ED9] font-semibold text-xs transition-colors"
+            class="social-btn btn-tele"
           >
-            <span class="font-bold">✈</span> Telegram
+            <span class="btn-brand-icon">✈</span> Telegram
           </button>
           <button
             onclick={handleNativeShare}
             aria-label="Mở tùy chọn chia sẻ khác hoặc Web Share"
-            class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-purple-300 font-semibold text-xs transition-colors"
+            class="social-btn btn-other"
           >
             <Share2 size={14} /> Khác
           </button>
@@ -280,18 +283,18 @@
       </div>
 
       <!-- Input copy đường link có referral -->
-      <div class="space-y-1.5">
-        <label for="share-link-input" class="text-xs text-stone-400">Liên kết kèm mã giới thiệu của bạn:</label>
-        <div class="flex items-center gap-2 bg-stone-900 border border-stone-800 rounded-xl p-1.5 pl-3">
+      <div class="referral-input-section">
+        <label for="share-link-input" class="referral-label">Liên kết kèm mã giới thiệu của bạn:</label>
+        <div class="referral-input-box">
           <input
             id="share-link-input"
             readonly
             value={shareUrl}
-            class="flex-1 bg-transparent text-xs text-stone-300 font-mono outline-none truncate"
+            class="referral-input"
           />
           <button
             onclick={handleCopy}
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs transition-colors"
+            class="btn-copy-link"
           >
             {#if isCopied}
               <Check size={14} /> Đã chép
@@ -304,20 +307,420 @@
     </div>
 
     <!-- Footer Actions -->
-    <div class="p-4 border-t border-stone-800/80 bg-stone-950 flex flex-wrap items-center justify-between gap-3">
-      <p class="text-[11px] text-amber-300/80 flex items-center gap-1">
+    <div class="share-modal-footer">
+      <p class="reward-tip">
         <Sparkles size={12} /> Nhận ngay +5 XU khi người quen tạo tài khoản qua link của bạn
       </p>
-      <div class="flex items-center gap-2 ml-auto">
-        <button
-          onclick={handleDownloadImage}
-          disabled={isExporting}
-          class="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs transition-all shadow-md shadow-amber-500/20 disabled:opacity-50"
-        >
-          <Download size={14} />
-          {isExporting ? 'Đang xuất ảnh...' : 'Tải Ảnh Poster'}
-        </button>
-      </div>
+      <button
+        onclick={handleDownloadImage}
+        disabled={isExporting}
+        class="btn-download-poster"
+      >
+        <Download size={14} />
+        {isExporting ? 'Đang xuất ảnh...' : 'Tải Ảnh Poster'}
+      </button>
     </div>
   </div>
 </div>
+
+<style>
+  .share-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(4, 3, 2, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #f3f4f6;
+  }
+
+  .share-modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 620px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    background: #0d0a07;
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 16px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(212, 175, 55, 0.15);
+    overflow: hidden;
+  }
+
+  .share-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    background: linear-gradient(90deg, #1f180e 0%, #0d0a07 100%);
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-icon-box {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffd700;
+  }
+
+  .header-title {
+    margin: 0;
+    font-family: var(--font-serif, serif);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #ffd700;
+  }
+
+  .header-subtitle {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #9ca3af;
+  }
+
+  .btn-close-modal {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+
+  .btn-close-modal:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .share-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #d1d5db;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  :global(.accent-icon) {
+    color: #ffd700;
+  }
+
+  .ratio-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .ratio-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    color: #9ca3af;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .ratio-btn.active {
+    background: rgba(212, 175, 55, 0.18);
+    border-color: #ffd700;
+    color: #ffd700;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.2);
+  }
+
+  .poster-preview-stage {
+    display: flex;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 16px;
+    overflow: hidden;
+  }
+
+  .share-poster-box {
+    position: relative;
+    background: radial-gradient(circle at 50% 20%, #221a10 0%, #0c0906 100%);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .corner-ornament {
+    position: absolute;
+    color: #ffd700;
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+  .top-left { top: 6px; left: 8px; }
+  .top-right { top: 6px; right: 8px; }
+  .bottom-left { bottom: 6px; left: 8px; }
+  .bottom-right { bottom: 6px; right: 8px; }
+
+  .card-crest-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    background: rgba(212, 175, 55, 0.15);
+    color: #ffd700;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 999px;
+    margin-bottom: 6px;
+  }
+
+  .card-title {
+    margin: 0;
+    font-family: var(--font-serif, serif);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fef3c7;
+    line-height: 1.3;
+  }
+
+  .card-subtitle {
+    margin: 4px 0 0;
+    font-size: 0.68rem;
+    color: #9ca3af;
+  }
+
+  .card-quote-box {
+    margin: auto 0;
+    padding: 8px 12px;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    background: rgba(212, 175, 55, 0.05);
+    border-radius: 8px;
+    max-width: 90%;
+  }
+
+  .card-quote-text {
+    margin: 0;
+    font-family: var(--font-serif, serif);
+    font-size: 0.78rem;
+    font-style: italic;
+    color: #fef08a;
+    line-height: 1.5;
+  }
+
+  .card-footer-inner {
+    width: 100%;
+    padding-top: 10px;
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-footer-brand {
+    text-align: left;
+  }
+
+  .brand-line-1 {
+    margin: 0;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #ffd700;
+  }
+
+  .brand-line-2 {
+    margin: 0;
+    font-size: 0.6rem;
+    color: #9ca3af;
+  }
+
+  .qr-box {
+    width: 36px;
+    height: 36px;
+    background: #18120a;
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffd700;
+  }
+
+  .social-btn-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-brand-icon {
+    font-weight: 900;
+    font-size: 0.85rem;
+  }
+
+  .btn-fb {
+    background: rgba(24, 119, 242, 0.15);
+    border: 1px solid rgba(24, 119, 242, 0.4);
+    color: #60a5fa;
+  }
+  .btn-fb:hover { background: rgba(24, 119, 242, 0.25); }
+
+  .btn-zalo {
+    background: rgba(0, 104, 255, 0.15);
+    border: 1px solid rgba(0, 104, 255, 0.4);
+    color: #38bdf8;
+  }
+  .btn-zalo:hover { background: rgba(0, 104, 255, 0.25); }
+
+  .btn-tele {
+    background: rgba(34, 158, 217, 0.15);
+    border: 1px solid rgba(34, 158, 217, 0.4);
+    color: #7dd3fc;
+  }
+  .btn-tele:hover { background: rgba(34, 158, 217, 0.25); }
+
+  .btn-other {
+    background: rgba(168, 85, 247, 0.15);
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    color: #c084fc;
+  }
+  .btn-other:hover { background: rgba(168, 85, 247, 0.25); }
+
+  .referral-label {
+    display: block;
+    font-size: 0.72rem;
+    color: #9ca3af;
+    margin-bottom: 4px;
+  }
+
+  .referral-input-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 6px 6px 6px 12px;
+  }
+
+  .referral-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #e5e7eb;
+    outline: none;
+  }
+
+  .btn-copy-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #d4af37;
+    color: #17120a;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.2s;
+  }
+
+  .btn-copy-link:hover { filter: brightness(1.1); }
+
+  .share-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
+    background: #090705;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .reward-tip {
+    margin: 0;
+    font-size: 0.72rem;
+    color: #fef08a;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .btn-download-poster {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #d4af37, #b45309);
+    border: 1px solid #ffd700;
+    color: #17120a;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+    transition: filter 0.2s;
+    margin-left: auto;
+  }
+
+  .btn-download-poster:hover:not(:disabled) { filter: brightness(1.1); }
+
+  @media (max-width: 500px) {
+    .social-btn-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>

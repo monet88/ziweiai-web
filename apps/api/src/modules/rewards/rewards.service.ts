@@ -200,7 +200,7 @@ export class RewardsService {
     }
 
     const nextStreak = canCheckin ? streak + 1 : streak;
-    const rewardToday = nextStreak % 7 === 0 ? 10 : 5;
+    const rewardToday = nextStreak % 7 === 0 ? 3 : 1;
 
     return {
       canCheckin,
@@ -211,15 +211,32 @@ export class RewardsService {
   }
 
   async getReferralHistory(userId: string) {
-    return this.profilesRepository.listReferralsByReferrerId(userId);
+    try {
+      return await this.profilesRepository.listReferralsByReferrerId(userId);
+    } catch (e: any) {
+      this.logger.warn(`listReferralsByReferrerId error for user ${userId}: ${e.message}`);
+      return [];
+    }
   }
 
   async getPartnerHubData(userId: string, origin = apiEnv.PUBLIC_ORIGIN) {
-    const profile = await this.profilesRepository.findProfileByUserId(userId);
+    let profile: any = null;
+    try {
+      profile = await this.profilesRepository.findProfileByUserId(userId);
+    } catch (e: any) {
+      this.logger.warn(`findProfileByUserId failed in getPartnerHubData for ${userId}: ${e.message}`);
+    }
+
     const referralCode = profile?.referralCode || `ref_${userId.slice(0, 8)}`;
     const referralLink = `${origin}/?ref=${referralCode}`;
 
-    const recentReferrals = await this.profilesRepository.listReferralsByReferrerId(userId);
+    let recentReferrals: any[] = [];
+    try {
+      recentReferrals = await this.profilesRepository.listReferralsByReferrerId(userId);
+    } catch (e: any) {
+      this.logger.warn(`listReferralsByReferrerId failed for ${userId}: ${e.message}`);
+    }
+
     const totalReferrals = recentReferrals.length;
     const totalXuEarned = recentReferrals.reduce((sum, r) => sum + (r.status === 'completed' ? r.rewardXu : 0), 0);
 
@@ -244,7 +261,12 @@ export class RewardsService {
     }
 
     // Xây dựng Top 10 Bảng Xếp Hạng Sứ Giả Lan Tỏa từ dữ liệu thật
-    const realAmbassadors = await this.profilesRepository.getReferralLeaderboard(10);
+    let realAmbassadors: any[] = [];
+    try {
+      realAmbassadors = await this.profilesRepository.getReferralLeaderboard(10);
+    } catch (e: any) {
+      this.logger.warn(`getReferralLeaderboard failed in getPartnerHubData: ${e.message}`);
+    }
 
     // Mẫu danh dự hạt giống (dùng lấp đầy các vị trí còn thiếu nếu hệ thống chưa đủ 10 Sứ Giả thật)
     const honorarySeedAmbassadors = [

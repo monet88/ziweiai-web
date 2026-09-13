@@ -34,7 +34,9 @@
     CheckCircle2,
     Lock,
     Trophy,
-    History
+    History,
+    Crown,
+    Shield
   } from 'lucide-svelte';
 
   import {
@@ -97,6 +99,17 @@
     setTimeout(() => {
       if (copiedField === fieldName) copiedField = null;
     }, 2000);
+  }
+
+  function selectVipPackage() {
+    const vipPkg = packages.find((p) => p.price >= 50000) || packages[0];
+    selectedPackage = vipPkg;
+    activeTab = 'packages';
+    if (browser) {
+      setTimeout(() => {
+        document.querySelector('.payment-card')?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+    }
   }
 
   const siteOrigin = browser ? window.location.origin : 'https://tuvitoantap.online';
@@ -203,7 +216,7 @@
             <Gift size={18} class="text-gold" />
             <strong>Điểm Danh Hàng Ngày</strong>
           </div>
-          <p>Nhận ngay <strong>+5 XU</strong> mỗi ngày khi đăng nhập vào ViOS</p>
+          <p>Nhận ngay <strong>+1 XU</strong> mỗi ngày (Jackpot +3 XU ngày 7) khi đăng nhập vào ViOS</p>
           {#if checkinError}
             <p class="error-text">{checkinError}</p>
           {/if}
@@ -220,11 +233,82 @@
           {:else if auth.isAnonymous}
             Đăng nhập để nhận
           {:else}
-            <Gift size={14} /> Nhận 5 XU
+            <Gift size={14} /> Nhận 1 XU
           {/if}
         </PrimaryButton>
       </div>
     </section>
+
+    <!-- KHÂM THIÊN BẢO GIÁM · CHƯƠNG TRÌNH HỘI VIÊN VIP -->
+    <div class="royal-vip-banner">
+      <div class="royal-badge-wrap">
+        <Crown size={15} class="text-celestial-gold" />
+        <span>CHƯƠNG TRÌNH HỘI VIÊN VIOS VIP · KHÂM THIÊN BẢO GIÁM</span>
+      </div>
+
+      <div class="royal-content">
+        <div class="royal-main-text">
+          <h2 class="royal-title">Nâng Cấp Hội Viên ViOS VIP — Đỉnh Cao Mệnh Lý</h2>
+          <p class="royal-sub">
+            Trở thành Hội Viên Hoàng Thân để tiếp cận trọn vẹn tinh hoa thuật số với <strong>2 cách thức cực kỳ dễ dàng</strong>:
+          </p>
+
+          <!-- 2 Con đường lên VIP -->
+          <div class="vip-pathways-grid">
+            <div class="pathway-card">
+              <div class="pathway-badge">CÁCH 1: NẠP TÍCH LŨY</div>
+              <div class="pathway-title">Nạp từ 50.000đ</div>
+              <p class="pathway-desc">Nhận ngay 120 XU (tặng thêm +20% XU lần đầu) & kích hoạt VIP trọn đời tức thì.</p>
+            </div>
+            <div class="pathway-card highlight-ref">
+              <div class="pathway-badge free-badge">CÁCH 2: MIỄN PHÍ 100%</div>
+              <div class="pathway-title">Giới Thiệu 5 Bạn Bè</div>
+              <p class="pathway-desc">Chia sẻ mã giới thiệu, đủ 5 bạn đăng ký -> Nhận VIP miễn phí + thưởng 10 XU/người.</p>
+            </div>
+          </div>
+
+          <!-- Đặc quyền VIP -->
+          <div class="royal-perks-list">
+            <div class="perk-item">
+              <CheckCircle2 size={15} class="text-celestial-gold" />
+              <span><strong>Mở khóa Luận Giải Tam Hợp VIP:</strong> Kết hợp Tử Vi + Bát Tự + Quẻ Dịch cùng lúc</span>
+            </div>
+            <div class="perk-item">
+              <CheckCircle2 size={15} class="text-celestial-gold" />
+              <span><strong>Ưu đãi 50% chi phí XU:</strong> Giảm nửa giá khi đàm đạo chuyên sâu cùng AI Master</span>
+            </div>
+            <div class="perk-item">
+              <CheckCircle2 size={15} class="text-celestial-gold" />
+              <span><strong>Xuất Hồ Sơ Hoàng Gia PDF 19 Trang:</strong> Tải toàn bộ bản luận giải A4 không watermark</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="royal-action-card">
+          <div class="action-card-header">
+            <Crown size={24} class="text-celestial-gold" />
+            <div>
+              <strong>Kích Hoạt Hội Viên VIP</strong>
+              <small>Chọn nạp VietQR hoặc giới thiệu bạn bè</small>
+            </div>
+          </div>
+
+          <div class="action-buttons-group">
+            <button type="button" class="btn-royal-deposit" onclick={selectVipPackage}>
+              <Zap size={16} />
+              <span>Nạp 50k Lên VIP Tức Thì</span>
+            </button>
+            <button type="button" class="btn-royal-ref" onclick={() => (showPartnerHubModal = true)}>
+              <Users size={16} />
+              <span>Giới Thiệu Bạn Bè (Lên VIP Free)</span>
+            </button>
+          </div>
+          <small class="secure-note">
+            <Shield size={12} /> Tự động thăng hạng VIP ngay khi đạt điều kiện — Bảo chứng trọn đời
+          </small>
+        </div>
+      </div>
+    </div>
 
     <!-- Navigation Tabs: Nạp XU & Lịch Sử Giao Dịch -->
     <div class="wallet-nav-tabs">
@@ -262,7 +346,7 @@
             <AlertCircle size={24} class="warning-icon" />
             <div class="warning-content">
               <h3>Bạn đang dùng tài khoản vãng lai</h3>
-              <p>Hãy đăng nhập bằng Email để giữ bảo mật số dư XU bền vững và nhận 5 XU điểm danh mỗi ngày!</p>
+              <p>Hãy đăng nhập bằng Email để giữ bảo mật số dư XU bền vững và nhận 1 XU điểm danh mỗi ngày (Jackpot +3 XU)!</p>
             </div>
             <a href="/sign-in" class="btn-anon-login">Đăng nhập ngay</a>
           </div>
@@ -1843,5 +1927,258 @@
 
   :global(.text-success) {
     color: #16a34a;
+  }
+
+  /* KHÂM THIÊN BẢO GIÁM · ROYAL VIP BANNER */
+  .royal-vip-banner {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: clamp(20px, 3.5vw, 32px);
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(32, 24, 60, 0.85) 0%, rgba(18, 14, 34, 0.95) 100%);
+    border: 1.5px solid rgba(255, 215, 0, 0.38);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), inset 0 0 24px rgba(212, 175, 55, 0.1);
+    margin-bottom: 24px;
+  }
+
+  :global([data-theme="light"]) .royal-vip-banner {
+    background: linear-gradient(135deg, #fffdfa 0%, #f7f3e8 100%);
+    border-color: rgba(180, 83, 9, 0.38);
+    box-shadow: 0 16px 48px rgba(180, 83, 9, 0.12);
+  }
+
+  .royal-badge-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 14px;
+    border-radius: var(--radius-pill);
+    background: var(--celestial-badge-bg);
+    border: 1px solid var(--celestial-badge-border);
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: 0.06em;
+    color: var(--celestial-badge-text);
+    width: fit-content;
+  }
+
+  .royal-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.7fr);
+    gap: 28px;
+    align-items: center;
+  }
+
+  @media (max-width: 860px) {
+    .royal-content {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .royal-title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: clamp(20px, 2.5vw, 26px);
+    font-weight: 850;
+    background: linear-gradient(135deg, #ffffff 0%, #ffd700 80%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  :global([data-theme="light"]) .royal-title {
+    background: linear-gradient(135deg, #110d22 0%, #92400e 80%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .royal-sub {
+    margin: 8px 0 16px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+  }
+
+  .royal-sub strong {
+    color: var(--celestial-gold-text);
+  }
+
+  :global([data-theme="light"]) .royal-sub strong {
+    color: #92400e;
+  }
+
+  .vip-pathways-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .pathway-card {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  :global([data-theme="light"]) .pathway-card {
+    background: rgba(180, 83, 9, 0.04);
+    border-color: rgba(180, 83, 9, 0.2);
+  }
+
+  .pathway-card.highlight-ref {
+    border-color: rgba(192, 132, 252, 0.35);
+    background: rgba(192, 132, 252, 0.05);
+  }
+
+  .pathway-badge {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #ffd700;
+  }
+
+  .pathway-badge.free-badge {
+    color: #c084fc;
+  }
+
+  :global([data-theme="light"]) .pathway-badge {
+    color: #b45309;
+  }
+
+  :global([data-theme="light"]) .pathway-badge.free-badge {
+    color: #7e22ce;
+  }
+
+  .pathway-title {
+    font-size: 14px;
+    font-weight: 750;
+    color: var(--color-text-primary);
+  }
+
+  .pathway-desc {
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .royal-perks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .perk-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .royal-action-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px;
+    border-radius: 16px;
+    background: rgba(14, 10, 26, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  :global([data-theme="light"]) .royal-action-card {
+    background: #ffffff;
+    border-color: rgba(180, 83, 9, 0.28);
+    box-shadow: 0 8px 24px rgba(180, 83, 9, 0.08);
+  }
+
+  .action-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .action-card-header strong {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--color-text-primary);
+  }
+
+  .action-card-header small {
+    display: block;
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+
+  .action-buttons-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn-royal-deposit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 0 18px;
+    border-radius: var(--radius-pill);
+    background: var(--celestial-gradient-gold);
+    color: #100c22;
+    font-size: 13.5px;
+    font-weight: 850;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 6px 18px var(--celestial-gold-glow);
+    transition: all 0.2s ease;
+  }
+
+  .btn-royal-deposit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px var(--celestial-gold-glow);
+  }
+
+  .btn-royal-ref {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 18px;
+    border-radius: var(--radius-pill);
+    background: var(--celestial-badge-bg);
+    border: 1px solid var(--celestial-badge-border);
+    color: var(--celestial-gold-text);
+    font-size: 12.5px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-royal-ref:hover {
+    background: var(--celestial-border-gold);
+    border-color: var(--celestial-gold);
+  }
+
+  .secure-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 10.5px;
+    color: var(--color-text-muted);
+    text-align: center;
   }
 </style>

@@ -201,7 +201,7 @@
         </div>
         <div class="perk-info">
           <h4>Điểm Danh Nhận XU</h4>
-          <p>Mỗi ngày vào Ví XU điểm danh nhận ngay +5 XU miễn phí để trải nghiệm các tính năng AI.</p>
+          <p>Mỗi ngày vào Ví XU điểm danh nhận ngay +1 XU miễn phí (thưởng Jackpot +3 XU ngày 7) để trải nghiệm các tính năng AI.</p>
         </div>
       </div>
 

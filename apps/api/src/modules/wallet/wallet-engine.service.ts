@@ -96,34 +96,39 @@ export class WalletEngineService {
    * Get user's transaction history mapped to TransactionDto
    */
   async getUserTransactions(userId: string) {
-    const { data, error, count } = await this.client
-      .from('transactions')
-      .select('*', { count: 'exact' })
-      .eq('owner_user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(50);
+    try {
+      const { data, error, count } = await this.client
+        .from('transactions')
+        .select('*', { count: 'exact' })
+        .eq('owner_user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-    if (error) {
-      this.logger.error(`Failed to fetch transactions for user ${userId}`, error);
-      throw new Error(`Could not fetch transactions for user ${userId}`);
+      if (error) {
+        this.logger.warn(`Failed to fetch transactions for user ${userId}: ${error.message}`);
+        return { data: [], total: 0 };
+      }
+
+      const items = (data || []).map((row: any) => ({
+        id: row.id,
+        user_id: row.owner_user_id || userId,
+        amount: row.amount_vnd ? Number(row.amount_vnd) : 0,
+        currency: row.currency || 'VND',
+        coin_amount: row.xu_added || 0,
+        status: 'completed' as const,
+        gateway: row.sepay_transaction_id ? 'sepay' : (row.revenuecat_transaction_id ? 'revenuecat' : 'manual'),
+        gateway_transaction_id: row.sepay_transaction_id || row.revenuecat_transaction_id || null,
+        created_at: typeof row.created_at === 'string' ? row.created_at : new Date(row.created_at).toISOString(),
+      }));
+
+      return {
+        data: items,
+        total: count ?? items.length,
+      };
+    } catch (err: any) {
+      this.logger.error(`Unexpected error fetching transactions for user ${userId}`, err);
+      return { data: [], total: 0 };
     }
-
-    const items = (data || []).map((row: any) => ({
-      id: row.id,
-      user_id: row.owner_user_id,
-      amount: row.amount_vnd ? Number(row.amount_vnd) : 0,
-      currency: 'VND',
-      coin_amount: row.xu_added || 0,
-      status: 'completed' as const,
-      gateway: row.sepay_transaction_id ? 'sepay' : (row.revenuecat_transaction_id ? 'revenuecat' : 'manual'),
-      gateway_transaction_id: row.sepay_transaction_id || row.revenuecat_transaction_id || null,
-      created_at: typeof row.created_at === 'string' ? row.created_at : new Date(row.created_at).toISOString(),
-    }));
-
-    return {
-      data: items,
-      total: count || items.length,
-    };
   }
 }
 

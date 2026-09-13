@@ -32,7 +32,8 @@
     Bot,
     Gift,
     Crown,
-    Zap
+    Zap,
+    Users
   } from 'lucide-svelte';
   import type { FeaturesResponse } from '@ziweiai/contracts';
 
@@ -447,53 +448,68 @@
       <div class="royal-card">
         <div class="royal-badge-wrap">
           <Crown size={16} class="text-celestial-gold" />
-          <span>ĐẶC QUYỀN HỘI VIÊN VIOS VIP</span>
+          <span>CHƯƠNG TRÌNH HỘI VIÊN VIOS VIP · KHÂM THIÊN BẢO GIÁM</span>
         </div>
 
         <div class="royal-content">
           <div class="royal-main-text">
-            <h2 class="royal-title">Thiệp Khởi Vận — Điểm Danh Nhận Thưởng XU Mỗi Ngày</h2>
+            <h2 class="royal-title">Nâng Cấp Hội Viên ViOS VIP — Đỉnh Cao Mệnh Lý</h2>
             <p class="royal-sub">
-              Nạp XU tự động siêu tốc qua VietQR 1-chạm hoặc quét mã thẻ. Tặng ngay <strong>+20% XU</strong> cho lần nạp đầu tiên để mở khóa luận giải chi tiết 12 cung và đại vận 10 năm.
+              Trở thành Hội Viên Hoàng Thân để tiếp cận trọn vẹn tinh hoa thuật số với <strong>2 cách thức cực kỳ dễ dàng</strong>:
             </p>
 
+            <!-- 2 Con đường lên VIP -->
+            <div class="vip-pathways-grid">
+              <div class="pathway-card">
+                <div class="pathway-badge">CÁCH 1: NẠP TÍCH LŨY</div>
+                <div class="pathway-title">Nạp từ 50.000đ</div>
+                <p class="pathway-desc">Nhận ngay 120 XU (tặng thêm +20% XU lần đầu) & kích hoạt VIP trọn đời tức thì.</p>
+              </div>
+              <div class="pathway-card highlight-ref">
+                <div class="pathway-badge free-badge">CÁCH 2: MIỄN PHÍ 100%</div>
+                <div class="pathway-title">Giới Thiệu 5 Bạn Bè</div>
+                <p class="pathway-desc">Chia sẻ mã giới thiệu, đủ 5 bạn đăng ký -> Nhận VIP miễn phí + thưởng 10 XU/người.</p>
+              </div>
+            </div>
+
+            <!-- Đặc quyền VIP -->
             <div class="royal-perks-list">
               <div class="perk-item">
                 <CheckCircle2 size={15} class="text-celestial-gold" />
-                <span>Không giới hạn câu hỏi đàm đạo cùng AI Tử Vi</span>
+                <span><strong>Mở khóa Luận Giải Tam Hợp VIP:</strong> Kết hợp Tử Vi + Bát Tự + Quẻ Dịch cùng lúc</span>
               </div>
               <div class="perk-item">
                 <CheckCircle2 size={15} class="text-celestial-gold" />
-                <span>Lưu trữ không giới hạn gia phả & lá số người thân</span>
+                <span><strong>Ưu đãi 50% chi phí XU:</strong> Giảm nửa giá khi đàm đạo chuyên sâu cùng AI Master</span>
               </div>
               <div class="perk-item">
                 <CheckCircle2 size={15} class="text-celestial-gold" />
-                <span>Báo cáo dự đoán tài lộc, sự nghiệp, tình cảm hàng tháng</span>
+                <span><strong>Xuất Hồ Sơ Hoàng Gia PDF 19 Trang:</strong> Tải toàn bộ bản luận giải A4 không watermark</span>
               </div>
             </div>
           </div>
 
           <div class="royal-action-card">
             <div class="action-card-header">
-              <CoinsIcon size={24} class="text-celestial-gold" />
+              <Crown size={26} class="text-celestial-gold" />
               <div>
-                <strong>Nạp XU Khởi Vận</strong>
-                <small>Hỗ trợ VietQR, Thẻ Nội Địa & Quốc Tế</small>
+                <strong>Tham Gia Hội Viên VIP</strong>
+                <small>Chọn nạp VietQR hoặc giới thiệu bạn bè</small>
               </div>
             </div>
 
             <div class="action-buttons-group">
               <a href={resolve('/wallet')} class="btn-royal-deposit">
                 <Zap size={16} />
-                <span>Mở Ví & Nạp XU Ngay</span>
+                <span>Nạp 50k Lên VIP Tức Thì</span>
               </a>
               <a href={resolve('/wallet')} class="btn-royal-checkin">
-                <Gift size={16} />
-                <span>Điểm Danh Nhận XU Miễn Phí</span>
+                <Users size={16} />
+                <span>Giới Thiệu Bạn Bè (Lên VIP Free)</span>
               </a>
             </div>
             <small class="secure-note">
-              <Shield size={12} /> Giao dịch bảo mật chuẩn ngân hàng — Cộng XU tức thì 3s
+              <Shield size={12} /> Tự động thăng hạng VIP ngay khi đạt điều kiện — Bảo chứng trọn đời
             </small>
           </div>
         </div>
@@ -1605,6 +1621,65 @@
 
   :global([data-theme="light"]) .royal-sub strong {
     color: #92400e;
+  }
+
+  .vip-pathways-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .pathway-card {
+    padding: 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  :global([data-theme="light"]) .pathway-card {
+    background: rgba(180, 83, 9, 0.04);
+    border-color: rgba(180, 83, 9, 0.2);
+  }
+
+  .pathway-card.highlight-ref {
+    border-color: rgba(192, 132, 252, 0.35);
+    background: rgba(192, 132, 252, 0.05);
+  }
+
+  .pathway-badge {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #ffd700;
+  }
+
+  .pathway-badge.free-badge {
+    color: #c084fc;
+  }
+
+  :global([data-theme="light"]) .pathway-badge {
+    color: #b45309;
+  }
+
+  :global([data-theme="light"]) .pathway-badge.free-badge {
+    color: #7e22ce;
+  }
+
+  .pathway-title {
+    font-size: 14px;
+    font-weight: 750;
+    color: var(--color-text-primary);
+  }
+
+  .pathway-desc {
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--color-text-secondary);
+    margin: 0;
   }
 
   .royal-perks-list {

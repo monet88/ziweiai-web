@@ -26,15 +26,15 @@
   let checkinError = $state<string | null>(null);
   let turnstileWidget = $state<any>(null);
 
-  // Chuỗi 7 ngày điểm danh với phần thưởng
+  // Chuỗi 7 ngày điểm danh với phần thưởng cân bằng kinh tế học (1 XU/ngày, ngày 7 nhận 3 XU)
   const streakDays = [
-    { day: 1, reward: 5, label: 'Ngày 1' },
-    { day: 2, reward: 5, label: 'Ngày 2' },
-    { day: 3, reward: 5, label: 'Ngày 3' },
-    { day: 4, reward: 5, label: 'Ngày 4' },
-    { day: 5, reward: 5, label: 'Ngày 5' },
-    { day: 6, reward: 5, label: 'Ngày 6' },
-    { day: 7, reward: 10, label: 'Ngày 7', jackpot: true }
+    { day: 1, reward: 1, label: 'Ngày 1' },
+    { day: 2, reward: 1, label: 'Ngày 2' },
+    { day: 3, reward: 1, label: 'Ngày 3' },
+    { day: 4, reward: 1, label: 'Ngày 4' },
+    { day: 5, reward: 1, label: 'Ngày 5' },
+    { day: 6, reward: 1, label: 'Ngày 6' },
+    { day: 7, reward: 3, label: 'Ngày 7', jackpot: true }
   ];
 
   async function handleCheckin() {
@@ -87,7 +87,7 @@
       </div>
       <div>
         <h3 class="widget-title">Điểm Danh Khởi Vận 7 Ngày</h3>
-        <p class="widget-desc">Duy trì chuỗi điểm danh để nhận Jackpot <strong>+10 XU</strong> vào Ngày 7</p>
+        <p class="widget-desc">Duy trì chuỗi điểm danh 7 ngày để nhận Jackpot <strong>+3 XU</strong> (Mỗi ngày +1 XU)</p>
       </div>
     </div>
 
@@ -159,7 +159,7 @@
           <span>Đang ghi nhận...</span>
         {:else}
           <Gift size={16} />
-          <span>Điểm Danh Ngay (+5 XU)</span>
+          <span>Điểm Danh Ngay (+1 XU)</span>
         {/if}
       </button>
     {:else}

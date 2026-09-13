@@ -217,7 +217,7 @@
       <span class="watermark-symbol">❖</span>
     </div>
     <div class="watermark-footer-ribbon">
-      <span>BẢN QUYỀN: {data.userName.toUpperCase()} · MÃ BẢO CHỨNG: {royalSecurityCode} · KHÂM THIÊN GIÁM</span>
+      <span>BẢN QUYỀN: {data.userName.toUpperCase()} · TUVITOANTAP.ONLINE · MÃ BẢO CHỨNG: {royalSecurityCode} · KHÂM THIÊN GIÁM</span>
     </div>
   </div>
 {/snippet}
@@ -442,7 +442,7 @@
                 <div class="stamp-label">NGỰ BÚT KHÂM PHÊ</div>
               </div>
               <div class="cover-legal">
-                Tài liệu nghiên cứu mệnh lý cung đình được bảo hộ số hóa độc quyền bởi ViOS.<br />
+                Tài liệu nghiên cứu mệnh lý cung đình được bảo hộ số hóa độc quyền bởi ViOS Tử Vi Toàn Tập (https://tuvitoantap.online).<br />
                 Xuất bản lưu hành: {new Date().toLocaleDateString('vi-VN')}
               </div>
             </div>
@@ -525,7 +525,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Tử Vi Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Tử Vi Toàn Tập · tuvitoantap.online · Khâm Thiên Bảo Giám</span>
               <span>Trang 2 / 19</span>
             </footer>
           </div>
@@ -588,7 +588,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Tử Vi Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Tử Vi Toàn Tập · tuvitoantap.online · Tinh Bàn Hoàng Triều</span>
               <span>Trang 3 / 19</span>
             </footer>
           </div>
@@ -682,7 +682,7 @@
               </div>
 
               <footer class="page-footer">
-                <span>Tử Vi Toàn Tập · Cung {palace.name}</span>
+                <span>Tử Vi Toàn Tập · tuvitoantap.online · Cung {palace.name}</span>
                 <span>Trang {pIdx + 4} / 19</span>
               </footer>
             </div>
@@ -728,7 +728,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Tử Vi Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Tử Vi Toàn Tập · tuvitoantap.online · Tam Hợp Mệnh Tài Quan</span>
               <span>Trang 16 / 19</span>
             </footer>
           </div>
@@ -768,7 +768,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Tử Vi Toàn Tập · Khâm Thiên Bảo Giám</span>
+              <span>Tử Vi Toàn Tập · tuvitoantap.online · Cung Phúc Đức Thần Khí</span>
               <span>Trang 17 / 19</span>
             </footer>
           </div>
@@ -826,7 +826,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Tử Vi Toàn Tập · Lưu Niên 2026</span>
+              <span>Tử Vi Toàn Tập · tuvitoantap.online · Lưu Niên 2026</span>
               <span>Trang 18 / 19</span>
             </footer>
           </div>
@@ -903,7 +903,7 @@
             </div>
 
             <footer class="page-footer">
-              <span>Bản quyền nội dung © ViOS · Tử Vi Toàn Tập</span>
+              <span>Bản quyền nội dung © ViOS · Tử Vi Toàn Tập (https://tuvitoantap.online)</span>
               <span>Trang 19 / 19</span>
             </footer>
           </div>

@@ -33,6 +33,8 @@ export class DynamicThrottlerGuard extends ThrottlerGuard {
         this.lastCacheTime = now;
       } catch (e) {
         console.error('Failed to refresh throttler configs', e);
+        // Backoff 30s before trying again to prevent cascading timeouts
+        this.lastCacheTime = now - this.CACHE_TTL_MS + 30000;
       }
     }
 

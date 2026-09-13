@@ -155,6 +155,14 @@ class ReferralService {
     try {
       final apiClient = _apiClient;
       if (apiClient != null) {
+        if (turnstileToken == null || turnstileToken.trim().isEmpty) {
+          return (
+            success: false,
+            rewardXu: 0,
+            message: 'Tính năng nhận thưởng trực tiếp trên Native App đang kết nối Cloudflare Turnstile trong Giai đoạn 2. Quý tri kỷ vui lòng trải nghiệm tại https://tuvitoantap.online.',
+          );
+        }
+
         final res = await apiClient.dailyCheckin(
           referralCode: trimmed,
           turnstileToken: turnstileToken,

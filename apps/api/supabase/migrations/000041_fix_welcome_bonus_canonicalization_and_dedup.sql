@@ -50,14 +50,21 @@ set
 from auth.users u
 where c.user_id = u.id;
 
--- 4. Deduplicate và đối soát sổ cái (Ledger Reconciliation):
+-- 4. Deduplicate và đối soát sổ cái chuẩn mực kế toán (Ledger Reconciliation):
 -- Với mọi bản ghi trùng lặp (rn > 1):
--- a) Ghi nhận bút toán đảo giao dịch vào public.xu_transactions
--- b) Khấu trừ số dư profiles.xu_balance tương ứng
--- c) Xoá claim duplicate khỏi public.welcome_bonus_claims
+-- a) Tính số tiền thực tế có thể thu hồi từ số dư ví:
+--    v_recoverable_xu = least(greatest(0, coalesce(p.xu_balance, 0)), r.reward_xu)
+-- b) Khấu trừ đúng v_recoverable_xu từ ví và ghi transaction đảo -v_recoverable_xu.
+--    => Bảo đảm 100% tuyệt đối: profiles.xu_balance LUÔN BẰNG tổng xu_transactions.
+-- c) Nếu người dùng đã tiêu một phần hoặc toàn bộ bonus trước đó (v_unrecoverable_xu > 0):
+--    Ghi nhận dòng audit memo (amount = 0) lưu vết kiểm toán phần XU đã bị tiêu.
+-- d) Xoá claim duplicate khỏi public.welcome_bonus_claims.
 do $$
 declare
   r record;
+  v_current_balance int;
+  v_recoverable_xu int;
+  v_unrecoverable_xu int;
 begin
   for r in (
     with ranked_claims as (
@@ -76,25 +83,50 @@ begin
     from ranked_claims
     where rn > 1
   ) loop
-    -- Ghi bút toán đảo đối soát vào xu_transactions
-    insert into public.xu_transactions (
-      user_id,
-      amount,
-      transaction_type,
-      actor_email
-    ) values (
-      r.user_id,
-      -r.reward_xu,
-      'welcome_bonus_duplicate_reversal',
-      'system_migration_000041'
-    );
-
-    -- Khấu trừ số dư ví người dùng, không bao giờ để âm
-    update public.profiles
-    set xu_balance = greatest(0, coalesce(xu_balance, 0) - r.reward_xu)
+    -- Lấy số dư ví hiện tại của profile
+    select coalesce(xu_balance, 0) into v_current_balance
+    from public.profiles
     where user_id = r.user_id;
 
-    -- Xoá bản ghi duplicate claim
+    -- Tính số XU thực tế còn nằm trong ví có thể thu hồi
+    v_recoverable_xu := least(greatest(0, v_current_balance), r.reward_xu);
+    v_unrecoverable_xu := r.reward_xu - v_recoverable_xu;
+
+    -- 1. Nếu ví còn XU, ghi nhận giao dịch đảo tương ứng và khấu trừ số dư
+    if v_recoverable_xu > 0 then
+      insert into public.xu_transactions (
+        user_id,
+        amount,
+        transaction_type,
+        actor_email
+      ) values (
+        r.user_id,
+        -v_recoverable_xu,
+        'welcome_bonus_duplicate_reversal',
+        'system_migration_000041'
+      );
+
+      update public.profiles
+      set xu_balance = xu_balance - v_recoverable_xu
+      where user_id = r.user_id;
+    end if;
+
+    -- 2. Nếu user đã tiêu mất bonus trước đó, ghi nhận audit memo (amount = 0)
+    if v_unrecoverable_xu > 0 then
+      insert into public.xu_transactions (
+        user_id,
+        amount,
+        transaction_type,
+        actor_email
+      ) values (
+        r.user_id,
+        0,
+        'welcome_bonus_duplicate_unrecoverable_consumed',
+        'system_migration_000041: unrecoverable ' || v_unrecoverable_xu || ' xu consumed prior to migration'
+      );
+    end if;
+
+    -- 3. Xoá bản ghi duplicate claim
     delete from public.welcome_bonus_claims
     where ctid = r.ctid;
   end loop;

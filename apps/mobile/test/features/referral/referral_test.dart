@@ -75,7 +75,36 @@ void main() {
       expect(result.message, equals('Đã nhập mã giới thiệu thành công!'));
     });
 
-    test('redeemReferralCode handles 400 bot verification failure with clear message', () async {
+    test('redeemReferralCode guards against null or empty turnstileToken and directs to Web MVP', () async {
+      final mockApiClient = MockApiClient();
+      final mockSupabase = MockSupabaseClient();
+      final mockAuth = MockGoTrueClient();
+      final mockUser = MockUser();
+
+      when(() => mockSupabase.auth).thenReturn(mockAuth);
+      when(() => mockAuth.currentUser).thenReturn(mockUser);
+      when(() => mockUser.id).thenReturn('mock-user-id');
+
+      final serviceWithMocks = ReferralService(
+        supabase: mockSupabase,
+        apiClient: mockApiClient,
+      );
+
+      final result = await serviceWithMocks.redeemReferralCode(
+        'FRIEND88',
+        turnstileToken: null,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.rewardXu, equals(0));
+      expect(result.message, contains('https://tuvitoantap.online'));
+      verifyNever(() => mockApiClient.dailyCheckin(
+            referralCode: any(named: 'referralCode'),
+            turnstileToken: any(named: 'turnstileToken'),
+          ));
+    });
+
+    test('redeemReferralCode handles 400 bot verification failure with clear message when token is invalid', () async {
       final mockApiClient = MockApiClient();
       final mockSupabase = MockSupabaseClient();
       final mockAuth = MockGoTrueClient();
@@ -109,7 +138,7 @@ void main() {
 
       final result = await serviceWithMocks.redeemReferralCode(
         'FRIEND88',
-        turnstileToken: null,
+        turnstileToken: 'invalid_token_sample',
       );
 
       expect(result.success, isFalse);

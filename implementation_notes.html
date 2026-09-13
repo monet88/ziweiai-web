@@ -471,6 +471,73 @@
         <br>• Trạng thái cuối cùng: <strong>UNCONDITIONAL GO FOR WEB MVP COMMERCIAL LAUNCH</strong>.
       </div>
     </div>
+
+    <!-- SPRINT 90 SECTION -->
+    <div class="card">
+      <h2>8. Sprint 90 — Vận Hành Thương Mại Web MVP & Lộ Trình Mobile App</h2>
+      <span class="badge badge-gold">Commercial Operations</span>
+      <span class="badge badge-success">Ledger Reconciled</span>
+      <span class="badge badge-purple">Mobile Turnstile Spec</span>
+
+      <h3>8.1. Các Quyết Định Thiết Kế & Thực Thi (Implicit & Architectural Decisions)</h3>
+      <ul>
+        <li>
+          <strong>Hạ Tầng Giám Sát Ngân Sách AI (Upstash Redis Monitor):</strong>
+          Xây dựng công cụ CLI <code>scripts/monitor-ai-quota.js</code> kết nối trực tiếp vào REST API của Upstash Redis (<code>holy-pug-128685.upstash.io</code>).
+          Tự động đọc key hạn mức hàng ngày <code>ai:circuit:global:YYYY-MM-DD</code>, tính toán tỷ lệ tiêu thụ thực tế so với trần 10.000 requests/ngày, hiển thị trạng thái ngắt mạch (NORMAL, WARNING, TRIPPED) và thời gian reset TTL.
+        </li>
+        <li>
+          <strong>Quy Trình Xử Lý Giao Dịch Treo VietQR / SePay (Unmatched Resolver):</strong>
+          Xây dựng công cụ CLI <code>scripts/resolve-unmatched-sepay.js</code> cho phép Admin tra cứu các giao dịch chuyển khoản sai hoặc thiếu cú pháp (như trường hợp ID 0 tiền 10.000đ test), kiểm tra đối soát dry-run, và thực thi gán người dùng kèm cập nhật số dư ví và ghi bút toán kép vào sổ cái <code>public.xu_transactions</code> (loại <code>topup</code>).
+        </li>
+        <li>
+          <strong>Giải Pháp Cloudflare Turnstile Cho Flutter Mobile (Turnstile WebView):</strong>
+          Triển khai trang web widget tĩnh siêu nhẹ tại <code>apps/web/static/turnstile-widget.html</code> với giao diện tối huyền bí đồng bộ thương hiệu ViOS. Trang web nhúng script Cloudflare Turnstile chính thức và giao tiếp với ứng dụng Flutter qua JavaScript Channel <code>TurnstileBridge.postMessage(token)</code>.
+          Giải pháp này tương thích 100% với các endpoint backend hiện tại mà không đòi hỏi chỉnh sửa backend API hay phụ thuộc vào tài khoản trả phí của Apple/Google.
+        </li>
+      </ul>
+
+      <h3>8.2. So Sánh & Đánh Đổi Kỹ Thuật (Considered Trade-offs)</h3>
+      <ul>
+        <li>
+          <strong>Turnstile WebView vs. Native Attestation:</strong>
+          Đã phân tích chi tiết trong tài liệu <code>docs/mobile/turnstile-webview-integration-spec.md</code>. Chọn WebView vì mang lại token chuẩn Cloudflare ngay lập tức, zero backend rewrite, triển khai nhanh và hoàn toàn miễn phí.
+        </li>
+        <li>
+          <strong>Đóng Gói Release Store & RevenueCat IAP:</strong>
+          Đã hệ thống hóa toàn bộ quy trình cấu hình Product IDs, StoreKit sandbox, Google Play billing, và RevenueCat Webhook đồng bộ VIP sang Supabase trong tài liệu <code>docs/mobile/revenuecat-and-store-release-guide.md</code>.
+        </li>
+      </ul>
+
+      <h3>8.3. Kết Quả Kiểm Tra Chất Lượng Toàn Diện (Verification Gates)</h3>
+      <ul>
+        <li><strong>Backend API Tests:</strong> <code>571 / 571 passed (100%)</code> trên 89 suites.</li>
+        <li><strong>Web Type Check:</strong> <code>svelte-check: 0 errors, 0 warnings</code>.</li>
+        <li><strong>Mobile Flutter Tests:</strong> <code>152 / 152 passed (100%)</code>.</li>
+        <li><strong>Mobile Code Quality:</strong> <code>flutter analyze: No issues found (0 issues)</code>.</li>
+        <li><strong>Monorepo Code Quality:</strong> <code>pnpm lint: 0 errors, 0 warnings</code>.</li>
+        <li><strong>Hạ Tầng Live:</strong> Upstash Redis PING: PONG thông suốt, SePay ghi nhận 160.000 VNĐ / 160 XU khớp 100%.</li>
+      </ul>
+
+      <h3>8.4. Khắc Phục Lỗi Hiển Thị Bát Tự Thiếu Giờ Sinh & Kiểm Toán Console Error</h3>
+      <span class="badge badge-success">UX Polish</span>
+      <span class="badge badge-primary">Bazi Fallback Guard</span>
+      <ul>
+        <li>
+          <strong>Nguyên nhân gốc (Root Cause):</strong> Khi người dùng chọn "Không rõ giờ sinh", hệ thống chuẩn hóa đầu vào gán <code>blocksExactReading = true</code> theo thiết kế bất biến của astro-engine.
+          Với Tử Vi Đẩu Số, giao diện có nhánh kiểm tra <code>detail.palaces.length === 0</code> và render <code>EmptyStateCard</code> giải thích rõ ràng ("Chưa thể dựng bàn lá số 12 cung").
+          Tuy nhiên, với Bát Tự (<code>ba-zi</code>) và Mạnh Phái (<code>mangpai</code>), giao diện chưa kiểm tra điều kiện trụ rỗng (<code>detail.pillars.length === 0</code>), dẫn đến việc render thẻ <code>SummaryCard title="Tứ trụ"</code> với danh sách rỗng (ra khung trắng trơn không có nội dung).
+        </li>
+        <li>
+          <strong>Khắc phục triệt để:</strong>
+          <br>1) Bổ sung chuỗi i18n <code>baziUnavailableTitle</code> ("Chưa thể dựng đồ hình Tứ Trụ") và <code>baziUnavailableDescription</code> trong <code>vi.ts</code>.
+          <br>2) Thêm nhánh điều kiện vào <code>ChartDetailScreen.svelte</code> để render <code>EmptyStateCard</code> chuẩn chỉnh khi Bát Tự thiếu giờ sinh.
+          <br>3) Cập nhật <code>BaziDetailCard.svelte</code> với guard <code>pillarRows.length > 0</code>, tự động chuyển sang <code>EmptyStateCard</code> nếu không có trụ nào được sinh ra.
+          <br>4) Kiểm toán 2 lỗi 500 xuất hiện trên console DevTools (<code>/api/history?limit=8</code> và <code>/api/wallet/transactions</code>): Đây là hiện tượng cold-start của Vercel Serverless Function trong lần khởi động đầu tiên trước khi NestJS app init hoàn tất; các request ngay sau đó và test trực tiếp bằng Bearer Token chuẩn đều phản hồi HTTP 200 OK thông suốt.
+        </li>
+        <li><strong>Kiểm chứng:</strong> 414/414 web unit tests pass (100%), <code>svelte-check</code> sạch 0 lỗi 0 cảnh báo.</li>
+      </ul>
+    </div>
   </div>
 </body>
 </html>

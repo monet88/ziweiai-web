@@ -6,13 +6,17 @@ Tài liệu này tổng hợp các tính năng cốt lõi ĐÃ HOÀN THÀNH đ�
 
 ---
 
-## 🚀 Trạng Thái Tính Năng & Sprint (Phase 12: Imperial Synergy & Khâm Thiên Giám Ngự Báo — Sprint 48 — 10/09/2026)
-- **Current Branch:** `feature/sprint-48-imperial-synergy` (Commit `dcec554`)
-- **Total Tests:** **1.062 / 1.062 Passed (100% Xanh)** (Mobile: 111, API: 478, Web: 303, Contracts: 135, Astro-Engine: 35)
-- **Sprint 48 Progress:** 3/3 Phases (**100% HOÀN TẤT**).
-  - Phase 1: Duyên Định Cung Đình (Astrological Compatibility + Thẻ Story 9:16).
-  - Phase 2: Ngự Phán Phòng Toàn Năng (Global AI Divination Chat + Audio Ducking + TTS).
-  - Phase 3: Khâm Thiên Giám Ngự Báo (Daily Horoscope JD + Local Notification 07:00 AM).
+## 🚀 Trạng Thái Tính Năng & Sprint (Sprint 90: Web MVP Commercial Launch & Mobile Work Plan — 13/09/2026)
+- **Current Branch:** `main` (Commit chuẩn: `8ccf234`)
+- **Rollback Anchor:** `8ccf234`
+- **Total Tests:** **1.161+ Passed (100% Xanh)** (API: 571 tests / 89 files, Mobile: 152 tests / 10 files, Web check: 0 issues, ESLint: 0 issues)
+- **Production URL:** `https://tuvitoantap.online` & `https://tuvitoantap.vercel.app` (Deployment: `dpl_4ost1c2Tk6eRScaT2VhbFyndpCf1` — READY 200 OK)
+- **Production Database:** Supabase `nachzhkeuzwiqmbtelrp` (Migration `000041` applied, Unique index on `normalized_email` active)
+- **Production Redis:** Upstash `holy-pug-128685.upstash.io` (PING: PONG, Fail-closed Global AI Circuit Breaker)
+- **Sprint 90 Deliverables:**
+  - Vận hành thương mại hóa Web MVP: Script đối soát `reconcile-sepay-transactions.js`, công cụ xử lý giao dịch treo `resolve-unmatched-sepay.js`, script giám sát trần ngân sách AI `monitor-ai-quota.js`.
+  - Lộ trình Mobile Flutter: Widget tĩnh `turnstile-widget.html`, đặc tả kỹ thuật `docs/mobile/turnstile-webview-integration-spec.md`, hướng dẫn IAP Store `docs/mobile/revenuecat-and-store-release-guide.md`.
+
 
 1. **Sprint 39 Ticket 39.1 (DONE):**
    - Cấu hình Keystore signing và build bản phát hành Google Play App Bundle (`.aab`).

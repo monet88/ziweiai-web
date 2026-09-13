@@ -3,7 +3,7 @@
   // Hỗ trợ hiển thị hoàn hảo trên cả Desktop (bảng 5 cột có mục tra cứu) và Mobile
   // (bảng 4 cột dàn đều 100% màn hình, không bị tràn hay cắt xén, có micro-label từng hàng).
   import type { ChartDetailResponse } from '@ziweiai/contracts';
-  import { SummaryCard } from '$lib/components/ui';
+  import { EmptyStateCard, SummaryCard } from '$lib/components/ui';
   import { formatBaziMetaItems, formatBaziPillarRows } from './chart-display';
   import { buildBaziDossierData } from '$lib/features/dossier/bazi-dossier-interpretations';
 
@@ -332,7 +332,14 @@
         </button>
       </div>
     {/if}
-    <SummaryCard variant="glass" title="Tứ trụ" items={pillarRows} />
+    {#if pillarRows.length > 0}
+      <SummaryCard variant="glass" title="Tứ trụ" items={pillarRows} />
+    {:else}
+      <EmptyStateCard
+        title="Chưa thể dựng đồ hình Tứ Trụ"
+        description="Lá số này chưa có thông tin giờ sinh để lập trọn vẹn Tứ Trụ (Bát Tự). Hãy xem cảnh báo độ tin cậy và phần tóm tắt phía trên."
+      />
+    {/if}
     {#if metaItems.length > 0}
       <SummaryCard variant="glass" title="Mệnh bàn" items={metaItems} />
     {/if}

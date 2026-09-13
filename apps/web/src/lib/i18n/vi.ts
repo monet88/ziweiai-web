@@ -442,6 +442,8 @@ export const viCopy = {
     twelvePalaceTitle: 'Lá số 12 cung',
     twelvePalaceUnavailableTitle: 'Chưa thể dựng bàn lá số 12 cung',
     twelvePalaceUnavailableDescription: 'Lá số này chưa có đủ dữ liệu cung để vẽ bàn 12 cung. Hãy xem cảnh báo độ tin cậy và phần tóm tắt phía trên.',
+    baziUnavailableTitle: 'Chưa thể dựng đồ hình Tứ Trụ',
+    baziUnavailableDescription: 'Lá số này chưa có thông tin giờ sinh để lập trọn vẹn Tứ Trụ (Bát Tự). Hãy xem cảnh báo độ tin cậy và phần tóm tắt phía trên.',
     pillarsTitle: 'Trụ lá số',
     unsupportedSystemTitle: 'Hệ lá số này chưa có renderer ở app',
     unsupportedSystemDescription: 'Chi tiết giao diện cho hệ này sẽ được bổ sung ở phase riêng; hiện tại chỉ nên dùng để kiểm tra contract và backend.',

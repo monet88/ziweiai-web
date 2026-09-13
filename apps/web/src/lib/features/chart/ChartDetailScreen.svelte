@@ -329,6 +329,11 @@
           title={copy.twelvePalaceUnavailableTitle}
           description={copy.twelvePalaceUnavailableDescription}
         />
+      {:else if (detail.chartSystem === 'ba-zi' || detail.chartSystem === 'mangpai') && (detail.snapshot?.pillars?.length ?? 0) === 0 && !detail.snapshot?.bazi}
+        <EmptyStateCard
+          title={copy.baziUnavailableTitle}
+          description={copy.baziUnavailableDescription}
+        />
       {:else if detailState === 'pillars'}
         <BaziDetailCard snapshot={detail.snapshot} />
       {:else if detailState === 'mangpai'}

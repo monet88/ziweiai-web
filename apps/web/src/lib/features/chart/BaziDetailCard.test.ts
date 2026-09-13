@@ -86,7 +86,23 @@ describe('BaziDetailCard', () => {
     expect(screen.getByText(/ĐỒ HÌNH BÁT TỰ TỨ TRỤ TIÊN THIÊN/i)).toBeInTheDocument();
   });
 
-  it('falls back to classic summary cards when snapshot has no bazi', () => {
+  it('falls back to classic summary cards when snapshot has pillars but no rich bazi', () => {
+    const fallbackSnapshot = {
+      solarDate: '1990-09-15',
+      pillars: [
+        { slot: 'year', heavenlyStemKey: 'gengHeavenly', earthlyBranchKey: 'wuEarthly' },
+      ],
+      palaces: [],
+    } as unknown as ChartDetailResponse['snapshot'];
+
+    render(BaziDetailCard, { props: { snapshot: fallbackSnapshot } });
+
+    // Không render bảng đồ hình hoàng gia mà render SummaryCard fallback
+    expect(screen.queryByText(/ĐỒ HÌNH BÁT TỰ TỨ TRỤ TIÊN THIÊN/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Tứ trụ')).toBeInTheDocument();
+  });
+
+  it('renders EmptyStateCard when snapshot has no bazi and empty pillars', () => {
     const emptySnapshot = {
       solarDate: '1990-09-15',
       pillars: [],
@@ -95,8 +111,7 @@ describe('BaziDetailCard', () => {
 
     render(BaziDetailCard, { props: { snapshot: emptySnapshot } });
 
-    // Không render bảng đồ hình hoàng gia mà render SummaryCard fallback
     expect(screen.queryByText(/ĐỒ HÌNH BÁT TỰ TỨ TRỤ TIÊN THIÊN/i)).not.toBeInTheDocument();
-    expect(screen.getByText('Tứ trụ')).toBeInTheDocument();
+    expect(screen.getByText('Chưa thể dựng đồ hình Tứ Trụ')).toBeInTheDocument();
   });
 });

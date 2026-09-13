@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../data/models/chart_snapshot.dart';
 
@@ -253,7 +252,7 @@ class _PalaceDetailBottomSheetState extends State<PalaceDetailBottomSheet> {
                               ),
                               child: Text(
                                 'CUNG $palaceName'.toUpperCase(),
-                                style: GoogleFonts.cinzel(
+                                style: AppTheme.titleFont(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w800,
                                   color: palace.isBodyPalace || palace.isOriginalPalace
@@ -436,7 +435,7 @@ class _PalaceDetailBottomSheetState extends State<PalaceDetailBottomSheet> {
                                     const SizedBox(width: 8),
                                     Text(
                                       'ĐÀM ĐẠO VỚI KHÂM THIÊN GIÁM AI',
-                                      style: GoogleFonts.cinzel(
+                                      style: AppTheme.titleFont(
                                         color: const Color(0xFF141026),
                                         fontWeight: FontWeight.w800,
                                         fontSize: 12,
@@ -776,7 +775,7 @@ class _PalaceDetailBottomSheetState extends State<PalaceDetailBottomSheet> {
               const SizedBox(width: 8),
               Text(
                 'KHÂM THIÊN GIÁM NGỰ PHÊ',
-                style: GoogleFonts.cinzel(
+                style: AppTheme.titleFont(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.goldBright,
@@ -853,7 +852,7 @@ class _PalaceDetailBottomSheetState extends State<PalaceDetailBottomSheet> {
               const SizedBox(width: 8),
               Text(
                 'LIÊN CUNG TAM PHƯƠNG TỨ CHÍNH',
-                style: GoogleFonts.cinzel(
+                style: AppTheme.titleFont(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.goldBright,

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/repositories/auth_repository.dart';
@@ -35,7 +34,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         title: Text(
           'Đăng Xuất',
-          style: GoogleFonts.cinzel(
+          style: AppTheme.titleFont(
             color: AppTheme.goldBright,
             fontWeight: FontWeight.w700,
           ),
@@ -99,7 +98,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(width: 10),
             Text(
               'Xóa Tài Khoản',
-              style: GoogleFonts.cinzel(
+              style: AppTheme.titleFont(
                 color: const Color(0xFFFF5252),
                 fontWeight: FontWeight.w800,
               ),
@@ -165,10 +164,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       appBar: AppBar(
         title: Text(
           'Hồ Sơ Cá Nhân',
-          style: GoogleFonts.cinzel(
+          style: AppTheme.titleFont(
             fontWeight: FontWeight.w700,
             color: AppTheme.goldBright,
-            letterSpacing: 1.2,
+            letterSpacing: 1.0,
           ),
         ),
         backgroundColor: Colors.transparent,
@@ -312,42 +311,49 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: CelestialGradients.imperialGold,
-                              boxShadow: CelestialShadows.goldGlow,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: CelestialGradients.imperialGold,
+                                boxShadow: CelestialShadows.goldGlow,
+                              ),
+                              child: const Icon(Icons.account_balance_wallet, color: Color(0xFF141026), size: 24),
                             ),
-                            child: const Icon(Icons.account_balance_wallet, color: Color(0xFF141026), size: 24),
-                          ),
-                          const SizedBox(width: 14),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Số Dư Hiện Tại',
-                                style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 12),
-                              ),
-                              const SizedBox(height: 2),
-                              balanceAsync.when(
-                                data: (balance) => Text(
-                                  '$balance XU',
-                                  style: GoogleFonts.cinzel(
-                                    color: AppTheme.goldBright,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w900,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Số Dư Hiện Tại',
+                                    style: TextStyle(color: AppTheme.mysticalTextSecondary, fontSize: 12),
                                   ),
-                                ),
-                                loading: () => const Text('Đang tải...', style: TextStyle(color: AppTheme.goldBright)),
-                                error: (error, stack) => const Text('0 XU', style: TextStyle(color: AppTheme.goldBright)),
+                                  const SizedBox(height: 2),
+                                  balanceAsync.when(
+                                    data: (balance) => Text(
+                                      '$balance XU',
+                                      style: AppTheme.titleFont(
+                                        color: AppTheme.goldBright,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    loading: () => const Text('Đang tải...', style: TextStyle(color: AppTheme.goldBright)),
+                                    error: (error, stack) => const Text('0 XU', style: TextStyle(color: AppTheme.goldBright)),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       ElevatedButton.icon(
                         onPressed: () => context.push('/wallet'),
                         icon: const Icon(Icons.add, size: 18),
@@ -367,11 +373,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // Settings & Actions Menu
                 Text(
                   'QUẢN LÝ TÀI KHOẢN',
-                  style: GoogleFonts.cinzel(
+                  style: AppTheme.titleFont(
                     color: AppTheme.goldBright,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
+                    letterSpacing: 1.0,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -445,11 +451,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 // Ceremony Sound Settings
                 Text(
                   'ÂM THANH & NGHI LỄ HOÀNG TRIỀU',
-                  style: GoogleFonts.cinzel(
+                  style: AppTheme.titleFont(
                     color: AppTheme.goldBright,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
+                    letterSpacing: 1.0,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -463,37 +469,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                isAudioMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-                                color: isAudioMuted ? AppTheme.mysticalTextSecondary : AppTheme.goldBright,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 14),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Hiệu Ứng Âm Thanh Nghi Lễ',
-                                    style: TextStyle(
-                                      color: AppTheme.mysticalText,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isAudioMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                                  color: isAudioMuted ? AppTheme.mysticalTextSecondary : AppTheme.goldBright,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Hiệu Ứng Âm Thanh Nghi Lễ',
+                                        style: TextStyle(
+                                          color: AppTheme.mysticalText,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        isAudioMuted ? 'Đang tắt nhạc khí' : 'Bật nhạc khí cung đình',
+                                        style: const TextStyle(
+                                          color: AppTheme.mysticalTextSecondary,
+                                          fontSize: 12,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    isAudioMuted ? 'Đang tắt nhạc khí' : 'Bật nhạc khí cung đình',
-                                    style: const TextStyle(
-                                      color: AppTheme.mysticalTextSecondary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Switch.adaptive(
                             value: !isAudioMuted,
                             activeThumbColor: AppTheme.goldBright,
@@ -512,32 +527,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.offline_bolt_rounded, color: Color(0xFF4ADE80), size: 20),
-                                const SizedBox(width: 10),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: const [
-                                    Text(
-                                      'Nghi Lễ Ngoại Tuyến (Zero Latency)',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                      ),
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.offline_bolt_rounded, color: Color(0xFF4ADE80), size: 20),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: const [
+                                        Text(
+                                          'Nghi Lễ Ngoại Tuyến (Zero Latency)',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(
+                                          'Nạp sẵn âm thanh vào RAM, không cần Internet',
+                                          style: TextStyle(
+                                            color: AppTheme.mysticalTextSecondary,
+                                            fontSize: 11,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
                                     ),
-                                    Text(
-                                      'Nạp sẵn âm thanh vào RAM, không cần Internet',
-                                      style: TextStyle(
-                                        color: AppTheme.mysticalTextSecondary,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                ],
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             Switch.adaptive(
                               value: isOfflineRitual,
                               activeThumbColor: const Color(0xFF4ADE80),
@@ -673,7 +697,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         title: Text(
           'Chọn Giao Diện Hoàng Triều',
-          style: GoogleFonts.cinzel(
+          style: AppTheme.titleFont(
             color: AppTheme.goldBright,
             fontWeight: FontWeight.w700,
             fontSize: 18,

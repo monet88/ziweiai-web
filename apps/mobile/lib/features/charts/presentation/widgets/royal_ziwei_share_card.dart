@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:screenshot/screenshot.dart';
@@ -192,7 +191,7 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
                   child: Center(
                     child: Text(
                       '✦ ✦ ✦   KHÂM THIÊN GIÁM NGỰ PHÁN   ✦ ✦ ✦',
-                      style: GoogleFonts.cinzel(
+                      style: AppTheme.titleFont(
                         color: const Color(0xFFFFD700).withValues(alpha: 0.75),
                         fontSize: 8,
                         letterSpacing: 2.0,
@@ -235,7 +234,7 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         'KHÂM THIÊN GIÁM',
-                        style: GoogleFonts.cinzel(
+                        style: AppTheme.titleFont(
                           color: const Color(0xFFFFD700),
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
@@ -248,7 +247,7 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'CHIẾU CHỈ MỆNH SỐ',
-                  style: GoogleFonts.cinzel(
+                  style: AppTheme.titleFont(
                     color: const Color(0xFFFFE066),
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
@@ -286,7 +285,7 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
                     children: [
                       Text(
                         name.toUpperCase(),
-                        style: GoogleFonts.cinzel(
+                        style: AppTheme.titleFont(
                           color: const Color(0xFFFFD700),
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
@@ -368,7 +367,7 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
                           children: [
                             Text(
                               'CỤC & BẢN MỆNH',
-                              style: GoogleFonts.cinzel(
+                              style: AppTheme.titleFont(
                                 color: const Color(0xFFFFD700),
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.bold,
@@ -408,7 +407,7 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
                           children: [
                             Text(
                               'THÂN CƯ VỊ TRÍ',
-                              style: GoogleFonts.cinzel(
+                              style: AppTheme.titleFont(
                                 color: const Color(0xFFFFD700),
                                 fontSize: 9.5,
                                 fontWeight: FontWeight.bold,
@@ -480,7 +479,7 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
                           const SizedBox(width: 5),
                           Text(
                             'NGỰ PHÊ KHÂM THIÊN',
-                            style: GoogleFonts.cinzel(
+                            style: AppTheme.titleFont(
                               color: const Color(0xFFFFD700),
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
@@ -526,7 +525,7 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
                             children: [
                               Text(
                                 'TỬ VI TOÀN TẬP',
-                                style: GoogleFonts.cinzel(
+                                style: AppTheme.titleFont(
                                   color: const Color(0xFFFFD700),
                                   fontSize: 9.5,
                                   fontWeight: FontWeight.bold,
@@ -578,7 +577,7 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.cinzel(
+          style: AppTheme.titleFont(
             color: const Color(0xFFFFD700).withValues(alpha: 0.8),
             fontSize: 9,
             fontWeight: FontWeight.bold,
@@ -631,7 +630,7 @@ class RoyalZiweiCertificateCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.cinzel(
+                  style: AppTheme.titleFont(
                     color: isPrimary ? const Color(0xFFFFD700) : Colors.purpleAccent,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w800,
@@ -826,7 +825,7 @@ class _RoyalZiweiPreviewDialogState extends ConsumerState<RoyalZiweiPreviewDialo
                 children: [
                   Text(
                     'XUẤT THIỆP HOÀNG TRIỀU',
-                    style: GoogleFonts.cinzel(
+                    style: AppTheme.titleFont(
                       color: const Color(0xFFFFD700),
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -1000,7 +999,7 @@ class _RoyalZiweiPreviewDialogState extends ConsumerState<RoyalZiweiPreviewDialo
                         : const Icon(Icons.share, color: Color(0xFF140D26), size: 18),
                     label: Text(
                       _isSharing ? 'Đang xuất ảnh...' : 'CHIA SẺ CHIẾU CHỈ',
-                      style: GoogleFonts.cinzel(
+                      style: AppTheme.titleFont(
                         color: const Color(0xFF140D26),
                         fontWeight: FontWeight.bold,
                         fontSize: 13,

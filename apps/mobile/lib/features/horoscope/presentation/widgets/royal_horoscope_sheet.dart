@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/daily_horoscope.dart';
@@ -75,13 +74,17 @@ class RoyalHoroscopeSheet extends StatelessWidget {
                             const Icon(Icons.wb_twilight_rounded,
                                 size: 18, color: AppTheme.goldBright),
                             const SizedBox(width: 6),
-                            Text(
-                              'KHÂM THIÊN GIÁM NGỰ BÁO',
-                              style: GoogleFonts.cinzel(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w900,
-                                color: AppTheme.goldBright,
-                                letterSpacing: 1.2,
+                            Expanded(
+                              child: Text(
+                                'KHÂM THIÊN GIÁM NGỰ BÁO',
+                                style: AppTheme.titleFont(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppTheme.goldBright,
+                                  letterSpacing: 0.8,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -97,6 +100,7 @@ class RoyalHoroscopeSheet extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
                   // Ấn Triện Son Cung Đình
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -136,11 +140,11 @@ class RoyalHoroscopeSheet extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           'CHỈ DỤ ĐẦU NGÀY',
-                          style: GoogleFonts.cinzel(
+                          style: AppTheme.titleFont(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
                             color: AppTheme.goldBright,
-                            letterSpacing: 1.0,
+                            letterSpacing: 0.8,
                           ),
                         ),
                       ],
@@ -198,7 +202,7 @@ class RoyalHoroscopeSheet extends StatelessWidget {
                   children: [
                     Text(
                       'PHƯƠNG VỊ XUẤT HÀNH NGHÊNH CÁT',
-                      style: GoogleFonts.cinzel(
+                      style: AppTheme.titleFont(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                         color: AppTheme.goldBright,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Design tokens and Celestial Luxury Design System for Tử Vi Toàn Tập Mobile.
 class AppTheme {
@@ -47,29 +46,74 @@ class AppTheme {
   static const Color glassBorderGold = Color(0x40E8C37D); // Translucent gold border
   static const Color glassFill = Color(0x00FFFFFF);
 
+  // Local Unicode Font Families
+  static const String fontSans = 'BeVietnamPro';
+  static const String fontSerif = 'PlayfairDisplay';
+
+  /// Helper tạo Typography Serif hoàng gia hỗ trợ 100% tiếng Việt Unicode (Playfair Display)
+  static TextStyle titleFont({
+    Color? color,
+    double? fontSize,
+    FontWeight? fontWeight,
+    double? letterSpacing,
+    double? height,
+    FontStyle? fontStyle,
+  }) {
+    return TextStyle(
+      fontFamily: fontSerif,
+      color: color,
+      fontSize: fontSize,
+      fontWeight: fontWeight ?? FontWeight.w700,
+      letterSpacing: letterSpacing,
+      height: height,
+      fontStyle: fontStyle,
+    );
+  }
+
+  /// Helper tạo Typography Sans-serif tối ưu tiếng Việt Unicode (Be Vietnam Pro)
+  static TextStyle bodyFont({
+    Color? color,
+    double? fontSize,
+    FontWeight? fontWeight,
+    double? letterSpacing,
+    double? height,
+    FontStyle? fontStyle,
+  }) {
+    return TextStyle(
+      fontFamily: fontSans,
+      color: color,
+      fontSize: fontSize,
+      fontWeight: fontWeight ?? FontWeight.normal,
+      letterSpacing: letterSpacing,
+      height: height,
+      fontStyle: fontStyle,
+    );
+  }
+
   static ThemeData get paperCalm {
     return ThemeData(
       useMaterial3: true,
+      fontFamily: fontSans,
       colorScheme: ColorScheme.fromSeed(
         seedColor: paperCanvas,
         primary: ink,
         secondary: taupe,
       ),
       scaffoldBackgroundColor: paperCanvas,
-      textTheme: GoogleFonts.interTextTheme(const TextTheme(
-        displayLarge: TextStyle(color: ink, fontWeight: FontWeight.bold),
-        bodyLarge: TextStyle(color: ink),
-        bodyMedium: TextStyle(color: inkMuted),
-      )),
-      appBarTheme: const AppBarTheme(
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(color: ink, fontWeight: FontWeight.bold, fontFamily: fontSans),
+        bodyLarge: TextStyle(color: ink, fontFamily: fontSans),
+        bodyMedium: TextStyle(color: inkMuted, fontFamily: fontSans),
+      ),
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: ink),
-        titleTextStyle: TextStyle(
+        iconTheme: const IconThemeData(color: ink),
+        titleTextStyle: titleFont(
           color: ink,
           fontSize: 20,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -79,6 +123,7 @@ class AppTheme {
   static ThemeData get mystical {
     return ThemeData(
       useMaterial3: true,
+      fontFamily: fontSans,
       brightness: Brightness.dark,
       colorScheme: const ColorScheme.dark(
         primary: mysticalGold,
@@ -88,24 +133,24 @@ class AppTheme {
         onSurface: mysticalText,
       ),
       scaffoldBackgroundColor: cosmosDark,
-      textTheme: GoogleFonts.interTextTheme(const TextTheme(
-        displayLarge: TextStyle(color: mysticalText, fontWeight: FontWeight.bold, letterSpacing: -0.5),
-        titleLarge: TextStyle(color: mysticalText, fontWeight: FontWeight.w700),
-        titleMedium: TextStyle(color: mysticalText, fontWeight: FontWeight.w600),
-        bodyLarge: TextStyle(color: mysticalText),
-        bodyMedium: TextStyle(color: mysticalTextSecondary),
-      )),
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(color: mysticalText, fontWeight: FontWeight.bold, letterSpacing: -0.5, fontFamily: fontSans),
+        titleLarge: TextStyle(color: mysticalText, fontWeight: FontWeight.w700, fontFamily: fontSans),
+        titleMedium: TextStyle(color: mysticalText, fontWeight: FontWeight.w600, fontFamily: fontSans),
+        bodyLarge: TextStyle(color: mysticalText, fontFamily: fontSans),
+        bodyMedium: TextStyle(color: mysticalTextSecondary, fontFamily: fontSans),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         foregroundColor: mysticalGold,
         iconTheme: const IconThemeData(color: mysticalGold),
-        titleTextStyle: GoogleFonts.cinzel(
+        titleTextStyle: titleFont(
           color: mysticalGold,
           fontSize: 20,
           fontWeight: FontWeight.w700,
-          letterSpacing: 1.5,
+          letterSpacing: 1.2,
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(

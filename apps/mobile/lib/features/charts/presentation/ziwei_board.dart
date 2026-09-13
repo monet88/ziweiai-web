@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:screenshot/screenshot.dart';
 
 import '../data/models/chart_snapshot.dart';
@@ -44,6 +43,7 @@ class _ZiweiBoardState extends State<ZiweiBoard> {
   }
 
   void _resetZoom(double availableWidth) {
+    if (availableWidth <= 0) return;
     final double initialScale = availableWidth / 800.0;
     _transformationController.value = Matrix4.diagonal3Values(initialScale, initialScale, 1.0);
   }
@@ -81,14 +81,18 @@ class _ZiweiBoardState extends State<ZiweiBoard> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final availableWidth = constraints.maxWidth.isFinite && constraints.maxWidth > 0
+        final double screenWidth = MediaQuery.of(context).size.width;
+        final double availableWidth = (constraints.maxWidth.isFinite && constraints.maxWidth > 0)
             ? constraints.maxWidth
-            : MediaQuery.of(context).size.width - 48;
+            : (screenWidth > 48 ? screenWidth - 48 : 340.0);
 
         if (!_initializedScale && availableWidth > 0) {
-          final double initialScale = availableWidth / boardSize;
-          _transformationController.value = Matrix4.diagonal3Values(initialScale, initialScale, 1.0);
           _initializedScale = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _resetZoom(availableWidth);
+            }
+          });
         }
 
         return Stack(
@@ -167,7 +171,7 @@ class _ZiweiBoardState extends State<ZiweiBoard> {
                                   const SizedBox(height: 14),
                                   Text(
                                     widget.snapshot.summary?['name']?.toString() ?? 'Tử Vi Toàn Tập',
-                                    style: GoogleFonts.cinzel(
+                                    style: AppTheme.titleFont(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w800,
                                       color: AppTheme.goldBright,
@@ -311,38 +315,52 @@ class _ZiweiBoardState extends State<ZiweiBoard> {
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(height: 8),
+                                       const SizedBox(height: 6),
 
-                                      // Major stars (Chính tinh)
-                                      ...palace.majorStars.map((s) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 2.0),
-                                        child: Text(
-                                          s.displayName ?? s.nameKey,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 13,
-                                            color: Color(0xFFFF6B6B),
-                                            letterSpacing: 0.2,
-                                          ),
-                                        ),
-                                      )),
+                                       // Stars list (scrollable if too many stars)
+                                       Expanded(
+                                         child: SingleChildScrollView(
+                                           physics: const ClampingScrollPhysics(),
+                                           child: Column(
+                                             crossAxisAlignment: CrossAxisAlignment.start,
+                                             children: [
+                                               // Major stars (Chính tinh)
+                                               ...palace.majorStars.map((s) => Padding(
+                                                 padding: const EdgeInsets.only(bottom: 2.0),
+                                                 child: Text(
+                                                   s.displayName ?? s.nameKey,
+                                                   maxLines: 1,
+                                                   overflow: TextOverflow.ellipsis,
+                                                   style: const TextStyle(
+                                                     fontWeight: FontWeight.w800,
+                                                     fontSize: 12.5,
+                                                     color: Color(0xFFFF6B6B),
+                                                     letterSpacing: 0.2,
+                                                   ),
+                                                 ),
+                                               )),
 
-                                      // Minor stars (Phụ tinh)
-                                      ...palace.minorStars.take(3).map((s) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 1.0),
-                                        child: Text(
-                                          s.displayName ?? s.nameKey,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 11,
-                                            color: Color(0xFF4DD0E1),
-                                          ),
-                                        ),
-                                      )),
+                                               // Minor stars (Phụ tinh)
+                                               ...palace.minorStars.take(4).map((s) => Padding(
+                                                 padding: const EdgeInsets.only(bottom: 1.0),
+                                                 child: Text(
+                                                   s.displayName ?? s.nameKey,
+                                                   maxLines: 1,
+                                                   overflow: TextOverflow.ellipsis,
+                                                   style: const TextStyle(
+                                                     fontWeight: FontWeight.w600,
+                                                     fontSize: 11,
+                                                     color: Color(0xFF4DD0E1),
+                                                   ),
+                                                 ),
+                                               )),
+                                             ],
+                                           ),
+                                         ),
+                                       ),
+                                       const SizedBox(height: 4),
 
-                                      const Spacer(),
-
-                                      // Footer: Đại hạn & Can Chi
+                                       // Footer: Đại hạn & Can Chi
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [

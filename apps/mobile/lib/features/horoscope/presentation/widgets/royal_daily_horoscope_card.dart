@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/daily_horoscope.dart';
 import '../../domain/services/daily_notification_service.dart';
@@ -42,22 +41,30 @@ class RoyalDailyHoroscopeCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.wb_sunny_outlined, size: 16, color: AppTheme.goldBright),
-                  const SizedBox(width: 6),
-                  Text(
-                    'KHÂM THIÊN GIÁM NGỰ BÁO',
-                    style: GoogleFonts.cinzel(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.goldBright,
-                      letterSpacing: 1.0,
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.wb_sunny_outlined, size: 16, color: AppTheme.goldBright),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'KHÂM THIÊN GIÁM NGỰ BÁO',
+                        style: AppTheme.titleFont(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.goldBright,
+                          letterSpacing: 0.8,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 6),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // Badge Trực Nhật
                   Container(

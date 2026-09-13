@@ -158,15 +158,36 @@ class _ChartDetailScreenState extends State<ChartDetailScreen>
           padding: const EdgeInsets.all(10),
           borderRadius: BorderRadius.circular(20),
           borderGradient: CelestialGradients.goldBorder,
-          child: AspectRatio(
-            aspectRatio: 1.0,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: ZiweiBoard(
-                snapshot: widget.chartData.chartRecord.snapshot,
-                screenshotController: _screenshotController,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AspectRatio(
+                aspectRatio: 1.0,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: ZiweiBoard(
+                    snapshot: widget.chartData.chartRecord.snapshot,
+                    screenshotController: _screenshotController,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.touch_app_outlined, size: 13, color: AppTheme.mysticalGold.withValues(alpha: 0.8)),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Chạm ô cung để xem chi tiết • Chụm hai ngón để thu phóng',
+                    style: TextStyle(
+                      color: AppTheme.mysticalTextSecondary.withValues(alpha: 0.85),
+                      fontSize: 11.5,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 20),

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../charts/data/models/birth_input.dart';
 import '../../charts/data/models/create_chart_request.dart';
@@ -135,7 +134,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             // Imperial Seal Khâm Thiên Giám Ngự Triện
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 gradient: CelestialGradients.cinnabarImperial,
@@ -144,34 +143,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               child: const Icon(
                 Icons.auto_awesome,
-                size: 14,
+                size: 13,
                 color: AppTheme.goldBright,
               ),
             ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'ViOS · KHÂM THIÊN GIÁM',
-                  style: GoogleFonts.cinzel(
-                    color: AppTheme.goldBright,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
+            const SizedBox(width: 7),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'ViOS · KHÂM THIÊN GIÁM',
+                    style: AppTheme.titleFont(
+                      color: AppTheme.goldBright,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Text(
-                  'Hoàng Gia Thuật Số · AI Triều Đình',
-                  style: TextStyle(
-                    color: AppTheme.mysticalTextSecondary.withValues(alpha: 0.8),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.5,
+                  Text(
+                    'Hoàng Gia Thuật Số · AI Triều Đình',
+                    style: TextStyle(
+                      color: AppTheme.mysticalTextSecondary.withValues(alpha: 0.8),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.4,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -186,24 +191,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Container(
                 constraints: const BoxConstraints(minHeight: AppTheme.touchTargetMin),
                 alignment: Alignment.center,
-                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                   gradient: CelestialGradients.imperialGold,
                   boxShadow: CelestialShadows.goldGlow,
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.workspace_premium, size: 13, color: Color(0xFF141026)),
-                    SizedBox(width: 3),
+                    Icon(Icons.workspace_premium, size: 12, color: Color(0xFF141026)),
+                    SizedBox(width: 2),
                     Text(
-                      'VIP PRO',
+                      'PRO',
                       style: TextStyle(
                         color: Color(0xFF141026),
                         fontWeight: FontWeight.w900,
-                        fontSize: 10,
+                        fontSize: 9,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -220,10 +225,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             },
             child: Container(
               constraints: const BoxConstraints(minHeight: AppTheme.touchTargetMin),
-              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(18),
                 gradient: LinearGradient(
                   colors: [
                     AppTheme.mysticalGold.withValues(alpha: 0.22),
@@ -232,7 +237,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 border: Border.all(
                   color: AppTheme.mysticalGold.withValues(alpha: 0.5),
-                  width: 1,
+                  width: 0.9,
                 ),
               ),
               child: Row(
@@ -240,24 +245,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   const Icon(
                     Icons.monetization_on,
-                    size: 15,
+                    size: 13,
                     color: AppTheme.goldBright,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 3),
                   balanceAsync.when(
                     data: (balance) => Text(
                       '$balance XU',
                       style: const TextStyle(
                         color: AppTheme.goldBright,
                         fontWeight: FontWeight.w700,
-                        fontSize: 12,
+                        fontSize: 11,
                       ),
                     ),
                     loading: () => const SizedBox(
-                      width: 10,
-                      height: 10,
+                      width: 8,
+                      height: 8,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
+                        strokeWidth: 1.5,
                         color: AppTheme.goldBright,
                       ),
                     ),
@@ -265,21 +270,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       '0 XU',
                       style: TextStyle(
                         color: AppTheme.goldBright,
-                        fontSize: 12,
+                        fontSize: 11,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 3),
                   // Plus Top-Up icon
                   Container(
-                    padding: const EdgeInsets.all(2),
+                    padding: const EdgeInsets.all(1.5),
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppTheme.goldBright,
                     ),
                     child: const Icon(
                       Icons.add,
-                      size: 10,
+                      size: 9,
                       color: Color(0xFF141026),
                     ),
                   ),
@@ -291,19 +296,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Royal Gallery Button (Thư Viện Hoàng Triều)
           IconButton(
             tooltip: 'Thư Viện Hoàng Triều',
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
             icon: Container(
-              padding: const EdgeInsets.all(5),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: AppTheme.mysticalGold.withValues(alpha: 0.5),
-                  width: 1.2,
+                  width: 1.0,
                 ),
               ),
               child: const Icon(
                 Icons.photo_library_outlined,
                 color: AppTheme.goldBright,
-                size: 18,
+                size: 16,
               ),
             ),
             onPressed: () {
@@ -315,15 +322,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Profile Button with 48dp Touch Target
           IconButton(
             tooltip: 'Hồ sơ cá nhân',
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
             icon: Container(
-              padding: const EdgeInsets.all(5),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: user != null && !user.isAnonymous
                       ? AppTheme.goldBright
                       : AppTheme.mysticalGold.withValues(alpha: 0.5),
-                  width: 1.2,
+                  width: 1.0,
                 ),
               ),
               child: Icon(
@@ -333,7 +342,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 color: user != null && !user.isAnonymous
                     ? AppTheme.goldBright
                     : AppTheme.mysticalTextSecondary,
-                size: 18,
+                size: 16,
               ),
             ),
             onPressed: () {
@@ -341,7 +350,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               context.push('/profile');
             },
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 2),
         ],
       ),
       body: AnimatedBackground(
@@ -396,11 +405,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(width: 8),
                   Text(
                     'BENTO GRID THUẬT SỐ HOÀNG GIA',
-                    style: GoogleFonts.cinzel(
+                    style: AppTheme.titleFont(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
                       color: AppTheme.goldBright,
-                      letterSpacing: 1.2,
+                      letterSpacing: 1.0,
                     ),
                   ),
                 ],
@@ -496,11 +505,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(width: 6),
                     Text(
                       'BẢN MỆNH CUNG ĐÌNH',
-                      style: GoogleFonts.cinzel(
+                      style: AppTheme.titleFont(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.goldBright,
-                        letterSpacing: 1.0,
+                        letterSpacing: 0.8,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -526,7 +535,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(height: 2),
                 Text(
                   'Kính chào $userName · Mệnh Kiếm Phong Kim',
-                  style: GoogleFonts.playfairDisplay(
+                  style: AppTheme.titleFont(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: AppTheme.mysticalText,
@@ -581,33 +590,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      gradient: CelestialGradients.cinnabarImperial,
-                      boxShadow: CelestialShadows.cinnabarGlow,
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        gradient: CelestialGradients.cinnabarImperial,
+                        boxShadow: CelestialShadows.cinnabarGlow,
+                      ),
+                      child: const Icon(
+                        Icons.flare,
+                        size: 13,
+                        color: AppTheme.goldBright,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.flare,
-                      size: 14,
-                      color: AppTheme.goldBright,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'VẬN KHÍ LƯU NIÊN 2026 BÍNH NGỌ',
+                        style: AppTheme.titleFont(
+                          color: AppTheme.goldBright,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'VẬN KHÍ LƯU NIÊN 2026 BÍNH NGỌ',
-                    style: GoogleFonts.cinzel(
-                      color: AppTheme.goldBright,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
@@ -739,33 +755,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.cosmosElevated,
-                      border: Border.all(color: AppTheme.mysticalGold, width: 1),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppTheme.cosmosElevated,
+                        border: Border.all(color: AppTheme.mysticalGold, width: 1),
+                      ),
+                      child: const Icon(
+                        Icons.compass_calibration,
+                        size: 14,
+                        color: AppTheme.goldBright,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.compass_calibration,
-                      size: 15,
-                      color: AppTheme.goldBright,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'THÔNG TIN LẬP LÁ SỐ',
+                        style: AppTheme.titleFont(
+                          color: AppTheme.goldBright,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'THÔNG TIN LẬP LÁ SỐ',
-                    style: GoogleFonts.cinzel(
-                      color: AppTheme.goldBright,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(

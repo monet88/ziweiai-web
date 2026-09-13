@@ -7,11 +7,13 @@
     TextInputField,
     NoticeBanner,
   } from '$lib/components/ui';
+  import { page } from '$app/state';
   import { fade, slide } from 'svelte/transition';
   import { viCopy } from '$lib/i18n/vi';
   import type { DashboardModel } from './dashboard-model.svelte';
   import ChartSystemPicker from './ChartSystemPicker.svelte';
   import BirthSkeleton from './BirthSkeleton.svelte';
+  import BirthTimeEstimatorModal from './BirthTimeEstimatorModal.svelte';
   import {
     Compass,
     Calendar,
@@ -54,6 +56,39 @@
     { label: copy.knownTime, value: 'known' },
     { label: copy.unknownTime, value: 'unknown' },
   ];
+
+  let isEstimatorOpen = $state(false);
+
+  $effect(() => {
+    const estHour = page.url.searchParams.get('estimatedHour');
+    const estMin = page.url.searchParams.get('estimatedMinute');
+    if (estHour !== null && estMin !== null) {
+      model.setField('isUnknownTime', false);
+      model.setField('hour', estHour);
+      model.setField('minute', estMin);
+    }
+  });
+
+  const submitButtonText = $derived.by(() => {
+    switch (model.draft.chartSystem) {
+      case 'zi-wei-dou-shu':
+        return 'KHỞI TẠO THIÊN BÀN 12 CUNG';
+      case 'ba-zi':
+        return 'LẬP LÁ SỐ BÁT TỰ TỨ TRỤ';
+      case 'mangpai':
+        return 'LẬP BÁT TỰ MANH PHÁI';
+      case 'mei-hua-yi-shu':
+        return 'KHỞI QUẺ MAI HOA DỊCH SỐ';
+      case 'liu-yao':
+        return 'GIEO QUẺ LỤC HÀO KINH DỊCH';
+      case 'da-liu-ren':
+        return 'LẬP KHÓA ĐẠI LỤC NHÂM';
+      case 'qi-men-dun-jia':
+        return 'BÀY TRẬN KỲ MÔN ĐỘN GIÁP';
+      default:
+        return 'LẬP LÁ SỐ THUẬT SỐ';
+    }
+  });
 
   function errorFor(field: keyof typeof model.fieldErrors): string | null {
     return model.submitAttempted ? (model.fieldErrors[field] ?? null) : null;
@@ -174,8 +209,32 @@
       </div>
 
       {#if model.draft.isUnknownTime}
-        <div class="mt-3" transition:slide={{ duration: 250 }}>
-          <NoticeBanner message={viCopy.warnings.unknownBirthTime} tone="warning" />
+        <div class="unknown-time-guidance mt-3" transition:slide={{ duration: 250 }}>
+          <div class="unknown-time-alert">
+            <div class="alert-icon-col">
+              <Clock class="alert-clock-icon" />
+            </div>
+            <div class="alert-body">
+              <h5 class="alert-title">Lưu Ý Quan Trọng Về Giờ Sinh</h5>
+              <p class="alert-text">
+                {#if model.draft.chartSystem === 'zi-wei-dou-shu'}
+                  Tử Vi Đẩu Số <strong>bắt buộc cần giờ sinh</strong> để an vị trí Cung Mệnh, Thân và 14 chính tinh. Nếu thiếu giờ sinh, hệ thống không thể dựng thiên bàn 12 cung.
+                {:else if model.draft.chartSystem === 'ba-zi' || model.draft.chartSystem === 'mangpai'}
+                  Bát Tự Tứ Trụ nếu thiếu giờ sinh sẽ chỉ an được <strong>Tam Trụ (6 chữ)</strong>, khuyết mất Trụ Giờ (đại diện Cung Con Cái và hậu vận).
+                {:else}
+                  Thiếu mốc giờ sinh cụ thể có thể hạn chế độ sâu của bài luận giải học thuật.
+                {/if}
+              </p>
+              <button
+                type="button"
+                class="btn-estimate-trigger"
+                onclick={() => (isEstimatorOpen = true)}
+              >
+                <Sparkles size={14} class="btn-sparkle" />
+                <span>Tra cứu & Ước lượng 12 Canh Giờ Sinh Dân Gian</span>
+              </button>
+            </div>
+          </div>
         </div>
       {:else}
         <div class="time-input-group mt-3" transition:slide={{ duration: 250 }}>
@@ -224,7 +283,7 @@
     >
       <div class="submit-btn-content">
         <Sparkles class="submit-sparkle-icon" />
-        <span class="submit-btn-text">KHỞI TẠO THIÊN BÀN 12 CUNG</span>
+        <span class="submit-btn-text">{submitButtonText}</span>
       </div>
     </PrimaryButton>
 
@@ -234,6 +293,16 @@
     </div>
   </div>
 </form>
+
+<BirthTimeEstimatorModal
+  isOpen={isEstimatorOpen}
+  onClose={() => (isEstimatorOpen = false)}
+  onSelect={(hour, minute) => {
+    model.setField('isUnknownTime', false);
+    model.setField('hour', hour);
+    model.setField('minute', minute);
+  }}
+/>
 {/if}
 
 <style>
@@ -436,6 +505,88 @@
     0% { transform: rotate(0deg) scale(1); }
     50% { transform: rotate(180deg) scale(1.15); }
     100% { transform: rotate(360deg) scale(1); }
+  }
+
+  /* Unknown Time Guidance Alert */
+  .unknown-time-guidance {
+    margin-top: 12px;
+  }
+
+  .unknown-time-alert {
+    display: flex;
+    gap: 14px;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(212, 168, 83, 0.08) 0%, rgba(20, 16, 28, 0.8) 100%);
+    border: 1px solid rgba(212, 168, 83, 0.35);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .alert-icon-col {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 2px;
+  }
+
+  :global(.alert-clock-icon) {
+    width: 20px;
+    height: 20px;
+    color: #e6b44a;
+    flex-shrink: 0;
+  }
+
+  .alert-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .alert-title {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #f7eed8;
+    letter-spacing: -0.01em;
+  }
+
+  .alert-text {
+    margin: 0;
+    font-size: 0.84rem;
+    color: #bfae99;
+    line-height: 1.5;
+  }
+
+  .alert-text strong {
+    color: #f7eed8;
+  }
+
+  .btn-estimate-trigger {
+    margin-top: 6px;
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: rgba(212, 168, 83, 0.15);
+    border: 1px solid rgba(212, 168, 83, 0.45);
+    color: #e6b44a;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-estimate-trigger:hover {
+    background: rgba(212, 168, 83, 0.28);
+    border-color: #e6b44a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(212, 168, 83, 0.2);
+  }
+
+  :global(.btn-sparkle) {
+    color: #e6b44a;
   }
 
   .submit-btn-text {

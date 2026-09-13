@@ -6,6 +6,7 @@
   import { EmptyStateCard, SummaryCard } from '$lib/components/ui';
   import { formatBaziMetaItems, formatBaziPillarRows } from './chart-display';
   import { buildBaziDossierData } from '$lib/features/dossier/bazi-dossier-interpretations';
+  import BlockedBirthTimeGuidance from './BlockedBirthTimeGuidance.svelte';
 
   interface Props {
     snapshot: ChartDetailResponse['snapshot'];
@@ -339,6 +340,7 @@
         title="Chưa thể dựng đồ hình Tứ Trụ"
         description="Lá số này chưa có thông tin giờ sinh để lập trọn vẹn Tứ Trụ (Bát Tự). Hãy xem cảnh báo độ tin cậy và phần tóm tắt phía trên."
       />
+      <BlockedBirthTimeGuidance chartSystem="ba-zi" />
     {/if}
     {#if metaItems.length > 0}
       <SummaryCard variant="glass" title="Mệnh bàn" items={metaItems} />

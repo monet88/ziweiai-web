@@ -44,6 +44,7 @@
   import EnhancedSocialShareModal from '$lib/features/poster/EnhancedSocialShareModal.svelte';
   import PalaceDeepDiveModal from './PalaceDeepDiveModal.svelte';
   import AstrologicalJournalModal from '../journal/AstrologicalJournalModal.svelte';
+  import BlockedBirthTimeGuidance from './BlockedBirthTimeGuidance.svelte';
   import { resolvePalaceScope } from '$lib/features/explanation/explanation-model.svelte';
   import { revealElements, revealHexagramLines } from '$lib/motion/reveal';
   import { goto } from '$app/navigation';
@@ -325,15 +326,23 @@
           </div>
         </section>
       {:else if detail.palaces.length === 0 && detail.chartSystem === 'zi-wei-dou-shu'}
-        <EmptyStateCard
-          title={copy.twelvePalaceUnavailableTitle}
-          description={copy.twelvePalaceUnavailableDescription}
-        />
+        {#if explanationBlocked || detail.snapshot?.birth.originalInput.time.isUnknown}
+          <BlockedBirthTimeGuidance chartSystem={detail.chartSystem} chartId={detail.chartId} />
+        {:else}
+          <EmptyStateCard
+            title={copy.twelvePalaceUnavailableTitle}
+            description={copy.twelvePalaceUnavailableDescription}
+          />
+        {/if}
       {:else if (detail.chartSystem === 'ba-zi' || detail.chartSystem === 'mangpai') && (detail.snapshot?.pillars?.length ?? 0) === 0 && !detail.snapshot?.bazi}
-        <EmptyStateCard
-          title={copy.baziUnavailableTitle}
-          description={copy.baziUnavailableDescription}
-        />
+        {#if explanationBlocked || detail.snapshot?.birth.originalInput.time.isUnknown}
+          <BlockedBirthTimeGuidance chartSystem={detail.chartSystem} chartId={detail.chartId} />
+        {:else}
+          <EmptyStateCard
+            title={copy.baziUnavailableTitle}
+            description={copy.baziUnavailableDescription}
+          />
+        {/if}
       {:else if detailState === 'pillars'}
         <BaziDetailCard snapshot={detail.snapshot} />
       {:else if detailState === 'mangpai'}

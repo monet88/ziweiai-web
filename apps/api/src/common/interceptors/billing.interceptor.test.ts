@@ -1,8 +1,7 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ExecutionContext, CallHandler, HttpException } from '@nestjs/common';
 import { of, throwError, lastValueFrom } from 'rxjs';
 import { RequireXU } from './billing.interceptor';
-import { apiEnv } from '../../config/env';
 
 vi.mock('../../config/env', () => ({
   apiEnv: {

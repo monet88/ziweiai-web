@@ -367,6 +367,19 @@
         <li><strong>P1 Cờ AI_EXPLANATION_FREE_FOR_ALL Fail-Closed:</strong> Đặt mặc định thành <code>false</code> trong <code>env.ts</code>. Bắt buộc trừ XU và không bao giờ bị bypass nếu thiếu cấu hình môi trường.</li>
         <li><strong>P2 Deadlock Concurrency:</strong> Sắp xếp thứ tự khóa hàng profile theo UUID tăng dần (<code>least</code> trước, <code>greatest</code> sau), triệt tiêu hoàn toàn nguy cơ deadlock khi 2 tài khoản ref chéo nhau.</li>
       </ul>
+
+      <h3>7.6. Khắc Phục Triệt Để Phản Biện Đợt 2 Của Codex (Migration 000039 & Advanced Hardening)</h3>
+      <span class="badge badge-success">P0 Ledger Table Fixed</span>
+      <span class="badge badge-purple">P0 Normalized Email Anti-Sybil</span>
+      <span class="badge badge-primary">P1 Global Spend Guard</span>
+      <ul>
+        <li><strong>P0 Ledger Runtime Blocker (xu_ledger vs xu_transactions):</strong> Sửa toàn bộ các lệnh ghi log trong migration và code thành <code>public.xu_transactions (user_id, amount, transaction_type)</code>. Đồng thời tạo view tương thích <code>public.xu_ledger</code> trỏ vào <code>public.xu_transactions</code>. Database Production đã nạp thành công migration 000039 (38/38 migrations).</li>
+        <li><strong>P0 Chống Sybil Alias & Dot Trick:</strong> Bổ sung cột <code>normalized_email</code> và <code>UNIQUE INDEX</code> trên <code>welcome_bonus_claims</code>. Viết hàm PostgreSQL <code>normalize_email_address()</code> loại bỏ alias <code>+</code> và dấu chấm <code>.</code> của Gmail. Chặn đứng 100% việc tạo nhiều account cùng 1 hòm thư để farm 15 XU.</li>
+        <li><strong>P0 Turnstile Fail-Closed in Production:</strong> Khi chạy production, nếu thiếu secret key, gặp lỗi 5xx hoặc mạng gián đoạn, <code>TurnstileService</code> lập tức từ chối request (fail-closed), ngăn chặn bot lợi dụng sự cố để farm.</li>
+        <li><strong>P1 Quota Store Fail-Closed:</strong> Khởi động server sẽ crash/fail-closed ngay lập tức ở production nếu cấu hình <code>QUOTA_STORE_DRIVER=upstash</code> mà thiếu URL/token. Khi Upstash down, hệ thống chặn lượt vượt hạn mức thay vì fallback memory.</li>
+        <li><strong>P1 Global AI Spend Circuit Breaker:</strong> Bổ sung <code>AI_GLOBAL_DAILY_REQUEST_LIMIT</code> (mặc định 10.000 requests/ngày). Tự động ngắt khẩn cấp khi đạt ngưỡng trần để bảo vệ tài khoản API Gemini của Đại Ka trước nguy cơ tấn công DDoS.</li>
+        <li><strong>P1 Mobile Check-in Route:</strong> Bổ sung phương thức <code>dailyCheckin()</code> vào <code>ApiClient</code> mobile Flutter, chuyển <code>ReferralService</code> gọi qua NestJS API thay vì Supabase RPC trực tiếp, loại bỏ hoàn toàn lỗi 403.</li>
+      </ul>
     </div>
   </div>
 </body>

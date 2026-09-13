@@ -116,6 +116,29 @@ class ApiClient {
     }
   }
 
+  Future<Map<String, dynamic>> dailyCheckin({
+    String? referralCode,
+    String? turnstileToken,
+  }) async {
+    try {
+      final payload = <String, dynamic>{};
+      if (referralCode != null && referralCode.isNotEmpty) {
+        payload['referralCode'] = referralCode;
+      }
+      if (turnstileToken != null && turnstileToken.isNotEmpty) {
+        payload['turnstileToken'] = turnstileToken;
+      }
+
+      final response = await _dio.post(
+        '/rewards/checkin',
+        data: payload.isNotEmpty ? payload : null,
+      );
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // --- Dossier 19-Page Endpoints ---
   Future<Map<String, dynamic>> getDossierStatus(String chartId) async {
     try {

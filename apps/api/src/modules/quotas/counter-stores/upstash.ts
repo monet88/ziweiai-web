@@ -101,11 +101,10 @@ export class UpstashRestQuotaCounterStore implements QuotaCounterStore {
     ttlSeconds: number,
   ): Promise<{ count: number; allowed: boolean }> {
     this.logger.warn(`quota-store.unavailable driver=upstash failMode=${this.failMode} reason=${reason}`);
-    if (this.failMode === 'closed') {
+    if (this.failMode === 'closed' || process.env.NODE_ENV === 'production') {
       return { count: Number.POSITIVE_INFINITY, allowed: false };
     }
-    // Resilient memory fallback: thay vì mù quáng trả count=0 vô hạn,
-    // chuyển sang in-memory counter cục bộ để vẫn kiểm soát được hạn mức.
+    // Resilient memory fallback cho dev/test
     return this.memoryFallback.incrementAndCheck(key, limit, ttlSeconds);
   }
 }

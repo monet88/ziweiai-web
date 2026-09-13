@@ -1,9 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/api/api_client.dart';
+import '../../../../core/api/api_provider.dart';
 
 final referralServiceProvider = Provider<ReferralService>((ref) {
-  return ReferralService();
+  final apiClient = ref.watch(apiClientProvider);
+  return ReferralService(apiClient: apiClient);
 });
 
 final userReferralCodeProvider = FutureProvider<String?>((ref) async {
@@ -29,6 +32,10 @@ class ReferralStats {
 }
 
 class ReferralService {
+  final ApiClient? _apiClient;
+
+  ReferralService({ApiClient? apiClient}) : _apiClient = apiClient;
+
   SupabaseClient? get _supabase {
     try {
       return Supabase.instance.client;
@@ -138,16 +145,26 @@ class ReferralService {
     }
 
     try {
+      if (_apiClient != null) {
+        final res = await _apiClient!.dailyCheckin(referralCode: trimmed);
+        final reward = (res['rewardXu'] is num) ? (res['rewardXu'] as num).toInt() : 10;
+        return (
+          success: true,
+          rewardXu: reward > 0 ? reward : 10,
+          message: 'Đã nhập mã giới thiệu thành công!',
+        );
+      }
+
       final response = await client.rpc('daily_checkin', params: {
         'p_user_id': user.id,
         'p_referral_code': trimmed,
       });
 
-      final reward = (response is num) ? response.toInt() : 20;
+      final reward = (response is num) ? response.toInt() : 10;
       return (
         success: true,
-        rewardXu: reward > 0 ? reward : 20,
-        message: 'Đã nhập mã giới thiệu thành công! Nhận ngay +20 XU!',
+        rewardXu: reward > 0 ? reward : 10,
+        message: 'Đã nhập mã giới thiệu thành công!',
       );
     } catch (e) {
       debugPrint('[ReferralService] redeem error: $e');

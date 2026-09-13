@@ -94,8 +94,8 @@ begin
   where user_id = p_user_id;
 
   -- 5. Ghi sổ giao dịch ledger
-  insert into public.xu_ledger (user_id, amount, balance_after, reason, reference_id)
-  values (p_user_id, 15, v_new_balance, 'welcome_bonus', 'bonus_' || p_user_id::text);
+  insert into public.xu_transactions (user_id, amount, transaction_type)
+  values (p_user_id, 15, 'welcome_bonus');
 
   return 15;
 end;
@@ -219,14 +219,8 @@ begin
     where profiles.user_id = p_user_id;
 
     -- Ghi sổ nhật ký điểm danh
-    insert into public.xu_ledger (user_id, amount, balance_after, reason, reference_id)
-    values (
-      p_user_id,
-      reward_xu,
-      (select xu_balance from public.profiles where profiles.user_id = p_user_id),
-      'daily_checkin',
-      'checkin_' || p_user_id::text || '_' || today::text
-    );
+    insert into public.xu_transactions (user_id, amount, transaction_type)
+    values (p_user_id, reward_xu, 'daily_checkin');
 
     -- Xử lý thưởng Referral (nếu là lần đầu điểm danh)
     if current_streak = 1 and current_last_checkin is null and referrer_user_id is not null then
@@ -244,14 +238,8 @@ begin
           set xu_balance = xu_balance + ref_reward_xu
           where profiles.user_id = referrer_user_id;
 
-          insert into public.xu_ledger (user_id, amount, balance_after, reason, reference_id)
-          values (
-            referrer_user_id,
-            ref_reward_xu,
-            (select xu_balance from public.profiles where profiles.user_id = referrer_user_id),
-            'referral_reward',
-            'ref_' || p_user_id::text
-          );
+          insert into public.xu_transactions (user_id, amount, transaction_type)
+          values (referrer_user_id, ref_reward_xu, 'referral_reward');
         end if;
       end if;
     end if;

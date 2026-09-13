@@ -17,6 +17,11 @@ export function createQuotaCounterStore(env: ApiEnv = apiEnv): QuotaCounterStore
   switch (driver) {
     case 'upstash': {
       if (!env.QUOTA_UPSTASH_REST_URL || !env.QUOTA_UPSTASH_REST_TOKEN) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error(
+            '[quotas] CRITICAL: QUOTA_STORE_DRIVER=upstash requires QUOTA_UPSTASH_REST_URL and QUOTA_UPSTASH_REST_TOKEN in production.',
+          );
+        }
         Logger.warn(
           '[quotas] QUOTA_STORE_DRIVER=upstash requires QUOTA_UPSTASH_REST_URL and QUOTA_UPSTASH_REST_TOKEN. Falling back to memory driver to prevent server crash.',
         );

@@ -121,6 +121,11 @@ export const apiEnvSchema = z.object({
     (val) => (val === '' ? undefined : val),
     z.coerce.number().int().positive().default(12),
   ),
+  // Global spend budget / circuit breaker: giới hạn tổng số lượt gọi LLM toàn hệ thống / ngày
+  AI_GLOBAL_DAILY_REQUEST_LIMIT: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.coerce.number().int().positive().default(10000),
+  ),
 
   // US-017 + B6: feature flags for extended divination systems. US-042: default `true` =
   // fail-OPEN. Mọi hệ thuật số bật sẵn cho user; cờ chỉ còn để TẮT có chủ đích (đặt =false

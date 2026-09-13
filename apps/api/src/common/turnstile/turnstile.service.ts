@@ -20,8 +20,14 @@ export class TurnstileService {
   ): Promise<TurnstileVerificationResult> {
     const secretKey = customSecretKey ?? process.env.TURNSTILE_SECRET_KEY;
 
-    // Graceful Bypass Mode: Nếu không có secret key cấu hình trên môi trường (dev / test)
+    // Graceful Bypass Mode: Chỉ cho phép ở môi trường dev/test khi không có secret key
     if (!secretKey) {
+      if (process.env.NODE_ENV === 'production') {
+        this.logger.error(
+          'CRITICAL: TURNSTILE_SECRET_KEY is not configured in production. Failing closed for bot protection.',
+        );
+        return { success: false, errorCodes: ['missing-secret-key'] };
+      }
       this.logger.warn(
         'TURNSTILE_SECRET_KEY is not set. Operating in graceful bypass mode (bot defense disabled).',
       );
@@ -64,7 +70,10 @@ export class TurnstileService {
         this.logger.error(
           `Cloudflare Turnstile verification HTTP error: ${response.status} ${response.statusText}`,
         );
-        // Khi Cloudflare outage hoặc lỗi HTTP 5xx: fallback an toàn để không chặn user thật
+        // Trong production: Fail Closed để chặn bot lợi dụng outage
+        if (process.env.NODE_ENV === 'production') {
+          return { success: false, errorCodes: ['turnstile-service-unavailable'] };
+        }
         return { success: true, isBypassed: true };
       }
 
@@ -83,7 +92,10 @@ export class TurnstileService {
       };
     } catch (error) {
       this.logger.error('Failed to communicate with Cloudflare Turnstile API', error);
-      // Resilience fallback: không sập app nếu mạng tới Cloudflare bị gián đoạn
+      // Trong production: Fail Closed khi mạng gián đoạn
+      if (process.env.NODE_ENV === 'production') {
+        return { success: false, errorCodes: ['turnstile-network-error'] };
+      }
       return { success: true, isBypassed: true };
     }
   }

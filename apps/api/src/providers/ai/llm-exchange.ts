@@ -19,6 +19,26 @@ import { ProviderTimeoutError, ProviderUnavailableError } from './provider-error
 @Injectable()
 export class LlmExchange {
   private readonly logger = new Logger(LlmExchange.name);
+  private globalDailyCount = 0;
+  private currentDayKey = '';
+
+  private checkGlobalSpendCircuitBreaker() {
+    const today = new Date().toISOString().slice(0, 10);
+    if (this.currentDayKey !== today) {
+      this.currentDayKey = today;
+      this.globalDailyCount = 0;
+    }
+
+    if (this.globalDailyCount >= apiEnv.AI_GLOBAL_DAILY_REQUEST_LIMIT) {
+      this.logger.error(
+        `CRITICAL: Global daily AI request budget exceeded (${this.globalDailyCount}/${apiEnv.AI_GLOBAL_DAILY_REQUEST_LIMIT}). Circuit breaker triggered.`,
+      );
+      throw new ProviderUnavailableError(
+        'Hệ thống AI đã đạt giới hạn an toàn toàn cục trong ngày để bảo vệ ngân sách dịch vụ. Vui lòng quay lại vào ngày mai.',
+      );
+    }
+    this.globalDailyCount++;
+  }
 
   async run(params: {
     adapter: LlmChatAdapter;
@@ -29,6 +49,8 @@ export class LlmExchange {
     timeoutMsOverride?: number;
     kind?: 'explanation' | 'conversation';
   }): Promise<{ renderedMarkdown: string; providerMetadata: Record<string, string> }> {
+    this.checkGlobalSpendCircuitBreaker();
+
     const { adapter } = params;
     if (!adapter.isAvailable()) {
       throw new ProviderUnavailableError(adapter.notConfiguredMessage);

@@ -88,8 +88,15 @@ export class RewardsService {
   }
 
   async claimWelcomeBonus(userId: string, userEmail?: string) {
-    if (userEmail && isDisposableEmail(userEmail)) {
-      throw new BadRequestException('Email không hợp lệ hoặc thuộc danh sách dịch vụ email tạm thời.');
+    if (userEmail) {
+      if (isDisposableEmail(userEmail)) {
+        throw new BadRequestException('Email không hợp lệ hoặc thuộc danh sách dịch vụ email tạm thời.');
+      }
+      // Chặn trick alias dấu + (vd: user+1@gmail.com) để chống Sybil farm quà tân thủ
+      const localPart = userEmail.split('@')[0] || '';
+      if (localPart.includes('+')) {
+        throw new BadRequestException('Địa chỉ email chứa bí danh (alias) không đủ điều kiện nhận quà tân thủ.');
+      }
     }
 
     const { data: rewardXu, error } = await this.client.rpc('claim_welcome_bonus', {

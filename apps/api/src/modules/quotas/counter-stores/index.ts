@@ -40,9 +40,18 @@ export function createQuotaCounterStore(env: ApiEnv = apiEnv): QuotaCounterStore
       // Chưa triển khai: chốt một driver thật (upstash) ở MVP để tránh thêm dependency native.
       throw new Error('QUOTA_STORE_DRIVER=redis not implemented yet — use "upstash" or "memory"');
     case 'memory':
-    default:
+    default: {
+      if (
+        process.env.NODE_ENV === 'production' &&
+        process.env.ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD !== 'true'
+      ) {
+        Logger.warn(
+          '⚠️ [quotas] SECURITY WARNING: Running with QUOTA_STORE_DRIVER=memory in production is subject to resets across serverless cold-starts. For distributed persistent quotas, configure QUOTA_STORE_DRIVER=upstash, or explicitly set ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD=true.',
+        );
+      }
       logDriver('memory');
       return new MemoryQuotaCounterStore();
+    }
   }
 }
 

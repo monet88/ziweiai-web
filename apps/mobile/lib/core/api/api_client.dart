@@ -14,6 +14,7 @@ class ApiClient {
       receiveTimeout: const Duration(seconds: 30),
       headers: {
         'Content-Type': 'application/json',
+        'X-Client-Platform': 'mobile',
       },
     ));
 

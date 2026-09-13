@@ -145,9 +145,11 @@ class ReferralService {
     }
 
     try {
-      if (_apiClient != null) {
-        final res = await _apiClient!.dailyCheckin(referralCode: trimmed);
-        final reward = (res['rewardXu'] is num) ? (res['rewardXu'] as num).toInt() : 10;
+      final apiClient = _apiClient;
+      if (apiClient != null) {
+        final res = await apiClient.dailyCheckin(referralCode: trimmed);
+        final rawReward = res['rewardXu'] ?? res['xu_added'];
+        final reward = (rawReward is num) ? rawReward.toInt() : 10;
         return (
           success: true,
           rewardXu: reward > 0 ? reward : 10,

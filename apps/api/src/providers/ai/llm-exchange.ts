@@ -45,9 +45,22 @@ export class LlmExchange {
         });
 
         if (res.ok) {
-          const payload = (await res.json()) as Array<{ result?: number }>;
-          const count = Number(payload?.[0]?.result);
-          if (Number.isFinite(count) && count > limit) {
+          const payload = (await res.json()) as Array<{ result?: number; error?: string }>;
+          const firstItem = Array.isArray(payload) ? payload[0] : null;
+          const count = firstItem?.result !== undefined ? Number(firstItem.result) : NaN;
+
+          if (!Array.isArray(payload) || payload.length === 0 || !Number.isFinite(count)) {
+            const errDetail = firstItem?.error ? ` (Upstash error: ${firstItem.error})` : '';
+            logger.error(`Upstash counter returned malformed or unparseable payload${errDetail}: ${JSON.stringify(payload)}`);
+            if (process.env.NODE_ENV === 'production') {
+              throw new ProviderUnavailableError(
+                'Dịch vụ AI tạm thời không khả dụng do phản hồi kiểm soát ngân sách không hợp lệ. Vui lòng thử lại sau.',
+              );
+            }
+            return;
+          }
+
+          if (count > limit) {
             logger.error(
               `CRITICAL: Upstash Global AI daily budget reached (${count}/${limit}). Circuit breaker tripped.`,
             );

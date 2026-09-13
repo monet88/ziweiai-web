@@ -230,6 +230,114 @@ describe('LlmExchange.run', () => {
       process.env.NODE_ENV = originalEnv;
       vi.unstubAllGlobals();
     });
+
+    it('fails closed when Upstash returns HTTP 200 with empty object {} in production', async () => {
+      process.env.NODE_ENV = 'production';
+      const { apiEnv } = await import('../../config/env');
+      (apiEnv as any).QUOTA_UPSTASH_REST_URL = 'https://mock-upstash.local';
+      (apiEnv as any).QUOTA_UPSTASH_REST_TOKEN = 'mock-token';
+
+      const buildRequestSpy = vi.fn();
+      const adapter = buildStubAdapter({ buildRequest: buildRequestSpy });
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(JSON.stringify({}), { status: 200 })),
+      );
+
+      const exchange = new LlmExchange();
+      await expect(exchange.run({ adapter, prompt: 'p', emptyMessage: 'empty' })).rejects.toThrow(
+        'Dịch vụ AI tạm thời không khả dụng do phản hồi kiểm soát ngân sách không hợp lệ. Vui lòng thử lại sau.',
+      );
+
+      expect(buildRequestSpy).not.toHaveBeenCalled();
+
+      process.env.NODE_ENV = originalEnv;
+      (apiEnv as any).QUOTA_UPSTASH_REST_URL = undefined;
+      (apiEnv as any).QUOTA_UPSTASH_REST_TOKEN = undefined;
+      vi.unstubAllGlobals();
+    });
+
+    it('fails closed when Upstash returns HTTP 200 with empty array [] in production', async () => {
+      process.env.NODE_ENV = 'production';
+      const { apiEnv } = await import('../../config/env');
+      (apiEnv as any).QUOTA_UPSTASH_REST_URL = 'https://mock-upstash.local';
+      (apiEnv as any).QUOTA_UPSTASH_REST_TOKEN = 'mock-token';
+
+      const buildRequestSpy = vi.fn();
+      const adapter = buildStubAdapter({ buildRequest: buildRequestSpy });
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(JSON.stringify([]), { status: 200 })),
+      );
+
+      const exchange = new LlmExchange();
+      await expect(exchange.run({ adapter, prompt: 'p', emptyMessage: 'empty' })).rejects.toThrow(
+        'Dịch vụ AI tạm thời không khả dụng do phản hồi kiểm soát ngân sách không hợp lệ. Vui lòng thử lại sau.',
+      );
+
+      expect(buildRequestSpy).not.toHaveBeenCalled();
+
+      process.env.NODE_ENV = originalEnv;
+      (apiEnv as any).QUOTA_UPSTASH_REST_URL = undefined;
+      (apiEnv as any).QUOTA_UPSTASH_REST_TOKEN = undefined;
+      vi.unstubAllGlobals();
+    });
+
+    it('fails closed when Upstash returns HTTP 200 with pipeline error [{ error: "ERR syntax" }] in production', async () => {
+      process.env.NODE_ENV = 'production';
+      const { apiEnv } = await import('../../config/env');
+      (apiEnv as any).QUOTA_UPSTASH_REST_URL = 'https://mock-upstash.local';
+      (apiEnv as any).QUOTA_UPSTASH_REST_TOKEN = 'mock-token';
+
+      const buildRequestSpy = vi.fn();
+      const adapter = buildStubAdapter({ buildRequest: buildRequestSpy });
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(JSON.stringify([{ error: 'ERR syntax error' }]), { status: 200 })),
+      );
+
+      const exchange = new LlmExchange();
+      await expect(exchange.run({ adapter, prompt: 'p', emptyMessage: 'empty' })).rejects.toThrow(
+        'Dịch vụ AI tạm thời không khả dụng do phản hồi kiểm soát ngân sách không hợp lệ. Vui lòng thử lại sau.',
+      );
+
+      expect(buildRequestSpy).not.toHaveBeenCalled();
+
+      process.env.NODE_ENV = originalEnv;
+      (apiEnv as any).QUOTA_UPSTASH_REST_URL = undefined;
+      (apiEnv as any).QUOTA_UPSTASH_REST_TOKEN = undefined;
+      vi.unstubAllGlobals();
+    });
+
+    it('fails closed when Upstash returns HTTP 200 with non-numeric result [{ result: "invalid" }] in production', async () => {
+      process.env.NODE_ENV = 'production';
+      const { apiEnv } = await import('../../config/env');
+      (apiEnv as any).QUOTA_UPSTASH_REST_URL = 'https://mock-upstash.local';
+      (apiEnv as any).QUOTA_UPSTASH_REST_TOKEN = 'mock-token';
+
+      const buildRequestSpy = vi.fn();
+      const adapter = buildStubAdapter({ buildRequest: buildRequestSpy });
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(JSON.stringify([{ result: 'not-a-number' }]), { status: 200 })),
+      );
+
+      const exchange = new LlmExchange();
+      await expect(exchange.run({ adapter, prompt: 'p', emptyMessage: 'empty' })).rejects.toThrow(
+        'Dịch vụ AI tạm thời không khả dụng do phản hồi kiểm soát ngân sách không hợp lệ. Vui lòng thử lại sau.',
+      );
+
+      expect(buildRequestSpy).not.toHaveBeenCalled();
+
+      process.env.NODE_ENV = originalEnv;
+      (apiEnv as any).QUOTA_UPSTASH_REST_URL = undefined;
+      (apiEnv as any).QUOTA_UPSTASH_REST_TOKEN = undefined;
+      vi.unstubAllGlobals();
+    });
   });
 });
 

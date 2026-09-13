@@ -23,11 +23,15 @@ describe('Migration 000041: Safe Canonicalization & Deduplication', () => {
     expect(updatePos).toBeLessThan(createIndexPos);
   });
 
-  it('performs safe deduplication using CTE and row_number', () => {
+  it('performs safe deduplication with ledger reconciliation and balance clawback', () => {
     expect(migration).toContain('row_number() over');
     expect(migration).toContain('partition by normalized_email');
     expect(migration).toContain('delete from public.welcome_bonus_claims');
-    expect(migration).toContain('where ctid in');
+    expect(migration).toContain('where ctid = r.ctid');
+    expect(migration).toContain('insert into public.xu_transactions');
+    expect(migration).toContain("'welcome_bonus_duplicate_reversal'");
+    expect(migration).toContain('update public.profiles');
+    expect(migration).toContain('greatest(0, coalesce(xu_balance, 0) - r.reward_xu)');
   });
 
   it('canonicalizes gmail and googlemail addresses without dots or alias tags', () => {

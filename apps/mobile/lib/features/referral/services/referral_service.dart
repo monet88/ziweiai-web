@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -32,11 +33,15 @@ class ReferralStats {
 }
 
 class ReferralService {
+  final SupabaseClient? _injectedSupabase;
   final ApiClient? _apiClient;
 
-  ReferralService({ApiClient? apiClient}) : _apiClient = apiClient;
+  ReferralService({SupabaseClient? supabase, ApiClient? apiClient})
+      : _injectedSupabase = supabase,
+        _apiClient = apiClient;
 
   SupabaseClient? get _supabase {
+    if (_injectedSupabase != null) return _injectedSupabase;
     try {
       return Supabase.instance.client;
     } catch (_) {
@@ -110,8 +115,11 @@ class ReferralService {
     }
   }
 
-  /// Nhập mã giới thiệu để nhận +20 XU
-  Future<({bool success, int rewardXu, String message})> redeemReferralCode(String code) async {
+  /// Nhập mã giới thiệu để nhận +20 XU (kèm turnstileToken chống bot)
+  Future<({bool success, int rewardXu, String message})> redeemReferralCode(
+    String code, {
+    String? turnstileToken,
+  }) async {
     final trimmed = code.trim().toUpperCase();
     if (trimmed.isEmpty) {
       return (success: false, rewardXu: 0, message: 'Vui lòng nhập mã giới thiệu');
@@ -147,7 +155,10 @@ class ReferralService {
     try {
       final apiClient = _apiClient;
       if (apiClient != null) {
-        final res = await apiClient.dailyCheckin(referralCode: trimmed);
+        final res = await apiClient.dailyCheckin(
+          referralCode: trimmed,
+          turnstileToken: turnstileToken,
+        );
         final rawReward = res['rewardXu'] ?? res['xu_added'];
         final reward = (rawReward is num) ? rawReward.toInt() : 10;
         return (
@@ -170,6 +181,16 @@ class ReferralService {
       );
     } catch (e) {
       debugPrint('[ReferralService] redeem error: $e');
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data is Map && data['message'] != null) {
+          return (
+            success: false,
+            rewardXu: 0,
+            message: data['message'].toString(),
+          );
+        }
+      }
       return (
         success: false,
         rewardXu: 0,

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:ziweiai_mobile/core/theme/app_theme.dart';
+import 'package:ziweiai_mobile/core/security/turnstile_service.dart';
 import 'package:ziweiai_mobile/ui/animated_background.dart';
 import 'package:ziweiai_mobile/features/referral/services/referral_service.dart';
 import 'package:ziweiai_mobile/features/referral/widgets/royal_referral_card.dart';
@@ -86,11 +87,17 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
       return;
     }
 
+    final turnstile = ref.read(turnstileServiceProvider);
+    final turnstileToken = await turnstile.acquireTurnstileToken(context, action: 'referral_redeem');
+    if (turnstileToken == null) {
+      return;
+    }
+
     setState(() => _isRedeeming = true);
     HapticFeedback.lightImpact();
 
     final service = ref.read(referralServiceProvider);
-    final result = await service.redeemReferralCode(code);
+    final result = await service.redeemReferralCode(code, turnstileToken: turnstileToken);
 
     if (!mounted) return;
     setState(() => _isRedeeming = false);

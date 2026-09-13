@@ -419,15 +419,31 @@
         <li><strong>P1 Mobile Check-in Route:</strong> Bổ sung phương thức <code>dailyCheckin()</code> vào <code>ApiClient</code> mobile Flutter, chuyển <code>ReferralService</code> gọi qua NestJS API thay vì Supabase RPC trực tiếp, loại bỏ hoàn toàn lỗi 403.</li>
       </ul>
 
-      <h3>7.7. Khắc Phục Triệt Để Phản Biện Đợt 3 Của Codex (Migration 000040 & Distributed Spend Guard)</h3>
-      <span class="badge badge-success">P1 Distributed Spend Guard</span>
-      <span class="badge badge-primary">P1 Mobile Native Platform Header</span>
-      <span class="badge badge-purple">P2 Migration Canonicalization</span>
+      <h3>7.8. Khắc Phục Lỗ Hổng Spoof Header & Phase 4 Hardening (Commit 5a195a8)</h3>
+      <span class="badge badge-danger">P0 Spoof Header Removed</span>
+      <span class="badge badge-success">P1 Upstash Breaker Fail-Closed</span>
+      <span class="badge badge-purple">P2 Migration Index Ordering</span>
       <ul>
-        <li><strong>P1 Global AI Spend Circuit Breaker Bền Vững:</strong> Chuyển bộ đếm sang <code>static</code> class-level để 100% provider instances trong cùng process dùng chung, tích hợp Upstash REST pipeline <code>INCR</code> + <code>EXPIRE NX</code> qua mọi Vercel serverless lambda, và kiểm tra/đếm chính xác trước mỗi lần gọi <code>fetch</code> (bao gồm cả retry).</li>
-        <li><strong>P1 Quota Store Memory Warning:</strong> Thêm cảnh báo bảo mật nghiêm ngặt và cờ kiểm soát <code>ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD</code> khi chạy memory quota ở môi trường production.</li>
-        <li><strong>P1 Mobile Check-in Platform Integration:</strong> Bổ sung header <code>X-Client-Platform: mobile</code> trong <code>ApiClient</code>, cho phép authenticated native mobile app vượt qua Turnstile web mà không bị 400, đồng thời sửa <code>ReferralService</code> đọc linh hoạt cả <code>xu_added</code> lẫn <code>rewardXu</code>. Đã triệt tiêu 100% warning lint Dart.</li>
-        <li><strong>P2 Migration Canonicalization (000040):</strong> Đã nạp thành công migration <code>000040</code> lên Supabase Production (39/39 migrations). Canonicalize toàn bộ dữ liệu claim cũ bằng <code>normalize_email_address()</code> và deduplicate trước khi tạo unique index, triệt tiêu nguy cơ drift/fail.</li>
+        <li><strong>P0 Header Spoofing Neutralized:</strong> Loại bỏ hoàn toàn việc tin tưởng header <code>X-Client-Platform: mobile</code> tại <code>RewardsController.checkin</code>. Chặn đứng nguy cơ curl/web bot giả mạo header để bypass Turnstile CAPTCHA.</li>
+        <li><strong>P1 Global AI Spend Breaker Fail-Closed:</strong> Hardening <code>llm-exchange.ts</code> ném <code>ProviderUnavailableError</code> khi Upstash gặp lỗi HTTP non-200 hoặc network timeout trong production.</li>
+        <li><strong>P1 Quota Memory Driver Guard:</strong> Thêm exception chặn đứng việc bootstrap API trong production nếu dùng <code>driver=memory</code> mà không có cờ <code>ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD=true</code>.</li>
+        <li><strong>P2 Migration 000041 Trật Tự Index:</strong> Tạo migration <code>000041</code> để drop unique index trước khi canonicalize dữ liệu bằng <code>ROW_NUMBER()</code> và <code>ctid</code>.</li>
+      </ul>
+
+      <h3>7.9. Khắc Phục Triệt Để 100% Phản Biện Phase 5 Của Codex (Commercial Launch Readiness)</h3>
+      <span class="badge badge-success">P1 Upstash Malformed Fail-Closed</span>
+      <span class="badge badge-primary">P1 Mobile Turnstile Bot Defense</span>
+      <span class="badge badge-gold">P1 Ledger Reconciliation & Clawback</span>
+      <ul>
+        <li><strong>P1 Upstash HTTP 200 Malformed Fail-Closed:</strong> Đã hardening triệt để đoạn parse JSON tại <code>llm-exchange.ts</code> dòng 47-60. Kiểm tra nghiêm ngặt <code>Array.isArray(payload)</code>, mảng không rỗng, và <code>count</code> phải là số hữu hạn (<code>Number.isFinite</code>). Bất kỳ phản hồi dị dạng nào như <code>{}</code>, <code>[]</code>, <code>[{ error: "..." }]</code>, hay <code>NaN</code> trong production đều kích hoạt fail-closed (ném <code>ProviderUnavailableError</code>) và chặn đứng hoàn toàn việc gọi LLM (<code>adapter.buildRequest</code> không bao giờ chạy). Đã bổ sung 4 unit test vitest bao phủ 100% các case này.</li>
+        <li><strong>P1 Mobile Turnstile Bot Defense & E2E Verification:</strong> Xây dựng module dịch vụ <code>TurnstileMobileService</code> (<code>apps/mobile/lib/core/security/turnstile_service.dart</code>) và tích hợp Riverpod provider. Bổ sung sheet xác thực bảo mật hoàng gia trên mobile. Cập nhật <code>ReferralService.redeemReferralCode(code, turnstileToken: ...)</code> và <code>ReferralScreen</code> chuyển tiếp token tới <code>apiClient.dailyCheckin</code>. Bắt lỗi HTTP 400 DioException từ backend để thông báo rõ ràng bằng tiếng Việt. Bổ sung trọn bộ unit test mock và widget test UI (151/151 tests passed, 0 lint warnings).</li>
+        <li><strong>P1 Đối Soát Sổ Cái Kế Toán Trong Migration 000041:</strong> Cập nhật migration <code>000041_fix_welcome_bonus_canonicalization_and_dedup.sql</code>: Khi phát hiện claim trùng lặp (<code>rn > 1</code> theo <code>normalized_email</code>), migration tự động chạy khối PL/pgSQL nguyên tử để:
+          <ol>
+            <li>Ghi bút toán đảo đối soát (clawback reversal) vào <code>public.xu_transactions</code> với <code>transaction_type = 'welcome_bonus_duplicate_reversal'</code>, số tiền <code>-reward_xu</code> và <code>actor_email = 'system_migration_000041'</code>.</li>
+            <li>Khấu trừ số dư ví người dùng <code>profiles.xu_balance = greatest(0, coalesce(xu_balance, 0) - reward_xu)</code>, đảm bảo không bao giờ bị âm.</li>
+            <li>Xoá bản ghi claim trùng lặp và tái lập unique index an toàn. Sổ cái kinh tế và số dư thực tế khớp nhau 100%.</li>
+          </ol>
+        </li>
       </ul>
     </div>
   </div>

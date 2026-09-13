@@ -50,18 +50,56 @@ set
 from auth.users u
 where c.user_id = u.id;
 
--- 4. Deduplicate an toàn tuyệt đối các bản ghi trùng lặp (giữ lại bản ghi sớm nhất theo claimed_at và user_id)
-with ranked_claims as (
-  select ctid,
-         row_number() over (
-           partition by normalized_email 
-           order by claimed_at asc, user_id asc
-         ) as rn
-  from public.welcome_bonus_claims
-  where normalized_email is not null
-)
-delete from public.welcome_bonus_claims
-where ctid in (select ctid from ranked_claims where rn > 1);
+-- 4. Deduplicate và đối soát sổ cái (Ledger Reconciliation):
+-- Với mọi bản ghi trùng lặp (rn > 1):
+-- a) Ghi nhận bút toán đảo giao dịch vào public.xu_transactions
+-- b) Khấu trừ số dư profiles.xu_balance tương ứng
+-- c) Xoá claim duplicate khỏi public.welcome_bonus_claims
+do $$
+declare
+  r record;
+begin
+  for r in (
+    with ranked_claims as (
+      select ctid,
+             user_id,
+             reward_xu,
+             normalized_email,
+             row_number() over (
+               partition by normalized_email 
+               order by claimed_at asc, user_id asc
+             ) as rn
+      from public.welcome_bonus_claims
+      where normalized_email is not null
+    )
+    select ctid, user_id, coalesce(reward_xu, 15) as reward_xu, normalized_email
+    from ranked_claims
+    where rn > 1
+  ) loop
+    -- Ghi bút toán đảo đối soát vào xu_transactions
+    insert into public.xu_transactions (
+      user_id,
+      amount,
+      transaction_type,
+      actor_email
+    ) values (
+      r.user_id,
+      -r.reward_xu,
+      'welcome_bonus_duplicate_reversal',
+      'system_migration_000041'
+    );
+
+    -- Khấu trừ số dư ví người dùng, không bao giờ để âm
+    update public.profiles
+    set xu_balance = greatest(0, coalesce(xu_balance, 0) - r.reward_xu)
+    where user_id = r.user_id;
+
+    -- Xoá bản ghi duplicate claim
+    delete from public.welcome_bonus_claims
+    where ctid = r.ctid;
+  end loop;
+end;
+$$;
 
 -- 5. TÁI LẬP UNIQUE INDEX an toàn sau khi bảng đã sạch 100% duplicate
 create unique index if not exists welcome_bonus_claims_normalized_email_idx 

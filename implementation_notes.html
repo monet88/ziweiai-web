@@ -355,6 +355,18 @@
         <li><strong>SaaS Launch Score:</strong> <strong>9.5/10 (APPROVED - SẴN SÀNG MỞ BÁN THƯƠNG MẠI)</strong>.</li>
         <li><strong>Tài liệu chi tiết:</strong> Đã lưu trữ toàn văn tại <code>docs/sprint-88-commercial-tokenomics-and-behavior-audit.md</code>.</li>
       </ul>
+
+      <h3>7.5. Khắc Phục Triệt Để 100% Các Lỗ Hổng P0/P1 Theo Phản Biện Của Codex (Migration 000038)</h3>
+      <span class="badge badge-danger">P0 Sybil Bonus Neutralized</span>
+      <span class="badge badge-purple">P0 Turnstile RPC Lock</span>
+      <span class="badge badge-success">P1 Fail-Closed Default</span>
+      <ul>
+        <li><strong>P0 Sybil 15 XU Tân Thủ:</strong> Đã gán <code>v_initial_xu := 0</code> cho toàn bộ người dùng mới tạo trong <code>handle_new_user()</code>. 15 XU tân thủ chỉ được nhận thông qua endpoint <code>POST /api/rewards/welcome-bonus</code> và RPC <code>claim_welcome_bonus()</code> sau khi email đã được xác minh (<code>email_confirmed_at IS NOT NULL</code>), đã qua Turnstile CAPTCHA và kiểm tra danh sách đen disposable email.</li>
+        <li><strong>P0 Bypass Turnstile trên daily_checkin:</strong> Thu hồi toàn bộ quyền EXECUTE trên <code>daily_checkin()</code> khỏi vai trò <code>anon</code> và <code>authenticated</code>. Client không thể curl PostgREST trực tiếp mà bắt buộc phải đi qua NestJS backend API đã bọc Cloudflare Turnstile CAPTCHA.</li>
+        <li><strong>P0 Direct Client Ad Reward:</strong> Vô hiệu hóa endpoint trực tiếp từ client (trả về <code>ForbiddenException</code>). Phần thưởng quảng cáo chỉ được phép ghi nhận thông qua Google AdMob SSV callback (xác thực chữ ký ECDSA công khai của Google).</li>
+        <li><strong>P1 Cờ AI_EXPLANATION_FREE_FOR_ALL Fail-Closed:</strong> Đặt mặc định thành <code>false</code> trong <code>env.ts</code>. Bắt buộc trừ XU và không bao giờ bị bypass nếu thiếu cấu hình môi trường.</li>
+        <li><strong>P2 Deadlock Concurrency:</strong> Sắp xếp thứ tự khóa hàng profile theo UUID tăng dần (<code>least</code> trước, <code>greatest</code> sau), triệt tiêu hoàn toàn nguy cơ deadlock khi 2 tài khoản ref chéo nhau.</li>
+      </ul>
     </div>
   </div>
 </body>

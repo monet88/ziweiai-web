@@ -55,6 +55,37 @@ export class RewardsController {
     return result;
   }
 
+  @Post('welcome-bonus')
+  async claimWelcomeBonus(
+    @Req() req: AuthenticatedRequest,
+    @Body() body?: { turnstileToken?: string },
+  ) {
+    const userId = req.authenticatedUser?.userId;
+    if (!userId) {
+      throw new BadRequestException('User ID not found');
+    }
+
+    if (!req.authenticatedUser?.email) {
+      throw new BadRequestException('Tài khoản ẩn danh không đủ điều kiện nhận 15 XU tân thủ.');
+    }
+
+    const clientIp =
+      (req?.headers?.['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req?.socket?.remoteAddress;
+
+    const turnstileResult = await this.turnstileService.verifyToken(
+      body?.turnstileToken,
+      clientIp,
+    );
+    if (!turnstileResult.success) {
+      throw new BadRequestException(
+        'Xác thực chống bot không thành công (Turnstile verification failed).',
+      );
+    }
+
+    return this.rewardsService.claimWelcomeBonus(userId, req.authenticatedUser.email);
+  }
+
   @Post('ad-reward')
   async claimAdReward(
     @Req() req: AuthenticatedRequest,

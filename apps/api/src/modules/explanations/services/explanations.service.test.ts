@@ -794,7 +794,7 @@ describe('US-010 AI explanation gate', () => {
     expect(apiEnvSchema.parse({ AI_EXPLANATION_FREE_FOR_ALL: 'false' }).AI_EXPLANATION_FREE_FOR_ALL).toBe(false);
     expect(apiEnvSchema.parse({ AI_EXPLANATION_FREE_FOR_ALL: '0' }).AI_EXPLANATION_FREE_FOR_ALL).toBe(false);
     expect(apiEnvSchema.parse({ AI_EXPLANATION_FREE_FOR_ALL: 'true' }).AI_EXPLANATION_FREE_FOR_ALL).toBe(true);
-    expect(apiEnvSchema.parse({}).AI_EXPLANATION_FREE_FOR_ALL).toBe(true);
+    expect(apiEnvSchema.parse({}).AI_EXPLANATION_FREE_FOR_ALL).toBe(false); // Fail-closed by default
   });
 
   it('refunds 10 XU automatically when provider fails during explanation generation', async () => {

@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, ForbiddenException, Inject } from '@nestjs/common';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { isDisposableEmail } from '@ziweiai/contracts';
 import { SUPABASE_CLIENT } from '../../database/supabase-client';
@@ -80,41 +80,29 @@ export class RewardsService {
     return { success: added > 0, xu_added: added };
   }
 
-  async claimAdReward(userId: string, adToken?: string, impressionId?: string) {
-    // 1. Kiểm tra cờ kích hoạt tính năng: Fail-closed an toàn nếu chưa có Ad Network SSV production
-    if (process.env.ENABLE_AD_REWARDS !== 'true' && process.env.NODE_ENV === 'production') {
-      throw new BadRequestException(
-        'Tính năng nhận XU qua quảng cáo đang được nâng cấp Server-Side Verification (AdMob SSV). Vui lòng điểm danh hằng ngày hoặc nạp XU qua VietQR.',
-      );
+  async claimAdReward(_userId: string, _adToken?: string, _impressionId?: string) {
+    // Chặn đứng direct client-side ad reward. Phần thưởng quảng cáo CHỈ được phát thông qua Google AdMob SSV callback (/rewards/admob-ssv).
+    throw new ForbiddenException(
+      'Nhận thưởng quảng cáo trực tiếp từ client đã bị vô hiệu hóa vì lý do an ninh. Phần thưởng quảng cáo chỉ được xử lý qua Google AdMob SSV callback.',
+    );
+  }
+
+  async claimWelcomeBonus(userId: string, userEmail?: string) {
+    if (userEmail && isDisposableEmail(userEmail)) {
+      throw new BadRequestException('Email không hợp lệ hoặc thuộc danh sách dịch vụ email tạm thời.');
     }
 
-    const effectiveImpressionId = (impressionId || adToken || '').trim();
-
-    // 2. Bắt buộc có impressionId hợp lệ (không chấp nhận rỗng hoặc bypass)
-    if (!effectiveImpressionId || effectiveImpressionId.length < 8) {
-      throw new BadRequestException('Mã xác thực xem quảng cáo (impressionId / adToken) không hợp lệ hoặc thiếu.');
-    }
-
-    // 3. Gọi RPC atomic claim_ad_reward (service_role only, hardcoded 5 XU, atomic lock-by-insert)
-    const { data: rpcResult, error: rpcError } = await this.client.rpc('claim_ad_reward', {
+    const { data: rewardXu, error } = await this.client.rpc('claim_welcome_bonus', {
       p_user_id: userId,
-      p_impression_id: effectiveImpressionId,
     });
 
-    if (rpcError || !rpcResult) {
-      this.logger.error(`claim_ad_reward RPC failed for user ${userId}`, rpcError);
-      throw new BadRequestException('Lỗi hệ thống khi xử lý nhận thưởng quảng cáo.');
+    if (error) {
+      this.logger.warn(`claim_welcome_bonus failed for user ${userId}: ${error.message}`);
+      throw new BadRequestException(error.message || 'Không thể nhận thưởng 15 XU tân thủ lúc này.');
     }
 
-    if (!rpcResult.success) {
-      throw new BadRequestException(rpcResult.message || 'Không thể nhận thưởng quảng cáo lúc này.');
-    }
-
-    return {
-      success: true,
-      xu_added: rpcResult.xu_added,
-      new_balance: rpcResult.new_balance,
-    };
+    const added = typeof rewardXu === 'number' ? rewardXu : 15;
+    return { success: true, xu_added: added };
   }
 
   /**

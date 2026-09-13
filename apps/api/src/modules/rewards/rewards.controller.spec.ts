@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { RewardsController } from './rewards.controller';
 import { RewardsService } from './rewards.service';
 import type { AuthenticatedRequest } from '../auth/types/authenticated-request';
@@ -83,65 +83,14 @@ describe('RewardsController & RewardsService', () => {
   });
 
   describe('claimAdReward', () => {
-    it('should successfully credit ad reward and return new balance', async () => {
-      mockSupabaseClient.rpc.mockResolvedValueOnce({
-        data: { success: true, xu_added: 5, new_balance: 35 },
-        error: null,
-      });
-
-      const mockReq = {
-        authenticatedUser: { userId: 'user-uuid-123' },
-      } as AuthenticatedRequest;
-
-      const result = await controller.claimAdReward(mockReq, {
-        impressionId: 'ad_impression_valid_123',
-      });
-
-      expect(result).toEqual({
-        success: true,
-        xu_added: 5,
-        new_balance: 35,
-      });
-      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('claim_ad_reward', {
-        p_user_id: 'user-uuid-123',
-        p_impression_id: 'ad_impression_valid_123',
-      });
-    });
-
-    it('should throw BadRequestException when impressionId is missing or shorter than 8 chars', async () => {
-      const mockReq = {
-        authenticatedUser: { userId: 'user-uuid-123' },
-      } as AuthenticatedRequest;
-
-      await expect(controller.claimAdReward(mockReq, {} as any)).rejects.toThrow(
-        'Mã xác thực xem quảng cáo (impressionId / adToken) không hợp lệ hoặc thiếu.',
-      );
-
-      await expect(
-        controller.claimAdReward(mockReq, { impressionId: 'short' }),
-      ).rejects.toThrow(
-        'Mã xác thực xem quảng cáo (impressionId / adToken) không hợp lệ hoặc thiếu.',
-      );
-    });
-
-    it('should throw BadRequestException when user exceeds daily ad reward limit', async () => {
-      mockSupabaseClient.rpc.mockResolvedValueOnce({
-        data: {
-          success: false,
-          message: 'Bạn đã đạt giới hạn nhận thưởng quảng cáo trong ngày (tối đa 5 lượt/ngày).',
-        },
-        error: null,
-      });
-
+    it('should throw ForbiddenException for direct client ad reward calls', async () => {
       const mockReq = {
         authenticatedUser: { userId: 'user-uuid-123' },
       } as AuthenticatedRequest;
 
       await expect(
         controller.claimAdReward(mockReq, { impressionId: 'ad_impression_valid_123' }),
-      ).rejects.toThrow(
-        'Bạn đã đạt giới hạn nhận thưởng quảng cáo trong ngày (tối đa 5 lượt/ngày).',
-      );
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw BadRequestException if userId is missing', async () => {
@@ -153,20 +102,45 @@ describe('RewardsController & RewardsService', () => {
         controller.claimAdReward(mockReq, { impressionId: 'ad_impression_valid_123' }),
       ).rejects.toThrow(BadRequestException);
     });
+  });
 
-    it('should throw BadRequestException if claim_ad_reward RPC errors', async () => {
-      mockSupabaseClient.rpc.mockResolvedValueOnce({
-        data: null,
-        error: { message: 'Database error' },
-      });
-
+  describe('claimWelcomeBonus', () => {
+    it('should successfully credit 15 XU welcome bonus for verified email user', async () => {
+      mockSupabaseClient.rpc.mockResolvedValueOnce({ data: 15, error: null });
       const mockReq = {
-        authenticatedUser: { userId: 'user-uuid-123' },
-      } as AuthenticatedRequest;
+        authenticatedUser: { userId: 'user-uuid-123', email: 'user@gmail.com' },
+        headers: { 'x-forwarded-for': '127.0.0.1' },
+      } as unknown as AuthenticatedRequest;
+
+      const result = await controller.claimWelcomeBonus(mockReq, { turnstileToken: 'valid-token' });
+      expect(result).toEqual({ success: true, xu_added: 15 });
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('claim_welcome_bonus', {
+        p_user_id: 'user-uuid-123',
+      });
+    });
+
+    it('should throw BadRequestException if user is anonymous', async () => {
+      const mockReq = {
+        authenticatedUser: { userId: 'anon-user-123', email: null },
+      } as unknown as AuthenticatedRequest;
 
       await expect(
-        controller.claimAdReward(mockReq, { impressionId: 'ad_impression_valid_123' }),
-      ).rejects.toThrow(BadRequestException);
+        controller.claimWelcomeBonus(mockReq, { turnstileToken: 'valid-token' }),
+      ).rejects.toThrow('Tài khoản ẩn danh không đủ điều kiện nhận 15 XU tân thủ.');
+    });
+
+    it('should throw BadRequestException if turnstile fails', async () => {
+      const mockFailingTurnstile = {
+        verifyToken: vi.fn().mockResolvedValue({ success: false }),
+      };
+      const customController = new RewardsController(service, mockFailingTurnstile as any);
+      const mockReq = {
+        authenticatedUser: { userId: 'user-uuid-123', email: 'user@gmail.com' },
+      } as unknown as AuthenticatedRequest;
+
+      await expect(
+        customController.claimWelcomeBonus(mockReq, { turnstileToken: 'invalid-token' }),
+      ).rejects.toThrow('Xác thực chống bot không thành công (Turnstile verification failed).');
     });
   });
 

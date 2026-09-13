@@ -107,9 +107,8 @@ export const apiEnvSchema = z.object({
   // provider cụ thể lên đầu chain mà vẫn giữ phần còn lại làm fallback.
   AI_DEFAULT_PROVIDER: z.enum(['auto', 'deepseek', 'openai-compat', 'gemini']).default('auto'),
   // z.stringbool (zod v4): "false"/"0"/"no" → false, "true"/"1"/"yes" → true.
-  // KHÔNG dùng z.coerce.boolean() — nó chạy Boolean(string) nên mọi chuỗi non-empty
-  // (kể cả "false") đều thành true, khiến AI_EXPLANATION_FREE_FOR_ALL=false vô hiệu ở prod.
-  AI_EXPLANATION_FREE_FOR_ALL: z.stringbool().default(true),
+  // MẶC ĐỊNH LÀ FALSE (fail-closed, tính phí XU). Chỉ mở miễn phí khi biến môi trường được đặt tường minh là true (dev/demo).
+  AI_EXPLANATION_FREE_FOR_ALL: z.stringbool().default(false),
   AI_CONVERSATION_ENABLED: z.stringbool().default(true),
   // z.preprocess '' → undefined: env khai báo nhưng để trống (VAR=) đọc ra '' khiến
   // z.coerce.number() ép thành 0, fail .positive() → crash khởi động và .default() KHÔNG áp

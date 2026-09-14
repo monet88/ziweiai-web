@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Xác Thực Bảo Mật — Tử Vi Toàn Tập</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #0d0f18;
+      color: #e6c687;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+    }
+    .card {
+      background: rgba(20, 24, 38, 0.95);
+      border: 1px solid rgba(230, 198, 135, 0.35);
+      border-radius: 16px;
+      padding: 28px 24px;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(12px);
+    }
+    .icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+    h2 {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #e6c687;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    p {
+      font-size: 13px;
+      color: #a0aec0;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+    #turnstile-container {
+      display: flex;
+      justify-content: center;
+      min-height: 65px;
+    }
+    .status {
+      margin-top: 14px;
+      font-size: 12px;
+      color: #718096;
+      font-style: italic;
+    }
+    .success-badge {
+      display: none;
+      color: #48bb78;
+      font-weight: 600;
+      font-size: 14px;
+      margin-top: 12px;
+    }
+  </style>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🛡️</div>
+    <h2>Xác Thực An Toàn</h2>
+    <p>Hệ thống đang kiểm tra bảo mật chống bot tự động để trao XU phúc khí cho bạn.</p>
+    
+    <div id="turnstile-container"></div>
+    <div id="status" class="status">Đang tải Cloudflare Turnstile...</div>
+    <div id="success" class="success-badge">✓ Xác thực thành công! Đang chuyển tiếp...</div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    // Ưu tiên sitekey từ URL parameter, fallback về key production hoặc test key
+    const siteKey = urlParams.get('sitekey') || '0x4AAAAAAA-placeholder-or-configured' || '1x00000000000000000000AA';
+    const action = urlParams.get('action') || 'mobile_checkin';
+
+    function sendTokenToHost(token) {
+      document.getElementById('status').style.display = 'none';
+      document.getElementById('success').style.display = 'block';
+
+      // 1. Gửi qua Flutter WebView Javascript Channel (TurnstileBridge)
+      if (window.TurnstileBridge && typeof window.TurnstileBridge.postMessage === 'function') {
+        window.TurnstileBridge.postMessage(token);
+      }
+
+      // 2. Gửi qua window.parent (cho iframe nếu có)
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'TURNSTILE_TOKEN', token: token }, '*');
+      }
+
+      // 3. Gửi qua document title fallback nếu bridge gặp lỗi
+      document.title = 'TURNSTILE_TOKEN:' + token;
+    }
+
+    function onTurnstileSuccess(token) {
+      sendTokenToHost(token);
+    }
+
+    function onTurnstileError() {
+      document.getElementById('status').innerText = 'Không thể tải xác thực. Vui lòng kiểm tra kết nối mạng.';
+    }
+
+    window.onload = function() {
+      const checkInterval = setInterval(function() {
+        if (window.turnstile) {
+          clearInterval(checkInterval);
+          document.getElementById('status').innerText = 'Vui lòng hoàn thành xác thực bên dưới:';
+          try {
+            window.turnstile.render('#turnstile-container', {
+              sitekey: siteKey,
+              action: action,
+              theme: 'dark',
+              callback: onTurnstileSuccess,
+              'error-callback': onTurnstileError,
+              'expired-callback': function() {
+                document.getElementById('status').innerText = 'Phiên xác thực đã hết hạn, vui lòng thử lại.';
+              }
+            });
+          } catch (e) {
+            document.getElementById('status').innerText = 'Lỗi khởi tạo widget.';
+          }
+        }
+      }, 100);
+    };
+  </script>
+</body>
+</html>

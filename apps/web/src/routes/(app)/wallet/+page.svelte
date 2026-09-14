@@ -396,146 +396,6 @@
             {/each}
           </div>
         </section>
-
-        <!-- Section 2: XU Feature Costs Table -->
-        <section class="costs-section glass-panel">
-          <div class="section-header">
-            <h2><Sparkles size={20} class="text-gold" /> Bảng giá sử dụng XU</h2>
-          </div>
-          <div class="costs-list">
-            {#each featureCosts as item (item.name)}
-              <div class="cost-item">
-                <div class="cost-item-left">
-                  <item.icon size={16} class="cost-icon" />
-                  <span class="cost-name">{item.name}</span>
-                </div>
-                <div class="cost-item-right">
-                  <span class="cost-tag">{item.tag}</span>
-                  <span class="cost-val">{item.cost}</span>
-                </div>
-              </div>
-            {/each}
-          </div>
-        </section>
-
-        <!-- Section 3: Referrals -->
-        <section class="referral-section glass-panel">
-          <div class="section-header">
-            <h2><Users size={20} class="text-gold" /> Giới thiệu bạn bè nhận XU</h2>
-          </div>
-          <p class="referral-desc">
-            Chia sẻ link giới thiệu của bạn. Khi người mới đăng nhập & điểm danh lần đầu, bạn nhận <strong>+10 XU</strong> và người đó nhận tổng <strong>15 XU</strong> (+5 điểm danh +10 thưởng giới thiệu).
-          </p>
-
-          {#if walletModel.referralCode}
-            <div class="ref-link-box">
-              <input
-                type="text"
-                readonly
-                value={referralShareUrl}
-                class="ref-input"
-              />
-              <button
-                type="button"
-                class="btn-copy-ref"
-                onclick={() => copyToClipboard(referralShareUrl, 'refLink')}
-              >
-                {#if copiedField === 'refLink'}
-                  <Check size={14} /> Đã Copy
-                {:else}
-                  <Copy size={14} /> Copy Link
-                {/if}
-              </button>
-            </div>
-
-            <!-- Social Share Bar -->
-            <div class="social-share-bar">
-              <span class="share-label"><Share2 size={14} /> Chia sẻ nhanh:</span>
-              <button
-                type="button"
-                class="btn-share-social zalo"
-                onclick={() => shareOnZalo(referralShareUrl)}
-              >
-                Zalo
-              </button>
-              <button
-                type="button"
-                class="btn-share-social facebook"
-                onclick={() => shareOnFacebook(referralShareUrl)}
-              >
-                Facebook
-              </button>
-              <button
-                type="button"
-                class="btn-share-social telegram"
-                onclick={() => shareOnTelegram(referralShareUrl, 'Tham gia ViOS ngay để nhận XU thưởng Tử Vi & Chiêm Tinh AI!')}
-              >
-                Telegram
-              </button>
-            </div>
-          {:else}
-            <p class="loading-text">Đang tải mã giới thiệu...</p>
-          {/if}
-
-          <!-- Các Nút Hành Động Referral: Thiệp Mời & Partner Hub -->
-          <div class="referral-action-buttons">
-            <button
-              type="button"
-              class="btn-open-viral-card"
-              onclick={() => (showViralModal = true)}
-            >
-              <Sparkles size={16} class="gold-icon" />
-              <span>Tạo Thiệp Mời Celestial Luxury</span>
-            </button>
-            <button
-              type="button"
-              class="btn-open-partner-hub"
-              onclick={() => (showPartnerHubModal = true)}
-            >
-              <Trophy size={16} class="hub-icon" />
-              <span>Cấp Bậc & Bảng Vàng Đối Tác</span>
-            </button>
-          </div>
-
-          <!-- 2 thẻ KPI thống kê Referral -->
-          <div class="referral-stats-grid">
-            <div class="ref-stat-card">
-              <span class="ref-stat-icon">👥</span>
-              <div class="ref-stat-info">
-                <span class="ref-stat-label">Bạn bè đã mời</span>
-                <span class="ref-stat-value">{walletModel.referrals.length} bạn</span>
-              </div>
-            </div>
-            <div class="ref-stat-card">
-              <span class="ref-stat-icon">🪙</span>
-              <div class="ref-stat-info">
-                <span class="ref-stat-label">Tổng XU nhận được</span>
-                <span class="ref-stat-value highlight">{walletModel.referrals.reduce((sum, r) => sum + (r.rewardXu || 10), 0)} XU</span>
-              </div>
-            </div>
-          </div>
-
-          {#if walletModel.referrals.length > 0}
-            <div class="referral-history">
-              <h4>Lịch sử bạn bè kích hoạt ({walletModel.referrals.length})</h4>
-              <div class="ref-list">
-                {#each walletModel.referrals as ref (ref.createdAt)}
-                  <div class="ref-item">
-                    <div class="ref-item-main">
-                      <span class="ref-date">
-                        {new Date(ref.createdAt).toLocaleDateString('vi-VN')} {new Date(ref.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      <span class="ref-desc">
-                        Bạn mới ({ref.refereeEmailMasked || 'ẩn danh'}) đã kích hoạt thành công
-                      </span>
-                    </div>
-                    <span class="ref-reward">+{ref.rewardXu} XU</span>
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {/if}
-        </section>
       </div>
 
       <!-- Right Column: Sticky Payment VietQR SePay -->
@@ -680,6 +540,149 @@
           {/if}
         </div>
       </aside>
+    </div>
+
+    <!-- TẦNG 2: BẢNG GIÁ VÀ GIỚI THIỆU BẠN BÈ CÂN XỨNG 2 CỘT (50/50) -->
+    <div class="wallet-bottom-grid">
+      <!-- Section 2: XU Feature Costs Table -->
+      <section class="costs-section glass-panel">
+        <div class="section-header">
+          <h2><Sparkles size={20} class="text-gold" /> Bảng giá sử dụng XU</h2>
+        </div>
+        <div class="costs-list">
+          {#each featureCosts as item (item.name)}
+            <div class="cost-item">
+              <div class="cost-item-left">
+                <item.icon size={16} class="cost-icon" />
+                <span class="cost-name">{item.name}</span>
+              </div>
+              <div class="cost-item-right">
+                <span class="cost-tag">{item.tag}</span>
+                <span class="cost-val">{item.cost}</span>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </section>
+
+      <!-- Section 3: Referrals -->
+      <section class="referral-section glass-panel">
+        <div class="section-header">
+          <h2><Users size={20} class="text-gold" /> Giới thiệu bạn bè nhận XU</h2>
+        </div>
+        <p class="referral-desc">
+          Chia sẻ link giới thiệu của bạn. Khi người mới đăng nhập & điểm danh lần đầu, bạn nhận <strong>+10 XU</strong> và người đó nhận tổng <strong>15 XU</strong> (+5 điểm danh +10 thưởng giới thiệu).
+        </p>
+
+        {#if walletModel.referralCode}
+          <div class="ref-link-box">
+            <input
+              type="text"
+              readonly
+              value={referralShareUrl}
+              class="ref-input"
+            />
+            <button
+              type="button"
+              class="btn-copy-ref"
+              onclick={() => copyToClipboard(referralShareUrl, 'refLink')}
+            >
+              {#if copiedField === 'refLink'}
+                <Check size={14} /> Đã Copy
+              {:else}
+                <Copy size={14} /> Copy Link
+              {/if}
+            </button>
+          </div>
+
+          <!-- Social Share Bar -->
+          <div class="social-share-bar">
+            <span class="share-label"><Share2 size={14} /> Chia sẻ nhanh:</span>
+            <button
+              type="button"
+              class="btn-share-social zalo"
+              onclick={() => shareOnZalo(referralShareUrl)}
+            >
+              Zalo
+            </button>
+            <button
+              type="button"
+              class="btn-share-social facebook"
+              onclick={() => shareOnFacebook(referralShareUrl)}
+            >
+              Facebook
+            </button>
+            <button
+              type="button"
+              class="btn-share-social telegram"
+              onclick={() => shareOnTelegram(referralShareUrl, 'Tham gia ViOS ngay để nhận XU thưởng Tử Vi & Chiêm Tinh AI!')}
+            >
+              Telegram
+            </button>
+          </div>
+        {:else}
+          <p class="loading-text">Đang tải mã giới thiệu...</p>
+        {/if}
+
+        <!-- Các Nút Hành Động Referral: Thiệp Mời & Partner Hub -->
+        <div class="referral-action-buttons">
+          <button
+            type="button"
+            class="btn-open-viral-card"
+            onclick={() => (showViralModal = true)}
+          >
+            <Sparkles size={16} class="gold-icon" />
+            <span>Tạo Thiệp Mời Celestial Luxury</span>
+          </button>
+          <button
+            type="button"
+            class="btn-open-partner-hub"
+            onclick={() => (showPartnerHubModal = true)}
+          >
+            <Trophy size={16} class="hub-icon" />
+            <span>Cấp Bậc & Bảng Vàng Đối Tác</span>
+          </button>
+        </div>
+
+        <!-- 2 thẻ KPI thống kê Referral -->
+        <div class="referral-stats-grid">
+          <div class="ref-stat-card">
+            <span class="ref-stat-icon">👥</span>
+            <div class="ref-stat-info">
+              <span class="ref-stat-label">Bạn bè đã mời</span>
+              <span class="ref-stat-value">{walletModel.referrals.length} bạn</span>
+            </div>
+          </div>
+          <div class="ref-stat-card">
+            <span class="ref-stat-icon">🪙</span>
+            <div class="ref-stat-info">
+              <span class="ref-stat-label">Tổng XU nhận được</span>
+              <span class="ref-stat-value highlight">{walletModel.referrals.reduce((sum, r) => sum + (r.rewardXu || 10), 0)} XU</span>
+            </div>
+          </div>
+        </div>
+
+        {#if walletModel.referrals.length > 0}
+          <div class="referral-history">
+            <h4>Lịch sử bạn bè kích hoạt ({walletModel.referrals.length})</h4>
+            <div class="ref-list">
+              {#each walletModel.referrals as ref (ref.createdAt)}
+                <div class="ref-item">
+                  <div class="ref-item-main">
+                    <span class="ref-date">
+                      {new Date(ref.createdAt).toLocaleDateString('vi-VN')} {new Date(ref.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span class="ref-desc">
+                      Bạn mới ({ref.refereeEmailMasked || 'ẩn danh'}) đã kích hoạt thành công
+                    </span>
+                  </div>
+                  <span class="ref-reward">+{ref.rewardXu} XU</span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </section>
     </div>
     {:else}
       <!-- Tab 2: Lịch Sử Giao Dịch Nạp XU -->
@@ -1186,6 +1189,21 @@
     .wallet-grid {
       display: grid;
       grid-template-columns: 1fr 400px;
+      align-items: start;
+    }
+  }
+
+  /* Wallet Bottom Grid Layout (Bảng phí & Giới thiệu 50/50 cân xứng) */
+  .wallet-bottom-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  @media (min-width: 960px) {
+    .wallet-bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       align-items: start;
     }
   }

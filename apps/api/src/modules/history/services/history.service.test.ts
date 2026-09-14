@@ -295,4 +295,32 @@ describe('HistoryService', () => {
     warnSpy.mockRestore();
     errorSpy.mockRestore();
   });
+
+  it('vẫn trả về kết quả an toàn khi 1 subquery trong Promise.all bị reject (lỗi subquery không làm sập history)', async () => {
+    const view = createHistoryView();
+    const gateway = createGateway({
+      listHistoryViews: vi.fn(async () => [view]),
+      findChartSnapshotsByIds: vi.fn().mockRejectedValue(new Error('Supabase 502 Bad Gateway')),
+    });
+    const service = new HistoryService(gateway, gateway, gateway, gateway, gateway, createVisionStorage());
+
+    const response = await service.listHistory(USER_ID, 20);
+
+    expect(response.items).toHaveLength(1);
+    expect(response.items[0]?.chartRecord).toBeNull();
+  });
+
+  it('fallback trả về { items: [] } khi listHistoryViews ném ngoại lệ nghiêm trọng (không bao giờ trả 500)', async () => {
+    const gateway = createGateway({
+      listHistoryViews: vi.fn().mockRejectedValue(new Error('Database Connection Lost')),
+    });
+    const errorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const service = new HistoryService(gateway, gateway, gateway, gateway, gateway, createVisionStorage());
+
+    const response = await service.listHistory(USER_ID, 20);
+
+    expect(response).toEqual({ items: [] });
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
 });

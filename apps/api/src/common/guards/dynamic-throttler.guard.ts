@@ -4,7 +4,10 @@ import { AdminRepository } from '../../database/repositories/admin.repository';
 
 @Injectable()
 export class DynamicThrottlerGuard extends ThrottlerGuard {
-  private configCache: Record<string, any> = {};
+  private configCache: Record<string, any> = {
+    RATE_LIMIT_AUTH: { ttl: 60, limit: 60 },
+    RATE_LIMIT_ANON: { ttl: 60, limit: 10 },
+  };
   private lastCacheTime = 0;
   private readonly CACHE_TTL_MS = 60000; // Cache config for 60 seconds
 

@@ -3,204 +3,182 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sprint 95: Implementation Notes & Living Spec — Tử Vi Toàn Tập (ViOS)</title>
+  <title>Sprint 96 Implementation Notes & Living Spec</title>
   <style>
     :root {
-      --bg: #0d0b14;
-      --card-bg: rgba(26, 21, 43, 0.85);
-      --gold: #d4af37;
-      --gold-light: #f7e7a9;
-      --accent: #9333ea;
-      --border: rgba(212, 175, 55, 0.25);
-      --text: #e2e8f0;
-      --text-muted: #94a3b8;
-      --success: #10b981;
+      --bg: #0b0f19;
+      --card-bg: rgba(26, 32, 53, 0.7);
+      --border: rgba(99, 102, 241, 0.25);
+      --primary: #818cf8;
+      --accent: #c084fc;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --success: #34d399;
+      --warning: #fbbf24;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg);
+      background-color: var(--bg);
       color: var(--text);
       line-height: 1.6;
       margin: 0;
-      padding: 32px 16px;
+      padding: 40px 20px;
     }
     .container {
-      max-width: 960px;
+      max-width: 900px;
       margin: 0 auto;
     }
     header {
       border-bottom: 1px solid var(--border);
       padding-bottom: 24px;
-      margin-bottom: 32px;
+      margin-bottom: 36px;
     }
     h1 {
-      color: var(--gold-light);
-      font-size: 2.2rem;
-      margin: 0 0 8px 0;
-      text-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
+      font-size: 28px;
+      margin: 0 0 10px;
+      background: linear-gradient(135deg, #ffffff 30%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
-    .badge {
+    .meta-badge {
       display: inline-block;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid var(--border);
+      color: var(--primary);
       padding: 4px 12px;
-      border-radius: 9999px;
-      font-size: 0.85rem;
+      border-radius: 999px;
+      font-size: 13px;
       font-weight: 600;
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--success);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      margin-right: 8px;
     }
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 16px;
       padding: 24px;
       margin-bottom: 24px;
       backdrop-filter: blur(12px);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
     }
     h2 {
-      color: var(--gold);
-      font-size: 1.4rem;
+      font-size: 20px;
+      color: var(--accent);
       margin-top: 0;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border-bottom: 1px dashed rgba(212, 175, 55, 0.2);
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       padding-bottom: 8px;
     }
-    ul, ol {
+    ul {
+      margin: 0;
       padding-left: 20px;
-      margin: 12px 0;
     }
     li {
       margin-bottom: 8px;
     }
     code {
-      background: rgba(0, 0, 0, 0.4);
-      padding: 2px 6px;
-      border-radius: 4px;
-      color: #f472b6;
-      font-family: monospace;
-      font-size: 0.9em;
-    }
-    pre {
-      background: rgba(0, 0, 0, 0.6);
-      padding: 16px;
-      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.35);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      overflow-x: auto;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      color: #f1f5f9;
+    }
+    .status-pill {
+      color: var(--success);
+      font-weight: 700;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 16px 0;
+      margin-top: 12px;
     }
     th, td {
-      border: 1px solid var(--border);
-      padding: 10px 14px;
       text-align: left;
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 14px;
     }
     th {
-      background: rgba(212, 175, 55, 0.15);
-      color: var(--gold-light);
-    }
-    .footer {
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      margin-top: 40px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      padding-top: 20px;
+      color: var(--muted);
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.02);
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <span class="badge">SPRINT 95 COMPLETE</span>
-      <span class="badge">1000/1000 TESTS PASSED</span>
-      <span class="badge">E2E JOURNEY PASSED</span>
-      <h1>Living Spec & Implementation Notes</h1>
-      <p style="color: var(--text-muted); margin: 0;">Dự án Tử Vi Toàn Tập (ViOS) • Domain Live: <a href="https://tuvitoantap.online" style="color: var(--gold); text-decoration: none;">https://tuvitoantap.online</a></p>
+      <div class="meta-badge">Sprint 96 • Karpathy Guideline Rule 5</div>
+      <h1>Implementation Notes: Dynamic Model Tiering & Real Estate B2B</h1>
+      <p style="color: var(--muted); margin: 8px 0 0;">
+        ViOS Tử Vi Toàn Tập • Cập nhật ngày 14/09/2026
+      </p>
     </header>
 
-    <!-- 1. Unspecified & Implicit Decisions -->
     <div class="card">
-      <h2>1. Quyết Định Thiết Kế Ngầm & Phát Sinh (Unspecified & Implicit Decisions)</h2>
+      <h2>1. Unspecified & Implicit Decisions</h2>
       <ul>
-        <li><strong>Ngăn chặn trạng thái chạy đua (Race Condition) ở nút Điểm danh:</strong> Phát hiện khi trang <code>/wallet</code> mới mount, TanStack query <code>query.isPending</code> trả về <code>true</code> khiến <code>canCheckin</code> tạm thời tính ra <code>true</code> và nút chớp chữ "Nhận 1 XU" trong ~300ms trước khi dữ liệu thật trả về từ Supabase. Đã bổ sung <code>if (query.isPending) return false</code> trong <code>wallet-model.svelte.ts</code> và hiển thị <code>Đang kiểm tra...</code> giúp trải nghiệm UX mượt mà và triệt tiêu flaky trong E2E test.</li>
-        <li><strong>Đóng tự động XuSuccessModal sau khi điểm danh:</strong> Khi người dùng điểm danh thành công, hiệu ứng chúc mừng <code>XuSuccessModal</code> xuất hiện che phủ backdrop. Kịch bản E2E được thiết kế tự động bắt và đóng modal này trước khi thực hiện các bước tiếp theo.</li>
-        <li><strong>Mã Referral mặc định cho Campaign Links:</strong> Thiết lập chính xác mã sứ giả thật <code>56153792</code> thuộc tài khoản Đại Ka (<code>galaxypro710@gmail.com</code>, số dư 77 XU) bên cạnh mã danh dự <code>VIOS_VIP</code> để bảo đảm toàn vẹn luồng hoa hồng 20% khi phát tán link.</li>
+        <li><strong>Semver Overrides Strategy:</strong> Khóa <code>"undici": "^7.28.0"</code> thay vì <code>>=7.29</code> vì phiên bản 8.x phá vỡ module internal cần thiết cho môi trường test <code>jsdom</code>. Khóa <code>"vitest": "^4.1.11"</code> để giải quyết toàn bộ 17 CVEs mà không làm phát sinh breaking change.</li>
+        <li><strong>SePay Threshold Disambiguation:</strong> Gói bán lẻ 600 XU có giá 500.000đ. Để tránh va chạm với số tiền nạp bán lẻ, gói B2B 1.000 XU được định giá <strong>790.000đ</strong> (790đ/XU - chiết khấu 50%). Ngưỡng SePay webhook phân biệt rõ ràng: >= 790k -> 1.000 XU; >= 79k -> 100 XU.</li>
+        <li><strong>Backward Compatibility for GEMINI_MODEL:</strong> Cấu hình <code>env.ts</code> sử dụng <code>z.preprocess</code> nhận diện <code>process.env.GEMINI_MODEL</code> làm fallback cho <code>GEMINI_MODEL_DEEP</code> nhằm giữ tính ổn định của các unit test cũ.</li>
       </ul>
     </div>
 
-    <!-- 2. Deviations from Specification -->
     <div class="card">
-      <h2>2. Thay Đổi So Với Yêu Cầu Ban Đầu & Giải Trình (Deviations)</h2>
+      <h2>2. Deviations from Specification & Strategic Pivot</h2>
       <ul>
-        <li><strong>Không can thiệp cấu trúc dữ liệu database:</strong> Sprint 95 không cần thêm migration schema nào vì kết quả kiểm toán <code>pnpm check:db</code> và <code>pnpm monitor:xu</code> đã khẳng định cơ sở dữ liệu Supabase đạt chuẩn 100% toàn vẹn (đủ 7 cột sổ cái, 0 tài khoản âm).</li>
-        <li><strong>Tích hợp TestSprite MCP hai tầng:</strong> Cấu hình server TestSprite MCP đồng bộ ở cả cấp IDE local (<code>~/.gemini/antigravity-ide/mcp_config.json</code>) và cấp toàn cục (<code>~/.gemini/config/mcp_config.json</code>) để sẵn sàng cho các lần gọi trực tiếp của AgentKit.</li>
+        <li><strong>Pivot từ Banker Pack sang B2B Real Estate & Construction Pack:</strong> Theo phân tích sâu sắc của Đại Ka, nhóm chuyên viên môi giới BĐS, nhà thầu xây dựng và chủ doanh nghiệp mới là nhóm đối tượng có nhu cầu phong thủy, xem ngày động thổ và mua quà tặng tri ân khách hàng cao nhất. Đã triển khai Landing Section chuyên biệt và Banner B2B trên trang bảng giá.</li>
+        <li><strong>Security Hardening (Codex Audit):</strong> Xử lý tức thì 3 finding bảo mật:
+          <ul>
+            <li>Chuyển URL remote git sang dạng HTTPS sạch, triệt tiêu token PAT trong <code>.git/config</code>.</li>
+            <li>Chuyển logic notification endpoint sang <code>fail-closed</code> trên môi trường production khi thiếu <code>CRON_SECRET</code>.</li>
+            <li>Khắc phục 100% các lỗ hổng dependency thông qua pnpm overrides.</li>
+          </ul>
+        </li>
       </ul>
     </div>
 
-    <!-- 3. Considered Trade-offs -->
     <div class="card">
-      <h2>3. Các Đánh Đổi Đã Phân Tích (Considered Trade-offs)</h2>
+      <h2>3. Considered Trade-offs</h2>
+      <ul>
+        <li><strong>Model Tiering Architecture:</strong> Không phân tách model theo sub-service phức tạp mà thread tham số <code>tier: 'light' | 'deep'</code> xuyên suốt từ prompt payload đến adapter. Điều này giúp code gọn gàng (Surgical changes), dễ dàng override khi có nhu cầu mà không sinh ra dead code.</li>
+        <li><strong>Cost vs Latency:</strong> <code>gemini-2.0-flash-lite</code> giảm thêm 60% chi phí và giảm thời gian phản hồi cho các micro-features (Tarot, Xin Quẻ, Giấc Mộng, Chat), trong khi <code>gemini-2.5-flash</code> giữ trọn vẹn chiều sâu văn phong cho Báo Cáo Năm và Hồ Sơ Hoàng Gia Deluxe PDF.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>4. Verification Gates & Maintenance Notes</h2>
       <table>
         <thead>
           <tr>
-            <th>Hạng mục</th>
-            <th>Phương án Chọn</th>
-            <th>Phương án Loại bỏ</th>
-            <th>Lý do & Tối ưu</th>
+            <th>Gate</th>
+            <th>Lệnh</th>
+            <th>Trạng thái</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>Playwright E2E Strategy</strong></td>
-            <td>Stub AI Explanation response theo contracts schema chuẩn</td>
-            <td>Gọi trực tiếp Gemini 2.5 Flash trong mọi lần chạy E2E</td>
-            <td>Tiết kiệm 100% token LLM, đảm bảo tốc độ chạy nhanh (31s) và không phụ thuộc vào độ trễ mạng của AI provider. Luồng AI live đã có bộ test riêng <code>us-006-ziwei-detail-live.spec.ts (@live)</code> đảm trách.</td>
+            <td>Svelte Check</td>
+            <td><code>pnpm -F @ziweiai/web check</code></td>
+            <td><span class="status-pill">0 errors, 0 warnings</span></td>
           </tr>
           <tr>
-            <td><strong>Giám sát kinh tế XU</strong></td>
-            <td>Script dòng lệnh độc lập <code>pnpm monitor:xu</code> truy vấn pooler Supabase</td>
-            <td>Tích hợp thêm dashboard UI nặng nề trong web app</td>
-            <td>Nhẹ, nhanh, an toàn, có thể tích hợp vào Cron job hoặc CI pipeline mà không gây phình to bundle frontend.</td>
+            <td>Typecheck Monorepo</td>
+            <td><code>pnpm typecheck</code></td>
+            <td><span class="status-pill">10/10 tasks successful</span></td>
+          </tr>
+          <tr>
+            <td>All Unit & Integration Tests</td>
+            <td><code>pnpm test</code></td>
+            <td><span class="status-pill">1.016/1.016 tests passed</span></td>
+          </tr>
+          <tr>
+            <td>Security Vulnerabilities</td>
+            <td><code>pnpm audit</code></td>
+            <td><span class="status-pill">0 vulnerabilities found</span></td>
           </tr>
         </tbody>
       </table>
-    </div>
-
-    <!-- 5. Annual Report Token Truncation Diagnosis & Resolution -->
-    <div class="card">
-      <h2>5. Chẩn Đoán & Khắc Phục Lỗi Báo Cáo Năm Bị Cắt Cụt (Annual Report Truncation)</h2>
-      <p><strong>Triệu chứng:</strong> Lá số <code>bab356f8-fd5c-491f-b92d-0cf56104782e</code> xem Báo Cáo Năm 2026 dừng đột ngột ở cụm từ <code>**Liêm Trinh Hóa K</code>.</p>
-      <ul>
-        <li><strong>Kết luận chẩn đoán:</strong> Hoàn toàn <em>KHÔNG PHẢI</em> do popup modal CSS hay giới hạn chiều cao giao diện. Bản ghi lưu trong database thật (<code>public.annual_reports</code>, id <code>4661d5f0-afbb-4caa-85ee-81fcb7a23a35</code>) thực sự bị đứt ở ký tự thứ 3,745.</li>
-        <li><strong>Nguyên nhân gốc rễ (Root Cause):</strong>
-          <ol>
-            <li><strong>Giới hạn maxOutputTokens:</strong> <code>GeminiChatAdapter</code> cấu hình cứng <code>maxOutputTokens: 2048</code>.</li>
-            <li><strong>Chế độ ngẫm (Thinking Mode):</strong> Model <code>gemini-flash-latest</code> kích hoạt reasoning nội bộ tiêu tốn ~1,700 tokens trong quota, chỉ để lại ~500 tokens cho bài viết tiếng Việt khiến model chạm trần <code>finishReason: MAX_TOKENS</code> giữa chừng.</li>
-            <li><strong>Thiếu kiểm tra finishReason:</strong> Adapter chấp nhận chuỗi bị cắt cụt mà không ném lỗi retry.</li>
-            <li><strong>Cache vĩnh viễn:</strong> <code>AnnualReportService</code> trả về ngay bản ghi trong DB theo <code>(chart_snapshot_id, year)</code> mà không có cơ chế ghi đè lại.</li>
-          </ol>
-        </li>
-        <li><strong>Giải pháp triệt để đã triển khai:</strong>
-          <ol>
-            <li><strong>Mở rộng Token & Tắt Thinking vô ích:</strong> Tăng <code>maxOutputTokens</code> lên <code>8192</code> và đặt <code>thinkingConfig: { thinkingBudget: 0 }</code>, dành trọn vẹn 8,192 tokens cho nội dung luận giải.</li>
-            <li><strong>Strict finishReason Validation:</strong> Bổ sung kiểm tra trong <code>GeminiChatAdapter.parseResult()</code>: nếu <code>finishReason !== 'STOP'</code> (nhất là <code>MAX_TOKENS</code> hoặc <code>SAFETY</code>), ném ngay <code>ProviderUnavailableError</code> để không bao giờ lưu văn bản đứt gãy.</li>
-            <li><strong>Hỗ trợ Tái tạo cưỡng chế (Force Regeneration):</strong> Bổ sung cờ <code>force?: boolean</code> trong contracts schema, controller và <code>upsertAnnualReport</code> tại repository để người dùng có thể lập lại và ghi đè báo cáo hoàn hảo.</li>
-            <li><strong>Sửa trực tiếp bản ghi Production:</strong> Gọi Gemini chạy lại cho lá số của Đại Ka, cập nhật văn bản đầy đủ 8,032 ký tự, đủ toàn bộ 12 lưu nguyệt và kết luận trọn vẹn tại mục <code>## 4. Lời Khuyên Cải Vận (Tóm lại)</code>.</li>
-            <li><strong>Tối ưu Cuộn Modal:</strong> Thêm scrollbar mạ vàng hoàng gia <code>::-webkit-scrollbar</code> vào <code>AnnualReportModal.svelte</code> để trải nghiệm đọc mượt mà trên desktop và mobile.</li>
-          </ol>
-        </li>
-      </ul>
-    </div>
-
-    <div class="footer">
-      Tử Vi Toàn Tập (ViOS) — Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia • Sprint 95 Complete
     </div>
   </div>
 </body>

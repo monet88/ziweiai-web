@@ -6,6 +6,8 @@ export interface XuPackage {
   readonly desc: string;
   readonly valueEquivalence: string;
   readonly popular?: boolean;
+  readonly seasonal?: boolean;
+  readonly b2b?: boolean;
   readonly bonusXu?: number;
   readonly unitPrice: string;
 }
@@ -49,6 +51,17 @@ export const XU_PACKAGES: readonly XuPackage[] = [
     unitPrice: '1.000đ / XU'
   },
   {
+    xu: 100,
+    price: 79000,
+    label: 'Combo Bính Ngọ 2026',
+    badge: 'Khai Vận 2026',
+    desc: '100 XU (Tặng trọn đời Báo Cáo Năm 2026 + 1 Quẻ Khai Vận)',
+    valueEquivalence: '1 Báo Cáo Năm 2026 + 5 lần luận giải chi tiết + 35 câu hỏi AI',
+    seasonal: true,
+    bonusXu: 21,
+    unitPrice: '790đ / XU'
+  },
+  {
     xu: 120,
     price: 100000,
     label: 'Gói Nâng Cao',
@@ -67,6 +80,17 @@ export const XU_PACKAGES: readonly XuPackage[] = [
     valueEquivalence: '60 lần luận giải chuyên sâu + 12 Hồ Sơ Hoàng Gia PDF',
     bonusXu: 100,
     unitPrice: '833đ / XU'
+  },
+  {
+    xu: 1000,
+    price: 790000,
+    label: 'Gói BĐS & Doanh Nghiệp (VIP Pack)',
+    badge: 'B2B Siêu Ưu Đãi',
+    desc: '1.000 XU sỉ (Xuất 20 Hồ Sơ Hoàng Gia PDF 19 Trang tặng khách VIP)',
+    valueEquivalence: '20 Hồ Sơ Hoàng Gia PDF 19 Trang in ấn sang trọng tặng khách mua nhà/đất',
+    b2b: true,
+    bonusXu: 210,
+    unitPrice: '790đ / XU'
   }
 ] as const;
 

@@ -28,7 +28,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
-    "@vitest/coverage-v8": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9.39.1",
     "eslint-plugin-svelte": "^3.19.0",
     "prettier": "^3.6.2",
@@ -36,7 +36,7 @@
     "turbo": "^2.6.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vitest": "^4.0.14"
+    "vitest": "^4.1.11"
   },
   "pnpm": {
     "overrides": {
@@ -52,7 +52,12 @@
       "baseline-browser-mapping": "^2.11.0",
       "browserslist": "^4.28.7",
       "postcss": "^8.5.23",
-      "@sveltejs/kit": "^2.70.2"
+      "@sveltejs/kit": "^2.70.2",
+      "undici": "^7.28.0",
+      "js-yaml": "^4.3.2",
+      "vitest": "^4.1.11",
+      "@vitest/mocker": "^4.1.11",
+      "@vitest/coverage-v8": "^4.1.11"
     }
   }
 }

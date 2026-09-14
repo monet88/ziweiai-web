@@ -28,7 +28,7 @@ describe('NotificationsController', () => {
   });
 
   describe('triggerDailyMorningCron', () => {
-    it('should trigger daily morning push successfully without secret when CRON_SECRET is empty', async () => {
+    it('should trigger daily morning push successfully without secret when CRON_SECRET is empty in non-production', async () => {
       service.sendDailyMorningPushNotifications.mockResolvedValue({
         dispatchedCount: 1,
         successCount: 1,
@@ -41,6 +41,20 @@ describe('NotificationsController', () => {
 
       expect(res.success).toBe(true);
       expect(service.sendDailyMorningPushNotifications).toHaveBeenCalled();
+    });
+
+    it('should fail-closed and throw UnauthorizedException when CRON_SECRET is missing in production', async () => {
+      const prevEnv = process.env.NODE_ENV;
+      const originalSecret = apiEnv.CRON_SECRET;
+      (apiEnv as any).CRON_SECRET = undefined;
+      (process.env as any).NODE_ENV = 'production';
+
+      try {
+        await expect(controller.triggerDailyMorningCron()).rejects.toThrow(UnauthorizedException);
+      } finally {
+        (process.env as any).NODE_ENV = prevEnv;
+        (apiEnv as any).CRON_SECRET = originalSecret;
+      }
     });
 
     it('should reject unauthorized request when CRON_SECRET is configured but header is invalid', async () => {
@@ -91,6 +105,20 @@ describe('NotificationsController', () => {
 
       expect(res.success).toBe(true);
       expect(service.sendDailyMorningPushNotifications).toHaveBeenCalledWith({ force: true });
+    });
+
+    it('should fail-closed and throw UnauthorizedException when CRON_SECRET is missing in production', async () => {
+      const prevEnv = process.env.NODE_ENV;
+      const originalSecret = apiEnv.CRON_SECRET;
+      (apiEnv as any).CRON_SECRET = undefined;
+      (process.env as any).NODE_ENV = 'production';
+
+      try {
+        await expect(controller.adminBroadcastDaily({ force: true })).rejects.toThrow(UnauthorizedException);
+      } finally {
+        (process.env as any).NODE_ENV = prevEnv;
+        (apiEnv as any).CRON_SECRET = originalSecret;
+      }
     });
 
     it('should trigger broadcast with custom content when provided', async () => {

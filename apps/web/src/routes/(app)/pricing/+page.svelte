@@ -22,7 +22,10 @@
     Clock,
     Users,
     Flame,
-    Lock
+    Lock,
+    Building2,
+    FileText,
+    Crown
   } from 'lucide-svelte';
 
   const auth = getAuthStore();
@@ -98,10 +101,21 @@
           <div
             class="package-card pricing-card"
             class:popular={pkg.popular}
+            class:seasonal={pkg.seasonal}
+            class:b2b={pkg.b2b}
           >
             {#if pkg.badge}
-              <div class="pkg-top-badge" class:popular-badge={pkg.popular}>
-                {#if pkg.popular}
+              <div
+                class="pkg-top-badge"
+                class:popular-badge={pkg.popular}
+                class:seasonal-badge={pkg.seasonal}
+                class:b2b-badge={pkg.b2b}
+              >
+                {#if pkg.seasonal}
+                  <Sparkles size={13} class="text-white" />
+                {:else if pkg.b2b}
+                  <Crown size={13} class="text-white" />
+                {:else if pkg.popular}
                   <Flame size={13} />
                 {/if}
                 <span>{pkg.badge}</span>
@@ -152,6 +166,44 @@
             </div>
           </div>
         {/each}
+      </div>
+    </section>
+
+    <!-- Gói B2B Bất Động Sản, Xây Dựng & Doanh Nghiệp -->
+    <section class="b2b-pricing-banner pricing-card">
+      <div class="b2b-banner-inner">
+        <div class="b2b-banner-badge">
+          <Building2 size={15} class="text-indigo-400" />
+          <span>GIẢI PHÁP ĐẶC QUYỀN DOANH NGHIỆP & BĐS</span>
+        </div>
+        <div class="b2b-banner-content">
+          <div class="b2b-banner-text">
+            <h3>Gói Chuyên Viên Bất Động Sản, Xây Dựng & Doanh Nghiệp (1.000 XU)</h3>
+            <p>
+              Tối ưu cho nhu cầu tư vấn phong thủy động thổ, khai móng, chọn ngày nhập trạch và xuất 20 cuốn <strong>Hồ Sơ Mệnh Lý Hoàng Gia 19 Trang PDF</strong> in ấn A4 làm quà tặng cao cấp trao tay khách hàng khi bàn giao nhà đất, chốt hợp đồng tiền tỷ.
+            </p>
+            <div class="b2b-perks-pills">
+              <span class="b2b-pill"><CheckCircle2 size={14} class="text-emerald-400" /> Tiết kiệm 50% (Chỉ 790đ/XU)</span>
+              <span class="b2b-pill"><CheckCircle2 size={14} class="text-emerald-400" /> Xuất 20 Hồ Sơ Hoàng Gia PDF</span>
+              <span class="b2b-pill"><CheckCircle2 size={14} class="text-emerald-400" /> Không giới hạn thời hạn XU</span>
+            </div>
+          </div>
+          <div class="b2b-banner-action">
+            <div class="b2b-price-box">
+              <span class="b2b-price-val">790.000</span>
+              <span class="b2b-price-curr">VNĐ</span>
+            </div>
+            <button
+              type="button"
+              class="b2b-buy-btn"
+              onclick={() => goto(resolve('/wallet') + '?package=1000')}
+            >
+              <Crown size={16} />
+              <span>Nạp Ngay 1.000 XU</span>
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -497,6 +549,30 @@
     box-shadow: 0 0 28px rgba(245, 158, 11, 0.2);
   }
 
+  .package-card.seasonal {
+    border: 2px solid #ef4444;
+    background: linear-gradient(180deg, #fff5f5 0%, #ffffff 100%);
+    box-shadow: 0 8px 30px rgba(239, 68, 68, 0.15);
+  }
+
+  :global([data-theme="dark"]) .package-card.seasonal {
+    border-color: rgba(239, 68, 68, 0.8);
+    background: linear-gradient(180deg, rgba(60, 20, 25, 0.85) 0%, rgba(26, 12, 16, 0.95) 100%);
+    box-shadow: 0 0 28px rgba(239, 68, 68, 0.25);
+  }
+
+  .package-card.b2b {
+    border: 2px solid #6366f1;
+    background: linear-gradient(180deg, #f5f7ff 0%, #ffffff 100%);
+    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.15);
+  }
+
+  :global([data-theme="dark"]) .package-card.b2b {
+    border-color: rgba(99, 102, 241, 0.8);
+    background: linear-gradient(180deg, rgba(30, 27, 75, 0.85) 0%, rgba(15, 13, 45, 0.95) 100%);
+    box-shadow: 0 0 28px rgba(99, 102, 241, 0.25);
+  }
+
   .pkg-top-badge {
     position: absolute;
     top: -12px;
@@ -525,7 +601,23 @@
     box-shadow: 0 2px 12px rgba(217, 119, 6, 0.35);
   }
 
-  :global([data-theme="dark"]) .pkg-top-badge:not(.popular-badge) {
+  .pkg-top-badge.seasonal-badge {
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+    color: #ffffff;
+    border: 1px solid #fecaca;
+    font-weight: 850;
+    box-shadow: 0 2px 12px rgba(239, 68, 68, 0.4);
+  }
+
+  .pkg-top-badge.b2b-badge {
+    background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+    color: #ffffff;
+    border: 1px solid #c7d2fe;
+    font-weight: 850;
+    box-shadow: 0 2px 12px rgba(99, 102, 241, 0.4);
+  }
+
+  :global([data-theme="dark"]) .pkg-top-badge:not(.popular-badge):not(.seasonal-badge):not(.b2b-badge) {
     background: rgba(30, 41, 59, 0.95);
     border-color: rgba(245, 158, 11, 0.4);
     color: #fbbf24;
@@ -968,5 +1060,135 @@
   .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(217, 119, 6, 0.5);
+  }
+
+  /* B2B PRICING BANNER */
+  .b2b-pricing-banner {
+    background: linear-gradient(135deg, rgba(30, 27, 75, 0.75) 0%, rgba(15, 23, 42, 0.85) 100%);
+    border: 1px solid rgba(129, 140, 248, 0.35);
+    border-radius: 20px;
+    padding: 32px 28px;
+    margin-bottom: 32px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3);
+  }
+
+  .b2b-banner-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(99, 102, 241, 0.18);
+    border: 1px solid rgba(129, 140, 248, 0.4);
+    color: #c7d2fe;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-bottom: 16px;
+  }
+
+  .b2b-banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+    flex-wrap: wrap;
+  }
+
+  .b2b-banner-text {
+    flex: 1;
+    min-width: 300px;
+  }
+
+  .b2b-banner-text h3 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 8px;
+    line-height: 1.3;
+  }
+
+  .b2b-banner-text p {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #94a3b8;
+    margin: 0 0 16px;
+  }
+
+  .b2b-perks-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .b2b-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #cbd5e1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 4px 10px;
+    border-radius: 8px;
+  }
+
+  .b2b-banner-action {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  .b2b-price-box {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .b2b-price-val {
+    font-size: 28px;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+  }
+
+  .b2b-price-curr {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+  }
+
+  .b2b-buy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .b2b-buy-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(168, 85, 247, 0.45);
+  }
+
+  @media (max-width: 768px) {
+    .b2b-banner-action {
+      align-items: flex-start;
+      width: 100%;
+    }
+
+    .b2b-buy-btn {
+      width: 100%;
+      justify-content: center;
+    }
   }
 </style>

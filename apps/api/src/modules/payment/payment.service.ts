@@ -28,10 +28,18 @@ export class PaymentService {
 
     // Calculate XU based on pricing tiers with bonus XU
     let xuAdded = Math.floor(payload.transferAmount / 1000);
-    if (payload.transferAmount >= 500000) {
+    if (payload.transferAmount >= 790000) {
+      // Gói Doanh Nghiệp B2B (BĐS, Xây Dựng & Chủ Doanh Nghiệp): 790.000đ nhận 1.000 XU (+210 XU thưởng)
+      xuAdded = Math.max(xuAdded, 1000);
+    } else if (payload.transferAmount >= 500000) {
+      // Gói VIP Thưởng Lớn: 500.000đ nhận 600 XU (+100 XU thưởng)
       xuAdded = Math.max(xuAdded, Math.floor(payload.transferAmount / 1000) + 100);
     } else if (payload.transferAmount >= 100000) {
+      // Gói Nâng Cao: 100.000đ nhận 120 XU (+20 XU thưởng)
       xuAdded = Math.max(xuAdded, Math.floor(payload.transferAmount / 1000) + 20);
+    } else if (payload.transferAmount >= 79000) {
+      // Gói Combo Mùa Vận Hạn "Bính Ngọ Khởi Sắc 2026": 79.000đ nhận 100 XU (+21 XU thưởng)
+      xuAdded = Math.max(xuAdded, 100);
     }
 
     if (xuAdded <= 0) {

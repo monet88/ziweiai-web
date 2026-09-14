@@ -63,8 +63,22 @@ describe('AiFeatureExecutionOrchestrator', () => {
     expect(providerRouter.generate).toHaveBeenCalledWith('auto', {
       explanationKind: 'tarot',
       promptOverride: 'Prompt tarot',
+      tier: 'light',
     });
     expect(reportOpsAlertSpy).not.toHaveBeenCalled();
+  });
+
+  it('supports explicit tier deep override', async () => {
+    await orchestrator.executeFeature({
+      ...baseOptions,
+      tier: 'deep',
+    });
+
+    expect(providerRouter.generate).toHaveBeenCalledWith('auto', {
+      explanationKind: 'tarot',
+      promptOverride: 'Prompt tarot',
+      tier: 'deep',
+    });
   });
 
   it('throws INSUFFICIENT_FUNDS if walletEngine returns false', async () => {

@@ -71,6 +71,7 @@ export class DrawsTarotService {
       paymentInsufficientFundsMessage: `Tính năng rút Tarot yêu cầu ${FEATURE_PRICING.TAROT_LENORMAND} XU. Số dư XU của bạn không đủ, vui lòng nạp thêm XU.`,
       promptOverride,
       generateFallback: () => this.generateDeterministicNarrative(normalizedQuestion, cards, spread),
+      tier: 'light',
     });
 
     return tarotDrawSchema.parse({

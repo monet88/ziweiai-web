@@ -162,6 +162,94 @@ describe('PaymentService', () => {
         p_content: 'TVTT 12345678 Nap 100k',
       });
     });
+
+    it('should calculate bonus XU for 79k Bính Ngọ combo and 790k B2B Real Estate pack correctly', async () => {
+      // 79,000 VND -> 100 XU
+      mockSupabaseClient.single.mockResolvedValueOnce({ data: null, error: null });
+      mockSupabaseClient.from.mockImplementationOnce(() => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null, error: null }),
+          }),
+        }),
+      })).mockImplementationOnce(() => ({
+        select: () => ({
+          gte: () => ({
+            lte: async () => ({
+              data: [{ user_id: '12345678-abcd-1234-5678-123456789012' }],
+              error: null,
+            }),
+          }),
+        }),
+      }));
+
+      const payload79k = {
+        id: 103,
+        gateway: 'ACB',
+        transactionDate: '2026-09-14',
+        accountNumber: '6384251098',
+        code: null,
+        content: 'TVTT 12345678 Binh Ngo 2026',
+        transferType: 'in',
+        transferAmount: 79000,
+        accumulated: 79000,
+        referenceCode: 'ref103',
+        description: 'Combo Binh Ngo 2026',
+      };
+
+      await service.processTransaction(payload79k as any);
+
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('process_sepay_payment', {
+        p_sepay_transaction_id: '103',
+        p_owner_user_id: '12345678-abcd-1234-5678-123456789012',
+        p_amount_vnd: 79000,
+        p_xu_added: 100,
+        p_content: 'TVTT 12345678 Binh Ngo 2026',
+      });
+
+      // 790,000 VND -> 1000 XU
+      mockSupabaseClient.single.mockResolvedValueOnce({ data: null, error: null });
+      mockSupabaseClient.from.mockImplementationOnce(() => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null, error: null }),
+          }),
+        }),
+      })).mockImplementationOnce(() => ({
+        select: () => ({
+          gte: () => ({
+            lte: async () => ({
+              data: [{ user_id: '12345678-abcd-1234-5678-123456789012' }],
+              error: null,
+            }),
+          }),
+        }),
+      }));
+
+      const payload790k = {
+        id: 104,
+        gateway: 'ACB',
+        transactionDate: '2026-09-14',
+        accountNumber: '6384251098',
+        code: null,
+        content: 'TVTT 12345678 B2B Pack',
+        transferType: 'in',
+        transferAmount: 790000,
+        accumulated: 790000,
+        referenceCode: 'ref104',
+        description: 'Goi Doanh Nghiep BDS',
+      };
+
+      await service.processTransaction(payload790k as any);
+
+      expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('process_sepay_payment', {
+        p_sepay_transaction_id: '104',
+        p_owner_user_id: '12345678-abcd-1234-5678-123456789012',
+        p_amount_vnd: 790000,
+        p_xu_added: 1000,
+        p_content: 'TVTT 12345678 B2B Pack',
+      });
+    });
   });
 
   describe('processRevenueCatTransaction', () => {

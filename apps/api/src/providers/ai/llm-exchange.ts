@@ -119,6 +119,7 @@ export class LlmExchange {
     prompt: string;
     emptyMessage: string;
     modelOverride?: string;
+    tier?: 'light' | 'deep';
     imageInput?: { base64: string; mimeType: string };
     timeoutMsOverride?: number;
     kind?: 'explanation' | 'conversation';
@@ -136,7 +137,7 @@ export class LlmExchange {
     }
 
     try {
-      const model = adapter.resolveModel(params.modelOverride);
+      const model = adapter.resolveModel(params.modelOverride, params.tier);
       const timeoutMs = params.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
 
       const executeFetch = async (attempt: number): Promise<LlmParsedResult> => {

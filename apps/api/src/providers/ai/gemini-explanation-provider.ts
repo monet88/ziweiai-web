@@ -40,16 +40,28 @@ export class GeminiExplanationProvider implements AiConversationProvider {
       prompt: buildConversationPrompt(payload),
       emptyMessage: 'Gemini không trả về nội dung hội thoại.',
       modelOverride: payload.modelOverride,
+      tier: payload.tier ?? 'light',
       kind: 'conversation',
     });
   }
 
   async generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {
+    const isLightKind = [
+      'tarot-reading',
+      'lenormand-reading',
+      'sticks-reading',
+      'dream-interpretation',
+      'almanac-advice',
+      'mbti-reading',
+    ].includes(payload.explanationKind);
+    const resolvedTier = payload.tier ?? (isLightKind ? 'light' : 'deep');
+
     return this.exchange.run({
       adapter: this.adapter,
       prompt: payload.promptOverride ?? buildExplanationPrompt(payload),
       emptyMessage: 'Gemini không trả về nội dung luận giải.',
       modelOverride: payload.modelOverride,
+      tier: resolvedTier,
       imageInput: payload.imageInput,
       timeoutMsOverride: payload.timeoutMsOverride,
       kind: 'explanation',

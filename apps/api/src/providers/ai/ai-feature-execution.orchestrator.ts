@@ -20,6 +20,7 @@ export interface AiFeatureExecutionOptions {
   paymentInsufficientFundsMessage: string;
   promptOverride: string;
   generateFallback: () => string;
+  tier?: 'light' | 'deep';
 }
 
 @Injectable()
@@ -52,6 +53,7 @@ export class AiFeatureExecutionOrchestrator {
       const providerResult = await this.providerRouter.generate('auto', {
         explanationKind: options.explanationKind as any,
         promptOverride: options.promptOverride,
+        tier: options.tier ?? 'light',
       });
 
       if (!providerResult || typeof providerResult.renderedMarkdown !== 'string') {

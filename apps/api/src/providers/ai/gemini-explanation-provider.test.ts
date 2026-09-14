@@ -8,6 +8,8 @@ describe('GeminiExplanationProvider', () => {
     delete process.env.GEMINI_SDK_BASE_URL;
     delete process.env.GEMINI_API_KEY;
     delete process.env.GEMINI_MODEL;
+    delete process.env.GEMINI_MODEL_LIGHT;
+    delete process.env.GEMINI_MODEL_DEEP;
   });
 
   it('treats native responses without parts as an unavailable Gemini result instead of crashing', async () => {
@@ -769,5 +771,110 @@ describe('GeminiExplanationProvider', () => {
     expect(prompt).toContain('Thê tài');
     expect(prompt).toContain('Đằng Xà');
     expect(prompt).not.toMatch(CJK_TEXT_PATTERN);
+  });
+
+  describe('Dynamic Model Tiering', () => {
+    it('routes conversation to gemini-2.0-flash-lite by default', async () => {
+      process.env.GEMINI_API_KEY = 'test-key-tiering';
+      vi.resetModules();
+
+      let capturedUrl = '';
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          capturedUrl = url;
+          return new Response(
+            JSON.stringify({
+              candidates: [{ content: { parts: [{ text: 'Phản hồi hội thoại thử nghiệm' }] }, finishReason: 'STOP' }],
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          );
+        }),
+      );
+
+      const { GeminiExplanationProvider } = await import('./gemini-explanation-provider');
+      const provider = new GeminiExplanationProvider();
+
+      const result = await provider.generateConversation({
+        chartSnapshot: {
+          snapshotId: 'fixture',
+          chartSystem: 'zi-wei-dou-shu',
+          palaces: [],
+          pillars: [],
+          birth: {} as any,
+          summary: {} as any,
+        } as any,
+        explanationContext: {
+          confidence: { level: 'high' },
+          visibleMessageKeys: [],
+        } as any,
+        messages: [],
+        userMessage: 'Xin chào AI Master',
+      });
+
+      expect(result.renderedMarkdown).toBe('Phản hồi hội thoại thử nghiệm');
+      expect(capturedUrl).toContain('models/gemini-2.0-flash-lite:generateContent');
+    });
+
+    it('routes micro task (tarot-reading) to gemini-2.0-flash-lite', async () => {
+      process.env.GEMINI_API_KEY = 'test-key-tiering';
+      vi.resetModules();
+
+      let capturedUrl = '';
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          capturedUrl = url;
+          return new Response(
+            JSON.stringify({
+              candidates: [{ content: { parts: [{ text: 'Luận giải lá bài Tarot' }] }, finishReason: 'STOP' }],
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          );
+        }),
+      );
+
+      const { GeminiExplanationProvider } = await import('./gemini-explanation-provider');
+      const provider = new GeminiExplanationProvider();
+
+      const result = await provider.generateExplanation({
+        explanationKind: 'tarot-reading',
+        promptOverride: 'Phân tích trải bài The Fool',
+      });
+
+      expect(result.renderedMarkdown).toBe('Luận giải lá bài Tarot');
+      expect(capturedUrl).toContain('models/gemini-2.0-flash-lite:generateContent');
+    });
+
+    it('routes deep task (annual-report) to gemini-2.5-flash', async () => {
+      process.env.GEMINI_API_KEY = 'test-key-tiering';
+      vi.resetModules();
+
+      let capturedUrl = '';
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          capturedUrl = url;
+          return new Response(
+            JSON.stringify({
+              candidates: [{ content: { parts: [{ text: 'Báo cáo vận hạn năm 2026 đầy đủ 12 tháng' }] }, finishReason: 'STOP' }],
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          );
+        }),
+      );
+
+      const { GeminiExplanationProvider } = await import('./gemini-explanation-provider');
+      const provider = new GeminiExplanationProvider();
+
+      const result = await provider.generateExplanation({
+        explanationKind: 'annual-report',
+        promptOverride: 'Phân tích lưu niên Bính Ngọ 2026',
+        tier: 'deep',
+      });
+
+      expect(result.renderedMarkdown).toBe('Báo cáo vận hạn năm 2026 đầy đủ 12 tháng');
+      expect(capturedUrl).toContain('models/gemini-2.5-flash:generateContent');
+    });
   });
 });

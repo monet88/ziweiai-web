@@ -101,7 +101,12 @@ export const apiEnvSchema = z.object({
     const val = value ?? process.env.GEMINI_API_BASE_URL;
     return val === '' ? undefined : val;
   }, z.url().optional()),
-  GEMINI_MODEL: z.string().min(1).default('gemini-flash-latest'),
+  GEMINI_MODEL: z.string().min(1).default('gemini-2.5-flash'),
+  GEMINI_MODEL_LIGHT: z.string().min(1).default('gemini-2.0-flash-lite'),
+  GEMINI_MODEL_DEEP: z.preprocess(
+    (val) => val ?? process.env.GEMINI_MODEL,
+    z.string().min(1).default('gemini-2.5-flash'),
+  ),
   // 'auto' dùng thứ tự chain gốc của router: [openai-compat, deepseek, gemini]
   // (openai-compat mặc định, deepseek fallback kế, gemini cuối). Đặt giá trị khác để ép một
   // provider cụ thể lên đầu chain mà vẫn giữ phần còn lại làm fallback.

@@ -111,6 +111,7 @@ export class AnnualReportService {
         // Báo cáo năm dài (~600-1200 từ) sinh lâu hơn explanation thường — đo deepseek ~18s, vượt
         // AI_PROVIDER_TIMEOUT_MS mặc định 15s → 504. Dùng timeout riêng để không khóa tính năng.
         timeoutMsOverride: apiEnv.AI_ANNUAL_REPORT_TIMEOUT_MS,
+        tier: 'deep',
       });
     } catch (error) {
       if (didDeductXu) {

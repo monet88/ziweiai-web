@@ -38,16 +38,20 @@ export class NotificationsController {
   ): Promise<{ success: boolean; result: PushNotificationResult }> {
     const configuredSecret = apiEnv.CRON_SECRET;
 
-    if (configuredSecret) {
+    if (!configuredSecret) {
+      if (process.env.NODE_ENV === 'production') {
+        this.logger.error('CRON_SECRET chưa được cấu hình. Chặn thực thi để bảo đảm an toàn trên production (fail-closed).');
+        throw new UnauthorizedException('Cron execution is disabled: CRON_SECRET not configured');
+      }
+      this.logger.warn(
+        'CRON_SECRET chưa được cấu hình. Cho phép thực thi ở chế độ bypass bảo mật (dev/demo).',
+      );
+    } else {
       const token = authHeader?.replace(/^Bearer\s+/i, '');
       if (token !== configuredSecret) {
         this.logger.warn('Truy cập cron daily-morning bị từ chối: CRON_SECRET không hợp lệ');
         throw new UnauthorizedException('Invalid cron authorization secret');
       }
-    } else {
-      this.logger.warn(
-        'CRON_SECRET chưa được cấu hình. Cho phép thực thi ở chế độ bypass bảo mật (dev/demo).',
-      );
     }
 
     this.logger.log('Khởi chạy Vercel Cron trigger: Daily Morning Push Notification');
@@ -70,7 +74,15 @@ export class NotificationsController {
     @Headers('x-admin-secret') xAdminSecret?: string,
   ): Promise<{ success: boolean; result: PushNotificationResult }> {
     const configuredSecret = apiEnv.CRON_SECRET;
-    if (configuredSecret) {
+    if (!configuredSecret) {
+      if (process.env.NODE_ENV === 'production') {
+        this.logger.error('CRON_SECRET chưa được cấu hình. Chặn admin broadcast trên production (fail-closed).');
+        throw new UnauthorizedException('Admin broadcast is disabled: secret not configured');
+      }
+      this.logger.warn(
+        'CRON_SECRET chưa được cấu hình. Cho phép thực thi admin broadcast ở chế độ bypass bảo mật (dev/demo).',
+      );
+    } else {
       const bearerToken = authHeader?.replace(/^Bearer\s+/i, '');
       const providedSecret = xAdminSecret || bearerToken || body?.secret;
       if (providedSecret !== configuredSecret) {

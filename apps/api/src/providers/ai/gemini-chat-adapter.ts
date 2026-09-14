@@ -71,8 +71,17 @@ export class GeminiChatAdapter implements LlmChatAdapter {
     return apiEnv.GEMINI_API_KEY.length > 0;
   }
 
-  resolveModel(modelOverride?: string): string {
-    return modelOverride ?? apiEnv.GEMINI_MODEL;
+  resolveModel(modelOverride?: string, tier?: 'light' | 'deep'): string {
+    if (modelOverride) {
+      return modelOverride;
+    }
+    if (tier === 'light') {
+      return apiEnv.GEMINI_MODEL_LIGHT;
+    }
+    if (tier === 'deep') {
+      return apiEnv.GEMINI_MODEL_DEEP;
+    }
+    return apiEnv.GEMINI_MODEL;
   }
 
   buildRequest(params: LlmChatAdapterBuildParams): LlmChatRequest {

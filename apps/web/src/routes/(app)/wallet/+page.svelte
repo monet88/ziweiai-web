@@ -367,12 +367,18 @@
                 type="button"
                 class="package-card"
                 class:selected={selectedPackage.xu === pkg.xu}
+                class:seasonal={pkg.seasonal}
+                class:b2b={pkg.b2b}
                 onclick={() => (selectedPackage = pkg)}
               >
                 <div class="pkg-header">
                   <span class="pkg-label">{pkg.label}</span>
                   {#if pkg.badge}
-                    <span class="pkg-badge">{pkg.badge}</span>
+                    <span
+                      class="pkg-badge"
+                      class:seasonal-badge={pkg.seasonal}
+                      class:b2b-badge={pkg.b2b}
+                    >{pkg.badge}</span>
                   {/if}
                 </div>
                 <div class="pkg-main">
@@ -1311,6 +1317,28 @@
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(15, 23, 42, 0.8) 100%);
   }
 
+  .package-card.seasonal.selected {
+    border-color: #ef4444;
+    background: #fff5f5;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
+  }
+
+  :global([data-theme="dark"]) .package-card.seasonal.selected {
+    border-color: #f87171;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(30, 15, 20, 0.85) 100%);
+  }
+
+  .package-card.b2b.selected {
+    border-color: #6366f1;
+    background: #f5f7ff;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
+  }
+
+  :global([data-theme="dark"]) .package-card.b2b.selected {
+    border-color: #818cf8;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(15, 13, 45, 0.85) 100%);
+  }
+
   .pkg-header {
     display: flex;
     align-items: center;
@@ -1332,6 +1360,14 @@
     background: #d97706;
     color: #ffffff;
     text-transform: uppercase;
+  }
+
+  .pkg-badge.seasonal-badge {
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  }
+
+  .pkg-badge.b2b-badge {
+    background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
   }
 
   .pkg-main {

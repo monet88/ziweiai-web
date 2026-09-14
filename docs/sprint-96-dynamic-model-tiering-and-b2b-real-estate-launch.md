@@ -72,11 +72,14 @@
 | **Turbo Typecheck** | `pnpm typecheck` | **10/10 tasks successful (0 errors)** |
 | **Monorepo Test Suite** | `pnpm test` | **1.016/1.016 tests passed** (API: 586, Web: 430) |
 | **Security Audit** | `pnpm audit` | **0 vulnerabilities found** |
+| **Vercel Production Deploy** | `pnpm deploy:vercel-demo` | **SUCCESS — Aliased to `tuvitoantap.online`** |
+| **Live Smoke Check** | `pnpm smoke:vercel-demo` | **100% PASSED (Root, API Health, Features, SPA Fallback)** |
 
 ---
 
 ## 4. BÀN GIAO & KHUYẾN NGHỊ VẬN HÀNH CHO ĐẠI KA
-1. **GitHub PAT:** Đại Ka vui lòng vào GitHub `Settings -> Developer settings -> Personal access tokens` để xóa/thu hồi token cũ đã từng được lưu cục bộ.
-2. **Triển khai Production:**
-   - Khi deploy Vercel demo, chỉ cần chạy lệnh chuẩn: `pnpm deploy:vercel-demo`.
-   - Đảm bảo biến `CRON_SECRET` đã được cấu hình trong Vercel Environment Variables để các tác vụ thông báo tự động (Cron job) hoạt động trơn tru.
+1. **GitHub PAT:** Đại Ka vui lòng vào GitHub `Settings -> Developer settings -> Personal access tokens` để xóa/thu hồi token cũ đã từng được lưu cục bộ. Khi muốn push lên GitHub, Đại Ka chỉ cần chạy `gh auth login` hoặc cấu hình SSH key.
+2. **Production Live Status:**
+   - Website chính thức: `https://tuvitoantap.online` (và `https://tuvitoantap.vercel.app`)
+   - API Health: `https://tuvitoantap.online/api/health` -> `status: "ok"`
+   - Các tính năng AI và B2B Real Estate đã hoạt động trơn tru trên live server.

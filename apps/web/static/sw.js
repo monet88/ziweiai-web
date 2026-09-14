@@ -1,8 +1,11 @@
 // ViOS Service Worker for PWA
-const CACHE_NAME = 'vios-cache-v4';
+const CACHE_NAME = 'vios-cache-v5';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/apple-touch-icon.png',
   '/icon-192.svg',
   '/icon-512.svg',
 ];

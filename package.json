@@ -14,6 +14,7 @@
     "generate:sitemap": "pnpm dlx tsx scripts/generate-sitemap.ts",
     "deploy:vercel-demo": "scripts/deploy-vercel-demo.zsh",
     "dev": "turbo run dev --parallel",
+    "dev:host": "turbo run dev --parallel -- --host",
     "lint": "eslint . --max-warnings=0",
     "prepare": "scripts/install-git-hooks.sh",
     "smoke:vercel-demo": "scripts/smoke-vercel-demo.zsh",

@@ -223,10 +223,12 @@
         </div>
 
         <PrimaryButton
-          disabled={!walletModel.canCheckin || checkinBusy || auth.isAnonymous}
+          disabled={walletModel.isLoading || !walletModel.canCheckin || checkinBusy || auth.isAnonymous}
           onclick={handleCheckin}
         >
-          {#if checkinBusy}
+          {#if walletModel.isLoading}
+            <RefreshCw size={14} class="spin-icon" /> Đang kiểm tra...
+          {:else if checkinBusy}
             <RefreshCw size={14} class="spin-icon" /> Đang nhận...
           {:else if !walletModel.canCheckin}
             <Check size={14} /> Đã nhận hôm nay

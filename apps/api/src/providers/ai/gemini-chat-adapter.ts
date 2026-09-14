@@ -10,7 +10,10 @@ import {
 import { ProviderUnavailableError } from './provider-errors';
 
 type GeminiNativeResponse = {
-  candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  candidates?: Array<{
+    content?: { parts?: Array<{ text?: string }> };
+    finishReason?: string;
+  }>;
   usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number };
   error?: { message?: string; code?: number | string; status?: string };
 };
@@ -101,8 +104,11 @@ export class GeminiChatAdapter implements LlmChatAdapter {
           },
           contents: [{ parts }],
           generationConfig: {
-            maxOutputTokens: 2048,
+            maxOutputTokens: 8192,
             temperature: 0.7,
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
           },
           safetySettings: [
             { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
@@ -131,7 +137,19 @@ export class GeminiChatAdapter implements LlmChatAdapter {
       throw new ProviderUnavailableError('Gemini trả về phản hồi rỗng.');
     }
 
-    const text = (body.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '') ?? []).join('');
+    const candidate = body.candidates?.[0];
+    const finishReason = candidate?.finishReason;
+    if (finishReason && finishReason !== 'STOP') {
+      if (finishReason === 'MAX_TOKENS') {
+        throw new ProviderUnavailableError('Phản hồi từ Gemini bị vượt quá giới hạn độ dài token.');
+      }
+      if (finishReason === 'SAFETY') {
+        throw new ProviderUnavailableError('Phản hồi từ Gemini bị chặn bởi bộ lọc an toàn.');
+      }
+      throw new ProviderUnavailableError(`Gemini dừng đột ngột với lý do: ${finishReason}.`);
+    }
+
+    const text = (candidate?.content?.parts?.map((part) => part.text ?? '') ?? []).join('');
     const usage: LlmUsage = {
       promptTokens: body.usageMetadata?.promptTokenCount,
       completionTokens: body.usageMetadata?.candidatesTokenCount,

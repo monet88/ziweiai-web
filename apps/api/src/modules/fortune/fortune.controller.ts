@@ -67,10 +67,15 @@ export class FortuneController {
     @Req() request: AuthenticatedRequest,
     @Param('chartSnapshotId', new ZodValidationPipe(z.uuid(), 'Mã lá số không hợp lệ.')) chartId: string,
     @Query('year') yearRaw: unknown,
+    @Query('force') forceRaw?: unknown,
   ): Promise<AnnualReportResponse> {
     // Query param luôn là chuỗi → coerce sang number trước khi validate khoảng 1900..2100.
-    const { year } = annualReportRequestSchema.parse({ year: Number(yearRaw) });
-    return this.annualReportService.createAnnualReport(currentUser, request.ip ?? 'unknown', chartId, year);
+    const isForce = forceRaw === 'true' || forceRaw === true || forceRaw === '1';
+    const { year, force } = annualReportRequestSchema.parse({
+      year: Number(yearRaw),
+      force: isForce,
+    });
+    return this.annualReportService.createAnnualReport(currentUser, request.ip ?? 'unknown', chartId, year, force);
   }
 
   @Get(':chartSnapshotId/destiny-timeline')

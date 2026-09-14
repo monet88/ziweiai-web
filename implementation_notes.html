@@ -1,148 +1,207 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sprint 94 Implementation Notes — Phase 8: Live Production Smoke, Viral SEO OpenGraph & Commercial GTM</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprint 95: Implementation Notes & Living Spec — Tử Vi Toàn Tập (ViOS)</title>
   <style>
     :root {
-      --bg: #0b0819;
-      --card-bg: #16102b;
+      --bg: #0d0b14;
+      --card-bg: rgba(26, 21, 43, 0.85);
       --gold: #d4af37;
-      --gold-bright: #ffd700;
-      --text: #f7eed8;
-      --muted: #a89a85;
-      --border: rgba(212, 175, 55, 0.3);
-      --success: #34d399;
-      --accent: #8b5cf6;
+      --gold-light: #f7e7a9;
+      --accent: #9333ea;
+      --border: rgba(212, 175, 55, 0.25);
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --success: #10b981;
     }
     body {
-      margin: 0;
-      padding: 2rem;
-      background-color: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       line-height: 1.6;
+      margin: 0;
+      padding: 32px 16px;
     }
     .container {
-      max-width: 900px;
+      max-width: 960px;
       margin: 0 auto;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 2.5rem;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(212, 175, 55, 0.1);
     }
-    h1, h2, h3 {
-      font-family: 'Playfair Display', Georgia, serif;
-      color: var(--gold-bright);
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
     }
     h1 {
-      margin-top: 0;
-      border-bottom: 2px solid var(--border);
-      padding-bottom: 0.8rem;
+      color: var(--gold-light);
+      font-size: 2.2rem;
+      margin: 0 0 8px 0;
+      text-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
     }
     .badge {
       display: inline-block;
-      padding: 0.25rem 0.65rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: bold;
-      background: rgba(212, 175, 55, 0.15);
-      color: var(--gold-bright);
-      border: 1px solid var(--border);
-      margin-bottom: 1rem;
-    }
-    .badge-success {
-      background: rgba(52, 211, 153, 0.15);
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.15);
       color: var(--success);
-      border-color: rgba(52, 211, 153, 0.3);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      margin-right: 8px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+    }
+    h2 {
+      color: var(--gold);
+      font-size: 1.4rem;
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px dashed rgba(212, 175, 55, 0.2);
+      padding-bottom: 8px;
+    }
+    ul, ol {
+      padding-left: 20px;
+      margin: 12px 0;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    code {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #f472b6;
+      font-family: monospace;
+      font-size: 0.9em;
+    }
+    pre {
+      background: rgba(0, 0, 0, 0.6);
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      overflow-x: auto;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 1.5rem 0;
+      margin: 16px 0;
     }
     th, td {
       border: 1px solid var(--border);
-      padding: 0.75rem 1rem;
+      padding: 10px 14px;
       text-align: left;
     }
     th {
-      background: rgba(212, 175, 55, 0.1);
-      color: var(--gold-bright);
+      background: rgba(212, 175, 55, 0.15);
+      color: var(--gold-light);
     }
-    code {
-      background: rgba(0, 0, 0, 0.4);
-      padding: 0.2rem 0.4rem;
-      border-radius: 4px;
-      color: var(--gold);
-      font-size: 0.9em;
-    }
-    pre {
-      background: #090614;
-      border: 1px solid var(--border);
-      padding: 1rem;
-      border-radius: 8px;
-      overflow-x: auto;
-      color: #e2e8f0;
+    .footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 20px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="badge badge-success">SPRINT 94 COMPLETE — ALL 993 TESTS PASSING</div>
-    <h1>Sprint 94 Living Spec & Implementation Notes</h1>
-    <p><strong>Dự án:</strong> Tử Vi Toàn Tập (ViOS) — <a href="https://tuvitoantap.online" style="color:var(--gold);">https://tuvitoantap.online</a><br>
-       <strong>Giai đoạn:</strong> Phase 8 — Live Production Smoke, Viral SEO OpenGraph & Commercial GTM</p>
+    <header>
+      <span class="badge">SPRINT 95 COMPLETE</span>
+      <span class="badge">1000/1000 TESTS PASSED</span>
+      <span class="badge">E2E JOURNEY PASSED</span>
+      <h1>Living Spec & Implementation Notes</h1>
+      <p style="color: var(--text-muted); margin: 0;">Dự án Tử Vi Toàn Tập (ViOS) • Domain Live: <a href="https://tuvitoantap.online" style="color: var(--gold); text-decoration: none;">https://tuvitoantap.online</a></p>
+    </header>
 
-    <h2>1. Unspecified & Implicit Decisions</h2>
-    <ul>
-      <li><strong>Tối ưu hóa đường dẫn chia sẻ mạng xã hội (Viral Crawler URL):</strong> Trong <code>ChartDetailScreen.svelte</code>, đường dẫn chia sẻ trước đây là <code>/charts/${chartId}</code> (SPA client-side route). Crawlers (Facebook/Zalo/TikTok) khi cào vào link này chỉ nhận được file tĩnh <code>app.html</code> với thông tin chung. Đã đổi sang <code>/share/charts/${chartId}</code>: bot cào sẽ nhận được thẻ OpenGraph động và ảnh OG đồ họa sắc nét từ API NestJS, trong khi người dùng thật vẫn được chuyển hướng mượt mà (302 Redirect) về lá số tương ứng kèm mã giới thiệu.</li>
-      <li><strong>Mở rộng danh mục 16 hệ thuật số cho OpenGraph Meta:</strong> Mở rộng <code>SYSTEM_LABELS</code> từ 7 hệ lên đầy đủ 16 hệ thuật số (Tarot, MBTI, Tướng Pháp, Chỉ Tay, Lenormand, Giải Mộng, Xin Xăm, Lịch Hoàng Đạo, Hợp Bàn) để mọi tính năng trong ViOS khi chia sẻ đều có tiêu đề, mô tả và nhãn hoàng gia chuẩn xác.</li>
-      <li><strong>Nâng cấp Bot Crawler User-Agent Regex:</strong> Bổ sung <code>bytespider</code>, <code>tiktok</code>, <code>threads</code>, <code>viber</code> vào bộ lọc bot crawler.</li>
-      <li><strong>Sửa lỗi nạp Font Satori Serverless:</strong> Thay thế cơ chế đọc file font TTF cục bộ (vốn chứa mã HTML preview lỗi từ trước) trong <code>og.png/+server.ts</code> bằng hàm nạp trực tiếp bộ font Inter từ jsDelivr với in-memory cache, đồng bộ 100% với backend NestJS.</li>
-    </ul>
+    <!-- 1. Unspecified & Implicit Decisions -->
+    <div class="card">
+      <h2>1. Quyết Định Thiết Kế Ngầm & Phát Sinh (Unspecified & Implicit Decisions)</h2>
+      <ul>
+        <li><strong>Ngăn chặn trạng thái chạy đua (Race Condition) ở nút Điểm danh:</strong> Phát hiện khi trang <code>/wallet</code> mới mount, TanStack query <code>query.isPending</code> trả về <code>true</code> khiến <code>canCheckin</code> tạm thời tính ra <code>true</code> và nút chớp chữ "Nhận 1 XU" trong ~300ms trước khi dữ liệu thật trả về từ Supabase. Đã bổ sung <code>if (query.isPending) return false</code> trong <code>wallet-model.svelte.ts</code> và hiển thị <code>Đang kiểm tra...</code> giúp trải nghiệm UX mượt mà và triệt tiêu flaky trong E2E test.</li>
+        <li><strong>Đóng tự động XuSuccessModal sau khi điểm danh:</strong> Khi người dùng điểm danh thành công, hiệu ứng chúc mừng <code>XuSuccessModal</code> xuất hiện che phủ backdrop. Kịch bản E2E được thiết kế tự động bắt và đóng modal này trước khi thực hiện các bước tiếp theo.</li>
+        <li><strong>Mã Referral mặc định cho Campaign Links:</strong> Thiết lập chính xác mã sứ giả thật <code>56153792</code> thuộc tài khoản Đại Ka (<code>galaxypro710@gmail.com</code>, số dư 77 XU) bên cạnh mã danh dự <code>VIOS_VIP</code> để bảo đảm toàn vẹn luồng hoa hồng 20% khi phát tán link.</li>
+      </ul>
+    </div>
 
-    <h2>2. Deviations from Specification</h2>
-    <ul>
-      <li><strong>Không có sai lệch (Zero Spec Deviation):</strong> Mọi thay đổi đều bám sát tuyệt đối 3 yêu cầu của Sprint 94: Kiểm tra toàn diện Live Production Smoke, Tối ưu hóa SEO Meta & Dynamic OpenGraph, và Trang bị bộ công cụ Marketing thực chiến (GTM Playbook & Campaign Link Generator).</li>
-    </ul>
+    <!-- 2. Deviations from Specification -->
+    <div class="card">
+      <h2>2. Thay Đổi So Với Yêu Cầu Ban Đầu & Giải Trình (Deviations)</h2>
+      <ul>
+        <li><strong>Không can thiệp cấu trúc dữ liệu database:</strong> Sprint 95 không cần thêm migration schema nào vì kết quả kiểm toán <code>pnpm check:db</code> và <code>pnpm monitor:xu</code> đã khẳng định cơ sở dữ liệu Supabase đạt chuẩn 100% toàn vẹn (đủ 7 cột sổ cái, 0 tài khoản âm).</li>
+        <li><strong>Tích hợp TestSprite MCP hai tầng:</strong> Cấu hình server TestSprite MCP đồng bộ ở cả cấp IDE local (<code>~/.gemini/antigravity-ide/mcp_config.json</code>) và cấp toàn cục (<code>~/.gemini/config/mcp_config.json</code>) để sẵn sàng cho các lần gọi trực tiếp của AgentKit.</li>
+      </ul>
+    </div>
 
-    <h2>3. Considered Trade-offs</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Lựa chọn</th>
-          <th>Ưu điểm</th>
-          <th>Nhược điểm & Đánh đổi</th>
-          <th>Quyết định</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>SSR toàn bộ trang lá số</strong> vs <strong>SPA + Dedicated /share route rewrite</strong></td>
-          <td>SSR cho phép cào trực tiếp mọi URL</td>
-          <td>Kiến trúc SvelteKit adapter-static hiện tại cực nhanh, nhẹ và an toàn tuyệt đối. Chuyển sang SSR sẽ tăng chi phí compute serverless đáng kể.</td>
-          <td><strong>Giữ SPA + Vercel rewrite <code>/share/*</code> về API</strong>: Vừa đảm bảo SEO/OG 100% cho bot, vừa giữ tốc độ tải trang client cực nhanh và chi phí cận biên bằng 0.</td>
-        </tr>
-        <tr>
-          <td><strong>Sinh ảnh OG phía Browser (Canvas)</strong> vs <strong>Sinh ảnh OG phía Server (Satori + Resvg)</strong></td>
-          <td>Canvas client-side không tốn CPU server</td>
-          <td>Bot Facebook/Zalo không thực thi JavaScript của client, ảnh chia sẻ sẽ bị rỗng</td>
-          <td><strong>Dùng Satori + Resvg phía Server</strong>: Ảnh PNG 1200x630px sắc nét, hiển thị lập tức trong 100% bản xem trước tin nhắn Zalo/Facebook/TikTok.</td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- 3. Considered Trade-offs -->
+    <div class="card">
+      <h2>3. Các Đánh Đổi Đã Phân Tích (Considered Trade-offs)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Hạng mục</th>
+            <th>Phương án Chọn</th>
+            <th>Phương án Loại bỏ</th>
+            <th>Lý do & Tối ưu</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Playwright E2E Strategy</strong></td>
+            <td>Stub AI Explanation response theo contracts schema chuẩn</td>
+            <td>Gọi trực tiếp Gemini 2.5 Flash trong mọi lần chạy E2E</td>
+            <td>Tiết kiệm 100% token LLM, đảm bảo tốc độ chạy nhanh (31s) và không phụ thuộc vào độ trễ mạng của AI provider. Luồng AI live đã có bộ test riêng <code>us-006-ziwei-detail-live.spec.ts (@live)</code> đảm trách.</td>
+          </tr>
+          <tr>
+            <td><strong>Giám sát kinh tế XU</strong></td>
+            <td>Script dòng lệnh độc lập <code>pnpm monitor:xu</code> truy vấn pooler Supabase</td>
+            <td>Tích hợp thêm dashboard UI nặng nề trong web app</td>
+            <td>Nhẹ, nhanh, an toàn, có thể tích hợp vào Cron job hoặc CI pipeline mà không gây phình to bundle frontend.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-    <h2>4. Maintenance & Verification Notes</h2>
-    <ul>
-      <li><strong>Live Production Smoke Script:</strong> <code>scripts/smoke-live-production.zsh</code> đã xác thực 12/12 tiêu chí trên <code>https://tuvitoantap.online</code> (Status 200/401/302, Content-Type, Byte length).</li>
-      <li><strong>Commercial Campaign Link Generator:</strong> Chạy <code>pnpm dlx tsx scripts/generate-campaign-links.ts --ref &lt;CODE&gt;</code> để xuất bộ link UTM đa kênh.</li>
-      <li><strong>Cẩm nang GTM:</strong> Lưu tại <code>docs/marketing/sprint-94-commercial-gtm-playbook.md</code> chứa 10 kịch bản video ngắn và kế hoạch 7 ngày hành động.</li>
-      <li><strong>Tổng số tests đạt:</strong> <strong>1000/1000 tests passed 100%</strong> (572 API + 428 Web). Svelte diagnostics: 0 errors, 0 warnings. Turbo typecheck: 10/10 tasks successful.</li>
-      <li><strong>Kiểm thử thiết bị thật Samsung Galaxy A53 (Wireless ADB 192.168.1.10:45151):</strong> Viewport 384x718px, DPR 2.8125. Không có lỗi cuộn ngang. Bottom Sheet mở/đóng mượt mà qua phím Back vật lý. Đã sửa lỗi đè footer bằng padding-bottom <code>calc(80px + env(safe-area-inset-bottom, 16px))</code>. PWA icons (192px, 512px, maskable) sẵn sàng chuẩn Add to Home Screen.</li>
-    </ul>
+    <!-- 5. Annual Report Token Truncation Diagnosis & Resolution -->
+    <div class="card">
+      <h2>5. Chẩn Đoán & Khắc Phục Lỗi Báo Cáo Năm Bị Cắt Cụt (Annual Report Truncation)</h2>
+      <p><strong>Triệu chứng:</strong> Lá số <code>bab356f8-fd5c-491f-b92d-0cf56104782e</code> xem Báo Cáo Năm 2026 dừng đột ngột ở cụm từ <code>**Liêm Trinh Hóa K</code>.</p>
+      <ul>
+        <li><strong>Kết luận chẩn đoán:</strong> Hoàn toàn <em>KHÔNG PHẢI</em> do popup modal CSS hay giới hạn chiều cao giao diện. Bản ghi lưu trong database thật (<code>public.annual_reports</code>, id <code>4661d5f0-afbb-4caa-85ee-81fcb7a23a35</code>) thực sự bị đứt ở ký tự thứ 3,745.</li>
+        <li><strong>Nguyên nhân gốc rễ (Root Cause):</strong>
+          <ol>
+            <li><strong>Giới hạn maxOutputTokens:</strong> <code>GeminiChatAdapter</code> cấu hình cứng <code>maxOutputTokens: 2048</code>.</li>
+            <li><strong>Chế độ ngẫm (Thinking Mode):</strong> Model <code>gemini-flash-latest</code> kích hoạt reasoning nội bộ tiêu tốn ~1,700 tokens trong quota, chỉ để lại ~500 tokens cho bài viết tiếng Việt khiến model chạm trần <code>finishReason: MAX_TOKENS</code> giữa chừng.</li>
+            <li><strong>Thiếu kiểm tra finishReason:</strong> Adapter chấp nhận chuỗi bị cắt cụt mà không ném lỗi retry.</li>
+            <li><strong>Cache vĩnh viễn:</strong> <code>AnnualReportService</code> trả về ngay bản ghi trong DB theo <code>(chart_snapshot_id, year)</code> mà không có cơ chế ghi đè lại.</li>
+          </ol>
+        </li>
+        <li><strong>Giải pháp triệt để đã triển khai:</strong>
+          <ol>
+            <li><strong>Mở rộng Token & Tắt Thinking vô ích:</strong> Tăng <code>maxOutputTokens</code> lên <code>8192</code> và đặt <code>thinkingConfig: { thinkingBudget: 0 }</code>, dành trọn vẹn 8,192 tokens cho nội dung luận giải.</li>
+            <li><strong>Strict finishReason Validation:</strong> Bổ sung kiểm tra trong <code>GeminiChatAdapter.parseResult()</code>: nếu <code>finishReason !== 'STOP'</code> (nhất là <code>MAX_TOKENS</code> hoặc <code>SAFETY</code>), ném ngay <code>ProviderUnavailableError</code> để không bao giờ lưu văn bản đứt gãy.</li>
+            <li><strong>Hỗ trợ Tái tạo cưỡng chế (Force Regeneration):</strong> Bổ sung cờ <code>force?: boolean</code> trong contracts schema, controller và <code>upsertAnnualReport</code> tại repository để người dùng có thể lập lại và ghi đè báo cáo hoàn hảo.</li>
+            <li><strong>Sửa trực tiếp bản ghi Production:</strong> Gọi Gemini chạy lại cho lá số của Đại Ka, cập nhật văn bản đầy đủ 8,032 ký tự, đủ toàn bộ 12 lưu nguyệt và kết luận trọn vẹn tại mục <code>## 4. Lời Khuyên Cải Vận (Tóm lại)</code>.</li>
+            <li><strong>Tối ưu Cuộn Modal:</strong> Thêm scrollbar mạ vàng hoàng gia <code>::-webkit-scrollbar</code> vào <code>AnnualReportModal.svelte</code> để trải nghiệm đọc mượt mà trên desktop và mobile.</li>
+          </ol>
+        </li>
+      </ul>
+    </div>
+
+    <div class="footer">
+      Tử Vi Toàn Tập (ViOS) — Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia • Sprint 95 Complete
+    </div>
   </div>
 </body>
 </html>

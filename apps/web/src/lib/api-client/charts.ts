@@ -72,9 +72,10 @@ export function fetchMonthlyFortune(
 
 export function createAnnualReport(
   token: string,
-  request: { chartId: string; year: number },
+  request: { chartId: string; year: number; force?: boolean },
 ): Promise<AnnualReportResponse> {
-  return fetchJson(`/charts/${request.chartId}/annual-report?year=${request.year}`, annualReportResponseSchema, {
+  const query = request.force ? `?year=${request.year}&force=true` : `?year=${request.year}`;
+  return fetchJson(`/charts/${request.chartId}/annual-report${query}`, annualReportResponseSchema, {
     method: 'POST',
     token,
   });

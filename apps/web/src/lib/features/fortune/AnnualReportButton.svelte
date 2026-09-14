@@ -36,7 +36,7 @@ import { createAnnualReport } from '$lib/api-client/charts';;
   let isModalOpen = $state(false);
 
   const mutation = createMutation(() => ({
-    mutationFn: async (): Promise<AnnualReportResponse> => {
+    mutationFn: async (vars?: { force?: boolean } | void): Promise<AnnualReportResponse> => {
       const token = auth.getAccessToken();
       if (!token) {
         throw new ApiError('unauthorized', viCopy.errors.missingChartContext);
@@ -44,7 +44,7 @@ import { createAnnualReport } from '$lib/api-client/charts';;
       // Năm tính TƯƠI tại thời điểm bấm (không đóng băng lúc mount): phiên dài qua giao thừa
       // vẫn tạo đúng báo cáo năm hiện tại. Modal hiển thị theo year server trả (mutation.data.year).
       const year = currentYear();
-      return createAnnualReport(token, { chartId, year });
+      return createAnnualReport(token, { chartId, year, force: vars?.force });
     },
     onSuccess: (data): void => {
       isModalOpen = true;
@@ -91,7 +91,7 @@ import { createAnnualReport } from '$lib/api-client/charts';;
         type="button"
         class="btn-recreate-report"
         disabled={mutation.isPending}
-        onclick={() => mutation.mutate()}
+        onclick={() => mutation.mutate({ force: true })}
         title="Lập lại báo cáo vận hạn mới (15 XU)"
       >
         <span>{mutation.isPending ? 'Đang khởi tạo...' : '🔄 Lập lại (15 XU)'}</span>
@@ -107,7 +107,7 @@ import { createAnnualReport } from '$lib/api-client/charts';;
       <PrimaryButton
         label={`📅 Lập Báo Cáo Năm ${currentYear()} (15 XU)`}
         loading={mutation.isPending}
-        onclick={() => mutation.mutate()}
+        onclick={() => mutation.mutate({})}
       />
 
       {#if walletStore}

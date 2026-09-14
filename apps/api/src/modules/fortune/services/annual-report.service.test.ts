@@ -28,6 +28,7 @@ function makeService(snapshot: any = ziweiSnapshot) {
     findChartSnapshotById: vi.fn().mockResolvedValue(snapshot ? { snapshot } : null),
     findAnnualReportByChartAndYear: vi.fn().mockResolvedValue(null),
     createAnnualReport: vi.fn().mockResolvedValue({ markdown: '# Báo cáo năm 2026\n\nNăm này...' }),
+    upsertAnnualReport: vi.fn().mockResolvedValue({ markdown: '# Báo cáo năm 2026 mới\n\nNăm này...' }),
   };
   const walletEngine = { deductXU: vi.fn().mockResolvedValue(true) };
   const quotas = { assertCanExecute: vi.fn().mockResolvedValue(undefined) };
@@ -64,6 +65,18 @@ describe('AnnualReportService', () => {
     const res = await service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026);
     expect(res.markdown).toBe('# Cũ');
     expect(providerRouter.generate).not.toHaveBeenCalled();
+  });
+
+  it('force=true: bỏ qua cache-hit, gọi provider và upsert báo cáo mới', async () => {
+    (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = true;
+    (apiEnv as any).AI_ANNUAL_REPORT_ENABLED = true;
+    const { service, persistence, providerRouter } = makeService();
+    (persistence.findAnnualReportByChartAndYear as any).mockResolvedValue({ markdown: '# Cũ' });
+
+    const res = await service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026, true);
+    expect(providerRouter.generate).toHaveBeenCalledOnce();
+    expect(persistence.upsertAnnualReport).toHaveBeenCalledOnce();
+    expect(res.markdown).toBe('# Báo cáo năm 2026 mới\n\nNăm này...');
   });
 
   it('cache-miss + AI_ANNUAL_REPORT_ENABLED=false → 402 PAYMENT_REQUIRED', async () => {

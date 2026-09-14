@@ -275,7 +275,19 @@
               {/if}
             </button>
 
+            {#if (isPending || isStreaming) && onAbort}
+              <button
+                type="button"
+                class="btn-royal-abort"
+                onclick={onAbort}
+                title="Dừng sinh luận giải"
+              >
+                <span>⏹ Dừng tạo luận giải</span>
+              </button>
+            {/if}
+
             <div class="unlock-footer-notes">
+              <span class="note-item">✦ Số dư ví: <strong>{userBalance} XU</strong></span>
               <span class="note-item">✦ 1 chạm trừ 10 XU trực tiếp từ ví</span>
               <span class="note-item">✦ Lưu vĩnh viễn không mất phí xem lại</span>
             </div>
@@ -525,6 +537,29 @@
     opacity: 0.65;
     cursor: not-allowed;
     transform: none;
+  }
+
+  .btn-royal-abort {
+    margin-top: 8px;
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-royal-abort:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
   }
 
   .unlock-footer-notes {

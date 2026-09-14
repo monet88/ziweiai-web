@@ -32,7 +32,7 @@ describe('GeminiChatAdapter.parseResult', () => {
   it('parses a successful native response into text + usage', async () => {
     const response = new Response(
       JSON.stringify({
-        candidates: [{ content: { parts: [{ text: 'xin chao' }] } }],
+        candidates: [{ content: { parts: [{ text: 'xin chao' }] }, finishReason: 'STOP' }],
         usageMetadata: { totalTokenCount: 7, promptTokenCount: 5, candidatesTokenCount: 2 },
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
@@ -48,6 +48,30 @@ describe('GeminiChatAdapter.parseResult', () => {
     await expect(adapter.parseResult(response)).rejects.toThrow(ProviderUnavailableError);
     await expect(adapter.parseResult(new Response('', { status: 200 }))).rejects.toThrow(
       'Gemini trả về phản hồi rỗng.',
+    );
+  });
+
+  it('rejects truncated responses with MAX_TOKENS finishReason', async () => {
+    const response = new Response(
+      JSON.stringify({
+        candidates: [{ content: { parts: [{ text: 'bài viết dở dang...' }] }, finishReason: 'MAX_TOKENS' }],
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+    await expect(adapter.parseResult(response)).rejects.toThrow(
+      'Phản hồi từ Gemini bị vượt quá giới hạn độ dài token.',
+    );
+  });
+
+  it('rejects responses blocked by SAFETY filter', async () => {
+    const response = new Response(
+      JSON.stringify({
+        candidates: [{ content: { parts: [] }, finishReason: 'SAFETY' }],
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+    await expect(adapter.parseResult(response)).rejects.toThrow(
+      'Phản hồi từ Gemini bị chặn bởi bộ lọc an toàn.',
     );
   });
 });

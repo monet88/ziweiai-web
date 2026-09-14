@@ -13,7 +13,8 @@
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "e2e": "playwright test --grep-invert @live",
-    "e2e:live": "playwright test --grep @live"
+    "e2e:live": "playwright test --grep @live",
+    "e2e:journey": "playwright test synthetic-user-journey-sprint95.spec.ts --workers=1"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.35",

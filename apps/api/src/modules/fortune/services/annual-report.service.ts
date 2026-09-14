@@ -52,15 +52,17 @@ export class AnnualReportService {
     return annualReportResponseSchema.parse({ chartId, year: targetYear, frame, markdown: cached.markdown });
   }
 
-  async createAnnualReport(user: AuthenticatedUser, ipAddress: string, chartId: string, year: number): Promise<AnnualReportResponse> {
+  async createAnnualReport(user: AuthenticatedUser, ipAddress: string, chartId: string, year: number, force = false): Promise<AnnualReportResponse> {
     const snapshot = await this.loadZiweiSnapshot(user, chartId);
 
-    // CACHE-HIT BYPASS GATE (decision 0010): có row rồi thì trả lại, không re-gate, không gọi LLM.
-    const cached = await this.annualReportsRepository.findAnnualReportByChartAndYear(user.userId, chartId, year);
-    if (cached) {
-      this.logger.log(`[fortune.annual] outcome=cache-hit chartId=${chartId} year=${year} userId=${user.userId}`);
-      const frame = this.engine.computeAnnualFrame(snapshot, year);
-      return annualReportResponseSchema.parse({ chartId, year, frame, markdown: cached.markdown });
+    // CACHE-HIT BYPASS GATE (decision 0010): có row rồi thì trả lại (trừ khi force=true), không re-gate, không gọi LLM.
+    if (!force) {
+      const cached = await this.annualReportsRepository.findAnnualReportByChartAndYear(user.userId, chartId, year);
+      if (cached) {
+        this.logger.log(`[fortune.annual] outcome=cache-hit chartId=${chartId} year=${year} userId=${user.userId}`);
+        const frame = this.engine.computeAnnualFrame(snapshot, year);
+        return annualReportResponseSchema.parse({ chartId, year, frame, markdown: cached.markdown });
+      }
     }
 
     // ===== GATES (chỉ áp khi sinh mới) — fail-closed cả hai cờ =====
@@ -128,16 +130,23 @@ export class AnnualReportService {
       throw error;
     }
 
-    // Race hai caller cùng (chart, year): createAnnualReport bắt unique-violation rồi đọc lại row
-    // của caller thắng → trả Markdown đó (idempotent). Caller thua "phí" một lần gọi LLM nhưng không
-    // ghi đè cache — chấp nhận được vì annual chỉ sinh 1 lần/lifetime mỗi (chart, year).
-    const row = await this.annualReportsRepository.createAnnualReport({
-      ownerUserId: user.userId,
-      chartSnapshotId: chartId,
-      year,
-      markdown: providerResult.renderedMarkdown,
-      providerMetadata: providerResult.providerMetadata,
-    });
+    // Khi force=true (ví dụ người dùng bấm Lập lại): dùng upsert để ghi đè báo cáo cũ hoàn chỉnh.
+    // Khi force=false: createAnnualReport bắt unique-violation rồi đọc lại row của caller thắng.
+    const row = force
+      ? await this.annualReportsRepository.upsertAnnualReport({
+          ownerUserId: user.userId,
+          chartSnapshotId: chartId,
+          year,
+          markdown: providerResult.renderedMarkdown,
+          providerMetadata: providerResult.providerMetadata,
+        })
+      : await this.annualReportsRepository.createAnnualReport({
+          ownerUserId: user.userId,
+          chartSnapshotId: chartId,
+          year,
+          markdown: providerResult.renderedMarkdown,
+          providerMetadata: providerResult.providerMetadata,
+        });
 
     this.logger.log(
       `[fortune.annual] outcome=generated chartId=${chartId} year=${year} userId=${user.userId} providerName=${providerResult.providerMetadata.provider} tokensIn=${providerResult.providerMetadata.promptTokens} tokensOut=${providerResult.providerMetadata.completionTokens}`,

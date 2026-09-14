@@ -199,6 +199,7 @@ export function createWalletModel(auth: AuthStore) {
       return transactionsQuery.isPending;
     },
     get canCheckin() {
+      if (query.isPending) return false;
       const lastCheckin = query.data?.last_checkin_date;
       if (!lastCheckin) return true;
       

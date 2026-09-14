@@ -97,4 +97,30 @@ export class AnnualReportsRepository extends SupabaseBaseRepository {
     this.throwIfError(error);
     return toAnnualReportRecord(data);
   }
+
+  async upsertAnnualReport(params: {
+    ownerUserId: string;
+    chartSnapshotId: string;
+    year: number;
+    markdown: string;
+    providerMetadata: Record<string, string>;
+  }): Promise<AnnualReportRecord> {
+    const { data, error } = await this.client
+      .from('annual_reports')
+      .upsert(
+        {
+          owner_user_id: params.ownerUserId,
+          chart_snapshot_id: params.chartSnapshotId,
+          year: params.year,
+          markdown: params.markdown,
+          provider_metadata: params.providerMetadata,
+        },
+        { onConflict: 'chart_snapshot_id,year' }
+      )
+      .select('*')
+      .single();
+
+    this.throwIfError(error);
+    return toAnnualReportRecord(data);
+  }
 }

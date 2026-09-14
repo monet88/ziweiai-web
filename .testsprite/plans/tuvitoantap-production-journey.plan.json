@@ -1,0 +1,49 @@
+{
+  "projectId": "7d0a9fac-140a-4076-8d40-c16a0db46f81",
+  "type": "frontend",
+  "name": "Full Synthetic User Journey - ViOS Production",
+  "description": "Comprehensive E2E autonomous test for https://tuvitoantap.online: Checks dashboard, Wallet & VietQR TPBank, Daily Checkin, Ziwei Chart generation, and AI explanation blur-teaser.",
+  "priority": "p0",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "Open https://tuvitoantap.online and wait for the application to load completely."
+    },
+    {
+      "type": "assertion",
+      "description": "The app should display the royal imperial theme header 'Tử Vi Toàn Tập' and not display any error screen or broken layout."
+    },
+    {
+      "type": "action",
+      "description": "Navigate to /wallet to inspect the Wallet and Daily Checkin interface."
+    },
+    {
+      "type": "assertion",
+      "description": "The wallet page loads successfully with heading 'Ví XU & Điểm Danh', showing the TPBank account '36889338888', account holder 'LE VAN TINH', and VietQR code image."
+    },
+    {
+      "type": "action",
+      "description": "Locate the Daily Checkin button on the wallet page and click it if it is active."
+    },
+    {
+      "type": "assertion",
+      "description": "The checkin action executes without displaying 'Database error while checking in', showing either a success toast/streak or already checked-in status."
+    },
+    {
+      "type": "action",
+      "description": "Navigate back to the home page or chart creation view (/)."
+    },
+    {
+      "type": "action",
+      "description": "Fill the birth data form with valid Gregorian date: Day 18, Month 8, Year 1995, Gender Male, Hour 10, Minute 30, and submit to create the Ziwei chart."
+    },
+    {
+      "type": "assertion",
+      "description": "The URL should transition to /charts/<uuid> and the square 12-palace Ziwei board should render properly."
+    },
+    {
+      "type": "assertion",
+      "description": "The page must not display 'Không tải được chi tiết lá số' and must offer royal explanation features."
+    }
+  ]
+}

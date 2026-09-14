@@ -12,6 +12,7 @@
     "build": "turbo run build",
     "check:supabase-migrations": "scripts/check-supabase-migrations.zsh",
     "check:db": "pnpm dlx tsx scripts/verify-live-db-integrity.ts",
+    "monitor:xu": "pnpm dlx tsx scripts/monitor-xu-economy.ts",
     "generate:sitemap": "pnpm dlx tsx scripts/generate-sitemap.ts",
     "deploy:vercel-demo": "scripts/deploy-vercel-demo.zsh",
     "dev": "turbo run dev --parallel",
@@ -21,6 +22,7 @@
     "smoke:vercel-demo": "scripts/smoke-vercel-demo.zsh",
     "smoke:vercel-live-mutation": "scripts/smoke-vercel-live-mutation.zsh",
     "test": "turbo run test",
+    "test:journey": "pnpm -F @ziweiai/web e2e:journey",
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {

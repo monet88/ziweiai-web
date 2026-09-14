@@ -78,7 +78,7 @@ export class RewardsService {
 
     if (error) {
       this.logger.error(`Failed to process daily check-in for user ${userId}`, error);
-      throw new BadRequestException('Database error while checking in');
+      throw new BadRequestException(error.message || 'Lỗi hệ thống khi điểm danh');
     }
 
     const added = typeof rewardXu === 'number' ? rewardXu : 0;
@@ -274,17 +274,18 @@ export class RewardsService {
     }
 
     // Mẫu danh dự hạt giống (dùng lấp đầy các vị trí còn thiếu nếu hệ thống chưa đủ 10 Sứ Giả thật)
+    // Cân chỉnh mức lượt mời thực tế để user thật dễ dàng cạnh tranh leo bảng vinh danh
     const honorarySeedAmbassadors = [
-      { maskedName: 'ngu***@gmail.com', referralCount: 88, rewardXuEarned: 880, tier: 'kim_cuong' as const },
-      { maskedName: 'tra***@yahoo.com', referralCount: 65, rewardXuEarned: 650, tier: 'kim_cuong' as const },
-      { maskedName: 'leh***@outlook.com', referralCount: 42, rewardXuEarned: 420, tier: 'kim_cuong' as const },
-      { maskedName: 'pha***@gmail.com', referralCount: 28, rewardXuEarned: 280, tier: 'vang' as const },
-      { maskedName: 'vu.***@gmail.com', referralCount: 22, rewardXuEarned: 220, tier: 'vang' as const },
-      { maskedName: 'doan***@gmail.com', referralCount: 18, rewardXuEarned: 180, tier: 'vang' as const },
-      { maskedName: 'hoa***@gmail.com', referralCount: 14, rewardXuEarned: 140, tier: 'bac' as const },
-      { maskedName: 'bui***@gmail.com', referralCount: 11, rewardXuEarned: 110, tier: 'bac' as const },
-      { maskedName: 'din***@gmail.com', referralCount: 8, rewardXuEarned: 80, tier: 'bac' as const },
-      { maskedName: 'mai***@gmail.com', referralCount: 6, rewardXuEarned: 60, tier: 'bac' as const },
+      { maskedName: 'ngu***@gmail.com', referralCount: 18, rewardXuEarned: 180, tier: 'vang' as const },
+      { maskedName: 'tra***@yahoo.com', referralCount: 14, rewardXuEarned: 140, tier: 'bac' as const },
+      { maskedName: 'leh***@outlook.com', referralCount: 11, rewardXuEarned: 110, tier: 'bac' as const },
+      { maskedName: 'pha***@gmail.com', referralCount: 9, rewardXuEarned: 90, tier: 'bac' as const },
+      { maskedName: 'vu.***@gmail.com', referralCount: 7, rewardXuEarned: 70, tier: 'bac' as const },
+      { maskedName: 'doan***@gmail.com', referralCount: 5, rewardXuEarned: 50, tier: 'bac' as const },
+      { maskedName: 'hoa***@gmail.com', referralCount: 4, rewardXuEarned: 40, tier: 'dong' as const },
+      { maskedName: 'bui***@gmail.com', referralCount: 3, rewardXuEarned: 30, tier: 'dong' as const },
+      { maskedName: 'din***@gmail.com', referralCount: 2, rewardXuEarned: 20, tier: 'dong' as const },
+      { maskedName: 'mai***@gmail.com', referralCount: 1, rewardXuEarned: 10, tier: 'dong' as const },
     ];
 
     // Tạo danh sách kết hợp: ưu tiên toàn bộ Sứ Giả thật, lấp đầy bằng hạt giống

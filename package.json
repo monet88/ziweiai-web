@@ -11,6 +11,7 @@
     "vercel-build": "pnpm rebuild esbuild && pnpm --filter @ziweiai/contracts build && pnpm --filter @ziweiai/core build && pnpm --filter @ziweiai/xuanshu-runtime build && pnpm --filter @ziweiai/astro-engine build && pnpm --filter @ziweiai/api build && pnpm --filter @ziweiai/web build",
     "build": "turbo run build",
     "check:supabase-migrations": "scripts/check-supabase-migrations.zsh",
+    "check:db": "pnpm dlx tsx scripts/verify-live-db-integrity.ts",
     "generate:sitemap": "pnpm dlx tsx scripts/generate-sitemap.ts",
     "deploy:vercel-demo": "scripts/deploy-vercel-demo.zsh",
     "dev": "turbo run dev --parallel",

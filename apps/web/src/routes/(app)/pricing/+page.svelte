@@ -126,6 +126,10 @@
             <div class="pkg-divider"></div>
 
             <div class="pkg-benefits">
+              <div class="pkg-equivalence-tag">
+                <Sparkles size={12} class="text-gold" />
+                <span>{pkg.valueEquivalence}</span>
+              </div>
               <p class="pkg-desc">{pkg.desc}</p>
               {#if pkg.bonusXu}
                 <div class="bonus-tag">
@@ -624,6 +628,27 @@
     line-height: 1.45;
     color: var(--color-text-secondary, #475569);
     margin: 0;
+  }
+
+  .pkg-equivalence-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm, 8px);
+    margin-bottom: 2px;
+    line-height: 1.35;
+  }
+  :global([data-theme="dark"]) .pkg-equivalence-tag {
+    color: #fef08a;
+    background: rgba(217, 119, 6, 0.18);
+    border-color: rgba(245, 158, 11, 0.35);
   }
 
   .bonus-tag {

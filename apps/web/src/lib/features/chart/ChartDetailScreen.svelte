@@ -5,6 +5,7 @@
   //
   // Bố cục: tải → bàn 12 cung (Tử Vi) hoặc thẻ tóm tắt (hệ khác) → chi tiết cung đang chọn
   // → khối luận giải AI (markdown sanitize qua MarkdownView). Mọi nhãn tiếng Việt qua viCopy.
+  import { browser } from '$app/environment';
   import { getAuthStore } from '$lib/auth/auth-context';
   import { useQueryClient } from '@tanstack/svelte-query';
   import { AppScaffold, PrimaryButton, SummaryCard, NoticeBanner, FullScreenState, EmptyStateCard } from '$lib/components/ui';
@@ -23,10 +24,9 @@
   import LiuyaoDetailCard from '$lib/features/chart/LiuyaoDetailCard.svelte';
   import DaliurenDetailCard from '$lib/features/chart/DaliurenDetailCard.svelte';
   import QimenDetailCard from '$lib/features/chart/QimenDetailCard.svelte';
-  import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
   import AIExplanationLoader from '$lib/features/explanation/AIExplanationLoader.svelte';
-  import AuspiciousSummaryCard from '$lib/features/explanation/AuspiciousSummaryCard.svelte';
-  import ExplanationToolbar from '$lib/features/explanation/ExplanationToolbar.svelte';
+  import BlurTeaserExplanation from '$lib/features/explanation/BlurTeaserExplanation.svelte';
+  import { paywallStore } from '$lib/stores/paywall.svelte';
   import AssistantPanel from '$lib/features/assistant/AssistantPanel.svelte';
   import DailyFortuneCard from '$lib/features/fortune/DailyFortuneCard.svelte';
   import MonthlyFortuneCard from '$lib/features/fortune/MonthlyFortuneCard.svelte';
@@ -141,6 +141,42 @@
       void wallet.refresh();
     }
   });
+
+  let isExplanationUnlocked = $state(false);
+
+  $effect(() => {
+    if (browser) {
+      const hasSavedInDb = detail.explanationResults.length > 0;
+      const isCached = localStorage.getItem(`vios_unlocked_explanation_${chartId}`) === 'true';
+      if (hasSavedInDb || isCached || explanation.hasResult || explanation.isStreaming) {
+        isExplanationUnlocked = true;
+      }
+    }
+  });
+
+  function handleUnlockExplanation() {
+    if (isExplanationUnlocked && explanation.hasResult) {
+      explanation.generate();
+      return;
+    }
+
+    if (wallet.balance < 10) {
+      paywallStore.open({
+        featureId: 'deep_explanation',
+        featureName: 'Mở Khóa Toàn Bộ Thiên Cơ',
+        requiredXu: 10,
+        suggestedPackageXu: 50,
+        message: 'Mở khóa toàn bộ luận giải thiên cơ chuyên sâu yêu cầu 10 XU (chỉ 10.000đ). Vui lòng nạp XU để tiếp tục.'
+      });
+      return;
+    }
+
+    if (browser) {
+      localStorage.setItem(`vios_unlocked_explanation_${chartId}`, 'true');
+    }
+    isExplanationUnlocked = true;
+    explanation.generate();
+  }
 
   // Phase 11 Ticket 3: dynamic document title / description from chart system + birth extras.
   const systemTitleByKey: Record<string, string> = {
@@ -396,7 +432,7 @@
               label={explanation.hasResult ? `${copy.regenerateExplanation} (10 XU)` : `${explanationButtonLabel} (10 XU)`}
               loading={explanation.isPending}
               disabled={explanationBlocked}
-              onclick={explanation.generate}
+              onclick={handleUnlockExplanation}
             />
             <div class="wallet-balance-indicator">
               <span class="wallet-icon">🪙</span>
@@ -424,7 +460,7 @@
           <AIExplanationLoader isPending={explanation.isPending} />
         {:else if explanation.isError && explanation.errorMessage}
           <NoticeBanner tone="danger" message={explanation.errorMessage} />
-        {:else if explanation.hasResult && explanation.renderedMarkdown}
+        {:else}
           <div class="explanation-result-container">
             {#if explanation.isPending || explanation.isStreaming}
               <div class="streaming-hud-banner">
@@ -434,44 +470,22 @@
               </div>
             {/if}
 
-            <!-- Bản Sớ Header (Chỉ xuất hiện khi in ra giấy hoặc lưu PDF) -->
-            <header class="print-so-header">
-              <div class="so-emblem">✦ VIOS KHÂM THIÊN GIÁM ✦</div>
-              <h1 class="so-title">BẢN SỚ TỬ VI ĐẠI THÀNH LUẬN GIẢI</h1>
-              <div class="so-subtitle">{pageTitle}</div>
-              <div class="so-meta-grid">
-                {#each summaryItems as item (item.label)}
-                  <div class="so-meta-item">
-                    <span class="lbl">{item.label}:</span>
-                    <span class="val">{item.value}</span>
-                  </div>
-                {/each}
-              </div>
-              <div class="so-seal-row">
-                <span class="so-seal-text">BẢO CHỨNG BỞI HỆ THỐNG TỬ VI TOÀN TẬP — VIOS ENGINE</span>
-                <span class="so-date-text">XUẤT BẢN NGÀY: {new Date().toLocaleDateString('vi-VN')}</span>
-              </div>
-            </header>
-
-            <AuspiciousSummaryCard markdown={explanation.renderedMarkdown} />
-            <ExplanationToolbar
+            <BlurTeaserExplanation
               markdown={explanation.renderedMarkdown}
-              chartTitle={pageTitle}
-              birthInfo={summaryItems.map((i) => `${i.label}: ${i.value}`).join(' · ')}
+              chartSystem={detail.chartSystem}
+              snapshot={detail.snapshot}
+              pageTitle={pageTitle}
+              isUnlocked={isExplanationUnlocked}
+              isPending={explanation.isPending}
+              isStreaming={explanation.isStreaming}
+              isBlocked={explanationBlocked}
+              userBalance={wallet.balance}
+              summaryItems={summaryItems}
+              onUnlock={handleUnlockExplanation}
+              onAbort={explanation.abort}
               onOpenRoyalPdfModal={() => (isExplanationPdfModalOpen = true)}
             />
-            <article class="result surface-glass printable-content">
-              <MarkdownView markdown={explanation.renderedMarkdown} />
-              {#if explanation.isPending || explanation.isStreaming}
-                <span class="live-streaming-cursor">▍</span>
-              {/if}
-            </article>
           </div>
-        {:else}
-          <EmptyStateCard
-            title={copy.noExplanationTitle}
-            description={detail.isOwner ? copy.noExplanationDescription : 'Lá số này hiện chưa có bài luận giải AI từ người tạo.'}
-          />
         {/if}
       </section>
 
@@ -954,36 +968,10 @@
     color: #fee2e2;
   }
 
-  .live-streaming-cursor {
-    display: inline-block;
-    color: #ffd700;
-    font-size: 16px;
-    font-weight: 700;
-    margin-left: 4px;
-    animation: blink-cursor 0.9s step-end infinite;
-  }
-
-  @keyframes blink-cursor {
-    50% { opacity: 0; }
-  }
-
-  .result {
-    margin-top: 0;
-    padding: var(--space-xl, 24px);
-    border-radius: var(--radius-xl, 20px);
-    border: 1px solid rgba(212, 175, 55, 0.25);
-  }
-
   .explanation-result-container {
     display: flex;
     flex-direction: column;
     gap: var(--space-md, 16px);
-  }
-
-  :global([data-theme="light"]) .result {
-    background: #ffffff;
-    border-color: rgba(180, 83, 9, 0.18);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   }
 
   :global([data-theme="light"]) .btn-abort-stream {
@@ -1010,10 +998,6 @@
   :global([data-theme="light"]) .pulse-dot {
     background-color: #b45309;
     box-shadow: 0 0 10px #b45309;
-  }
-
-  :global([data-theme="light"]) .live-streaming-cursor {
-    color: #b45309;
   }
 
   :global([data-theme="light"]) .pricing-badge-chip {
@@ -1048,9 +1032,7 @@
     }
   }
 
-  .print-so-header {
-    display: none;
-  }
+
 
   /* Chế độ In Sớ / Xuất PDF (@media print) */
   .btn-royal-journal {
@@ -1184,82 +1166,7 @@
       height: auto !important;
     }
 
-    /* Header Sớ In Trang Trọng */
-    :global(body:not(.printing-deluxe-dossier)) .print-so-header {
-      display: block !important;
-      text-align: center;
-      margin-bottom: 20px;
-      padding-bottom: 16px;
-      border-bottom: 2px solid #b45309;
-      page-break-after: avoid;
-      break-after: avoid;
-    }
 
-    .so-emblem {
-      font-size: 10.5pt;
-      letter-spacing: 3px;
-      font-weight: 700;
-      color: #92400e;
-      margin-bottom: 4px;
-    }
-
-    .so-title {
-      font-size: 19pt;
-      font-weight: 800;
-      color: #78350f;
-      margin: 0 0 6px 0;
-      letter-spacing: 0.5px;
-    }
-
-    .so-subtitle {
-      font-size: 12pt;
-      font-weight: 600;
-      color: #451a03;
-      margin-bottom: 12px;
-    }
-
-    .so-meta-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px 12px;
-      background: #fdfaf3;
-      border: 1px solid #e7d8b8;
-      border-radius: 6px;
-      padding: 8px 12px;
-      margin-bottom: 8px;
-      text-align: left;
-      font-size: 9.5pt;
-    }
-
-    .so-meta-item .lbl {
-      color: #78350f;
-      font-weight: 600;
-      margin-right: 4px;
-    }
-
-    .so-meta-item .val {
-      color: #111827;
-      font-weight: 700;
-    }
-
-    .so-seal-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 8pt;
-      color: #6b7280;
-      font-style: italic;
-      padding: 0 4px;
-    }
-
-    :global(body:not(.printing-deluxe-dossier)) .result {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      color: #111827 !important;
-      padding: 0 !important;
-      overflow: visible !important;
-      height: auto !important;
-    }
 
     @page {
       size: A4 portrait;

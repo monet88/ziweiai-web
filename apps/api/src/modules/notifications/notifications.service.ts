@@ -191,9 +191,11 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
                 : isAd
                 ? 'Thưởng Xem Quảng Cáo'
                 : isRef
-                ? 'Thưởng Giới Thiệu Bạn Bè'
+                ? 'Vinh Danh Sứ Giả: Bạn Bè Gia Nhập'
                 : 'Nạp XU Hoàng Kim Thành Công',
-              body: `+${amount} XU đã được cộng vào ví của bạn.`,
+              body: isRef
+                ? `Một đồng đạo vừa kích hoạt thành công qua mã giới thiệu của bạn. +${amount} XU vinh danh đã được trao vào ví!`
+                : `+${amount} XU đã được cộng vào ví của bạn.`,
               amountXu: amount,
               link: '/wallet',
               createdAt: tx.created_at || new Date().toISOString(),

@@ -377,6 +377,10 @@
                   <span class="pkg-xu">{pkg.xu} <small>XU</small></span>
                   <span class="pkg-price">{pkg.price.toLocaleString('vi-VN')} VNĐ</span>
                 </div>
+                <div class="pkg-equivalence-tag">
+                  <Sparkles size={12} class="text-gold" />
+                  <span>{pkg.valueEquivalence}</span>
+                </div>
                 <div class="pkg-footer">
                   <span>{pkg.desc}</span>
                 </div>
@@ -552,6 +556,14 @@
           {#if qrUrl}
             <div class="qr-frame">
               <img src={qrUrl} alt="Mã QR thanh toán SePay" class="qr-image" />
+            </div>
+
+            <div class="package-value-summary">
+              <div class="summary-badge">
+                <Sparkles size={13} class="text-gold" />
+                <span>Quy đổi giá trị thực tế</span>
+              </div>
+              <p class="summary-text">🎯 {selectedPackage.valueEquivalence}</p>
             </div>
 
             <div class="transfer-info-box">
@@ -1356,6 +1368,64 @@
     color: var(--color-text-muted, #64748b);
     border-top: 1px dashed var(--color-border-hairline, #e2e8f0);
     padding-top: 8px;
+  }
+
+  .pkg-equivalence-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #b45309;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 6px;
+    padding: 4px 7px;
+    margin-bottom: 8px;
+    line-height: 1.35;
+  }
+
+  :global([data-theme="dark"]) .pkg-equivalence-tag {
+    color: #fef08a;
+    background: rgba(217, 119, 6, 0.18);
+    border-color: rgba(245, 158, 11, 0.35);
+  }
+
+  .package-value-summary {
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.08) 0%, rgba(245, 158, 11, 0.03) 100%);
+    border: 1px solid rgba(217, 119, 6, 0.22);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+  }
+
+  :global([data-theme="dark"]) .package-value-summary {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(30, 27, 75, 0.35) 100%);
+    border-color: rgba(245, 158, 11, 0.35);
+  }
+
+  .summary-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #b45309;
+    margin-bottom: 4px;
+  }
+
+  :global([data-theme="dark"]) .summary-badge {
+    color: #fbbf24;
+  }
+
+  .summary-text {
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--color-text-primary, #0f172a);
   }
 
   /* Costs List */

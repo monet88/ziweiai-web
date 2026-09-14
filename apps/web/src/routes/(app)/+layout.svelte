@@ -69,6 +69,23 @@
       });
     }
   });
+
+  $effect(() => {
+    if (wallet.lastReferralEvent) {
+      const rewardXu = wallet.lastReferralEvent.rewardXu;
+      notificationStore.pushNotification({
+        id: `ref-honour-${Date.now()}`,
+        type: 'referral_reward',
+        title: 'Vinh Danh Sứ Giả Hoàng Triều',
+        body: `Một đồng đạo vừa kích hoạt thành công qua mã giới thiệu của bạn! Thưởng nóng +${rewardXu} XU hoàng kim đã được trao vào ví.`,
+        amountXu: rewardXu,
+        link: '/wallet',
+        createdAt: new Date().toISOString(),
+        isRead: false,
+      });
+      wallet.clearReferralEvent();
+    }
+  });
 </script>
 
 {#if auth.isInitializing}

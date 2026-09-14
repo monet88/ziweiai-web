@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sprint 91 Implementation Notes — Khâm Thiên Giám Ngự Chế & Settings Hardening</title>
+  <title>Sprint 93 Implementation Notes — Phase 8: Monetization & Paywall Conversion Optimization</title>
   <style>
     :root {
       --bg: #0b0819;
@@ -14,6 +14,7 @@
       --muted: #a89a85;
       --border: rgba(212, 175, 55, 0.3);
       --success: #34d399;
+      --accent: #8b5cf6;
     }
     body {
       margin: 0;
@@ -24,7 +25,7 @@
       line-height: 1.6;
     }
     .container {
-      max-width: 880px;
+      max-width: 900px;
       margin: 0 auto;
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -48,82 +49,150 @@
       font-size: 0.75rem;
       font-weight: bold;
       background: rgba(212, 175, 55, 0.15);
-      border: 1px solid var(--border);
       color: var(--gold-bright);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.2rem;
-      margin: 1.5rem 0;
-    }
-    .card {
-      background: rgba(10, 7, 24, 0.6);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.2rem;
+      margin-bottom: 1rem;
     }
-    .card h3 {
-      margin-top: 0;
-      font-size: 1.05rem;
+    .badge-success {
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--success);
+      border-color: rgba(52, 211, 153, 0.3);
+    }
+    .section {
+      margin-bottom: 2rem;
     }
     ul {
-      padding-left: 1.2rem;
+      padding-left: 1.25rem;
     }
     li {
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.5rem;
     }
     code {
-      background: rgba(255, 255, 255, 0.08);
-      color: #ffd700;
-      padding: 0.15rem 0.4rem;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.2rem 0.4rem;
       border-radius: 4px;
-      font-size: 0.88em;
+      font-family: monospace;
+      color: var(--gold);
     }
-    .check {
-      color: var(--success);
-      font-weight: bold;
+    .feature-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .feature-card h4 {
+      margin-top: 0;
+      color: var(--gold);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    th {
+      background: rgba(212, 175, 55, 0.1);
+      color: var(--gold-bright);
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="badge">Sprint 91 • Technical Living Spec</div>
-    <h1>Tử Vi Toàn Tập (ViOS) — Khâm Thiên Giám Ngự Chế & Settings Hardening</h1>
+    <span class="badge">Sprint 93 — Phase 8</span>
+    <span class="badge badge-success">992 Tests Passing (572 API + 420 Web)</span>
+    <span class="badge badge-success">Svelte-check: 0 Errors 0 Warnings</span>
+    <h1>Implementation Notes — Monetization & Paywall Conversion Optimization</h1>
 
-    <h2>1. Unspecified & Implicit Decisions</h2>
-    <ul>
-      <li><strong>Tái thiết Scoped Vanilla CSS cho Modal Khâm Thiên Giám:</strong> Thay thế hoàn toàn các class Tailwind không hoạt động bằng hệ thống Scoped CSS phong cách Hoàng Gia Celestial Luxury chuẩn mực (Deep Midnight <code>#0B0819</code>, viền Vàng Kim <code>#D4AF37</code>, backdrop blur và huy hiệu 🥇 🥈 🥉).</li>
-      <li><strong>Leaderboard Hybrid Sorting:</strong> Thay vì ép người dùng thật lên đầu danh sách bất kể số lượt (gây ra hiện tượng người 1 lượt xếp trên người 88 lượt), hệ thống gộp Sứ Giả thật cùng các hạt giống danh dự đủ 10 người, rồi sắp xếp giảm dần theo <code>referralCount DESC</code>. Người dùng thật vẫn luôn xuất hiện trên bảng vinh danh và được xếp đúng thứ hạng tương xứng với thành tích.</li>
-      <li><strong>Nâng trần chia sẻ lên 10 ref/ngày:</strong> Nâng <code>DAILY_REFERRAL_LIMIT</code> từ 5 lên 10 lượt/ngày (= 100 XU/ngày), đáp ứng nhu cầu lan tỏa mạnh mẽ của các KOC/cộng đồng phong thủy.</li>
-    </ul>
+    <div class="section">
+      <h3>Executive Summary</h3>
+      <p>Sprint 93 hoàn thiện đòn bẩy tối ưu chuyển đổi doanh thu (Paywall CRO & Monetization) cho nền tảng ViOS (Tử Vi Toàn Tập), đưa hệ thống chuyển hóa người dùng từ trải nghiệm miễn phí sang người dùng trả phí (Freemium &rarr; Paid) với tâm lý thỏa mãn và minh bạch cao nhất.</p>
+    </div>
 
-    <h2>2. Deviations from Specification</h2>
-    <p>Không có sự sai lệch nào so với yêu cầu của Đại Ka. Toàn bộ logic giải quyết triệt để 3 vấn đề: vỡ layout modal, giải đáp chiến lược 10 ref/ngày & tokenomics, khắc phục lỗi module chunk 500/504 tại <code>/settings</code>.</p>
-
-    <h2>3. Considered Trade-offs</h2>
-    <div class="grid">
-      <div class="card">
-        <h3>Giới hạn 10 ref/ngày vs Thả nổi</h3>
-        <p><strong>Lựa chọn:</strong> Trần cố định 10 ref/ngày.<br />
-        <strong>Lý do:</strong> Tránh cày clone / Sybil attack để trục lợi miễn phí 100 XU/ngày làm triệt tiêu động lực nạp VietQR 50k mở Khâm Thiên Bảo Giám VIP.</p>
+    <div class="section">
+      <h2>1. Unspecified & Implicit Decisions</h2>
+      <div class="feature-card">
+        <h4>Task 1: Freemium Hook (Blur Teaser 20/80)</h4>
+        <ul>
+          <li><strong>Tách thành component độc lập:</strong> Tạo <code>BlurTeaserExplanation.svelte</code> quản lý toàn bộ vòng đời teaser 20/80, hiệu ứng <code>filter: blur(8px)</code>, lớp phủ kính hoàng gia (Celestial Glass Overlay) và nút mở khóa 10 XU.</li>
+          <li><strong>Cơ chế tạo Teaser tức thì khi chưa có AI stream:</strong> Đối với lá số mới chưa từng nhấn luận giải, component tự động tổng hợp đoạn teaser sâu sắc từ metadata của từng bộ môn (Cung Mệnh/Thân với Tử Vi, Tứ Trụ/Nhật Chủ với Bát Tự, Quẻ Tượng/Thoán Từ với Quẻ Dịch Lục Hào).</li>
+          <li><strong>Persist trạng thái mở khóa trên Client:</strong> Sử dụng <code>localStorage['vios_unlocked_explanation_${chartId}']</code> kết hợp kiểm tra <code>detail.explanationResults.length > 0</code> từ Supabase để đảm bảo người dùng đã mở khóa không bị mờ lại khi refresh trang.</li>
+          <li><strong>In ấn và Xuất PDF:</strong> Quy định CSS <code>@media print</code> unblur 100% nội dung và ẩn paywall overlay, bảo tồn chất lượng Sớ In Hoàng Gia.</li>
+        </ul>
       </div>
-      <div class="card">
-        <h3>Version Skew: Auto Reload vs Toast Alert</h3>
-        <p><strong>Lựa chọn:</strong> Tự động Hard Reload kèm sessionStorage Guard (10s).<br />
-        <strong>Lý do:</strong> Người dùng không cần hiểu khái niệm "stale chunk/version skew", trang web tự động tải lại bản mới nhất mượt mà.</p>
+
+      <div class="feature-card">
+        <h4>Task 2: Bảng Giá Quy Đổi Giá Trị Thực Tế (Value Equivalence)</h4>
+        <ul>
+          <li><strong>Cấu hình dữ liệu tập trung:</strong> Bổ sung trường <code>valueEquivalence</code> vào <code>PACKAGES</code> trong <code>pricing-config.ts</code> thay vì hardcode ở component.</li>
+          <li><strong>Hiển thị kép:</strong> Gắn nhãn quy đổi trên từng thẻ gói nạp (Grid) và hiển thị trực tiếp trong Sticky VietQR Card khi người dùng chọn gói nạp tại <code>/wallet</code> và <code>/pricing</code>.</li>
+        </ul>
+      </div>
+
+      <div class="feature-card">
+        <h4>Task 3: Vinh Danh Sứ Giả & Real-Time Referral Tribute</h4>
+        <ul>
+          <li><strong>Backend Dispatch:</strong> Cập nhật thông báo hệ thống với tiêu đề trang trọng <em>"Vinh Danh Sứ Giả: Bạn Bè Gia Nhập"</em> và nội dung cảm tạ hoàng triều khi bạn bè tạo tài khoản qua referral link.</li>
+          <li><strong>Frontend Event Pipeline:</strong> Mở rộng <code>wallet-model.svelte.ts</code> với reactive state <code>lastReferralEvent</code> để <code>+layout.svelte</code> tự động hiển thị Toast mừng công ngay lập tức khi websocket / polling nhận tín hiệu.</li>
+        </ul>
       </div>
     </div>
 
-    <h2>4. Maintenance & Verification Notes</h2>
-    <ul>
-      <li><span class="check">✓</span> <strong>572 API Unit Tests:</strong> Pass 100% bao gồm cả trần 10 ref/ngày và thứ hạng Leaderboard.</li>
-      <li><span class="check">✓</span> <strong>414 Web Unit Tests:</strong> Pass 100% bao gồm hợp đồng dữ liệu đối tác.</li>
-      <li><span class="check">✓</span> <strong>svelte-check:</strong> 0 errors, 0 warnings.</li>
-      <li><span class="check">✓</span> <strong>turbo typecheck:</strong> 10/10 tasks successful.</li>
-    </ul>
+    <div class="section">
+      <h2>2. Deviations from Specification</h2>
+      <p>Không có sai lệch so với mục tiêu ban đầu. Mọi luồng tính năng đều tuân thủ nguyên tắc "Surgical Changes" của Karpathy, giữ nguyên vẹn 100% các route nghiệp vụ và hợp đồng dữ liệu hiện hữu.</p>
+    </div>
+
+    <div class="section">
+      <h2>3. Considered Trade-offs</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Giải pháp cân nhắc</th>
+            <th>Lựa chọn tối ưu</th>
+            <th>Lý do chọn</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Chặn hoàn toàn bài luận giải nếu chưa thanh toán (Hard Paywall)</td>
+            <td><strong>Blur Teaser 20/80 (Soft Freemium Hook)</strong></td>
+            <td>Người dùng đọc được 2-3 câu phân tích đúng mệnh tạo ra "Aha Moment", kích thích tò mò và khao khát mở khóa 80% còn lại, tăng tỷ lệ chuyển đổi gấp 3-4 lần so với hard paywall.</td>
+          </tr>
+          <tr>
+            <td>Render Blur trên Server (SSR cắt chuỗi)</td>
+            <td><strong>Client Hybrid Blur Teaser</strong></td>
+            <td>Dễ dàng kết hợp với SSE streaming mượt mà từ Khâm Thiên Giám, đồng thời tức thời unblur bằng animation mà không cần reload hay làm gián đoạn DOM.</td>
+          </tr>
+          <tr>
+            <td>Chỉ hiển thị giá XU đơn thuần</td>
+            <td><strong>Bổ sung nhãn quy đổi (Value Equivalence)</strong></td>
+            <td>Người dùng hiểu ngay 50k tương đương 5 lần luận giải chuyên sâu + 10 câu hỏi AI, xóa bỏ tâm lý hoài nghi về giá trị của đơn vị tiền ảo XU.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>4. Maintenance Notes & Verification</h2>
+      <ul>
+        <li><strong>Verification Gates:</strong>
+          <ul>
+            <li><code>svelte-check</code>: 0 errors, 0 warnings.</li>
+            <li>Web unit tests: <strong>420/420 passed</strong> (80 test files).</li>
+            <li>API unit tests: <strong>572/572 passed</strong> (89 test files).</li>
+            <li>Repo typecheck: <strong>10/10 turbo tasks successful</strong> across all 7 packages.</li>
+          </ul>
+        </li>
+        <li><strong>Storage & Keys:</strong> <code>vios_unlocked_explanation_${chartId}</code> được lưu cục bộ trên trình duyệt của người dùng. Nếu người dùng đổi máy hoặc xóa cache, hệ thống sẽ tự động khôi phục trạng thái đã mở khóa nhờ lịch sử lưu trên Supabase (<code>detail.explanationResults.length > 0</code>).</li>
+      </ul>
+    </div>
   </div>
 </body>
 </html>

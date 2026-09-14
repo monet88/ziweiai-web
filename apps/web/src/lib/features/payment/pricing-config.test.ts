@@ -14,11 +14,19 @@ describe('pricing-config', () => {
     expect(XU_PACKAGES.map((p) => p.price)).toEqual([10000, 20000, 50000, 100000, 500000]);
   });
 
-  it('marks 50 XU package as popular / Bán Chạy', () => {
+  it('marks 50 XU package as popular / Bán Chạy and specifies practical value', () => {
     const popularPkg = XU_PACKAGES.find((p) => p.popular);
     expect(popularPkg).toBeDefined();
     expect(popularPkg?.xu).toBe(50);
     expect(popularPkg?.badge).toBe('Bán Chạy');
+    expect(popularPkg?.valueEquivalence).toContain('5 lần luận giải chuyên sâu');
+  });
+
+  it('provides practical value equivalence for all packages', () => {
+    for (const pkg of XU_PACKAGES) {
+      expect(pkg.valueEquivalence).toBeDefined();
+      expect(pkg.valueEquivalence.length).toBeGreaterThan(5);
+    }
   });
 
   it('provides +20% bonus XU on higher packages', () => {

@@ -12,6 +12,7 @@ export function createWalletModel(auth: AuthStore) {
   const queryClient = useQueryClient();
 
   let lastTopupEvent = $state<{ added: number; newBalance: number } | null>(null);
+  let lastReferralEvent = $state<{ rewardXu: number; refereeEmailMasked?: string } | null>(null);
   let previousBalance = $state<number | null>(null);
 
   const queryKey = () => ['wallet_balance', auth.user?.id];
@@ -148,8 +149,10 @@ export function createWalletModel(auth: AuthStore) {
           (payload) => {
             lastReferralRewardTimestamp = Date.now();
             const rewardXu = payload.new?.reward_xu ?? 10;
+            const refereeEmailMasked = payload.new?.referee_email_masked ?? undefined;
+            lastReferralEvent = { rewardXu, refereeEmailMasked };
             import('$lib/stores/toast').then(({ toast }) => {
-              toast.show(`🎉 Đạo hữu vừa nhận thưởng giới thiệu bạn bè: +${rewardXu} XU vào ví!`, 'success');
+              toast.show(`👑 VINH DANH SỨ GIẢ: Bạn vừa nhận thưởng giới thiệu bạn bè: +${rewardXu} XU vào ví!`, 'success');
             });
             // Tự động làm mới số dư, lịch sử giới thiệu & partner hub
             queryClient.invalidateQueries({ queryKey: queryKey() });
@@ -216,6 +219,12 @@ export function createWalletModel(auth: AuthStore) {
     },
     clearTopupEvent() {
       lastTopupEvent = null;
+    },
+    get lastReferralEvent() {
+      return lastReferralEvent;
+    },
+    clearReferralEvent() {
+      lastReferralEvent = null;
     },
     async checkin(turnstileToken?: string) {
       if (!auth.user || auth.isAnonymous) throw new Error('Cần đăng nhập để điểm danh');

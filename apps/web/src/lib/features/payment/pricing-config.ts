@@ -4,6 +4,7 @@ export interface XuPackage {
   readonly label: string;
   readonly badge: string | null;
   readonly desc: string;
+  readonly valueEquivalence: string;
   readonly popular?: boolean;
   readonly bonusXu?: number;
   readonly unitPrice: string;
@@ -24,7 +25,8 @@ export const XU_PACKAGES: readonly XuPackage[] = [
     price: 10000,
     label: 'Gói Trải Nghiệm',
     badge: 'Khởi Đầu',
-    desc: 'Dùng cho 2 lượt luận giải AI hoặc 3 lượt gieo quẻ',
+    desc: 'Dùng cho 1 lượt luận giải chi tiết hoặc 10 câu hỏi AI',
+    valueEquivalence: '1 lần luận giải chuyên sâu hoặc 10 câu hỏi AI',
     unitPrice: '1.000đ / XU'
   },
   {
@@ -32,7 +34,8 @@ export const XU_PACKAGES: readonly XuPackage[] = [
     price: 20000,
     label: 'Gói Cơ Bản',
     badge: null,
-    desc: 'Dùng cho 4 lượt luận giải AI hoặc gieo quẻ',
+    desc: 'Dùng cho 2 lượt luận giải chi tiết hoặc 4 lượt gieo quẻ',
+    valueEquivalence: '2 lần luận giải chuyên sâu + 4 lượt gieo quẻ',
     unitPrice: '1.000đ / XU'
   },
   {
@@ -40,7 +43,8 @@ export const XU_PACKAGES: readonly XuPackage[] = [
     price: 50000,
     label: 'Gói Phổ Biến',
     badge: 'Bán Chạy',
-    desc: 'Dùng cho 10 lượt luận giải AI chuyên sâu',
+    desc: '5 lần luận giải chuyên sâu + 10 câu hỏi AI hoặc 1 Hồ Sơ PDF',
+    valueEquivalence: '5 lần luận giải chuyên sâu + 10 câu hỏi AI',
     popular: true,
     unitPrice: '1.000đ / XU'
   },
@@ -49,7 +53,8 @@ export const XU_PACKAGES: readonly XuPackage[] = [
     price: 100000,
     label: 'Gói Nâng Cao',
     badge: '+20% XU',
-    desc: 'Tặng thêm 20 XU thưởng',
+    desc: 'Tặng thêm 20 XU thưởng (tổng 120 XU)',
+    valueEquivalence: '12 lần luận giải chuyên sâu + 20 câu hỏi AI',
     bonusXu: 20,
     unitPrice: '833đ / XU'
   },
@@ -58,7 +63,8 @@ export const XU_PACKAGES: readonly XuPackage[] = [
     price: 500000,
     label: 'Gói VIP Thưởng Lớn',
     badge: '+20% XU',
-    desc: 'Tặng thêm 100 XU thưởng',
+    desc: 'Tặng thêm 100 XU thưởng (tổng 600 XU)',
+    valueEquivalence: '60 lần luận giải chuyên sâu + 12 Hồ Sơ Hoàng Gia PDF',
     bonusXu: 100,
     unitPrice: '833đ / XU'
   }

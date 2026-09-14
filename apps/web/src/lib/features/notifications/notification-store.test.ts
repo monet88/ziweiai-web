@@ -95,4 +95,23 @@ describe('NotificationStore', () => {
     expect(notificationStore.notifications.length).toBe(0);
     expect(notificationStore.readIds.has('notif-to-remove')).toBe(true);
   });
+
+  it('stores and tracks referral_reward honour notification correctly', () => {
+    const item: InAppNotification = {
+      id: 'ref-honour-1',
+      type: 'referral_reward',
+      title: 'Vinh Danh Sứ Giả Hoàng Triều',
+      body: 'Một đồng đạo vừa gia nhập qua mã giới thiệu của bạn! Thưởng nóng +10 XU đã được trao vào ví.',
+      amountXu: 10,
+      link: '/wallet',
+      createdAt: '2026-09-14T10:00:00Z',
+      isRead: false,
+    };
+
+    notificationStore.pushNotification(item);
+    expect(notificationStore.notifications.length).toBe(1);
+    expect(notificationStore.unreadCount).toBe(1);
+    expect(notificationStore.notifications[0].type).toBe('referral_reward');
+    expect(notificationStore.notifications[0].title).toBe('Vinh Danh Sứ Giả Hoàng Triều');
+  });
 });

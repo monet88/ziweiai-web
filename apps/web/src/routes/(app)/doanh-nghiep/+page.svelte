@@ -2,16 +2,12 @@
   import { resolve } from '$app/paths';
   import { AppScaffold } from '$lib/components/ui';
   import {
-    Building2,
     Crown,
     Zap,
     CheckCircle2,
     FileText,
     ArrowRight,
-    Compass,
-    Sparkles,
-    Shield,
-    Users
+    Compass
   } from 'lucide-svelte';
 </script>
 

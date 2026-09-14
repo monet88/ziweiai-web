@@ -24,7 +24,6 @@
     Flame,
     Lock,
     Building2,
-    FileText,
     Crown
   } from 'lucide-svelte';
 

@@ -37,22 +37,30 @@ GoogleService-Info.plist
 .serena/
 .playwright-mcp/
 .codepilot-uploads/
+.gitnexus/
+**/.gitnexus/
 mcps/
 
 # Build/output/media artifacts.
 apps/mobile/
 node_modules/
+**/node_modules/
 .turbo/
+**/.turbo/
 .svelte-kit/
+**/.svelte-kit/
 dist/
-build/
 **/dist/
+build/
 **/build/
 **/.dart_tool/
 **/.gradle/
 coverage/
+**/coverage/
 test-results/
+**/test-results/
 playwright-report/
+**/playwright-report/
 *.apk
 *.aab
 *.ipa

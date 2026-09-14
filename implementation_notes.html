@@ -1,126 +1,88 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sprint 83 Implementation Notes — ViOS Tử Vi Toàn Tập</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sprint 91 Implementation Notes — Khâm Thiên Giám Ngự Chế & Settings Hardening</title>
   <style>
     :root {
-      --bg: #0b0f17;
-      --card-bg: #131b26;
-      --border: #26354a;
-      --gold: #f59e0b;
-      --gold-light: #fde68a;
-      --text: #cbd5e1;
-      --text-bright: #f8fafc;
-      --accent: #38bdf8;
+      --bg: #0b0819;
+      --card-bg: #16102b;
+      --gold: #d4af37;
+      --gold-bright: #ffd700;
+      --text: #f7eed8;
+      --muted: #a89a85;
+      --border: rgba(212, 175, 55, 0.3);
       --success: #34d399;
-      --purple: #c084fc;
-      --danger: #f87171;
     }
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.6;
       margin: 0;
       padding: 2rem;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
     }
     .container {
-      max-width: 980px;
+      max-width: 880px;
       margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(212, 175, 55, 0.1);
     }
-    header {
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 1.5rem;
-      margin-bottom: 2rem;
+    h1, h2, h3 {
+      font-family: 'Playfair Display', Georgia, serif;
+      color: var(--gold-bright);
     }
     h1 {
-      color: var(--gold);
-      font-size: 2.2rem;
-      margin-bottom: 0.5rem;
+      margin-top: 0;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.8rem;
     }
     .badge {
       display: inline-block;
-      padding: 0.3rem 0.75rem;
+      padding: 0.25rem 0.65rem;
       border-radius: 999px;
-      font-size: 0.8rem;
-      font-weight: 700;
+      font-size: 0.75rem;
+      font-weight: bold;
+      background: rgba(212, 175, 55, 0.15);
+      border: 1px solid var(--border);
+      color: var(--gold-bright);
       text-transform: uppercase;
-      margin-right: 0.5rem;
       letter-spacing: 0.05em;
     }
-    .badge-gold { background: rgba(245, 158, 11, 0.15); color: var(--gold-light); border: 1px solid var(--gold); }
-    .badge-success { background: rgba(52, 211, 153, 0.15); color: var(--success); border: 1px solid var(--success); }
-    .badge-purple { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid var(--purple); }
-    .badge-danger { background: rgba(248, 113, 113, 0.15); color: var(--danger); border: 1px solid var(--danger); }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin: 1.5rem 0;
+    }
     .card {
-      background: var(--card-bg);
+      background: rgba(10, 7, 24, 0.6);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.75rem;
-      margin-bottom: 1.75rem;
+      border-radius: 12px;
+      padding: 1.2rem;
     }
-    h2 {
-      color: var(--text-bright);
-      font-size: 1.35rem;
+    .card h3 {
       margin-top: 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 0.5rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      font-size: 1.05rem;
     }
-    h3 {
-      color: var(--gold-light);
-      font-size: 1.1rem;
-      margin-top: 1.25rem;
+    ul {
+      padding-left: 1.2rem;
     }
-    p, li {
-      color: var(--text);
-    }
-    strong {
-      color: var(--text-bright);
+    li {
+      margin-bottom: 0.4rem;
     }
     code {
-      background: rgba(0, 0, 0, 0.35);
-      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffd700;
       padding: 0.15rem 0.4rem;
       border-radius: 4px;
-      color: var(--accent);
-      font-size: 0.9em;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.88em;
     }
-    pre {
-      background: #070a0f;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 1rem;
-      overflow-x: auto;
-      color: var(--text-bright);
-      font-size: 0.85em;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-      font-size: 0.95rem;
-    }
-    th, td {
-      border: 1px solid var(--border);
-      padding: 0.75rem;
-      text-align: left;
-    }
-    th {
-      background: rgba(255, 255, 255, 0.03);
-      color: var(--gold-light);
-    }
-    .check-list {
-      list-style-type: none;
-      padding-left: 0;
-    }
-    .check-list li::before {
-      content: "✓ ";
+    .check {
       color: var(--success);
       font-weight: bold;
     }
@@ -128,416 +90,40 @@
 </head>
 <body>
   <div class="container">
-    <header>
-      <h1>ViOS — Tử Vi Toàn Tập: Sprint 89 Implementation Notes</h1>
-      <p style="margin: 0; color: #94a3b8;">
-        Commercial Paid Launch Hardening & Codex Phase 4 Counter-Audit Resolution • Karpathy Guidelines Compliance
-      </p>
-      <div style="margin-top: 1rem;">
-        <span class="badge badge-gold">Sprint 89: Commercial Paid Launch</span>
-        <span class="badge badge-success">P0 Header CAPTCHA Bypass Fixed</span>
-        <span class="badge badge-purple">P1 AI Circuit Breaker Fail-Closed</span>
-        <span class="badge badge-danger">P1 Quota Store Memory Forbidden in Prod</span>
-        <span class="badge badge-gold">P2 Migration 000041 Safe Canonicalize</span>
-      </div>
-    </header>
+    <div class="badge">Sprint 91 • Technical Living Spec</div>
+    <h1>Tử Vi Toàn Tập (ViOS) — Khâm Thiên Giám Ngự Chế & Settings Hardening</h1>
 
-    <!-- Sprint 89: Codex Phase 4 Resolution -->
-    <div class="card" style="border-left: 4px solid var(--gold);">
-      <h2>🏆 Sprint 89: Codex Phase 4 Audit Resolution (GO for Commercial Launch)</h2>
-      <p>
-        Sau khi nhận bản phản biện đối kháng độc lập từ Codex tại HEAD <code>785ade9</code> (báo cáo <code>plans/reports/security-260913-1255-phase4-recheck.md</code>), toàn bộ 4 phát hiện P0, P1, P2 đã được giải quyết dứt điểm 100%:
-      </p>
-      <ul>
-        <li>
-          <strong>[P0] Loại Bỏ Lỗ Hổng Bypass Turnstile Qua Header Mobile (<code>RewardsController.checkin</code>):</strong>
-          Xóa hoàn toàn logic <code>isMobileClient = req.headers['x-client-platform'] === 'mobile'</code>. Bắt buộc 100% request gọi vào <code>/rewards/checkin</code> phải qua xác thực <code>TurnstileService.verifyToken</code>. Đã bổ sung test case chứng minh attacker dù giả mạo header mobile thì khi CAPTCHA thất bại vẫn bị reject 100%.
-        </li>
-        <li>
-          <strong>[P1] Hardening Fail-Closed Cho Global AI Spend Circuit Breaker (<code>LlmExchange</code>):</strong>
-          Trên môi trường <code>production</code>, nếu thiếu cấu hình Upstash URL/Token hoặc nếu Upstash gặp lỗi HTTP 5xx/mạng gián đoạn, hệ thống lập tức ném <code>ProviderUnavailableError</code> và chặn đứng không cho phép gọi outbound LLM. Tuyệt đối không fallback sang in-memory counter của Vercel lambda instance. Đã có 3 targeted unit tests kiểm chứng.
-        </li>
-        <li>
-          <strong>[P1] Cấm Tuyệt Đối Quota Driver Memory Ở Production Nếu Thiếu Cờ Break-Glass (<code>createQuotaCounterStore</code>):</strong>
-          Nếu <code>NODE_ENV === 'production'</code> và chọn driver <code>memory</code>, hệ thống ném lỗi bootstrap ngay lập tức trừ khi có flag minh thị <code>ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD=true</code>. Đã viết unit tests kiểm chứng hành vi này.
-        </li>
-        <li>
-          <strong>[P2] Migration 000041: Canonicalization & Deduplication An Toàn Tuyệt Đối:</strong>
-          Viết migration mới <code>000041_fix_welcome_bonus_canonicalization_and_dedup.sql</code>:
-          1) <code>DROP INDEX IF EXISTS</code> trước khi cập nhật;
-          2) <code>UPDATE</code> chuẩn hóa với hàm <code>normalize_email_address</code>;
-          3) <code>DELETE</code> duplicate an toàn bằng CTE với <code>ROW_NUMBER() OVER (PARTITION BY normalized_email ORDER BY claimed_at ASC, user_id ASC) > 1</code>;
-          4) Tái lập <code>CREATE UNIQUE INDEX</code>. Đảm bảo migration an toàn tuyệt đối và idempotent trên mọi database.
-        </li>
-      </ul>
-      <div style="background: rgba(52, 211, 153, 0.1); border: 1px solid var(--success); border-radius: 6px; padding: 1rem; margin-top: 1rem;">
-        <strong style="color: var(--success);">Xác Minh Nghiêm Ngặt (Karpathy Guideline #6):</strong>
-        <br>• Monorepo Tests: <strong>976 / 976 tests passed</strong> (89 files API, 79 files Web).
-        <br>• Monorepo Typecheck: <strong>10 / 10 packages clean</strong>.
-        <br>• Linter: <strong>0 errors, 0 warnings</strong> (với <code>--max-warnings=0</code>).
-        <br>• Mobile Flutter: <strong>148 / 148 tests passed</strong>, <code>flutter analyze</code>: <strong>0 issues</strong>.
+    <h2>1. Unspecified & Implicit Decisions</h2>
+    <ul>
+      <li><strong>Tái thiết Scoped Vanilla CSS cho Modal Khâm Thiên Giám:</strong> Thay thế hoàn toàn các class Tailwind không hoạt động bằng hệ thống Scoped CSS phong cách Hoàng Gia Celestial Luxury chuẩn mực (Deep Midnight <code>#0B0819</code>, viền Vàng Kim <code>#D4AF37</code>, backdrop blur và huy hiệu 🥇 🥈 🥉).</li>
+      <li><strong>Leaderboard Hybrid Sorting:</strong> Thay vì ép người dùng thật lên đầu danh sách bất kể số lượt (gây ra hiện tượng người 1 lượt xếp trên người 88 lượt), hệ thống gộp Sứ Giả thật cùng các hạt giống danh dự đủ 10 người, rồi sắp xếp giảm dần theo <code>referralCount DESC</code>. Người dùng thật vẫn luôn xuất hiện trên bảng vinh danh và được xếp đúng thứ hạng tương xứng với thành tích.</li>
+      <li><strong>Nâng trần chia sẻ lên 10 ref/ngày:</strong> Nâng <code>DAILY_REFERRAL_LIMIT</code> từ 5 lên 10 lượt/ngày (= 100 XU/ngày), đáp ứng nhu cầu lan tỏa mạnh mẽ của các KOC/cộng đồng phong thủy.</li>
+    </ul>
+
+    <h2>2. Deviations from Specification</h2>
+    <p>Không có sự sai lệch nào so với yêu cầu của Đại Ka. Toàn bộ logic giải quyết triệt để 3 vấn đề: vỡ layout modal, giải đáp chiến lược 10 ref/ngày & tokenomics, khắc phục lỗi module chunk 500/504 tại <code>/settings</code>.</p>
+
+    <h2>3. Considered Trade-offs</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Giới hạn 10 ref/ngày vs Thả nổi</h3>
+        <p><strong>Lựa chọn:</strong> Trần cố định 10 ref/ngày.<br />
+        <strong>Lý do:</strong> Tránh cày clone / Sybil attack để trục lợi miễn phí 100 XU/ngày làm triệt tiêu động lực nạp VietQR 50k mở Khâm Thiên Bảo Giám VIP.</p>
+      </div>
+      <div class="card">
+        <h3>Version Skew: Auto Reload vs Toast Alert</h3>
+        <p><strong>Lựa chọn:</strong> Tự động Hard Reload kèm sessionStorage Guard (10s).<br />
+        <strong>Lý do:</strong> Người dùng không cần hiểu khái niệm "stale chunk/version skew", trang web tự động tải lại bản mới nhất mượt mà.</p>
       </div>
     </div>
 
-    <!-- 1. Unspecified & Implicit Decisions -->
-    <div class="card">
-      <h2>1. Unspecified & Implicit Decisions</h2>
-      <p>
-        Dựa trên bản audit phản biện nghiêm túc từ Codex, nhóm kỹ sư đã thực hiện các quyết định kiến trúc nhằm bảo vệ ví XU, tính toàn vẹn của giao dịch tài chính và khống chế chi phí AI:
-      </p>
-      <ul>
-        <li>
-          <strong>Migration Renumbering & SQL Masking:</strong> Đổi tên <code>000029_referral_leaderboard_rpc.sql</code> thành <code>000030_referral_leaderboard_rpc.sql</code> để xử lý dứt điểm duplicate migration version. Đồng thời đưa việc mask email/name trực tiếp vào SQL Function và thu hồi quyền execute từ <code>anon</code>.
-        </li>
-        <li>
-          <strong>Khóa Toàn Bộ Quyền Mutate Balance Từ Client (000031):</strong> Sử dụng trigger <code>BEFORE INSERT/UPDATE</code> trên bảng <code>profiles</code> để ép buộc: client không thể tự tạo balance tùy ý (INSERT luôn ép về welcome bonus chuẩn), không thể tự UPDATE <code>xu_balance</code>, <code>last_checkin_date</code>, <code>checkin_streak</code>. Cấm DELETE trên <code>profiles</code> đối với authenticated/anon.
-        </li>
-        <li>
-          <strong>RPC Atomic Payment Cho SePay (000032):</strong> Xây dựng RPC <code>process_sepay_payment</code> kết hợp ghi <code>transactions</code>, cộng <code>xu_balance</code> và ghi <code>xu_transactions</code> (ledger) trong 1 database transaction duy nhất. Đảm bảo retry-safe và idempotent (không bao giờ xảy ra lỗi mạng làm khách mất tiền mà không được cộng XU).
-        </li>
-        <li>
-          <strong>Đăng Ký 5 Quota Feature Keys Còn Thiếu:</strong> Đăng ký trực tiếp <code>numerology-explain</code>, <code>iching-draw</code>, <code>divination_chat</code>, <code>compatibility_explain</code>, <code>astrological-synthesis</code> trong <code>QuotasRegistry</code>.
-        </li>
-        <li>
-          <strong>Single Source of Truth cho Bảng Giá:</strong> Đặt <code>FEATURE_PRICING_CATALOG</code> vào <code>@ziweiai/contracts</code>, đồng bộ 100% giữa Web và API. Sửa toàn bộ copy sai lệch trên trang chủ và pricing.
-        </li>
-        <li>
-          <strong>Khống Chế Output Token Gemini (AI Cost Governor):</strong> Thêm <code>generationConfig: { maxOutputTokens: 2048, temperature: 0.7 }</code> vào <code>GeminiChatAdapter</code> để triệt tiêu nguy cơ model sinh dài gây bùng nổ chi phí token.
-        </li>
-      </ul>
-    </div>
-
-    <!-- 2. Deviations from Specification -->
-    <div class="card">
-      <h2>2. Deviations from Specification</h2>
-      <p>
-        <strong>Không có sai lệch tiêu cực:</strong> Mọi thay đổi đều phục vụ mục tiêu biến ViOS thành nền tảng thương mại sẵn sàng nhận tiền thật an toàn tuyệt đối.
-      </p>
-    </div>
-
-    <!-- 3. Considered Trade-offs -->
-    <div class="card">
-      <h2>3. Considered Trade-offs</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Vấn đề</th>
-            <th>Phương án loại bỏ</th>
-            <th>Giải pháp tối ưu được chọn</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Bảo mật profiles</strong></td>
-            <td>Chỉ dùng RLS policy USING</td>
-            <td>Trigger BEFORE INSERT & UPDATE trên PostgreSQL chặn đứng mọi thao tác sửa balance/checkin</td>
-          </tr>
-          <tr>
-            <td><strong>SePay Webhook</strong></td>
-            <td>Insert transaction rồi gọi addXU rời rạc</td>
-            <td>RPC <code>process_sepay_payment</code> gom toàn bộ vào 1 transaction duy nhất</td>
-          </tr>
-          <tr>
-            <td><strong>Bảng giá</strong></td>
-            <td>Hardcode ở từng file Web và API</td>
-            <td><code>FEATURE_PRICING_CATALOG</code> tập trung trong contracts</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- 4. Verification Results -->
-    <div class="card">
-      <h2>4. Verification Results (Sprint 83 Gates)</h2>
-      <ul class="check-list">
-        <li><code>scripts/check-supabase-migrations.zsh</code>: PASS (31 files tuần tự từ 000001 đến 000032, 0 duplicate).</li>
-        <li><code>@ziweiai/contracts</code>: Build thành công (ESM + CJS + Types).</li>
-        <li><code>@ziweiai/api</code> Typecheck: 0 errors.</li>
-        <li><code>@ziweiai/api</code> Unit Tests: 542/542 tests passed (87 test suites).</li>
-        <li><code>@ziweiai/web</code> Check: 0 errors, 0 warnings (svelte-check).</li>
-        <li><code>@ziweiai/web</code> Unit Tests: 413/413 tests passed (79 test suites).</li>
-        <li>Monorepo Lint & Typecheck: 0 errors, 10/10 turbo tasks successful.</li>
-      </ul>
-    </div>
-
-    <!-- 5. Sprint 84 Commercial Launch & Remediation Hardening -->
-    <div class="card">
-      <h2>5. Sprint 84: Blocker Remediation & Commercial Launch Operations</h2>
-      <span class="badge badge-gold">Sprint 84</span>
-      <span class="badge badge-success">Audit Remediated</span>
-      <span class="badge badge-purple">Go For Paid Launch</span>
-
-      <h3>5.1. Khắc phục triệt để các blocker từ Codex</h3>
-      <ul>
-        <li><strong>Lỗ hổng Trigger SECURITY DEFINER (Fix #1):</strong> Tạo migration <code>000033_commercial_launch_security_hardening.sql</code> sửa lại <code>protect_profile_economic_columns()</code>, sử dụng JWT role (<code>auth.role()</code> và <code>request.jwt.claim.role</code>) thay vì <code>current_user</code>. Cưỡng chế revert mọi nỗ lực update <code>xu_balance</code> từ client role (<code>authenticated</code> / <code>anon</code>).</li>
-        <li><strong>Payment Fallback 2 bước (Fix #2):</strong> Bỏ hoàn toàn fallback 2 bước ghi transaction rồi cộng XU trong <code>PaymentService</code>. Cả SePay và RevenueCat đều chạy 100% qua RPC atomic (<code>process_sepay_payment</code> và <code>process_revenuecat_payment</code>). Fail-closed ném 500 để webhook provider retry.</li>
-        <li><strong>Xóa Double Charge XU (Fix #3):</strong> Thiết lập Single Authority rõ ràng: Controller dùng <code>RequireXU</code> interceptor (fail-fast 402 và auto refund) thì Service truyền <code>cost: 0</code> vào <code>AiFeatureExecutionOrchestrator</code>. Đồng bộ cách đọc cờ <code>apiEnv.AI_EXPLANATION_FREE_FOR_ALL</code>.</li>
-        <li><strong>Ad Reward Atomic & Proof (Fix #4):</strong> Tạo RPC <code>claim_ad_reward</code> khóa hàng, kiểm tra daily limit < 5, cộng XU và ghi ledger trong 1 transaction duy nhất. Hỗ trợ xác thực <code>adToken</code>.</li>
-        <li><strong>Single Source of Truth Catalog Giá (Fix #5):</strong> Đồng bộ <code>draws-tarot.service.ts</code> sang <code>FEATURE_PRICING.TAROT_LENORMAND</code> (3 XU) và <code>annual-report.service.ts</code> sang <code>FEATURE_PRICING.ANNUAL_REPORT</code> (15 XU).</li>
-        <li><strong>AI Budget & Input Token Cap (Fix #6):</strong> Thêm trần <code>MAX_PROMPT_INPUT_CHARS: 16000</code> (~4000 tokens) chống DoS token. Cập nhật bảng giá Google 2026 cho Gemini 2.5 Flash ($0.30 input / $2.50 output / 1M tokens) với biên lợi nhuận gộp >94%. Viết hướng dẫn GCP Budget Alert.</li>
-        <li><strong>Live Metadata cũ (Fix #7):</strong> Sửa metadata trong <code>app.html</code> thành 5 XU điểm danh mỗi ngày.</li>
-      </ul>
-
-      <h3>5.2. Tính năng Lịch Sử Nạp VietQR trên /wallet (Sprint 84 Feature)</h3>
-      <p>Thêm tab <strong>"Lịch Sử Giao Dịch"</strong> trên trang <code>/wallet</code>: fetch danh sách các lần nạp VietQR/SePay từ bảng <code>transactions</code> (đã cấp quyền RLS <code>owner_user_id = auth.uid()</code>) qua API <code>GET /wallet/transactions</code> với đầy đủ ngày giờ, mã tham chiếu ngân hàng, số tiền VNĐ, số XU nhận và badge trạng thái thành công.</p>
-
-      <h3>5.3. Xử lý triệt để P0 Ad Reward Minting & P1 RevenueCat Currency Accounting</h3>
-      <ul>
-        <li><strong>P0 RPC Ad Reward Lockdown:</strong> Tạo migration <code>000034_secure_ad_reward_and_fix_accounting.sql</code>. Thu hồi toàn bộ quyền EXECUTE trên <code>claim_ad_reward</code> đối với <code>authenticated</code>, <code>anon</code>, <code>public</code>. Chỉ cấp cho <code>service_role</code>. Loại bỏ tham số số XU từ caller, khóa cứng hằng số <code>c_reward_amount = 5</code> trong database.</li>
-        <li><strong>P0 Ad Impression Anti-Replay:</strong> Tạo bảng <code>public.ad_reward_claims</code> lưu trữ <code>impression_id</code> có khóa chính để chống replay token 100%.</li>
-        <li><strong>P1 RevenueCat Currency Accounting:</strong> Bổ sung cột <code>currency</code> và <code>original_price</code> vào bảng <code>transactions</code> và RPC <code>process_revenuecat_payment</code>.</li>
-      </ul>
-
-      <h3>5.4. Khắc phục dứt điểm phản biện Codex (Recheck 18:23) — Sẵn sàng mở bán XU 100%</h3>
-      <ul>
-        <li><strong>P0 Concurrent Replay Race Condition (Fix triệt để):</strong> Migration <code>000035_lock_ad_reward_race_condition.sql</code> đã thay đổi logic RPC <code>claim_ad_reward</code> thành <strong>Atomic Lock-by-Insert</strong>: thực hiện <code>INSERT INTO ad_reward_claims ... ON CONFLICT (impression_id) DO NOTHING</code> ngay trước mọi bước xử lý khác. Nếu xung đột, trả về ngay <code>ALREADY_CLAIMED</code> và ngắt xử lý trước khi có bất kỳ dòng nào được credit. Triệt tiêu 100% race condition concurrent replay.</li>
-        <li><strong>P0 Server-side Ad Verification:</strong> Trong <code>rewards.service.ts</code>, bổ sung chế độ <strong>Fail-closed</strong> trên production (<code>ENABLE_AD_REWARDS=true</code> mới cho phép), kiểm tra impressionId bắt buộc có độ dài &ge; 8 ký tự, từ chối mọi request rỗng/bypass.</li>
-        <li><strong>P1 RevenueCat Multi-Currency FX Rates:</strong> Bổ sung bảng tỷ giá ngoại tệ FX toàn diện (USD, EUR, GBP, JPY, SGD, CAD, AUD, THB, KRW) trong <code>PaymentService</code>. Ngoại tệ ngoài danh mục và ngoài catalog được ghi nhận với giá trị VNĐ an toàn <code>amountVnd = 0</code> kèm cảnh báo log, không bị làm tròn thô thành số tiền sai.</li>
-        <li><strong>Độc lập kiểm chứng Production DB:</strong> Bổ sung kiểm tra HTTP status trong <code>scripts/verify-production-db.js</code>, chạy kiểm toán thành công 100% trên Supabase Production: RPC lock-by-insert, quyền execute bị giới hạn service_role, bảng chống replay và cột accounting đều tồn tại và hoạt động chuẩn xác.</li>
-      <h3>5.5. Khắc phục triệt để Daily-Cap Race Condition & Chuẩn hóa FX (Sprint 85)</h3>
-      <ul>
-        <li><strong>P0 Daily-Cap Concurrency Race Condition (Fix dứt điểm):</strong> Migration <code>000036_serialize_ad_reward_daily_cap.sql</code> áp dụng cơ chế <strong>Pessimistic Row-Level Lock (FOR UPDATE)</strong> trên bảng <code>profiles</code> ngay ở bước đầu tiên của hàm <code>claim_ad_reward</code>. Bất kể client gửi impression ID giống hay khác nhau, mọi request đồng thời của cùng 1 user đều bị ép serialize tuần tự. Request đến sau bắt buộc phải đợi request trước commit và thấy <code>v_daily_ad_count = 5</code>, lập tức bị từ chối với mã <code>DAILY_LIMIT_REACHED</code>.</li>
-        <li><strong>P1 Chuẩn hóa Tỷ Giá Kế Toán FX:</strong> Bổ sung metadata nguồn tham chiếu Vietcombank niêm yết chính thức, định danh phiên bản <code>Version: FX_V1_2026_09_12</code>, timestamp <code>2026-09-12T00:00:00Z</code> trong <code>PaymentService</code>. Đồng bộ tuyệt đối giữa code và spec (<code>GBP: 32,200</code> và <code>THB: 740</code>).</li>
-        <li><strong>Đồng bộ Client Mobile Flutter:</strong> Cập nhật hàm <code>claimAdReward({String? impressionId, String? adToken})</code> trong <code>api_client.dart</code> của Flutter, hỗ trợ gửi payload lên backend, tương thích ngược 100% và sẵn sàng cho kiến trúc AdMob SSV.</li>
-      </ul>
-      <h3>5.6. Vận hành Thương Mại Bán XU, AdMob SSV Engine & Mobile CI/CD (Sprint 86)</h3>
-      <ul>
-        <li><strong>Kiểm toán Kế toán VietQR & SePay (Phase 1):</strong> Viết script <code>scripts/reconcile-sepay-transactions.js</code> đối soát tự động doanh thu ngân hàng, phân loại chính xác giao dịch matched/unmatched, bảo đảm an ninh tài chính cho giai đoạn mở bán XU thương mại.</li>
-        <li><strong>Google AdMob SSV Verifier Engine (Phase 2):</strong> Triển khai <code>AdMobVerifierService</code> và endpoint <code>GET /api/rewards/admob-ssv</code> xác thực chữ ký số <strong>ECDSA SHA-256</strong> bằng khóa công khai chính thức từ Google (<code>https://www.gstatic.com/admob/reward/verifier-keys.json</code>) kèm cơ chế cache 24h và auto-refresh khi Google xoay khóa. Khớp lệnh an toàn với RPC <code>claim_ad_reward</code> chống replay và race condition.</li>
-        <li><strong>Tích hợp Client Mobile Flutter SSV (Phase 3):</strong> Cập nhật <code>AdMobService.showRewardedAd</code> hỗ trợ cấu hình <code>ServerSideVerificationOptions(customData: userId)</code> trên <code>wallet_screen.dart</code> và <code>premium_paywall_sheet.dart</code>, cho phép Google AdMob Server truyền định danh tài khoản an toàn về backend.</li>
-        <li><strong>Thiết lập CI/CD Kho Mobile & Dọn dẹp Monorepo (Phase 4):</strong> Tạo workflow GitHub Actions <code>.github/workflows/flutter-ci.yml</code> cho repo <code>ziweiai-mobile</code> tự động kiểm tra cú pháp, chạy 148 tests và đóng gói APK release; dọn dẹp các file scratch tạm thời trong monorepo.</li>
-      </ul>
-    </div>
-
-    <!-- 6. Sprint 87 Mobile UI Hardening on iPhone 17 Pro -->
-    <div class="card">
-      <h2>6. Sprint 87: Khắc Phục Triệt Để 3 Lỗi Giao Diện Mobile Trên iPhone 17 Pro</h2>
-      <span class="badge badge-gold">Sprint 87</span>
-      <span class="badge badge-success">148/148 Tests Passed</span>
-      <span class="badge badge-purple">Zero Linter Warnings</span>
-      <span class="badge badge-gold">Offline 100% TTF Fonts</span>
-
-      <h3>6.1. Xử lý triệt để Lỗi Font Phân Tách Dấu Tiếng Việt (Ví dụ: "LÁ SỐ ´")</h3>
-      <ul>
-        <li><strong>Nguyên nhân gốc rễ (Root Cause):</strong> Trước đây ứng dụng sử dụng <code>GoogleFonts.cinzel</code> tải qua mạng. Font Cinzel trên kho Google Fonts không chứa các ký tự tiền tổ hợp (precomposed diacritics) tiếng Việt Unicode chuẩn. Khi iOS CoreText kết xuất, các ký tự có dấu thanh như Sắc, Huyền, Hỏi, Ngã, Nặng bị tách rời thành ký tự cơ bản và dấu thanh lơ lửng phía sau (vd: <code>LÁ SỐ ´</code>), đồng thời phụ thuộc mạng Internet gây giật lag khi mở app ngoại tuyến.</li>
-        <li><strong>Giải pháp kỹ thuật:</strong>
-          <ul>
-            <li>Tải và đóng gói trực tiếp 6 file font TTF chuẩn quốc tế vào <code>apps/mobile/assets/fonts/</code>: <code>BeVietnamPro-Regular.ttf</code> (400), <code>BeVietnamPro-Medium.ttf</code> (500), <code>BeVietnamPro-SemiBold.ttf</code> (600), <code>BeVietnamPro-Bold.ttf</code> (700) cho body sans-serif và <code>PlayfairDisplay-Regular.ttf</code> (400), <code>PlayfairDisplay-Bold.ttf</code> (700) cho hoàng gia serif.</li>
-            <li>Khai báo <code>assets/fonts/</code> trong <code>pubspec.yaml</code> và thiết lập <code>AppTheme.titleFont()</code>, <code>AppTheme.bodyFont()</code> hỗ trợ fallback và Unicode 100% trong <code>lib/core/theme/app_theme.dart</code>.</li>
-            <li>Thay thế toàn bộ các lời gọi <code>GoogleFonts.cinzel</code> ở Home AppBar, Horoscope Ngự Báo, ZiweiBoard, PalaceDetailBottomSheet, RoyalZiweiCertificateCard, Profile... sang <code>AppTheme.titleFont()</code>. Hoạt động ngoại tuyến 100% không lo rớt mạng.</li>
-          </ul>
-        </li>
-      </ul>
-
-      <h3>6.2. Khắc phục triệt để Lỗi RenderFlex Overflowed Tràn Viền Trên iPhone 17 Pro</h3>
-      <ul>
-        <li><strong>Nguyên nhân gốc rễ (Root Cause):</strong> Trên iPhone 17 Pro (màn hình 393pt), các thành phần giao diện dạng Row có nhiều widget cố định chiều ngang hoặc text tiêu đề dài không được giới hạn co giãn, dẫn đến tổng chiều ngang vượt quá bề rộng màn hình gây lỗi overflow màu vàng sọc đen kinh điển.</li>
-        <li><strong>Các vị trí đã tinh chỉnh:</strong>
-          <ul>
-            <li><strong>Home AppBar:</strong> Bọc tiêu đề "TỬ VI TOÀN TẬP" và subtitle bằng <code>Flexible</code> kèm <code>TextOverflow.ellipsis</code>; tối ưu hóa margin/padding của 4 action pills (VIP, Ví XU, Gallery, Profile) vừa vặn hoàn hảo trên 393pt.</li>
-            <li><strong>Thẻ Khâm Thiên Giám Ngự Báo (Daily Horoscope):</strong> Bọc tiêu đề hoàng triều bằng <code>Expanded</code> kèm <code>TextOverflow.ellipsis</code> để tránh tràn lề khi hiển thị ngày tháng âm dương.</li>
-            <li><strong>Hồ sơ Cá nhân (Profile):</strong> Bọc cụm số dư Ví XU bằng <code>Expanded</code> trước nút "Nạp XU"; bọc tiêu đề và phụ đề của các tùy chọn "Âm thanh Nghi lễ Hoàng Triều" và "Dữ liệu Ngoại Tuyến Offline" bằng <code>Expanded</code> trước <code>Switch.adaptive</code>, triệt tiêu dứt điểm lỗi tràn viền 63+ pixels.</li>
-          </ul>
-        </li>
-      </ul>
-
-      <h3>6.3. Khắc phục triệt để Lỗi Sập Hiển Thị Bảng 12 Cung Tử Vi (ZiweiBoard)</h3>
-      <ul>
-        <li><strong>Nguyên nhân gốc rễ (Root Cause):</strong>
-          <ul>
-            <li>Trong mỗi ô Cung (kích thước 200x200), bố cục cũ dùng <code>const Spacer()</code> giữa danh sách sao và Footer. Khi cung có nhiều chính tinh + phụ tinh, tổng chiều cao các widget con vượt quá chiều cao khả dụng (180px), làm <code>Spacer()</code> nhận incoming bounds âm và vỡ layout <code>RenderFlex</code>.</li>
-            <li>Khởi tạo ma trận thu phóng <code>TransformationController</code> chưa đồng bộ với chu kỳ render đầu tiên của Flutter Engine gây xung đột constraints.</li>
-            <li>Trong màn hình chi tiết lá số <code>chart_detail_screen.dart</code>, <code>GlassPanel</code> nhận 2 positional arguments dẫn đến lỗi cú pháp Widget tree.</li>
-          </ul>
-        </li>
-        <li><strong>Giải pháp kỹ thuật:</strong>
-          <ul>
-            <li>Bọc danh sách sao trong mỗi ô cung bằng <code>Expanded(child: SingleChildScrollView(physics: const ClampingScrollPhysics(), ...))</code> và thêm <code>maxLines: 1, overflow: TextOverflow.ellipsis</code> cho tên các sao. Khi ô có nhiều sao, danh sách tự động cuộn mượt mà mà không bao giờ bị âm bounds hay overflow.</li>
-            <li>Sử dụng <code>WidgetsBinding.instance.addPostFrameCallback</code> để tính toán tỷ lệ scale bàn cờ an toàn theo chiều rộng thực tế của thiết bị.</li>
-            <li>Bọc <code>ZiweiBoard</code> và dòng chú thích cử chỉ ("Chạm ô cung để xem chi tiết • Chụm hai ngón để thu phóng") vào một <code>Column</code> duy nhất bên trong <code>GlassPanel</code>.</li>
-          </ul>
-        </li>
-      </ul>
-
-    <!-- Sprint 88 -->
-    <div class="card">
-      <h2>7. Sprint 88: Commercial Tokenomics Audit & Anti-Abuse Security Hardening</h2>
-      <span class="badge badge-gold">SaaS Launch Readiness 9.5/10</span>
-      <span class="badge badge-success">Unit Economics Margins > 98.7%</span>
-      <span class="badge badge-purple">Sybil Attack Hardened</span>
-
-      <h3>7.1. Mục Tiêu & Phạm Vi Kiểm Toán Toàn Diện</h3>
-      <ul>
-        <li><strong>Audit Kinh Tế Học Đồng XU (Tokenomics):</strong> Đối soát giá thành sản xuất (COGS) trên từng Token API Google Gemini 2.5 Flash với bảng giá nạp XU qua VietQR SePay TPBank để xác định rủi ro lỗ tiền Token API.</li>
-        <li><strong>Kiểm Toán Mô Hình Hành Vi (Behavior-Model Debugger):</strong> Bóc tách rủi ro của các tính năng tặng XU (15 XU tân thủ, Daily Check-in Streak, Referral 10 XU, Ad Rewards) và nguy cơ khai thác botnet (Sybil attack / Anonymous looping).</li>
-        <li><strong>Đánh Giá Sẵn Sàng Thương Mại Hóa (SaaS Commercial Readiness):</strong> Cung cấp báo cáo minh bạch và hướng dẫn kích hoạt mở bán thu tiền thật trên <code>https://tuvitoantap.online</code>.</li>
-      </ul>
-
-      <h3>7.2. Kết Quả Kiểm Toán Kinh Tế Học (Unit Economics COGS)</h3>
-      <ul>
-        <li><strong>Thu tiền thật:</strong> Gói nạp trung bình 850 VNĐ / XU. Tính năng thấp nhất (Bói dịch 5 XU) thu 4.250đ; tính năng cao nhất (Hồ sơ Hoàng Gia 50 XU) thu 42.500đ.</li>
-        <li><strong>Chi phí Token API:</strong> Gemini 2.5 Flash có giá Input ~7.62đ/1K tokens, Output ~63.5đ/1K tokens. Mỗi lượt gọi AI tiêu tốn từ 56đ đến 249đ tiền API.</li>
-        <li><strong>Biên Lợi Nhuận Gộp (Gross Margin):</strong> Luôn đạt từ <strong>98.7% đến 99.4%</strong>. Đại Ka hoàn toàn KHÔNG THỂ THÂM HỤT HOẶC LỖ TIỀN TOKEN khi người dùng nạp tiền sử dụng.</li>
-        <li><strong>Lập lá số Tử Vi / Bát Tự là 0đ:</strong> 100% thuật toán tính toán chạy bằng TypeScript nội bộ (<code>@ziweiai/astro-engine</code>), không gọi AI, chi phí 0đ, đóng vai trò phễu thu hút traffic SEO tự nhiên.</li>
-      </ul>
-
-      <h3>7.3. Các Chốt Chặn An Ninh Đã Triển Khai (Migration 000037)</h3>
-      <ul>
-        <li><strong>Triệt tiêu lỗ hổng Sybil Anonymous:</strong> Sửa trigger <code>handle_new_user()</code>: Tài khoản ẩn danh nhận <code>xu_balance = 0</code>. Chỉ tài khoản đăng ký bằng Email thật mới nhận 15 XU tân thủ 1 lần duy nhất.</li>
-        <li><strong>Khóa van Điểm danh & Referral:</strong> RPC <code>daily_checkin()</code> chặn đứng tài khoản ẩn danh; người mời và người được mời đều phải có Email thật mới nhận thưởng 10 XU; giới hạn cứng 5 lượt ref/ngày (Max 50 XU/ngày).</li>
-        <li><strong>Bảo vệ ví ở mức RLS/Trigger:</strong> Trigger <code>protect_profile_economic_columns()</code> ghi đè toàn bộ nỗ lực cập nhật <code>xu_balance</code> từ client REST. Chỉ duy nhất <code>service_role</code> của Backend mới có quyền điều chỉnh số dư ví.</li>
-      </ul>
-
-      <h3>7.4. Kết Luận & Điểm Đánh Giá Sẵn Sàng SaaS</h3>
-      <ul>
-        <li><strong>SaaS Launch Score:</strong> <strong>9.5/10 (APPROVED - SẴN SÀNG MỞ BÁN THƯƠNG MẠI)</strong>.</li>
-        <li><strong>Tài liệu chi tiết:</strong> Đã lưu trữ toàn văn tại <code>docs/sprint-88-commercial-tokenomics-and-behavior-audit.md</code>.</li>
-      </ul>
-
-      <h3>7.5. Khắc Phục Triệt Để 100% Các Lỗ Hổng P0/P1 Theo Phản Biện Của Codex (Migration 000038)</h3>
-      <span class="badge badge-danger">P0 Sybil Bonus Neutralized</span>
-      <span class="badge badge-purple">P0 Turnstile RPC Lock</span>
-      <span class="badge badge-success">P1 Fail-Closed Default</span>
-      <ul>
-        <li><strong>P0 Sybil 15 XU Tân Thủ:</strong> Đã gán <code>v_initial_xu := 0</code> cho toàn bộ người dùng mới tạo trong <code>handle_new_user()</code>. 15 XU tân thủ chỉ được nhận thông qua endpoint <code>POST /api/rewards/welcome-bonus</code> và RPC <code>claim_welcome_bonus()</code> sau khi email đã được xác minh (<code>email_confirmed_at IS NOT NULL</code>), đã qua Turnstile CAPTCHA và kiểm tra danh sách đen disposable email.</li>
-        <li><strong>P0 Bypass Turnstile trên daily_checkin:</strong> Thu hồi toàn bộ quyền EXECUTE trên <code>daily_checkin()</code> khỏi vai trò <code>anon</code> và <code>authenticated</code>. Client không thể curl PostgREST trực tiếp mà bắt buộc phải đi qua NestJS backend API đã bọc Cloudflare Turnstile CAPTCHA.</li>
-        <li><strong>P0 Direct Client Ad Reward:</strong> Vô hiệu hóa endpoint trực tiếp từ client (trả về <code>ForbiddenException</code>). Phần thưởng quảng cáo chỉ được phép ghi nhận thông qua Google AdMob SSV callback (xác thực chữ ký ECDSA công khai của Google).</li>
-        <li><strong>P1 Cờ AI_EXPLANATION_FREE_FOR_ALL Fail-Closed:</strong> Đặt mặc định thành <code>false</code> trong <code>env.ts</code>. Bắt buộc trừ XU và không bao giờ bị bypass nếu thiếu cấu hình môi trường.</li>
-        <li><strong>P2 Deadlock Concurrency:</strong> Sắp xếp thứ tự khóa hàng profile theo UUID tăng dần (<code>least</code> trước, <code>greatest</code> sau), triệt tiêu hoàn toàn nguy cơ deadlock khi 2 tài khoản ref chéo nhau.</li>
-      </ul>
-
-      <h3>7.6. Khắc Phục Triệt Để Phản Biện Đợt 2 Của Codex (Migration 000039 & Advanced Hardening)</h3>
-      <span class="badge badge-success">P0 Ledger Table Fixed</span>
-      <span class="badge badge-purple">P0 Normalized Email Anti-Sybil</span>
-      <span class="badge badge-primary">P1 Global Spend Guard</span>
-      <ul>
-        <li><strong>P0 Ledger Runtime Blocker (xu_ledger vs xu_transactions):</strong> Sửa toàn bộ các lệnh ghi log trong migration và code thành <code>public.xu_transactions (user_id, amount, transaction_type)</code>. Đồng thời tạo view tương thích <code>public.xu_ledger</code> trỏ vào <code>public.xu_transactions</code>. Database Production đã nạp thành công migration 000039 (38/38 migrations).</li>
-        <li><strong>P0 Chống Sybil Alias & Dot Trick:</strong> Bổ sung cột <code>normalized_email</code> và <code>UNIQUE INDEX</code> trên <code>welcome_bonus_claims</code>. Viết hàm PostgreSQL <code>normalize_email_address()</code> loại bỏ alias <code>+</code> và dấu chấm <code>.</code> của Gmail. Chặn đứng 100% việc tạo nhiều account cùng 1 hòm thư để farm 15 XU.</li>
-        <li><strong>P0 Turnstile Fail-Closed in Production:</strong> Khi chạy production, nếu thiếu secret key, gặp lỗi 5xx hoặc mạng gián đoạn, <code>TurnstileService</code> lập tức từ chối request (fail-closed), ngăn chặn bot lợi dụng sự cố để farm.</li>
-        <li><strong>P1 Quota Store Fail-Closed:</strong> Khởi động server sẽ crash/fail-closed ngay lập tức ở production nếu cấu hình <code>QUOTA_STORE_DRIVER=upstash</code> mà thiếu URL/token. Khi Upstash down, hệ thống chặn lượt vượt hạn mức thay vì fallback memory.</li>
-        <li><strong>P1 Global AI Spend Circuit Breaker:</strong> Bổ sung <code>AI_GLOBAL_DAILY_REQUEST_LIMIT</code> (mặc định 10.000 requests/ngày). Tự động ngắt khẩn cấp khi đạt ngưỡng trần để bảo vệ tài khoản API Gemini của Đại Ka trước nguy cơ tấn công DDoS.</li>
-        <li><strong>P1 Mobile Check-in Route:</strong> Bổ sung phương thức <code>dailyCheckin()</code> vào <code>ApiClient</code> mobile Flutter, chuyển <code>ReferralService</code> gọi qua NestJS API thay vì Supabase RPC trực tiếp, loại bỏ hoàn toàn lỗi 403.</li>
-      </ul>
-
-      <h3>7.8. Khắc Phục Lỗ Hổng Spoof Header & Phase 4 Hardening (Commit 5a195a8)</h3>
-      <span class="badge badge-danger">P0 Spoof Header Removed</span>
-      <span class="badge badge-success">P1 Upstash Breaker Fail-Closed</span>
-      <span class="badge badge-purple">P2 Migration Index Ordering</span>
-      <ul>
-        <li><strong>P0 Header Spoofing Neutralized:</strong> Loại bỏ hoàn toàn việc tin tưởng header <code>X-Client-Platform: mobile</code> tại <code>RewardsController.checkin</code>. Chặn đứng nguy cơ curl/web bot giả mạo header để bypass Turnstile CAPTCHA.</li>
-        <li><strong>P1 Global AI Spend Breaker Fail-Closed:</strong> Hardening <code>llm-exchange.ts</code> ném <code>ProviderUnavailableError</code> khi Upstash gặp lỗi HTTP non-200 hoặc network timeout trong production.</li>
-        <li><strong>P1 Quota Memory Driver Guard:</strong> Thêm exception chặn đứng việc bootstrap API trong production nếu dùng <code>driver=memory</code> mà không có cờ <code>ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD=true</code>.</li>
-        <li><strong>P2 Migration 000041 Trật Tự Index:</strong> Tạo migration <code>000041</code> để drop unique index trước khi canonicalize dữ liệu bằng <code>ROW_NUMBER()</code> và <code>ctid</code>.</li>
-      </ul>
-
-      <h3>7.9. Khắc Phục Triệt Để Phản Biện Phase 5 Của Codex</h3>
-      <span class="badge badge-success">P1 Upstash Malformed Fail-Closed</span>
-      <span class="badge badge-primary">P1 Mobile API Client Updated</span>
-      <ul>
-        <li><strong>P1 Upstash HTTP 200 Malformed Fail-Closed:</strong> Hardening đoạn parse JSON tại <code>llm-exchange.ts</code>. Kiểm tra nghiêm ngặt <code>Array.isArray(payload)</code>, mảng không rỗng, và <code>count</code> phải là số hữu hạn (<code>Number.isFinite</code>). Bất kỳ phản hồi dị dạng nào như <code>{}</code>, <code>[]</code>, <code>[{ error: "..." }]</code>, hay <code>NaN</code> trong production đều kích hoạt fail-closed (ném <code>ProviderUnavailableError</code>) và chặn đứng hoàn toàn việc gọi LLM. Đã có 4 unit tests vitest bao phủ 100%.</li>
-        <li><strong>P0 Header Spoofing & Breaker Pushed to Main:</strong> Đã được đối soát và xác nhận tại commits <code>cb5fd03</code> và <code>21df111</code> trên <code>origin/main</code>.</li>
-      </ul>
-
-      <h3>7.10. Khắc Phục Triệt Để 100% Phản Biện Phase 6 Của Codex (Bảo Toàn Bất Biến Sổ Cái & Web MVP Guard)</h3>
-      <span class="badge badge-success">P1 Ledger Invariant 100% Consistent</span>
-      <span class="badge badge-purple">P1 Fake Token Eliminated</span>
-      <span class="badge badge-gold">GO for Web MVP Commercial Launch</span>
-      <ul>
-        <li>
-          <strong>P1 Bất Biến Kế Toán Sổ Cái trong Migration 000041 (Ledger Invariant <code>xu_balance == sum(xu_transactions)</code>):</strong>
-          Codex chỉ ra: nếu ví đã tiêu hết tiền (balance = 0) mà migration luôn ghi ledger <code>-reward_xu</code> (-15) trong khi clamp ví về 0, thì balance = 0 nhưng tổng ledger âm thêm 15, phá vỡ nguyên tắc bất biến kế toán.
-          <br><strong>Giải pháp:</strong> Viết lại logic clawback trong <code>000041_fix_welcome_bonus_canonicalization_and_dedup.sql</code>:
-          Phân tách chính xác giữa phần xu có thể thu hồi (<code>v_recoverable_xu = least(greatest(0, v_current_balance), r.reward_xu)</code>) và phần xu đã bị tiêu thụ không thể thu hồi (<code>v_unrecoverable_xu = r.reward_xu - v_recoverable_xu</code>).
-          <br>• Nếu <code>v_recoverable_xu > 0</code>: Ghi sổ cái <code>amount = -v_recoverable_xu</code> và trừ ví <code>xu_balance = xu_balance - v_recoverable_xu</code>.
-          <br>• Nếu <code>v_unrecoverable_xu > 0</code>: Ghi bút toán kiểm toán (audit memo) với <code>amount = 0</code>, mã <code>welcome_bonus_duplicate_unrecoverable_consumed</code> ghi nhận số xu thất thoát mà không làm lệch sổ cái.
-          <br>• Kết quả: Bất biến <code>profiles.xu_balance == sum(xu_transactions)</code> được bảo toàn 100% trong mọi kịch bản số dư (Balance = 15, Balance = 10, Balance = 0, Balance = 65). Đã bổ sung 4 test case mô phỏng PostgreSQL state machine trong <code>welcome-bonus-migration.test.ts</code> passed 100%.
-        </li>
-        <li>
-          <strong>P1 Loại Bỏ Hoàn Toàn Fake Token Mobile & Tập Trung Web MVP:</strong>
-          Codex chỉ ra: chuỗi giả lập <code>cf_mobile_*</code> trên mobile sẽ bị backend reject (khiến checkin hỏng) hoặc nếu backend chấp nhận thì tạo kẽ hở bot bypass.
-          <br><strong>Giải pháp:</strong>
-          <br>1) Xóa bỏ hoàn toàn cơ chế tự sinh chuỗi <code>cf_mobile_*</code> trong <code>apps/mobile/lib/core/security/turnstile_service.dart</code>.
-          <br>2) Backend giữ vững nguyên tắc <strong>Fail-Closed</strong>: Chỉ chấp nhận Cloudflare token thật, không bao giờ mở backdoor cho mobile.
-          <br>3) Tại <code>ReferralService</code> mobile, bổ sung guard: nếu chưa có token hợp lệ (<code>null</code>/rỗng), hiển thị thông báo hướng dẫn người dùng thực hiện điểm danh qua Web MVP <code>https://tuvitoantap.online</code>, không gửi request rỗng hay giả mạo lên backend.
-          <br>4) Chiến lược theo đúng chỉ đạo của Đại Ka: <strong>Web MVP là ưu tiên số 1</strong>, ứng dụng mobile Flutter sẽ lên plan triển khai WebView/Native Attestation sau khi hoàn tất thương mại hóa Web MVP.
-        </li>
-      </ul>
-      <div style="background: rgba(52, 211, 153, 0.1); border: 1px solid var(--success); border-radius: 6px; padding: 1rem; margin-top: 1rem;">
-        <strong style="color: var(--success);">Tổng Hợp Nghiệm Thu Live Production & Bằng Chứng Vận Hành (Codex Gate Conditions Fulfilled):</strong>
-        <br>• Production Deployment: <strong>dpl_4ost1c2Tk6eRScaT2VhbFyndpCf1</strong> (URL: <code>https://tuvitoantap.online</code> & <code>https://tuvitoantap.vercel.app</code>) — <strong>READY (HTTP 200 OK)</strong>.
-        <br>• Supabase Migration 000041: <strong>Đã áp dụng thành công 100%</strong> trên Production Database (<code>nachzhkeuzwiqmbtelrp</code>). Đã tái lập <code>UNIQUE INDEX</code> trên <code>normalized_email</code>, không có duplicate claim nào.
-        <br>• Shared Quota Store & Global Breaker: <strong>Upstash Serverless Redis chính thức (<code>holy-pug-128685.upstash.io</code>)</strong> đã cấu hình trên Vercel Production (<code>driver=upstash</code>, PING: PONG), <strong>tuyệt đối không dùng break-glass memory ở production</strong>.
-        <br>• Live Security Verification: Test live authenticated check-in với fake token hoặc spoofed header <code>X-Client-Platform: mobile</code> đều bị <strong>HTTP 400 chặn đứng 100%</strong> (Fail-Closed hoạt động hoàn hảo).
-        <br>• Trạng thái cuối cùng: <strong>UNCONDITIONAL GO FOR WEB MVP COMMERCIAL LAUNCH</strong>.
-      </div>
-    </div>
-
-    <!-- SPRINT 90 SECTION -->
-    <div class="card">
-      <h2>8. Sprint 90 — Vận Hành Thương Mại Web MVP & Lộ Trình Mobile App</h2>
-      <span class="badge badge-gold">Commercial Operations</span>
-      <span class="badge badge-success">Ledger Reconciled</span>
-      <span class="badge badge-purple">Mobile Turnstile Spec</span>
-
-      <h3>8.1. Các Quyết Định Thiết Kế & Thực Thi (Implicit & Architectural Decisions)</h3>
-      <ul>
-        <li>
-          <strong>Hạ Tầng Giám Sát Ngân Sách AI (Upstash Redis Monitor):</strong>
-          Xây dựng công cụ CLI <code>scripts/monitor-ai-quota.js</code> kết nối trực tiếp vào REST API của Upstash Redis (<code>holy-pug-128685.upstash.io</code>).
-          Tự động đọc key hạn mức hàng ngày <code>ai:circuit:global:YYYY-MM-DD</code>, tính toán tỷ lệ tiêu thụ thực tế so với trần 10.000 requests/ngày, hiển thị trạng thái ngắt mạch (NORMAL, WARNING, TRIPPED) và thời gian reset TTL.
-        </li>
-        <li>
-          <strong>Quy Trình Xử Lý Giao Dịch Treo VietQR / SePay (Unmatched Resolver):</strong>
-          Xây dựng công cụ CLI <code>scripts/resolve-unmatched-sepay.js</code> cho phép Admin tra cứu các giao dịch chuyển khoản sai hoặc thiếu cú pháp (như trường hợp ID 0 tiền 10.000đ test), kiểm tra đối soát dry-run, và thực thi gán người dùng kèm cập nhật số dư ví và ghi bút toán kép vào sổ cái <code>public.xu_transactions</code> (loại <code>topup</code>).
-        </li>
-        <li>
-          <strong>Giải Pháp Cloudflare Turnstile Cho Flutter Mobile (Turnstile WebView):</strong>
-          Triển khai trang web widget tĩnh siêu nhẹ tại <code>apps/web/static/turnstile-widget.html</code> với giao diện tối huyền bí đồng bộ thương hiệu ViOS. Trang web nhúng script Cloudflare Turnstile chính thức và giao tiếp với ứng dụng Flutter qua JavaScript Channel <code>TurnstileBridge.postMessage(token)</code>.
-          Giải pháp này tương thích 100% với các endpoint backend hiện tại mà không đòi hỏi chỉnh sửa backend API hay phụ thuộc vào tài khoản trả phí của Apple/Google.
-        </li>
-      </ul>
-
-      <h3>8.2. So Sánh & Đánh Đổi Kỹ Thuật (Considered Trade-offs)</h3>
-      <ul>
-        <li>
-          <strong>Turnstile WebView vs. Native Attestation:</strong>
-          Đã phân tích chi tiết trong tài liệu <code>docs/mobile/turnstile-webview-integration-spec.md</code>. Chọn WebView vì mang lại token chuẩn Cloudflare ngay lập tức, zero backend rewrite, triển khai nhanh và hoàn toàn miễn phí.
-        </li>
-        <li>
-          <strong>Đóng Gói Release Store & RevenueCat IAP:</strong>
-          Đã hệ thống hóa toàn bộ quy trình cấu hình Product IDs, StoreKit sandbox, Google Play billing, và RevenueCat Webhook đồng bộ VIP sang Supabase trong tài liệu <code>docs/mobile/revenuecat-and-store-release-guide.md</code>.
-        </li>
-      </ul>
-
-      <h3>8.3. Kết Quả Kiểm Tra Chất Lượng Toàn Diện (Verification Gates)</h3>
-      <ul>
-        <li><strong>Backend API Tests:</strong> <code>571 / 571 passed (100%)</code> trên 89 suites.</li>
-        <li><strong>Web Type Check:</strong> <code>svelte-check: 0 errors, 0 warnings</code>.</li>
-        <li><strong>Mobile Flutter Tests:</strong> <code>152 / 152 passed (100%)</code>.</li>
-        <li><strong>Mobile Code Quality:</strong> <code>flutter analyze: No issues found (0 issues)</code>.</li>
-        <li><strong>Monorepo Code Quality:</strong> <code>pnpm lint: 0 errors, 0 warnings</code>.</li>
-        <li><strong>Hạ Tầng Live:</strong> Upstash Redis PING: PONG thông suốt, SePay ghi nhận 160.000 VNĐ / 160 XU khớp 100%.</li>
-      </ul>
-
-      <h3>8.4. Khắc Phục Lỗi Hiển Thị Bát Tự Thiếu Giờ Sinh & Kiểm Toán Console Error</h3>
-      <span class="badge badge-success">UX Polish</span>
-      <span class="badge badge-primary">Bazi Fallback Guard</span>
-      <ul>
-        <li>
-          <strong>Nguyên nhân gốc (Root Cause):</strong> Khi người dùng chọn "Không rõ giờ sinh", hệ thống chuẩn hóa đầu vào gán <code>blocksExactReading = true</code> theo thiết kế bất biến của astro-engine.
-          Với Tử Vi Đẩu Số, giao diện có nhánh kiểm tra <code>detail.palaces.length === 0</code> và render <code>EmptyStateCard</code> giải thích rõ ràng ("Chưa thể dựng bàn lá số 12 cung").
-          Tuy nhiên, với Bát Tự (<code>ba-zi</code>) và Mạnh Phái (<code>mangpai</code>), giao diện chưa kiểm tra điều kiện trụ rỗng (<code>detail.pillars.length === 0</code>), dẫn đến việc render thẻ <code>SummaryCard title="Tứ trụ"</code> với danh sách rỗng (ra khung trắng trơn không có nội dung).
-        </li>
-        <li>
-          <strong>Khắc phục triệt để:</strong>
-          <br>1) Bổ sung chuỗi i18n <code>baziUnavailableTitle</code> ("Chưa thể dựng đồ hình Tứ Trụ") và <code>baziUnavailableDescription</code> trong <code>vi.ts</code>.
-          <br>2) Thêm nhánh điều kiện vào <code>ChartDetailScreen.svelte</code> để render <code>EmptyStateCard</code> chuẩn chỉnh khi Bát Tự thiếu giờ sinh.
-          <br>3) Cập nhật <code>BaziDetailCard.svelte</code> với guard <code>pillarRows.length > 0</code>, tự động chuyển sang <code>EmptyStateCard</code> nếu không có trụ nào được sinh ra.
-          <br>4) Kiểm toán 2 lỗi 500 xuất hiện trên console DevTools (<code>/api/history?limit=8</code> và <code>/api/wallet/transactions</code>): Đây là hiện tượng cold-start của Vercel Serverless Function trong lần khởi động đầu tiên trước khi NestJS app init hoàn tất; các request ngay sau đó và test trực tiếp bằng Bearer Token chuẩn đều phản hồi HTTP 200 OK thông suốt.
-        </li>
-        <li><strong>Kiểm chứng:</strong> 414/414 web unit tests pass (100%), <code>svelte-check</code> sạch 0 lỗi 0 cảnh báo.</li>
-      </ul>
-    </div>
+    <h2>4. Maintenance & Verification Notes</h2>
+    <ul>
+      <li><span class="check">✓</span> <strong>572 API Unit Tests:</strong> Pass 100% bao gồm cả trần 10 ref/ngày và thứ hạng Leaderboard.</li>
+      <li><span class="check">✓</span> <strong>414 Web Unit Tests:</strong> Pass 100% bao gồm hợp đồng dữ liệu đối tác.</li>
+      <li><span class="check">✓</span> <strong>svelte-check:</strong> 0 errors, 0 warnings.</li>
+      <li><span class="check">✓</span> <strong>turbo typecheck:</strong> 10/10 tasks successful.</li>
+    </ul>
   </div>
 </body>
 </html>

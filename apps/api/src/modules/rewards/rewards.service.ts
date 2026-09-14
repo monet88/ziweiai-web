@@ -9,7 +9,7 @@ import { apiEnv } from '../../config/env';
 
 import { AdMobVerifierService } from './admob-verifier.service';
 
-export const DAILY_REFERRAL_LIMIT = 5; // Tối đa 5 lượt thưởng ref / ngày = 50 XU/ngày cho 1 tài khoản giới thiệu
+export const DAILY_REFERRAL_LIMIT = 10; // Tối đa 10 lượt thưởng ref / ngày = 100 XU/ngày cho 1 tài khoản giới thiệu
 
 @Injectable()
 export class RewardsService {
@@ -33,10 +33,15 @@ export class RewardsService {
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (userProfile?.display_name && isDisposableEmail(userProfile.display_name)) {
-        this.logger.warn(`User ${userId} using disposable email (${userProfile.display_name}). Bypassing referral reward.`);
-        effectiveReferralCode = null;
-      } else {
+      if (userProfile?.display_name) {
+        const email = userProfile.display_name;
+        const localPart = email.split('@')[0] || '';
+        if (isDisposableEmail(email) || localPart.includes('+')) {
+          this.logger.warn(`User ${userId} using disposable email or alias (${email}). Bypassing referral reward.`);
+          effectiveReferralCode = null;
+        }
+      }
+      if (effectiveReferralCode) {
         // 2. Kiểm tra Daily Referral Cap cho người giới thiệu (referrer)
         const { data: referrerProfile } = await this.client
           .from('profiles')
@@ -270,74 +275,71 @@ export class RewardsService {
 
     // Mẫu danh dự hạt giống (dùng lấp đầy các vị trí còn thiếu nếu hệ thống chưa đủ 10 Sứ Giả thật)
     const honorarySeedAmbassadors = [
-      { maskedName: 'ngu***@gmail.com', referralCount: 88, rewardXuEarned: 880, tier: 'kim_cuong' as const, badge: '👑 Quán Quân Lan Tỏa' },
-      { maskedName: 'tra***@yahoo.com', referralCount: 65, rewardXuEarned: 650, tier: 'kim_cuong' as const, badge: '🥈 Á Quân Hoàng Gia' },
-      { maskedName: 'leh***@outlook.com', referralCount: 42, rewardXuEarned: 420, tier: 'kim_cuong' as const, badge: '🥉 Quý Quân Tinh Anh' },
-      { maskedName: 'pha***@gmail.com', referralCount: 28, rewardXuEarned: 280, tier: 'vang' as const, badge: '✨ Sứ Giả Vàng' },
-      { maskedName: 'vu.***@gmail.com', referralCount: 22, rewardXuEarned: 220, tier: 'vang' as const, badge: '✨ Sứ Giả Vàng' },
-      { maskedName: 'doan***@gmail.com', referralCount: 18, rewardXuEarned: 180, tier: 'vang' as const, badge: '✨ Sứ Giả Vàng' },
-      { maskedName: 'hoa***@gmail.com', referralCount: 14, rewardXuEarned: 140, tier: 'bac' as const, badge: '⭐ Sứ Giả Bạc' },
-      { maskedName: 'bui***@gmail.com', referralCount: 11, rewardXuEarned: 110, tier: 'bac' as const, badge: '⭐ Sứ Giả Bạc' },
-      { maskedName: 'din***@gmail.com', referralCount: 8, rewardXuEarned: 80, tier: 'bac' as const, badge: '⭐ Sứ Giả Bạc' },
-      { maskedName: 'mai***@gmail.com', referralCount: 6, rewardXuEarned: 60, tier: 'bac' as const, badge: '⭐ Sứ Giả Bạc' },
+      { maskedName: 'ngu***@gmail.com', referralCount: 88, rewardXuEarned: 880, tier: 'kim_cuong' as const },
+      { maskedName: 'tra***@yahoo.com', referralCount: 65, rewardXuEarned: 650, tier: 'kim_cuong' as const },
+      { maskedName: 'leh***@outlook.com', referralCount: 42, rewardXuEarned: 420, tier: 'kim_cuong' as const },
+      { maskedName: 'pha***@gmail.com', referralCount: 28, rewardXuEarned: 280, tier: 'vang' as const },
+      { maskedName: 'vu.***@gmail.com', referralCount: 22, rewardXuEarned: 220, tier: 'vang' as const },
+      { maskedName: 'doan***@gmail.com', referralCount: 18, rewardXuEarned: 180, tier: 'vang' as const },
+      { maskedName: 'hoa***@gmail.com', referralCount: 14, rewardXuEarned: 140, tier: 'bac' as const },
+      { maskedName: 'bui***@gmail.com', referralCount: 11, rewardXuEarned: 110, tier: 'bac' as const },
+      { maskedName: 'din***@gmail.com', referralCount: 8, rewardXuEarned: 80, tier: 'bac' as const },
+      { maskedName: 'mai***@gmail.com', referralCount: 6, rewardXuEarned: 60, tier: 'bac' as const },
     ];
 
-    const leaderboard: Array<{
-      rank: number;
+    // Tạo danh sách kết hợp: ưu tiên toàn bộ Sứ Giả thật, lấp đầy bằng hạt giống
+    const combinedCandidates: Array<{
       maskedName: string;
       referralCount: number;
       rewardXuEarned: number;
       tier: 'dong' | 'bac' | 'vang' | 'kim_cuong';
-      badge: string;
     }> = [];
 
-    // Đưa Sứ Giả thật lên đầu
-    for (let i = 0; i < realAmbassadors.length && leaderboard.length < 10; i++) {
-      const real = realAmbassadors[i];
-      const rank = leaderboard.length + 1;
+    for (const real of realAmbassadors) {
       let ambassadorTier: 'dong' | 'bac' | 'vang' | 'kim_cuong' = 'dong';
       if (real.referralCount >= 30) ambassadorTier = 'kim_cuong';
       else if (real.referralCount >= 15) ambassadorTier = 'vang';
       else if (real.referralCount >= 5) ambassadorTier = 'bac';
 
-      let badge = '🌱 Sứ Giả Triển Vọng';
-      if (rank === 1) badge = '👑 Quán Quân Lan Tỏa';
-      else if (rank === 2) badge = '🥈 Á Quân Hoàng Gia';
-      else if (rank === 3) badge = '🥉 Quý Quân Tinh Anh';
-      else if (ambassadorTier === 'kim_cuong') badge = '💎 Đại Sứ Kim Cương';
-      else if (ambassadorTier === 'vang') badge = '✨ Sứ Giả Vàng';
-      else if (ambassadorTier === 'bac') badge = '⭐ Sứ Giả Bạc';
-
-      leaderboard.push({
-        rank,
+      combinedCandidates.push({
         maskedName: real.maskedName,
         referralCount: real.referralCount,
         rewardXuEarned: real.rewardXuEarned,
         tier: ambassadorTier,
-        badge,
       });
     }
 
-    // Nếu chưa đủ 10 người, lấp đầy các vị trí còn lại bằng hạt giống danh dự
-    let seedIdx = 0;
-    while (leaderboard.length < 10 && seedIdx < honorarySeedAmbassadors.length) {
-      const seed = honorarySeedAmbassadors[seedIdx];
-      const rank = leaderboard.length + 1;
-      let badge = seed.badge;
+    // Nếu chưa đủ 10 người, lấy thêm các hạt giống danh dự từ trên xuống
+    const neededSeeds = Math.max(0, 10 - combinedCandidates.length);
+    for (let i = 0; i < neededSeeds && i < honorarySeedAmbassadors.length; i++) {
+      combinedCandidates.push(honorarySeedAmbassadors[i]);
+    }
+
+    // Sắp xếp giảm dần tuyệt đối theo referralCount DESC, phụ theo rewardXuEarned DESC
+    combinedCandidates.sort(
+      (a, b) => b.referralCount - a.referralCount || b.rewardXuEarned - a.rewardXuEarned,
+    );
+
+    const leaderboard = combinedCandidates.slice(0, 10).map((cand, index) => {
+      const rank = index + 1;
+      let badge = '🌱 Sứ Giả Triển Vọng';
       if (rank === 1) badge = '👑 Quán Quân Lan Tỏa';
       else if (rank === 2) badge = '🥈 Á Quân Hoàng Gia';
       else if (rank === 3) badge = '🥉 Quý Quân Tinh Anh';
+      else if (cand.tier === 'kim_cuong') badge = '💎 Đại Sứ Kim Cương';
+      else if (cand.tier === 'vang') badge = '✨ Sứ Giả Vàng';
+      else if (cand.tier === 'bac') badge = '⭐ Sứ Giả Bạc';
+      else badge = '🥉 Sứ Giả Đồng';
 
-      leaderboard.push({
+      return {
         rank,
-        maskedName: seed.maskedName,
-        referralCount: seed.referralCount,
-        rewardXuEarned: seed.rewardXuEarned,
-        tier: seed.tier,
+        maskedName: cand.maskedName,
+        referralCount: cand.referralCount,
+        rewardXuEarned: cand.rewardXuEarned,
+        tier: cand.tier,
         badge,
-      });
-      seedIdx++;
-    }
+      };
+    });
 
     return {
       referralCode,

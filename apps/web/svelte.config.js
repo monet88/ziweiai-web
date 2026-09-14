@@ -14,6 +14,9 @@ const config = {
     adapter: adapter({
       fallback: 'index.html',
     }),
+    version: {
+      pollInterval: 60000,
+    },
   },
 };
 

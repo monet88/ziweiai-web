@@ -219,7 +219,7 @@ describe('RewardsController & RewardsService', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                gte: vi.fn().mockResolvedValue({ count: 5, error: null }), // Đã đủ 5 lượt
+                gte: vi.fn().mockResolvedValue({ count: 10, error: null }), // Đã đủ 10 lượt trần mỗi ngày
               }),
             }),
           };
@@ -235,7 +235,7 @@ describe('RewardsController & RewardsService', () => {
       expect(result).toEqual({ success: true, xu_added: 5 });
       expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('daily_checkin', {
         p_user_id: 'clean-user-uuid',
-        p_referral_code: null, // Bị bỏ qua vì referrer đã đạt trần 5 lượt/ngày
+        p_referral_code: null, // Bị bỏ qua vì referrer đã đạt trần 10 lượt/ngày
       });
     });
 
@@ -277,27 +277,35 @@ describe('RewardsController & RewardsService', () => {
 
   describe('getReferrals', () => {
     it('should return referral history for authenticated user', async () => {
-      const mockHistory = [
-        {
-          id: 'ref-1',
-          referrerId: 'user-uuid-123',
-          refereeId: 'referee-1',
-          rewardXu: 10,
-          status: 'completed' as const,
-          createdAt: '2026-09-09T10:00:00.000Z',
-          completedAt: '2026-09-09T10:05:00.000Z',
-          refereeEmailMasked: 'g***0@gmail.com',
-        },
-      ];
-      (mockProfilesRepo.listReferralsByReferrerId as any).mockResolvedValueOnce(mockHistory);
-
       const mockReq = {
         authenticatedUser: { userId: 'user-uuid-123' },
       } as AuthenticatedRequest;
 
+      const mockHistory = [
+        {
+          id: 'ref-1',
+          referrerId: 'user-uuid-123',
+          refereeId: 'ref-user-1',
+          rewardXu: 10,
+          status: 'completed',
+          createdAt: '2026-09-01T00:00:00Z',
+        },
+      ];
+
+      (mockProfilesRepo.listReferralsByReferrerId as any).mockResolvedValueOnce(mockHistory);
+
       const result = await controller.getReferrals(mockReq);
-      expect(result).toEqual(mockHistory);
+
       expect(mockProfilesRepo.listReferralsByReferrerId).toHaveBeenCalledWith('user-uuid-123');
+      expect(result).toEqual(mockHistory);
+    });
+
+    it('should throw BadRequestException if user id is missing', async () => {
+      const mockReq = {
+        authenticatedUser: undefined,
+      } as any;
+
+      await expect(controller.getReferrals(mockReq)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -361,6 +369,12 @@ describe('RewardsController & RewardsService', () => {
           referralCount: 99,
           rewardXuEarned: 990,
         },
+        {
+          referrerId: 'user-newbie',
+          maskedName: 'newbie***@gmail.com',
+          referralCount: 1,
+          rewardXuEarned: 10,
+        },
       ]);
 
       const res = await controller.getPartnerHub(mockReq);
@@ -377,6 +391,12 @@ describe('RewardsController & RewardsService', () => {
       expect(res.leaderboard[0]?.rewardXuEarned).toBe(990);
       expect(res.leaderboard[0]?.tier).toBe('kim_cuong');
       expect(res.leaderboard[0]?.badge).toBe('👑 Quán Quân Lan Tỏa');
+
+      // Đảm bảo bảng xếp hạng sắp xếp giảm dần: người có 1 ref không bị đẩy lên top 1 hay 2
+      const newbieInBoard = res.leaderboard.find((x) => x.maskedName === 'newbie***@gmail.com');
+      expect(newbieInBoard).toBeDefined();
+      expect(newbieInBoard!.rank).toBeGreaterThan(3);
+      expect(newbieInBoard!.referralCount).toBe(1);
     });
 
     it('should throw BadRequestException if user id is missing', async () => {

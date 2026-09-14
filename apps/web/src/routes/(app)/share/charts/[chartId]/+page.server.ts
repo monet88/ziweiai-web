@@ -11,9 +11,18 @@ const systemNames: Record<string, string> = {
   'ba-zi': 'Bát Tự Tứ Trụ',
   mangpai: 'Bát Tự Mạnh Phái',
   'mei-hua-yi-shu': 'Mai Hoa Dịch Số',
-  'liu-yao': 'Lục Hào',
+  'liu-yao': 'Lục Hào Quái Tượng',
   'da-liu-ren': 'Đại Lục Nhâm',
   'qi-men-dun-jia': 'Kỳ Môn Độn Giáp',
+  tarot: 'Tarot Huyền Bí',
+  mbti: 'MBTI Nhân Cách',
+  face: 'Nhân Tướng Học AI',
+  palm: 'Thuật Xem Chỉ Tay AI',
+  lenormand: 'Lenormand Cổ Điển',
+  dream: 'Chu Công Giải Mộng',
+  sticks: 'Linh Sâm Thánh Mẫu',
+  almanac: 'Hoàng Đạo Trạch Cát',
+  hepan: 'Hợp Hôn Giao Duyên',
 };
 
 const systemTitles: Record<string, string> = {
@@ -24,6 +33,15 @@ const systemTitles: Record<string, string> = {
   'liu-yao': 'Quẻ Lục Hào',
   'da-liu-ren': 'Quẻ Đại Lục Nhâm',
   'qi-men-dun-jia': 'Kỳ Môn Độn Giáp',
+  tarot: 'Trải bài Tarot',
+  mbti: 'Bản đồ MBTI',
+  face: 'Tướng Pháp Diện Tướng',
+  palm: 'Chỉ Tay Phong Thủy',
+  lenormand: 'Trải bài Lenormand',
+  dream: 'Giải Mã Giấc Mơ',
+  sticks: 'Xin Xăm Linh Ứng',
+  almanac: 'Lịch Hoàng Đạo & Trạch Cát',
+  hepan: 'Hợp Bàn Duyên Số',
 };
 
 export const load: PageServerLoad = async ({ params, url }) => {

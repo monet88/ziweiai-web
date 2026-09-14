@@ -579,7 +579,7 @@
   <EnhancedSocialShareModal
     title={pageTitle}
     subtitle={copy.heroSubtitle}
-    path={`/charts/${chartId}`}
+    path={`/share/charts/${chartId}`}
     quote="Mời bạn khám phá bản đồ vận mệnh Tử Vi Hoàng Gia cùng ViOS!"
     onClose={() => (isEnhancedShareModalOpen = false)}
   />

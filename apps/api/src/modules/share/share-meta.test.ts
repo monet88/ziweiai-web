@@ -5,6 +5,13 @@ describe('share-meta', () => {
   it('resolveSystemLabels maps known systems', () => {
     expect(resolveSystemLabels('zi-wei-dou-shu').systemName).toBe('Tử Vi Đẩu Số');
     expect(resolveSystemLabels('mei-hua-yi-shu').title).toBe('Quẻ Mai Hoa');
+    expect(resolveSystemLabels('tarot').systemName).toBe('Tarot Huyền Bí');
+    expect(resolveSystemLabels('tarot').title).toBe('Trải bài Tarot');
+    expect(resolveSystemLabels('mbti').systemName).toBe('MBTI Nhân Cách');
+    expect(resolveSystemLabels('face').title).toBe('Tướng Pháp Diện Tướng');
+    expect(resolveSystemLabels('palm').title).toBe('Chỉ Tay Phong Thủy');
+    expect(resolveSystemLabels('hepan').systemName).toBe('Hợp Hôn Giao Duyên');
+    expect(resolveSystemLabels('sticks').title).toBe('Xin Xăm Linh Ứng');
   });
 
   it('buildShareMeta includes gender and year when present', () => {

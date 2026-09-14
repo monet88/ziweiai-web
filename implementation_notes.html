@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sprint 93 Implementation Notes — Phase 8: Monetization & Paywall Conversion Optimization</title>
+  <title>Sprint 94 Implementation Notes — Phase 8: Live Production Smoke, Viral SEO OpenGraph & Commercial GTM</title>
   <style>
     :root {
       --bg: #0b0819;
@@ -58,141 +58,90 @@
       color: var(--success);
       border-color: rgba(52, 211, 153, 0.3);
     }
-    .section {
-      margin-bottom: 2rem;
-    }
-    ul {
-      padding-left: 1.25rem;
-    }
-    li {
-      margin-bottom: 0.5rem;
-    }
-    code {
-      background: rgba(0, 0, 0, 0.4);
-      padding: 0.2rem 0.4rem;
-      border-radius: 4px;
-      font-family: monospace;
-      color: var(--gold);
-    }
-    .feature-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(212, 175, 55, 0.2);
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-    }
-    .feature-card h4 {
-      margin-top: 0;
-      color: var(--gold);
-    }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 1rem;
-      margin-bottom: 1rem;
+      margin: 1.5rem 0;
     }
     th, td {
       border: 1px solid var(--border);
-      padding: 0.6rem 0.8rem;
+      padding: 0.75rem 1rem;
       text-align: left;
-      font-size: 0.9rem;
     }
     th {
       background: rgba(212, 175, 55, 0.1);
       color: var(--gold-bright);
     }
+    code {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      color: var(--gold);
+      font-size: 0.9em;
+    }
+    pre {
+      background: #090614;
+      border: 1px solid var(--border);
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      color: #e2e8f0;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <span class="badge">Sprint 93 — Phase 8</span>
-    <span class="badge badge-success">992 Tests Passing (572 API + 420 Web)</span>
-    <span class="badge badge-success">Svelte-check: 0 Errors 0 Warnings</span>
-    <h1>Implementation Notes — Monetization & Paywall Conversion Optimization</h1>
+    <div class="badge badge-success">SPRINT 94 COMPLETE — ALL 993 TESTS PASSING</div>
+    <h1>Sprint 94 Living Spec & Implementation Notes</h1>
+    <p><strong>Dự án:</strong> Tử Vi Toàn Tập (ViOS) — <a href="https://tuvitoantap.online" style="color:var(--gold);">https://tuvitoantap.online</a><br>
+       <strong>Giai đoạn:</strong> Phase 8 — Live Production Smoke, Viral SEO OpenGraph & Commercial GTM</p>
 
-    <div class="section">
-      <h3>Executive Summary</h3>
-      <p>Sprint 93 hoàn thiện đòn bẩy tối ưu chuyển đổi doanh thu (Paywall CRO & Monetization) cho nền tảng ViOS (Tử Vi Toàn Tập), đưa hệ thống chuyển hóa người dùng từ trải nghiệm miễn phí sang người dùng trả phí (Freemium &rarr; Paid) với tâm lý thỏa mãn và minh bạch cao nhất.</p>
-    </div>
+    <h2>1. Unspecified & Implicit Decisions</h2>
+    <ul>
+      <li><strong>Tối ưu hóa đường dẫn chia sẻ mạng xã hội (Viral Crawler URL):</strong> Trong <code>ChartDetailScreen.svelte</code>, đường dẫn chia sẻ trước đây là <code>/charts/${chartId}</code> (SPA client-side route). Crawlers (Facebook/Zalo/TikTok) khi cào vào link này chỉ nhận được file tĩnh <code>app.html</code> với thông tin chung. Đã đổi sang <code>/share/charts/${chartId}</code>: bot cào sẽ nhận được thẻ OpenGraph động và ảnh OG đồ họa sắc nét từ API NestJS, trong khi người dùng thật vẫn được chuyển hướng mượt mà (302 Redirect) về lá số tương ứng kèm mã giới thiệu.</li>
+      <li><strong>Mở rộng danh mục 16 hệ thuật số cho OpenGraph Meta:</strong> Mở rộng <code>SYSTEM_LABELS</code> từ 7 hệ lên đầy đủ 16 hệ thuật số (Tarot, MBTI, Tướng Pháp, Chỉ Tay, Lenormand, Giải Mộng, Xin Xăm, Lịch Hoàng Đạo, Hợp Bàn) để mọi tính năng trong ViOS khi chia sẻ đều có tiêu đề, mô tả và nhãn hoàng gia chuẩn xác.</li>
+      <li><strong>Nâng cấp Bot Crawler User-Agent Regex:</strong> Bổ sung <code>bytespider</code>, <code>tiktok</code>, <code>threads</code>, <code>viber</code> vào bộ lọc bot crawler.</li>
+      <li><strong>Sửa lỗi nạp Font Satori Serverless:</strong> Thay thế cơ chế đọc file font TTF cục bộ (vốn chứa mã HTML preview lỗi từ trước) trong <code>og.png/+server.ts</code> bằng hàm nạp trực tiếp bộ font Inter từ jsDelivr với in-memory cache, đồng bộ 100% với backend NestJS.</li>
+    </ul>
 
-    <div class="section">
-      <h2>1. Unspecified & Implicit Decisions</h2>
-      <div class="feature-card">
-        <h4>Task 1: Freemium Hook (Blur Teaser 20/80)</h4>
-        <ul>
-          <li><strong>Tách thành component độc lập:</strong> Tạo <code>BlurTeaserExplanation.svelte</code> quản lý toàn bộ vòng đời teaser 20/80, hiệu ứng <code>filter: blur(8px)</code>, lớp phủ kính hoàng gia (Celestial Glass Overlay) và nút mở khóa 10 XU.</li>
-          <li><strong>Cơ chế tạo Teaser tức thì khi chưa có AI stream:</strong> Đối với lá số mới chưa từng nhấn luận giải, component tự động tổng hợp đoạn teaser sâu sắc từ metadata của từng bộ môn (Cung Mệnh/Thân với Tử Vi, Tứ Trụ/Nhật Chủ với Bát Tự, Quẻ Tượng/Thoán Từ với Quẻ Dịch Lục Hào).</li>
-          <li><strong>Persist trạng thái mở khóa trên Client:</strong> Sử dụng <code>localStorage['vios_unlocked_explanation_${chartId}']</code> kết hợp kiểm tra <code>detail.explanationResults.length > 0</code> từ Supabase để đảm bảo người dùng đã mở khóa không bị mờ lại khi refresh trang.</li>
-          <li><strong>In ấn và Xuất PDF:</strong> Quy định CSS <code>@media print</code> unblur 100% nội dung và ẩn paywall overlay, bảo tồn chất lượng Sớ In Hoàng Gia.</li>
-        </ul>
-      </div>
+    <h2>2. Deviations from Specification</h2>
+    <ul>
+      <li><strong>Không có sai lệch (Zero Spec Deviation):</strong> Mọi thay đổi đều bám sát tuyệt đối 3 yêu cầu của Sprint 94: Kiểm tra toàn diện Live Production Smoke, Tối ưu hóa SEO Meta & Dynamic OpenGraph, và Trang bị bộ công cụ Marketing thực chiến (GTM Playbook & Campaign Link Generator).</li>
+    </ul>
 
-      <div class="feature-card">
-        <h4>Task 2: Bảng Giá Quy Đổi Giá Trị Thực Tế (Value Equivalence)</h4>
-        <ul>
-          <li><strong>Cấu hình dữ liệu tập trung:</strong> Bổ sung trường <code>valueEquivalence</code> vào <code>PACKAGES</code> trong <code>pricing-config.ts</code> thay vì hardcode ở component.</li>
-          <li><strong>Hiển thị kép:</strong> Gắn nhãn quy đổi trên từng thẻ gói nạp (Grid) và hiển thị trực tiếp trong Sticky VietQR Card khi người dùng chọn gói nạp tại <code>/wallet</code> và <code>/pricing</code>.</li>
-        </ul>
-      </div>
+    <h2>3. Considered Trade-offs</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Lựa chọn</th>
+          <th>Ưu điểm</th>
+          <th>Nhược điểm & Đánh đổi</th>
+          <th>Quyết định</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>SSR toàn bộ trang lá số</strong> vs <strong>SPA + Dedicated /share route rewrite</strong></td>
+          <td>SSR cho phép cào trực tiếp mọi URL</td>
+          <td>Kiến trúc SvelteKit adapter-static hiện tại cực nhanh, nhẹ và an toàn tuyệt đối. Chuyển sang SSR sẽ tăng chi phí compute serverless đáng kể.</td>
+          <td><strong>Giữ SPA + Vercel rewrite <code>/share/*</code> về API</strong>: Vừa đảm bảo SEO/OG 100% cho bot, vừa giữ tốc độ tải trang client cực nhanh và chi phí cận biên bằng 0.</td>
+        </tr>
+        <tr>
+          <td><strong>Sinh ảnh OG phía Browser (Canvas)</strong> vs <strong>Sinh ảnh OG phía Server (Satori + Resvg)</strong></td>
+          <td>Canvas client-side không tốn CPU server</td>
+          <td>Bot Facebook/Zalo không thực thi JavaScript của client, ảnh chia sẻ sẽ bị rỗng</td>
+          <td><strong>Dùng Satori + Resvg phía Server</strong>: Ảnh PNG 1200x630px sắc nét, hiển thị lập tức trong 100% bản xem trước tin nhắn Zalo/Facebook/TikTok.</td>
+        </tr>
+      </tbody>
+    </table>
 
-      <div class="feature-card">
-        <h4>Task 3: Vinh Danh Sứ Giả & Real-Time Referral Tribute</h4>
-        <ul>
-          <li><strong>Backend Dispatch:</strong> Cập nhật thông báo hệ thống với tiêu đề trang trọng <em>"Vinh Danh Sứ Giả: Bạn Bè Gia Nhập"</em> và nội dung cảm tạ hoàng triều khi bạn bè tạo tài khoản qua referral link.</li>
-          <li><strong>Frontend Event Pipeline:</strong> Mở rộng <code>wallet-model.svelte.ts</code> với reactive state <code>lastReferralEvent</code> để <code>+layout.svelte</code> tự động hiển thị Toast mừng công ngay lập tức khi websocket / polling nhận tín hiệu.</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="section">
-      <h2>2. Deviations from Specification</h2>
-      <p>Không có sai lệch so với mục tiêu ban đầu. Mọi luồng tính năng đều tuân thủ nguyên tắc "Surgical Changes" của Karpathy, giữ nguyên vẹn 100% các route nghiệp vụ và hợp đồng dữ liệu hiện hữu.</p>
-    </div>
-
-    <div class="section">
-      <h2>3. Considered Trade-offs</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Giải pháp cân nhắc</th>
-            <th>Lựa chọn tối ưu</th>
-            <th>Lý do chọn</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Chặn hoàn toàn bài luận giải nếu chưa thanh toán (Hard Paywall)</td>
-            <td><strong>Blur Teaser 20/80 (Soft Freemium Hook)</strong></td>
-            <td>Người dùng đọc được 2-3 câu phân tích đúng mệnh tạo ra "Aha Moment", kích thích tò mò và khao khát mở khóa 80% còn lại, tăng tỷ lệ chuyển đổi gấp 3-4 lần so với hard paywall.</td>
-          </tr>
-          <tr>
-            <td>Render Blur trên Server (SSR cắt chuỗi)</td>
-            <td><strong>Client Hybrid Blur Teaser</strong></td>
-            <td>Dễ dàng kết hợp với SSE streaming mượt mà từ Khâm Thiên Giám, đồng thời tức thời unblur bằng animation mà không cần reload hay làm gián đoạn DOM.</td>
-          </tr>
-          <tr>
-            <td>Chỉ hiển thị giá XU đơn thuần</td>
-            <td><strong>Bổ sung nhãn quy đổi (Value Equivalence)</strong></td>
-            <td>Người dùng hiểu ngay 50k tương đương 5 lần luận giải chuyên sâu + 10 câu hỏi AI, xóa bỏ tâm lý hoài nghi về giá trị của đơn vị tiền ảo XU.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="section">
-      <h2>4. Maintenance Notes & Verification</h2>
-      <ul>
-        <li><strong>Verification Gates:</strong>
-          <ul>
-            <li><code>svelte-check</code>: 0 errors, 0 warnings.</li>
-            <li>Web unit tests: <strong>420/420 passed</strong> (80 test files).</li>
-            <li>API unit tests: <strong>572/572 passed</strong> (89 test files).</li>
-            <li>Repo typecheck: <strong>10/10 turbo tasks successful</strong> across all 7 packages.</li>
-          </ul>
-        </li>
-        <li><strong>Storage & Keys:</strong> <code>vios_unlocked_explanation_${chartId}</code> được lưu cục bộ trên trình duyệt của người dùng. Nếu người dùng đổi máy hoặc xóa cache, hệ thống sẽ tự động khôi phục trạng thái đã mở khóa nhờ lịch sử lưu trên Supabase (<code>detail.explanationResults.length > 0</code>).</li>
-      </ul>
-    </div>
+    <h2>4. Maintenance & Verification Notes</h2>
+    <ul>
+      <li><strong>Live Production Smoke Script:</strong> <code>scripts/smoke-live-production.zsh</code> đã xác thực 12/12 tiêu chí trên <code>https://tuvitoantap.online</code> (Status 200/401/302, Content-Type, Byte length).</li>
+      <li><strong>Commercial Campaign Link Generator:</strong> Chạy <code>pnpm dlx tsx scripts/generate-campaign-links.ts --ref &lt;CODE&gt;</code> để xuất bộ link UTM đa kênh.</li>
+      <li><strong>Cẩm nang GTM:</strong> Lưu tại <code>docs/marketing/sprint-94-commercial-gtm-playbook.md</code> chứa 10 kịch bản video ngắn và kế hoạch 7 ngày hành động.</li>
+      <li><strong>Tổng số tests đạt:</strong> <strong>993/993 tests passed 100%</strong> (572 API + 421 Web). Svelte diagnostics: 0 errors, 0 warnings. Turbo typecheck: 10/10 tasks successful.</li>
+    </ul>
   </div>
 </body>
 </html>

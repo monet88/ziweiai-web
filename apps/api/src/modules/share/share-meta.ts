@@ -9,6 +9,15 @@ export type ShareChartSystem =
   | 'liu-yao'
   | 'da-liu-ren'
   | 'qi-men-dun-jia'
+  | 'tarot'
+  | 'mbti'
+  | 'face'
+  | 'palm'
+  | 'lenormand'
+  | 'dream'
+  | 'sticks'
+  | 'almanac'
+  | 'hepan'
   | string;
 
 export interface ShareMetaInput {
@@ -43,9 +52,18 @@ const SYSTEM_LABELS: Record<string, { title: string; systemName: string }> = {
   'ba-zi': { title: 'Lá số Bát Tự', systemName: 'Bát Tự Tứ Trụ' },
   mangpai: { title: 'Lá số Mạnh Phái', systemName: 'Bát Tự Mạnh Phái' },
   'mei-hua-yi-shu': { title: 'Quẻ Mai Hoa', systemName: 'Mai Hoa Dịch Số' },
-  'liu-yao': { title: 'Quẻ Lục Hào', systemName: 'Lục Hào' },
+  'liu-yao': { title: 'Quẻ Lục Hào', systemName: 'Lục Hào Quái Tượng' },
   'da-liu-ren': { title: 'Quẻ Đại Lục Nhâm', systemName: 'Đại Lục Nhâm' },
   'qi-men-dun-jia': { title: 'Kỳ Môn Độn Giáp', systemName: 'Kỳ Môn Độn Giáp' },
+  tarot: { title: 'Trải bài Tarot', systemName: 'Tarot Huyền Bí' },
+  mbti: { title: 'Bản đồ MBTI', systemName: 'MBTI Nhân Cách' },
+  face: { title: 'Tướng Pháp Diện Tướng', systemName: 'Nhân Tướng Học AI' },
+  palm: { title: 'Chỉ Tay Phong Thủy', systemName: 'Thuật Xem Chỉ Tay AI' },
+  lenormand: { title: 'Trải bài Lenormand', systemName: 'Lenormand Cổ Điển' },
+  dream: { title: 'Giải Mã Giấc Mơ', systemName: 'Chu Công Giải Mộng' },
+  sticks: { title: 'Xin Xăm Linh Ứng', systemName: 'Linh Sâm Thánh Mẫu' },
+  almanac: { title: 'Lịch Hoàng Đạo & Trạch Cát', systemName: 'Hoàng Đạo Trạch Cát' },
+  hepan: { title: 'Hợp Bàn Duyên Số', systemName: 'Hợp Hôn Giao Duyên' },
 };
 
 export function escapeHtml(value: string): string {

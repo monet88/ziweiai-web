@@ -24,6 +24,12 @@ describe('poster-social-actions', () => {
       expect(url).toContain('/charts/123');
       expect(url).not.toContain('ref=');
     });
+
+    it('builds crawler-ready viral share URL with referral code', () => {
+      const url = buildShareUrl('/share/charts/test-uuid-456', 'USER_REF_999');
+      expect(url).toContain('/share/charts/test-uuid-456');
+      expect(url).toContain('ref=USER_REF_999');
+    });
   });
 
   describe('openFacebookShare', () => {

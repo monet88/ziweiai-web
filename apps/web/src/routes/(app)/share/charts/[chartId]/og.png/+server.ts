@@ -16,9 +16,18 @@ const systemNames: Record<string, string> = {
   'ba-zi': 'Bát Tự Tứ Trụ',
   mangpai: 'Bát Tự Mạnh Phái',
   'mei-hua-yi-shu': 'Mai Hoa Dịch Số',
-  'liu-yao': 'Lục Hào',
+  'liu-yao': 'Lục Hào Quái Tượng',
   'da-liu-ren': 'Đại Lục Nhâm',
   'qi-men-dun-jia': 'Kỳ Môn Độn Giáp',
+  tarot: 'Tarot Huyền Bí',
+  mbti: 'MBTI Nhân Cách',
+  face: 'Nhân Tướng Học AI',
+  palm: 'Thuật Xem Chỉ Tay AI',
+  lenormand: 'Lenormand Cổ Điển',
+  dream: 'Chu Công Giải Mộng',
+  sticks: 'Linh Sâm Thánh Mẫu',
+  almanac: 'Hoàng Đạo Trạch Cát',
+  hepan: 'Hợp Hôn Giao Duyên',
 };
 
 const systemTitles: Record<string, string> = {
@@ -29,10 +38,39 @@ const systemTitles: Record<string, string> = {
   'liu-yao': 'Quẻ Lục Hào',
   'da-liu-ren': 'Quẻ Đại Lục Nhâm',
   'qi-men-dun-jia': 'Kỳ Môn Độn Giáp',
+  tarot: 'Trải bài Tarot',
+  mbti: 'Bản đồ MBTI',
+  face: 'Tướng Pháp Diện Tướng',
+  palm: 'Chỉ Tay Phong Thủy',
+  lenormand: 'Trải bài Lenormand',
+  dream: 'Giải Mã Giấc Mơ',
+  sticks: 'Xin Xăm Linh Ứng',
+  almanac: 'Lịch Hoàng Đạo & Trạch Cát',
+  hepan: 'Hợp Bàn Duyên Số',
 };
 
-let fontRegular: Buffer;
-let fontBold: Buffer;
+const INTER_FONT_URLS = [
+  'https://cdn.jsdelivr.net/fontsource/fonts/inter@5.2.5/latin-400-normal.woff',
+  'https://cdn.jsdelivr.net/fontsource/fonts/inter@5.2.5/vietnamese-400-normal.woff',
+] as const;
+
+let fontBuffers: ArrayBuffer[] | null = null;
+
+async function getInterFonts(): Promise<ArrayBuffer[]> {
+  if (fontBuffers) return fontBuffers;
+  const loaded = await Promise.all(
+    INTER_FONT_URLS.map(async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch OG font (${response.status}): ${url}`);
+      }
+      return response.arrayBuffer();
+    }),
+  );
+  fontBuffers = loaded;
+  return loaded;
+}
+
 let wasmReady: Promise<void> | null = null;
 
 async function ensureWasm(): Promise<void> {
@@ -106,17 +144,7 @@ export const GET: RequestHandler = async ({ params }) => {
   if (year) titleBits.push(String(year));
   const chartTitle = titleBits.join(' · ');
 
-  try {
-    if (!fontRegular) {
-      fontRegular = fs.readFileSync(path.resolve('static/fonts/Inter-Regular.ttf'));
-    }
-    if (!fontBold) {
-      fontBold = fs.readFileSync(path.resolve('static/fonts/Inter-Bold.ttf'));
-    }
-  } catch (e) {
-    console.error('Could not load fonts from static/fonts/', e);
-    throw error(500, 'Could not load fonts');
-  }
+  const fonts = await getInterFonts();
 
   await ensureWasm();
 
@@ -187,10 +215,12 @@ export const GET: RequestHandler = async ({ params }) => {
   const svg = await satori(template as never, {
     width: 1200,
     height: 630,
-    fonts: [
-      { name: 'Inter', data: fontRegular, weight: 400, style: 'normal' },
-      { name: 'Inter', data: fontBold, weight: 700, style: 'normal' },
-    ],
+    fonts: fonts.map((data) => ({
+      name: 'Inter',
+      data,
+      weight: 400 as const,
+      style: 'normal' as const,
+    })),
   });
 
   const resvg = new Resvg(svg, {

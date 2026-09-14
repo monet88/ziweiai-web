@@ -14,9 +14,9 @@ import { buildShareMeta, escapeHtml } from './share-meta';
 
 const chartIdPipe = new ZodValidationPipe(z.uuid(), 'Mã lá số không hợp lệ.');
 
-// Bot User-Agents regex (Facebook, Zalo, Twitter, Google, Telegram, etc.)
+// Bot User-Agents regex (Facebook, Zalo, Twitter, Google, Telegram, TikTok, Threads, Viber, etc.)
 const BOT_USER_AGENTS =
-  /(bot|facebookexternalhit|zalo|discordbot|telegrambot|slackbot|vkShare|whatsapp|skype|twitterbot|linkedinbot|pinterest|applebot|yandex)/i;
+  /(bot|facebookexternalhit|zalo|discordbot|telegrambot|slackbot|vkShare|whatsapp|skype|twitterbot|linkedinbot|pinterest|applebot|yandex|bytespider|tiktok|threads|viber)/i;
 
 const PUBLIC_ORIGIN = apiEnv.PUBLIC_ORIGIN;
 
@@ -89,9 +89,13 @@ export class ShareController {
 
       const ogImageTags = ogImageUrl
         ? `    <meta property="og:image" content="${ogImageUrl}" />
+    <meta property="og:image:secure_url" content="${ogImageUrl}" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta name="twitter:image" content="${ogImageUrl}" />`
+    <meta property="og:image:alt" content="${safeOgTitle}" />
+    <meta name="twitter:image" content="${ogImageUrl}" />
+    <meta name="twitter:image:alt" content="${safeOgTitle}" />`
         : '';
 
       const htmlString = `<!DOCTYPE html>
@@ -100,6 +104,7 @@ export class ShareController {
     <meta charset="utf-8" />
     <title>${safeTitle}</title>
     <meta name="description" content="${safeDescription}" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta property="og:title" content="${safeOgTitle}" />
     <meta property="og:description" content="${safeDescription}" />
 ${ogImageTags}
@@ -209,9 +214,13 @@ ${ogImageTags}
       const ogImageUrl = `${PUBLIC_ORIGIN}/api/og/ref/${code}`;
 
       const ogImageTags = `    <meta property="og:image" content="${ogImageUrl}" />
+    <meta property="og:image:secure_url" content="${ogImageUrl}" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta name="twitter:image" content="${ogImageUrl}" />`;
+    <meta property="og:image:alt" content="${safeTitle}" />
+    <meta name="twitter:image" content="${ogImageUrl}" />
+    <meta name="twitter:image:alt" content="${safeTitle}" />`;
 
       const htmlString = `<!DOCTYPE html>
 <html lang="vi">
@@ -219,6 +228,7 @@ ${ogImageTags}
     <meta charset="utf-8" />
     <title>${safeTitle}</title>
     <meta name="description" content="${safeDescription}" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta property="og:title" content="${safeTitle}" />
     <meta property="og:description" content="${safeDescription}" />
 ${ogImageTags}

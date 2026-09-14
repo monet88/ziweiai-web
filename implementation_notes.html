@@ -140,7 +140,8 @@
       <li><strong>Live Production Smoke Script:</strong> <code>scripts/smoke-live-production.zsh</code> đã xác thực 12/12 tiêu chí trên <code>https://tuvitoantap.online</code> (Status 200/401/302, Content-Type, Byte length).</li>
       <li><strong>Commercial Campaign Link Generator:</strong> Chạy <code>pnpm dlx tsx scripts/generate-campaign-links.ts --ref &lt;CODE&gt;</code> để xuất bộ link UTM đa kênh.</li>
       <li><strong>Cẩm nang GTM:</strong> Lưu tại <code>docs/marketing/sprint-94-commercial-gtm-playbook.md</code> chứa 10 kịch bản video ngắn và kế hoạch 7 ngày hành động.</li>
-      <li><strong>Tổng số tests đạt:</strong> <strong>993/993 tests passed 100%</strong> (572 API + 421 Web). Svelte diagnostics: 0 errors, 0 warnings. Turbo typecheck: 10/10 tasks successful.</li>
+      <li><strong>Tổng số tests đạt:</strong> <strong>1000/1000 tests passed 100%</strong> (572 API + 428 Web). Svelte diagnostics: 0 errors, 0 warnings. Turbo typecheck: 10/10 tasks successful.</li>
+      <li><strong>Kiểm thử thiết bị thật Samsung Galaxy A53 (Wireless ADB 192.168.1.10:45151):</strong> Viewport 384x718px, DPR 2.8125. Không có lỗi cuộn ngang. Bottom Sheet mở/đóng mượt mà qua phím Back vật lý. Đã sửa lỗi đè footer bằng padding-bottom <code>calc(80px + env(safe-area-inset-bottom, 16px))</code>. PWA icons (192px, 512px, maskable) sẵn sàng chuẩn Add to Home Screen.</li>
     </ul>
   </div>
 </body>

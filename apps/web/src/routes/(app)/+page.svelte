@@ -2198,7 +2198,7 @@
 
   @media (max-width: 640px) {
     .shell {
-      padding: var(--space-sm) var(--space-sm) 40px;
+      padding: var(--space-sm) var(--space-sm) calc(80px + env(safe-area-inset-bottom, 16px));
       gap: 36px;
     }
 
@@ -2276,7 +2276,7 @@
 
   @media (max-width: 374px) {
     .shell {
-      padding: 8px 8px 36px;
+      padding: 8px 8px calc(80px + env(safe-area-inset-bottom, 16px));
       gap: 28px;
     }
 

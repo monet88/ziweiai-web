@@ -1,5 +1,6 @@
 import type { TarotSpread } from '@ziweiai/contracts';
 import type { TarotCardDraw } from './tarot-deck';
+import { TAROT_DATA_BY_ID } from './data/tarot-data';
 
 // US-017i: prompt builder tiếng Việt cho luận giải Tarot bằng LLM.
 //
@@ -62,7 +63,33 @@ function describeCard(card: DrawnCard, spread: TarotSpread): string {
   const positions = SPREAD_POSITIONS[spread];
   const positionName = positions[card.position] ?? `Vị trí ${card.position + 1}`;
   const orientation = card.reversed ? 'ngược' : 'xuôi';
-  return `${card.position + 1}. [${positionName}] ${card.name} — ${orientation}`;
+  const header = `${card.position + 1}. [${positionName}] ${card.name} — ${orientation}`;
+
+  const data = TAROT_DATA_BY_ID[card.id];
+  if (!data) {
+    return header;
+  }
+
+  const meaning = card.reversed ? data.meaning.reversed : data.meaning.upright;
+  const interp = card.reversed ? data.interpretation.reversed : data.interpretation.upright;
+  const advice = card.reversed ? data.advice.reversed : data.advice.upright;
+  const love = card.reversed ? data.categories.love.reversed : data.categories.love.upright;
+  const career = card.reversed ? data.categories.career.reversed : data.categories.career.upright;
+  const wealth = card.reversed ? data.categories.wealth.reversed : data.categories.wealth.upright;
+  const health = card.reversed ? data.categories.health.reversed : data.categories.health.upright;
+
+  return [
+    header,
+    `   - Biểu tượng: ${data.description}`,
+    `   - Ý nghĩa (${orientation}): ${meaning}`,
+    `   - Luận giải vị thế: ${interp}`,
+    `   - Lời khuyên: ${advice}`,
+    `   - Góc nhìn chủ đề:`,
+    `     + Tình cảm: ${love}`,
+    `     + Công việc: ${career}`,
+    `     + Tiền bạc: ${wealth}`,
+    `     + Sức khỏe: ${health}`,
+  ].join('\n');
 }
 
 /**

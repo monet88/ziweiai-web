@@ -34,6 +34,16 @@ describe('buildTarotReadingPrompt', () => {
     expect(prompt).toContain('[Hiện tại] Cốc Át — ngược');
     expect(prompt).toContain('## Tóm lại');
   });
+  it('nạp grounding context chi tiết (biểu tượng, ý nghĩa, lời khuyên, 4 chủ đề)', () => {
+    const prompt = buildTarotReadingPrompt('Tôi nên tập trung điều gì?', 'three-card', threeCard);
+    expect(prompt).toContain('Biểu tượng:');
+    expect(prompt).toContain('Lời khuyên:');
+    expect(prompt).toContain('Tình cảm:');
+    expect(prompt).toContain('Công việc:');
+    expect(prompt).toContain('Tiền bạc:');
+    expect(prompt).toContain('Sức khỏe:');
+  });
+
 
   it('three-card tính đúng tỉ lệ lá Ẩn Chính', () => {
     const prompt = buildTarotReadingPrompt('Câu hỏi', 'three-card', threeCard);

@@ -27,7 +27,7 @@ export interface AstrologyAdapterRegistryEntry {
 export const phase3AdapterRegistry: readonly AstrologyAdapterRegistryEntry[] = [
   {
     system: 'zi-wei-dou-shu',
-    canonicalLibrary: 'iztro@2.5.8',
+    canonicalLibrary: 'iztro@2.6.1',
     configProfile: 'phase-3-default',
   },
   {

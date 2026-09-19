@@ -229,8 +229,8 @@ importers:
         specifier: workspace:*
         version: link:../xuanshu-runtime
       iztro:
-        specifier: 2.5.8
-        version: 2.5.8
+        specifier: 2.6.1
+        version: 2.6.1
       lunar-javascript:
         specifier: 1.7.7
         version: 1.7.7
@@ -250,8 +250,8 @@ importers:
   packages/core:
     dependencies:
       iztro:
-        specifier: 2.5.8
-        version: 2.5.8
+        specifier: 2.6.1
+        version: 2.6.1
 
   packages/xuanshu-runtime:
     devDependencies:
@@ -2615,8 +2615,8 @@ packages:
     resolution: {integrity: sha512-RKYVTCjAnRthyJes037NX/IiqeidgN1xc3j1RjFfECFp28A1GVwK9nA+i0rJPaHqSZwygLzRnFlzUuHFoWWy+Q==}
     engines: {node: '>=6'}
 
-  iztro@2.5.8:
-    resolution: {integrity: sha512-kgyyvxdSEvgJxi6zvHpvzGbXZLGXCdhTHYK2Pe/sRdBIQ7RfCArvupmg2ChUMQCSQGomW7XCI0gWwUuKJwPENg==}
+  iztro@2.6.1:
+    resolution: {integrity: sha512-IvGE/xsiAgcFyePUYMA55K2SEtBb84kA4XzPJeSKOefrmoqGPDgi/yGVIeHp8FcfkCR1IIovhNpNDrxuamJKOQ==}
 
   jest-worker@27.5.1:
     resolution: {integrity: sha512-7vuh85V5cdDofPyxn58nrPjBktZo0u9x1g8WtjQol+jZDaE+fhN+cIvTj11GndBnMnyfrUOG1sZQxCdjKh+DKg==}
@@ -6379,7 +6379,7 @@ snapshots:
 
   iterare@1.2.1: {}
 
-  iztro@2.5.8:
+  iztro@2.6.1:
     dependencies:
       dayjs: 1.11.21
       i18next: 23.16.8

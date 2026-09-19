@@ -65,6 +65,34 @@ interface IztroHoroscopeSource {
   daily?: IztroHoroscopeItemSource;
 }
 
+export interface IztroFlankingPalacesSource {
+  previous: IztroPalaceSource;
+  next: IztroPalaceSource;
+  have?(stars: string[]): boolean;
+  notHave?(stars: string[]): boolean;
+  haveOneOf?(stars: string[]): boolean;
+  haveMutagen?(mutagen: string): boolean;
+  notHaveMutagen?(mutagen: string): boolean;
+}
+
+export interface IztroDecadalHoroscopeSource extends IztroHoroscopeItemSource {
+  palaceName: string;
+  ageRange: [number, number];
+  yearRange: [number, number];
+}
+
+export interface IztroYearlyHoroscopeSource extends IztroHoroscopeItemSource {
+  age: number;
+  year: number;
+}
+
+export interface IztroMonthlyHoroscopeSource extends IztroYearlyHoroscopeSource {
+  month: number;
+  isLeapMonth: boolean;
+  part: 'normal' | 'first' | 'second';
+  dayRange: [number, number];
+}
+
 export interface IztroAstrolabeSource {
   gender: string;
   solarDate: string;
@@ -79,11 +107,15 @@ export interface IztroAstrolabeSource {
   body: string;
   palaces: IztroPalaceSource[];
   horoscope(date?: string | Date, timeIndex?: number): IztroHoroscopeSource;
+  flankingPalaces(indexOrName: number | string): IztroFlankingPalacesSource;
+  decadalList(): IztroDecadalHoroscopeSource[];
+  yearlyList(indexOrName: number | string): IztroYearlyHoroscopeSource[];
+  monthlyList(year: number, fixLeap?: boolean): IztroMonthlyHoroscopeSource[];
 }
 
 const ZIWEI_ADAPTER_VERSION = {
   name: 'iztro',
-  version: '2.5.8',
+  version: '2.6.1',
   configProfile: PHASE3_CONFIG_PROFILE,
 } as const;
 
@@ -204,7 +236,7 @@ export function buildZiweiAstrolabeSource(
 export class IztroChartAdapter implements AstrologyChartAdapter {
   readonly system = 'zi-wei-dou-shu' as const;
   readonly adapterName = 'iztro';
-  readonly adapterVersion = '2.5.8';
+  readonly adapterVersion = '2.6.1';
   readonly usesViewYear = true;
 
   async calculateChart(input: BirthInput, options?: ChartCalculationOptions): Promise<ChartSnapshot> {
@@ -223,7 +255,7 @@ export class IztroChartAdapter implements AstrologyChartAdapter {
         input,
         normalizedBirth,
         chartSystem: 'zi-wei-dou-shu',
-        canonicalLibrary: { name: 'iztro', version: '2.5.8' },
+        canonicalLibrary: { name: 'iztro', version: '2.6.1' },
         adapterVersion: ZIWEI_ADAPTER_VERSION,
         confidence: normalizedBirth.normalizationConfidence,
         warnings,
@@ -235,7 +267,7 @@ export class IztroChartAdapter implements AstrologyChartAdapter {
         input,
         normalizedBirth,
         chartSystem: 'zi-wei-dou-shu',
-        canonicalLibrary: { name: 'iztro', version: '2.5.8' },
+        canonicalLibrary: { name: 'iztro', version: '2.6.1' },
         adapterVersion: ZIWEI_ADAPTER_VERSION,
         confidence: normalizedBirth.normalizationConfidence,
         warnings,
@@ -247,7 +279,7 @@ export class IztroChartAdapter implements AstrologyChartAdapter {
     const base = createBaseSnapshotFields({
       input,
       chartSystem: 'zi-wei-dou-shu',
-      canonicalLibrary: { name: 'iztro', version: '2.5.8' },
+      canonicalLibrary: { name: 'iztro', version: '2.6.1' },
       adapterVersion: ZIWEI_ADAPTER_VERSION,
       normalizedBirth,
       calculationConfidence: normalizedBirth.normalizationConfidence,

@@ -21,7 +21,7 @@
     "@js-temporal/polyfill": "^0.5.1",
     "@ziweiai/contracts": "workspace:*",
     "@ziweiai/xuanshu-runtime": "workspace:*",
-    "iztro": "2.5.8",
+    "iztro": "2.6.1",
     "lunar-javascript": "1.7.7"
   }
 }

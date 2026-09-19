@@ -17,6 +17,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "iztro": "2.5.8"
+    "iztro": "2.6.1"
   }
 }

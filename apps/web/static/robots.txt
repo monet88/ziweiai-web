@@ -1,0 +1,9 @@
+# Robots.txt for ViOS — Tử Vi Toàn Tập (tuvitoantap.online)
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /sign-in
+
+Sitemap: https://tuvitoantap.online/sitemap.xml

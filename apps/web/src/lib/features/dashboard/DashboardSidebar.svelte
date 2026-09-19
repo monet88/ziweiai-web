@@ -9,11 +9,12 @@
   import { createQuery } from '@tanstack/svelte-query';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { fetchHistory, DASHBOARD_HISTORY_LIMIT } from '$lib/api-client';
+  import { fetchHistory, DASHBOARD_HISTORY_LIMIT } from '$lib/api-client/history';;
   import { getAuthStore } from '$lib/auth/auth-context';
   import { NoticeBanner, EmptyStateCard, Spinner, PrimaryButton } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { dedupeHistoryChartEntries } from './dashboard-history';
+  import WalletBalance from '../payment/WalletBalance.svelte';
 
   interface Props {
     /** Mở form tạo lá số đầu tiên khi lịch sử rỗng (cuộn tới BirthForm). */
@@ -57,6 +58,9 @@
 </script>
 
 <section class="sidebar" aria-labelledby="dashboard-history-title">
+  <div class="wallet-section">
+    <WalletBalance />
+  </div>
   <h2 class="title" id="dashboard-history-title">{viCopy.history.title}</h2>
 
   {#if history.isPending}
@@ -112,6 +116,13 @@
     color: var(--color-text-primary);
     font-size: 17px;
     font-weight: 600;
+  }
+
+  .wallet-section {
+    display: flex;
+    justify-content: flex-start;
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border-hairline);
   }
 
   .state {

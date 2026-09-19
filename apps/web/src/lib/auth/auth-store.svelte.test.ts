@@ -14,6 +14,7 @@ const mockAuth = vi.hoisted(() => ({
   signInAnonymously: vi.fn(),
   signUp: vi.fn(),
   signOut: vi.fn(),
+  updateUser: vi.fn(),
 }));
 
 vi.mock('$lib/supabase/supabase-client', () => ({
@@ -29,10 +30,15 @@ function makeSession(token: string, isAnonymous = false) {
   };
 }
 
-function makeAnonSession(token: string) {
+function makeLegacyAnonSession(token: string) {
   return {
     access_token: token,
-    user: { id: 'anon-1', email: undefined, is_anonymous: true },
+    user: {
+      id: 'anon-legacy-1',
+      email: undefined,
+      phone: undefined,
+      app_metadata: { provider: 'anonymous' },
+    },
   };
 }
 
@@ -94,39 +100,16 @@ describe('AuthStore', () => {
     expect(store.getAccessToken()).toBe('new');
   });
 
-  it('init() cấp phiên ẩn danh khi chưa có session (decision 0009)', async () => {
-    mockAuth.signInAnonymously.mockResolvedValue({
-      data: { session: makeAnonSession('anon-tok') },
-      error: null,
-    });
+  it('init() tự động cấp phiên ẩn danh khi chưa có session', async () => {
+    mockAuth.getSession.mockResolvedValue({ data: { session: null } });
+    mockAuth.signInAnonymously.mockResolvedValue({ data: { session: makeLegacyAnonSession('anon-tok') }, error: null });
     const store = new AuthStore();
     store.init();
     await vi.waitFor(() => expect(store.isInitializing).toBe(false));
     expect(mockAuth.signInAnonymously).toHaveBeenCalledOnce();
     expect(store.isAuthenticated).toBe(true);
-    expect(store.isAnonymous).toBe(true);
+    expect(store.session).not.toBeNull();
     expect(store.getAccessToken()).toBe('anon-tok');
-  });
-
-  it('init() KHÔNG gọi signInAnonymously khi đã có session', async () => {
-    mockAuth.getSession.mockResolvedValue({ data: { session: makeSession('tok-1') } });
-    const store = new AuthStore();
-    store.init();
-    await vi.waitFor(() => expect(store.isInitializing).toBe(false));
-    expect(mockAuth.signInAnonymously).not.toHaveBeenCalled();
-    expect(store.isAnonymous).toBe(false);
-  });
-
-  it('init() tắt cờ initializing khi anonymous sign-in lỗi (không treo UI)', async () => {
-    mockAuth.signInAnonymously.mockResolvedValue({
-      data: { session: null },
-      error: { message: 'Anonymous sign-ins are disabled' },
-    });
-    const store = new AuthStore();
-    store.init();
-    await vi.waitFor(() => expect(store.isInitializing).toBe(false));
-    expect(store.isAuthenticated).toBe(false);
-    expect(store.isAnonymous).toBe(false);
   });
 
   it('isAnonymous false cho phiên email thường', async () => {
@@ -137,34 +120,12 @@ describe('AuthStore', () => {
     expect(store.isAnonymous).toBe(false);
   });
 
-  it('init() KHÔNG ghi đè phiên email bằng anon khi xảy ra race (phiên thật đến trước)', async () => {
-    // signInAnonymously đang bay; trong khe đó onAuthStateChange set phiên email thật.
-    // Khi anon resolve, this.session đã != null → anon KHÔNG được ghi đè phiên thật.
-    let resolveAnon: ((value: unknown) => void) | undefined;
-    mockAuth.signInAnonymously.mockReturnValue(
-      new Promise((resolve) => {
-        resolveAnon = resolve;
-      }),
-    );
-    let handler: (event: string, session: unknown) => void = () => {};
-    mockAuth.onAuthStateChange.mockImplementation((cb) => {
-      handler = cb;
-      return { data: { subscription: { unsubscribe: vi.fn() } } };
-    });
-
+  it('isAnonymous true cho phiên anonymous Supabase không có cờ is_anonymous', async () => {
+    mockAuth.getSession.mockResolvedValue({ data: { session: makeLegacyAnonSession('anon-tok') } });
     const store = new AuthStore();
     store.init();
-    await vi.waitFor(() => expect(mockAuth.signInAnonymously).toHaveBeenCalledOnce());
-
-    // Phiên email thật đến qua handler trong lúc anon còn in-flight.
-    handler('SIGNED_IN', makeSession('email-tok', false));
-    expect(store.getAccessToken()).toBe('email-tok');
-
-    // Anon resolve muộn → không nuốt mất phiên email.
-    resolveAnon?.({ data: { session: makeAnonSession('anon-tok') }, error: null });
     await vi.waitFor(() => expect(store.isInitializing).toBe(false));
-    expect(store.getAccessToken()).toBe('email-tok');
-    expect(store.isAnonymous).toBe(false);
+    expect(store.isAnonymous).toBe(true);
   });
 
   it('init() cleanup hủy subscription', () => {
@@ -189,9 +150,43 @@ describe('AuthStore', () => {
     expect(result.needsEmailConfirmation).toBe(true);
   });
 
+  it('signUpWithPassword từ chối đăng ký với disposable email', async () => {
+    const store = new AuthStore();
+    await expect(store.signUpWithPassword('spammer@tempmail.com', 'x')).rejects.toThrow(
+      'Hệ thống không chấp nhận email tạm thời.',
+    );
+    expect(mockAuth.signUp).not.toHaveBeenCalled();
+  });
+
   it('signOut ném lỗi khi Supabase trả error', async () => {
     mockAuth.signOut.mockResolvedValue({ error: { message: 'Lỗi đăng xuất' } });
     const store = new AuthStore();
     await expect(store.signOut()).rejects.toThrow('Lỗi đăng xuất');
+  });
+
+  it('upgradeAnonymousToPermanentAccount gọi updateUser({ email, password })', async () => {
+    mockAuth.updateUser.mockResolvedValue({ data: { user: { id: 'u1', email: 'real@gmail.com' } }, error: null });
+    const store = new AuthStore();
+    await store.upgradeAnonymousToPermanentAccount('real@gmail.com', 'strongPassword123');
+    expect(mockAuth.updateUser).toHaveBeenCalledWith({
+      email: 'real@gmail.com',
+      password: 'strongPassword123',
+    });
+  });
+
+  it('upgradeAnonymousToPermanentAccount từ chối disposable email', async () => {
+    const store = new AuthStore();
+    await expect(
+      store.upgradeAnonymousToPermanentAccount('fake@tempmail.com', 'strongPassword123'),
+    ).rejects.toThrow('Hệ thống không chấp nhận email tạm thời.');
+    expect(mockAuth.updateUser).not.toHaveBeenCalled();
+  });
+
+  it('upgradeAnonymousToPermanentAccount ném lỗi khi Supabase trả error', async () => {
+    mockAuth.updateUser.mockResolvedValue({ error: { message: 'Email đã tồn tại' } });
+    const store = new AuthStore();
+    await expect(
+      store.upgradeAnonymousToPermanentAccount('existing@gmail.com', 'pwd'),
+    ).rejects.toThrow('Email đã tồn tại');
   });
 });

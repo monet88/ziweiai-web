@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "nest build",
+    "build": "node ../../node_modules/@nestjs/cli/bin/nest.js build",
     "dev": "node scripts/dev-server.cjs",
     "env:local-supabase": "node scripts/write-local-supabase-env.cjs",
     "lint": "eslint . --max-warnings=0",
@@ -16,18 +16,27 @@
     "@nestjs/common": "^11.1.8",
     "@nestjs/core": "^11.1.8",
     "@nestjs/platform-express": "^11.1.8",
+    "@nestjs/throttler": "^6.5.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "@sentry/nestjs": "^10.66.0",
+    "@sentry/node": "^10.66.0",
     "@supabase/supabase-js": "^2.84.0",
     "@ziweiai/astro-engine": "workspace:*",
     "@ziweiai/contracts": "workspace:*",
     "@ziweiai/core": "workspace:*",
+    "langfuse-node": "^3.38.20",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "satori": "^0.28.0",
     "tyme4ts": "^1.5.2",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.21",
+    "@nestjs/testing": "^11.1.28",
     "@types/express": "^5.0.6",
+    "@types/pg": "^8.23.1",
+    "pg": "^8.23.0",
     "vitest": "^4.0.14"
   }
 }

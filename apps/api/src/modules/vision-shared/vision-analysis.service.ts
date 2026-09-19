@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { visionAnalysisSchema, type AuthenticatedUser, type VisionAnalysis, type VisionKind } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
-import { assertCanUseAiExplanation } from '../../common/entitlement/ai-entitlement.guard';
+
 import { assertEmailIdentityRequired } from '../auth/identity.guard';
 import { apiEnv } from '../../config/env';
 import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
@@ -10,7 +10,8 @@ import { QuotasService } from '../quotas/quotas.service';
 import { RateLimitWindowError } from '../quotas/quota-errors';
 import { buildVisionUserPrompt } from './vision-prompts';
 import { VisionStorageGateway } from './vision-storage.gateway';
-import { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
+import { VisionRepository } from '../../database/repositories/vision.repository';
+import { HistoryRepository } from '../../database/repositories/history.repository';
 
 export interface VisionAnalysisInput {
   kind: VisionKind;
@@ -45,7 +46,8 @@ export class VisionAnalysisService {
     private readonly quotasService: QuotasService,
     private readonly providerRouter: ExplanationProviderRouter,
     private readonly storageGateway: VisionStorageGateway,
-    private readonly persistence: SupabasePersistenceGateway,
+    private readonly visionRepository: VisionRepository,
+    private readonly historyRepository: HistoryRepository,
   ) {}
 
   async analyze(input: VisionAnalysisInput): Promise<VisionAnalysis> {
@@ -65,9 +67,8 @@ export class VisionAnalysisService {
     // danh → bắt buộc danh tính email (decision 0009 + 0012). Helper ném 403 IDENTITY_REQUIRED.
     assertEmailIdentityRequired(user);
 
-    // GATE 3: gate AI premium TRƯỚC quota (402) — không để user non-premium "tiêu" lượt quota cho thao
-    // tác chắc chắn bị từ chối. Dùng guard entitlement DÙNG CHUNG (decision 0010).
-    assertCanUseAiExplanation(this.logger);
+    // GATE 3: Trừ XU cho tính năng premium (Vision). Vision tốn 10 XU mỗi lượt.
+    // NOTE: Đã được chuyển sang BillingInterceptor trên VisionAnalysisController để tránh Domain Leak.
 
     // GATE 4: quota vision riêng (đắt token gấp 5-10× text). Bọc raw Error → 429 VISION_QUOTA_EXCEEDED.
     await this.assertVisionQuota(user.userId, ipAddress);
@@ -114,7 +115,7 @@ export class VisionAnalysisService {
 
     let visionResultId: string | null = null;
     try {
-      const visionResult = await this.persistence.createVisionResult({
+      const visionResult = await this.visionRepository.createVisionResult({
         ownerUserId: user.userId,
         kind,
         imagePath,
@@ -123,7 +124,7 @@ export class VisionAnalysisService {
         providerMetadata,
       });
       visionResultId = visionResult.id;
-      await this.persistence.createHistoryView({
+      await this.historyRepository.createHistoryView({
         ownerUserId: user.userId,
         chartSnapshotId: null,
         explanationResultId: null,
@@ -162,7 +163,7 @@ export class VisionAnalysisService {
     kind: VisionKind,
   ): Promise<void> {
     try {
-      await this.persistence.deleteVisionResult(ownerUserId, visionResultId);
+      await this.visionRepository.deleteVisionResult(ownerUserId, visionResultId);
     } catch (rollbackError) {
       this.logger.error(
         `[vision.${kind}] bù trừ xoá vision_results id=${visionResultId} thất bại (row mồ côi): ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`,
@@ -191,7 +192,7 @@ export class VisionAnalysisService {
   async deleteVisionResult(user: AuthenticatedUser, visionResultId: string): Promise<void> {
     assertEmailIdentityRequired(user);
 
-    const record = await this.persistence.findVisionResultById(user.userId, visionResultId);
+    const record = await this.visionRepository.findVisionResultById(user.userId, visionResultId);
     if (!record) {
       throw new ApiErrorHttpException(
         HttpStatus.NOT_FOUND,
@@ -201,17 +202,26 @@ export class VisionAnalysisService {
     }
 
     await this.storageGateway.deleteVisionImage(record.imagePath);
-    await this.persistence.deleteVisionResult(user.userId, visionResultId);
+    await this.visionRepository.deleteVisionResult(user.userId, visionResultId);
     this.logger.log(`[vision.${record.kind}] đã xoá vision result id=${visionResultId} (quyền được quên)`);
   }
 
   private isSystemEnabled(kind: VisionKind): boolean {
-    return kind === 'face' ? apiEnv.EXTENDED_SYSTEM_FACE_ENABLED : apiEnv.EXTENDED_SYSTEM_PALM_ENABLED;
+    switch (kind) {
+      case 'face':
+        return apiEnv.EXTENDED_SYSTEM_FACE_ENABLED;
+      case 'palm':
+        return apiEnv.EXTENDED_SYSTEM_PALM_ENABLED;
+      case 'tarot':
+        return apiEnv.EXTENDED_SYSTEM_TAROT_ENABLED;
+      default:
+        return false;
+    }
   }
 
   private async assertVisionQuota(userId: string, ipAddress: string): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateVisionAnalysis(userId, ipAddress);
+      await this.quotasService.assertCanExecute('vision-analysis', userId, ipAddress);
     } catch (error) {
       // Phân biệt hai loại "quá nhiều request" để client không nhầm rate-limit tạm thời thành hết
       // hạn mức ngày (review PR #28/#31): dùng typed error (instanceof) thay vì so khớp chuỗi message

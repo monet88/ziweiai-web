@@ -6,6 +6,9 @@
  */
 import type { ZodType } from 'zod';
 import { env } from '$lib/env';
+import { paywallStore } from '$lib/stores/paywall.svelte';
+import { authModalStore } from '$lib/stores/auth-modal.svelte';
+import { supabase } from '$lib/supabase/supabase-client';
 
 export type ApiErrorKind =
   | 'unauthorized' // 401
@@ -15,7 +18,8 @@ export type ApiErrorKind =
   | 'server' // 500
   | 'network' // fetch thất bại
   | 'parse' // Zod parse fail
-  | 'payment-required'; // 402
+  | 'payment-required' // 402
+  | 'rate-limit'; // 429
 
 export class ApiError extends Error {
   readonly kind: ApiErrorKind;
@@ -41,6 +45,8 @@ function mapStatusToKind(status: number): ApiErrorKind {
       return 'payment-required';
     case 422:
       return 'validation';
+    case 429:
+      return 'rate-limit';
     default:
       return 'server';
   }
@@ -87,6 +93,16 @@ async function throwHttpError(response: Response): Promise<never> {
   } catch {
     // Body không phải JSON (ví dụ 500 trả HTML) → giữ message generic.
   }
+
+  if (kind === 'payment-required') {
+    paywallStore.open(message);
+  } else if (kind === 'rate-limit') {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.is_anonymous) {
+      authModalStore.open('Bạn đã dùng hết số lượt trải nghiệm miễn phí hôm nay. Vui lòng đăng ký tài khoản để tiếp tục sử dụng tính năng này.');
+    }
+  }
+
   throw new ApiError(kind, message, response.status);
 }
 
@@ -113,6 +129,15 @@ async function parseResponseOrThrow<T>(response: Response, schema: ZodType<T>): 
   return parsed.data;
 }
 
+export function buildUrl(baseUrl: string, path: string): string {
+  const cleanBase = baseUrl.replace(/\/+$/, '');
+  let cleanPath = path.startsWith('/') ? path : `/${path}`;
+  if (cleanBase.endsWith('/api') && cleanPath.startsWith('/api/')) {
+    cleanPath = cleanPath.slice(4);
+  }
+  return `${cleanBase}${cleanPath}`;
+}
+
 /**
  * Gọi backend và parse response bằng schema từ @ziweiai/contracts.
  * Mọi response UI dùng đều phải đi qua đây — không trust raw JSON.
@@ -127,7 +152,7 @@ export async function fetchJson<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${env.apiBaseUrl}${path}`, {
+    response = await fetch(buildUrl(env.apiBaseUrl, path), {
       method,
       headers: createHeaders(options.token, hasBody),
       body: hasBody ? JSON.stringify(options.body) : undefined,
@@ -150,7 +175,7 @@ export async function fetchNoContent(
 ): Promise<void> {
   let response: Response;
   try {
-    response = await fetch(`${env.apiBaseUrl}${path}`, {
+    response = await fetch(buildUrl(env.apiBaseUrl, path), {
       method: options.method,
       headers: createHeaders(options.token, false),
     });
@@ -181,7 +206,7 @@ export async function fetchMultipart<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${env.apiBaseUrl}${path}`, { method: 'POST', headers, body: form });
+    response = await fetch(buildUrl(env.apiBaseUrl, path), { method: 'POST', headers, body: form });
   } catch {
     throw new ApiError('network', 'Không kết nối được máy chủ. Thử lại sau.');
   }

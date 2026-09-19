@@ -8,9 +8,12 @@ import { createClient } from '@supabase/supabase-js';
 // trỏ tới (Supabase Cloud, decision 0016). KHÔNG hardcode endpoint local nữa.
 // anon/publishable key là client-safe theo thiết kế Supabase (không phải secret).
 const rootEnvPath = fileURLToPath(new URL('../../../../.env', import.meta.url));
-if (existsSync(rootEnvPath) && typeof process.loadEnvFile === 'function') {
-  process.loadEnvFile(rootEnvPath);
+const rootEnvLocalPath = fileURLToPath(new URL('../../../../.env.local', import.meta.url));
+if (typeof process.loadEnvFile === 'function') {
+  if (existsSync(rootEnvPath)) process.loadEnvFile(rootEnvPath);
+  if (existsSync(rootEnvLocalPath)) process.loadEnvFile(rootEnvLocalPath);
 }
+
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -36,7 +39,7 @@ const TEST_PASSWORD = 'e2e-password-123456';
 // User dùng chung (fallback). Giữ lại email lịch sử US-006 để các lần chạy không-Playwright
 // (không set TEST_PARALLEL_INDEX) vẫn đăng nhập được. globalSetup luôn provision cả user này.
 export const TEST_USER: TestUser = {
-  email: 'e2e-us006@example.com',
+  email: 'e2e-us006@7app.online',
   password: TEST_PASSWORD,
 };
 
@@ -51,7 +54,7 @@ export const TEST_USER: TestUser = {
  */
 export function getTestUserForWorker(index?: number): TestUser {
   if (typeof index === 'number' && Number.isInteger(index) && index >= 0) {
-    return { email: `e2e-w${index}@example.com`, password: TEST_PASSWORD };
+    return { email: `e2e-w${index}@7app.online`, password: TEST_PASSWORD };
   }
   return TEST_USER;
 }
@@ -84,7 +87,7 @@ export async function ensureTestUser(user: TestUser = TEST_USER): Promise<void> 
     password: user.password,
   });
 
-  if (error && !/already registered/i.test(error.message)) {
+  if (error && !/already registered|email rate limit exceeded/i.test(error.message)) {
     throw new Error(`Không tạo được user test E2E (${user.email}): ${error.message}`);
   }
 }

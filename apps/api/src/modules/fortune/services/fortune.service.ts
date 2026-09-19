@@ -8,7 +8,7 @@ import {
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { throwQuotaRateLimited } from '../../quotas/quota-http';
-import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+import { ChartsRepository } from '../../../database/repositories/charts.repository';
 import { QuotasService } from '../../quotas/quotas.service';
 import { HoroscopeEngineAdapter } from './horoscope-engine.adapter';
 import { renderDailyCanonicalText, renderMonthlyCanonicalText } from './fortune-summary';
@@ -25,7 +25,7 @@ export class FortuneService {
   private readonly logger = new Logger(FortuneService.name);
 
   constructor(
-    private readonly persistenceGateway: SupabasePersistenceGateway,
+    private readonly chartsRepository: ChartsRepository,
     private readonly quotasService: QuotasService,
     private readonly engine: HoroscopeEngineAdapter,
   ) {}
@@ -55,12 +55,12 @@ export class FortuneService {
    */
   private async loadZiweiSnapshot(user: AuthenticatedUser, ipAddress: string, chartId: string) {
     try {
-      await this.quotasService.assertCanCreateChart(user.userId, ipAddress, user.email === null);
+      await this.quotasService.assertCanExecute('chart', user.userId, ipAddress, user.email === null);
     } catch (error) {
       throwQuotaRateLimited(error, 'Đã vượt hạn mức.');
     }
 
-    const chartRecord = await this.persistenceGateway.findChartSnapshotById(user.userId, chartId);
+    const chartRecord = await this.chartsRepository.findChartSnapshotById(user.userId, chartId);
     if (!chartRecord) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số đã lưu.');
     }

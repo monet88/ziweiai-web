@@ -51,7 +51,7 @@ export interface LlmChatAdapter {
   // Thông điệp lỗi chung ngoài cùng (mọi lỗi không phải ProviderUnavailableError/timeout).
   readonly unavailableMessage: string;
   isAvailable(): boolean;
-  resolveModel(modelOverride?: string): string;
+  resolveModel(modelOverride?: string, tier?: 'light' | 'deep'): string;
   buildRequest(params: LlmChatAdapterBuildParams): LlmChatRequest;
   // Đọc Response upstream. Tự ném ProviderUnavailableError khi !response.ok hoặc phản hồi rỗng đặc thù
   // (với thông điệp lỗi riêng từng provider). Trả { text, usage } khi thành công; text có thể rỗng để

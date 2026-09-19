@@ -8,8 +8,10 @@
   import { SvelteSet } from 'svelte/reactivity';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { deleteVisionResult, fetchHistory, HISTORY_SCREEN_LIMIT } from '$lib/api-client';
+  import { deleteVisionResult } from '$lib/api-client/divinations';
+import { fetchHistory, HISTORY_SCREEN_LIMIT } from '$lib/api-client/history';;
   import { getAuthStore } from '$lib/auth/auth-context';
+  import { getWalletStore } from '$lib/features/payment/wallet-context';
   import { NoticeBanner, EmptyStateCard, Spinner, PrimaryButton, ConfirmDialog } from '$lib/components/ui';
   import { viCopy } from '$lib/i18n/vi';
   import { formatHistoryViewedAt } from '$lib/features/chart/chart-display';
@@ -18,9 +20,13 @@
     collectVisionHistoryEntries,
   } from '$lib/features/dashboard/dashboard-history';
   import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
+  import AnnualReportModal from '$lib/features/fortune/AnnualReportModal.svelte';
   import type { DivinationPurposeKey } from '@ziweiai/contracts';
 
   const auth = getAuthStore();
+  const wallet = getWalletStore();
+
+  let viewingAnnualReport = $state<{ markdown: string; year: number } | null>(null);
 
   // Nửa thời hạn signed URL ảnh vision (server ký 3600s). Dùng làm staleTime/gcTime để query
   // history tự refetch + ký URL mới trước khi link cũ hết hạn; biên an toàn cho lệch giờ/clock skew.
@@ -130,6 +136,7 @@
       systemLabel: viCopy.chartSystem[entry.chartRecord.chartSystem],
       createdAtLabel: formatHistoryViewedAt(entry.chartRecord.createdAt),
       hasExplanation: entry.hasExplanation,
+      annualReport: entry.annualReport,
       question: entry.divinationContext?.question ?? null,
       purposeText: entry.divinationContext
         ? purposeLabel(entry.divinationContext.purposeKey, entry.divinationContext.purposeCustom)
@@ -176,6 +183,20 @@
   }
 </script>
 
+{#if !auth.isAnonymous && !wallet.isLoading && !wallet.isError && wallet.balance !== null && wallet.balance < 15}
+  <div class="monetization-banner">
+    <NoticeBanner tone="warning">
+      <div class="banner-content">
+        <div class="banner-text">
+          <strong>Số dư XU sắp hết!</strong>
+          <span>Bạn chỉ còn {wallet.balance} XU. Nạp ngay để không bị gián đoạn trải nghiệm luận giải AI.</span>
+        </div>
+        <PrimaryButton label="Nạp XU" variant="primary" onclick={() => void goto(resolve('/wallet'))} />
+      </div>
+    </NoticeBanner>
+  </div>
+{/if}
+
 <section class="history-list" aria-label={viCopy.history.title}>
 {#if history.isPending}
   <div class="state">
@@ -205,7 +226,7 @@
   {#if chartItems.length > 0}
     <ul class="list">
       {#each chartItems as item (item.id)}
-        <li>
+        <li class="history-item-container">
           <a class="item" href={resolve(`/charts/${item.id}`)}>
             {#if item.question}
               <span class="item-question">{item.question}</span>
@@ -213,13 +234,29 @@
                 {item.systemLabel} · {item.purposeText} · {item.createdAtLabel}
               </span>
             {:else}
-              <span class="item-system">{item.systemLabel}</span>
+              <div class="item-main-row">
+                <span class="item-system">{item.systemLabel}</span>
+                {#if item.annualReport}
+                  <span class="annual-badge">✦ Báo cáo năm {item.annualReport.year}</span>
+                {/if}
+              </div>
               <span class="item-meta">
                 {item.createdAtLabel}
                 · {item.hasExplanation ? viCopy.history.savedExplanation : viCopy.history.chartOnly}
               </span>
             {/if}
           </a>
+          {#if item.annualReport}
+            <button
+              type="button"
+              class="btn-annual-quickview"
+              onclick={() => (viewingAnnualReport = item.annualReport)}
+              title="Xem lại Báo cáo năm đã lập"
+            >
+              <span class="btn-icon">📖</span>
+              <span>Xem Báo Cáo Năm {item.annualReport.year}</span>
+            </button>
+          {/if}
         </li>
       {/each}
     </ul>
@@ -292,7 +329,49 @@
   />
 {/if}
 
+{#if viewingAnnualReport}
+  <AnnualReportModal
+    markdown={viewingAnnualReport.markdown}
+    year={viewingAnnualReport.year}
+    onClose={() => (viewingAnnualReport = null)}
+  />
+{/if}
+
 <style>
+  .monetization-banner {
+    margin-bottom: var(--space-xl);
+  }
+
+  .banner-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  .banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--color-text-primary);
+  }
+
+  .banner-text strong {
+    font-size: 15px;
+  }
+
+  .banner-text span {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+  }
+
+  @media (max-width: 640px) {
+    .banner-content {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
   .history-list {
     display: flex;
     flex-direction: column;
@@ -364,6 +443,71 @@
   .item:focus-visible {
     outline: 2px solid var(--color-accent-primary);
     outline-offset: 4px;
+  }
+
+  .history-item-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: var(--space-sm) 0;
+  }
+
+  .item-main-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .annual-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 12px;
+    background: rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    color: #d4af37;
+  }
+
+  .btn-annual-quickview {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: #d4af37;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+  }
+
+  .btn-annual-quickview:hover {
+    background: linear-gradient(135deg, #d4af37 0%, #aa8010 100%);
+    color: #0d0f18;
+    border-color: #d4af37;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+  }
+
+  @media (max-width: 640px) {
+    .history-item-container {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .btn-annual-quickview {
+      width: 100%;
+      justify-content: center;
+      margin-bottom: var(--space-sm);
+    }
   }
 
   .item-system {
@@ -485,5 +629,24 @@
   .vision-question-label {
     font-weight: 600;
     color: var(--color-text-primary);
+  }
+
+  /* Dual-Theme: Light Mode */
+  :global([data-theme="light"]) .annual-badge {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #b45309;
+  }
+
+  :global([data-theme="light"]) .btn-annual-quickview {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-color: #d97706;
+    color: #92400e;
+  }
+
+  :global([data-theme="light"]) .btn-annual-quickview:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    color: #ffffff;
+    border-color: #b45309;
   }
 </style>

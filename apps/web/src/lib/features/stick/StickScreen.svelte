@@ -152,84 +152,104 @@
   .stick-screen {
     min-height: 100dvh;
     overflow-x: hidden;
-    background: var(--color-bg-primary);
-    color: var(--color-text-primary);
+    background:
+      radial-gradient(ellipse 70% 35% at 50% 0%, rgba(212, 175, 55, 0.16), transparent 70%),
+      radial-gradient(ellipse 55% 30% at 85% 15%, rgba(192, 132, 252, 0.12), transparent 60%),
+      linear-gradient(180deg, #090615 0%, #130c2b 30%, #070512 100%);
+    color: #f7eed8;
   }
 
   .shell {
     box-sizing: border-box;
     width: 100%;
-    max-width: 640px;
+    max-width: 720px;
     margin: 0 auto;
     padding: 0 var(--space-lg) var(--space-xxl);
     display: flex;
     flex-direction: column;
-    gap: var(--space-lg);
+    gap: var(--space-xl);
   }
 
   .band {
     position: relative;
     margin-top: var(--space-lg);
     padding: var(--space-xl) var(--space-lg) var(--space-lg);
-    border-radius: var(--radius-lg);
+    border-radius: 24px;
     text-align: center;
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border-hairline);
+    background: rgba(22, 16, 42, 0.75);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.6), 0 0 30px rgba(212, 175, 55, 0.12);
   }
 
   .band-back {
     position: absolute;
     top: var(--space-md);
     left: var(--space-md);
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: none;
-    border-radius: var(--radius-pill);
-    background: transparent;
-    color: var(--color-text-primary);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    color: #f7eed8;
     cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .band-back svg {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
   }
 
   .band-back:hover {
-    background: var(--color-bg-surface);
+    border-color: #ffd700;
+    background: rgba(212, 175, 55, 0.2);
+    color: #ffd700;
+    transform: translateX(-2px);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
   }
 
   .band-back:focus-visible {
-    outline: 2px solid var(--color-accent-primary);
+    outline: 2px solid #d4af37;
     outline-offset: 2px;
   }
 
   .band-eyebrow {
-    margin: 0;
-    color: var(--color-text-muted);
+    display: inline-flex;
+    margin: 0 auto;
+    padding: 3px 12px;
+    border-radius: 999px;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: #ffd700;
     font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.125px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
   .band-title {
-    margin: 6px 0 0;
-    font-size: 26px;
-    font-weight: 700;
-    line-height: 1.23;
-    letter-spacing: 0;
-    color: var(--color-text-primary);
+    margin: 10px 0 0;
+    font-family: var(--font-serif);
+    font-size: clamp(26px, 4vw, 36px);
+    font-weight: 800;
+    line-height: 1.25;
+    background: linear-gradient(135deg, #ffffff 0%, #fce99f 50%, #d4af37 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   .band-sub {
     margin: var(--space-sm) auto 0;
-    max-width: 460px;
-    color: var(--color-text-muted);
-    font-size: 14px;
-    line-height: 1.55;
+    max-width: 520px;
+    color: rgba(226, 216, 184, 0.8);
+    font-size: 14.5px;
+    line-height: 1.6;
   }
 
   .content {
@@ -243,6 +263,13 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-lg);
+    background: rgba(22, 16, 42, 0.65);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 20px;
+    padding: var(--space-xl);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
   .field {
@@ -252,115 +279,141 @@
   }
 
   .field-label {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
+    color: #e2e8f0;
   }
 
   .question-input {
-    border: 1px solid var(--color-border-hairline);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--radius-md);
     padding: var(--space-sm) var(--space-md);
-    background: var(--color-bg-surface);
+    background: rgba(11, 13, 20, 0.6);
     color: var(--color-text-primary);
     font-size: 15px;
     font-family: inherit;
     resize: vertical;
+    transition: all 0.2s ease;
   }
 
   .question-input:focus-visible {
-    outline: 2px solid var(--color-accent-primary);
-    outline-offset: 1px;
+    outline: none;
+    border-color: #d4af37;
+    box-shadow: 0 0 16px rgba(212, 175, 55, 0.25);
   }
 
   .result-eyebrow {
     margin: 0;
     text-align: center;
-    color: var(--color-text-muted);
+    color: #d4af37;
     font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.125px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
   }
 
+  /* THẺ TRE CỔ ĐIỂN MẠ VÀNG (BAMBOO FORTUNE SLIP) */
   .stick-card {
     display: flex;
     flex-direction: column;
-    gap: var(--space-md);
-    padding: var(--space-lg);
+    gap: var(--space-lg);
+    padding: var(--space-xl);
     border-radius: var(--radius-lg);
-    background: var(--color-bg-surface);
-    border: 1px solid var(--color-border-hairline);
+    background: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.1), transparent 80%),
+                rgba(15, 18, 28, 0.9);
+    border: 2px solid #d4af37;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(212, 175, 55, 0.08);
+    position: relative;
   }
 
   .stick-head {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--space-sm);
+    align-items: center;
+    gap: var(--space-md);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    padding-bottom: var(--space-md);
   }
 
   .stick-id {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--color-accent-primary);
+    font-size: 16px;
+    font-weight: 800;
+    color: #fce99f;
+    padding: 2px 10px;
+    border-radius: var(--radius-pill);
+    background: rgba(212, 175, 55, 0.2);
+    border: 1px solid rgba(212, 175, 55, 0.4);
   }
 
   .stick-title {
     margin: 0;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--color-text-primary);
+    font-size: 24px;
+    font-weight: 800;
+    color: #ffffff;
   }
 
   .stick-level {
     margin-left: auto;
-    padding: 2px 10px;
+    padding: 4px 14px;
     border-radius: var(--radius-pill);
-    border: 1px solid var(--color-accent-primary);
-    color: var(--color-accent-primary);
-    font-size: 12px;
-    font-weight: 600;
+    border: 1px solid #d4af37;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.3), rgba(184, 134, 11, 0.15));
+    color: #fce99f;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
   }
 
   .stick-block {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    border-left: 3px solid #d4af37;
   }
 
   .stick-block p {
     margin: 0;
-    line-height: 1.55;
+    line-height: 1.6;
   }
 
   .block-title {
     font-size: 13px;
-    font-weight: 600;
-    color: var(--color-text-muted);
+    font-weight: 700;
+    color: #fce99f;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
   }
 
   .poem {
     font-style: italic;
-    color: var(--color-text-primary);
+    color: #fef08a;
+    font-size: 16px;
+    line-height: 1.7;
+    white-space: pre-line;
   }
 
   .field-list {
     margin: 0;
-    padding-left: var(--space-lg);
+    padding-left: var(--space-md);
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    line-height: 1.5;
+    gap: 6px;
+    line-height: 1.6;
   }
 
   .field-name {
-    font-weight: 600;
+    font-weight: 700;
+    color: #fce99f;
   }
 
   .reading {
     padding: var(--space-lg);
     border-radius: var(--radius-lg);
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border-hairline);
+    background: rgba(11, 13, 20, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
@@ -369,7 +422,98 @@
   .reading-title {
     margin: 0;
     font-size: 18px;
-    font-weight: 600;
-    color: var(--color-text-primary);
+    font-weight: 700;
+    color: #fce99f;
+  }
+
+  /* Đồng bộ Theme Light Hoàng Gia */
+  :global([data-theme="light"]) .stick-screen {
+    background:
+      radial-gradient(ellipse 75% 50% at 15% 0%, rgba(212, 175, 55, 0.1), transparent 60%),
+      radial-gradient(ellipse 60% 45% at 85% 10%, rgba(168, 85, 247, 0.08), transparent 55%),
+      linear-gradient(180deg, #faf8f5 0%, #f4f0e6 100%);
+    color: #1a162b;
+  }
+
+  :global([data-theme="light"]) .band {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(212, 175, 55, 0.45);
+    box-shadow: 0 16px 45px rgba(212, 175, 55, 0.12);
+  }
+
+  :global([data-theme="light"]) .band-back {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(212, 175, 55, 0.4);
+    color: #78350f;
+  }
+
+  :global([data-theme="light"]) .band-back:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #b45309;
+    color: #451a03;
+  }
+
+  :global([data-theme="light"]) .band-eyebrow {
+    background: rgba(212, 175, 55, 0.18);
+    border-color: rgba(212, 175, 55, 0.5);
+    color: #854d0e;
+  }
+
+  :global([data-theme="light"]) .band-title {
+    background: linear-gradient(135deg, #180d38 0%, #78350f 60%, #b45309 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  :global([data-theme="light"]) .band-sub {
+    color: #57534e;
+  }
+
+  :global([data-theme="light"]) .form,
+  :global([data-theme="light"]) .result {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(212, 175, 55, 0.45);
+    box-shadow: 0 16px 45px rgba(212, 175, 55, 0.12);
+  }
+
+  :global([data-theme="light"]) .field-label {
+    color: #78350f;
+  }
+
+  :global([data-theme="light"]) .question-input {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(212, 175, 55, 0.35);
+    color: #1c1917;
+  }
+
+  :global([data-theme="light"]) .stick-card {
+    background: rgba(248, 246, 240, 0.85);
+    border-color: rgba(212, 175, 55, 0.35);
+  }
+
+  :global([data-theme="light"]) .stick-id {
+    color: #b45309;
+  }
+
+  :global([data-theme="light"]) .poem {
+    color: #1c1917;
+  }
+
+  :global([data-theme="light"]) .block-title {
+    color: #78350f;
+  }
+
+  :global([data-theme="light"]) .field-name {
+    color: #78350f;
+  }
+
+  :global([data-theme="light"]) .reading {
+    background: rgba(248, 246, 240, 0.85);
+    border-color: rgba(212, 175, 55, 0.25);
+  }
+
+  :global([data-theme="light"]) .reading-title {
+    color: #78350f;
   }
 </style>

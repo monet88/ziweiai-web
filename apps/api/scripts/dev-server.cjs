@@ -6,7 +6,11 @@ const { resolveApiBuildOutputPaths } = require('./dev-server-path.cjs');
 const packageRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(packageRoot, '..', '..');
 const { distRoot, entryFile } = resolveApiBuildOutputPaths(packageRoot);
-const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+const nestCliPath = path.join(repoRoot, 'node_modules', '@nestjs', 'cli', 'bin', 'nest.js');
+const envLocalPath = path.join(repoRoot, '.env.local');
+if (fs.existsSync(envLocalPath)) {
+  process.loadEnvFile(envLocalPath);
+}
 const envPath = path.join(repoRoot, '.env');
 if (fs.existsSync(envPath)) {
   process.loadEnvFile(envPath);
@@ -79,8 +83,8 @@ try {
 }
 
 const builderProcess = spawn(
-  pnpmCommand,
-  ['exec', 'nest', 'build', '--watch', '--preserveWatchOutput'],
+  process.execPath,
+  [nestCliPath, 'build', '--watch', '--preserveWatchOutput'],
   {
     cwd: packageRoot,
     env: processEnv,

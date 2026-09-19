@@ -5,8 +5,6 @@ import { AnnualReportService } from './annual-report.service';
 import { apiEnv } from '../../../config/env';
 import { ProviderTimeoutError } from '../../../providers/ai/provider-errors';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const user: AuthenticatedUser = { userId: 'user-1', email: 'a@b.com' } as any;
 const CHART_ID = '11111111-1111-4111-8111-111111111111';
 
@@ -30,8 +28,10 @@ function makeService(snapshot: any = ziweiSnapshot) {
     findChartSnapshotById: vi.fn().mockResolvedValue(snapshot ? { snapshot } : null),
     findAnnualReportByChartAndYear: vi.fn().mockResolvedValue(null),
     createAnnualReport: vi.fn().mockResolvedValue({ markdown: '# Báo cáo năm 2026\n\nNăm này...' }),
+    upsertAnnualReport: vi.fn().mockResolvedValue({ markdown: '# Báo cáo năm 2026 mới\n\nNăm này...' }),
   };
-  const quotas = { assertCanCreateAnnualReport: vi.fn().mockResolvedValue(undefined) };
+  const walletEngine = { deductXU: vi.fn().mockResolvedValue(true) };
+  const quotas = { assertCanExecute: vi.fn().mockResolvedValue(undefined) };
   const providerRouter = {
     generate: vi.fn().mockResolvedValue({
       renderedMarkdown: '# Báo cáo năm 2026\n\nNăm này...',
@@ -39,8 +39,8 @@ function makeService(snapshot: any = ziweiSnapshot) {
     }),
   };
   const engine = { computeAnnualFrame: vi.fn().mockReturnValue(annualFrame) };
-  const service = new AnnualReportService(persistence as any, quotas as any, providerRouter as any, engine as any);
-  return { service, persistence, quotas, providerRouter, engine };
+  const service = new AnnualReportService(persistence as any, persistence as any, quotas as any, providerRouter as any, engine as any, walletEngine as any);
+  return { service, persistence, quotas, providerRouter, engine, walletEngine };
 }
 
 describe('AnnualReportService', () => {
@@ -67,12 +67,24 @@ describe('AnnualReportService', () => {
     expect(providerRouter.generate).not.toHaveBeenCalled();
   });
 
+  it('force=true: bỏ qua cache-hit, gọi provider và upsert báo cáo mới', async () => {
+    (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = true;
+    (apiEnv as any).AI_ANNUAL_REPORT_ENABLED = true;
+    const { service, persistence, providerRouter } = makeService();
+    (persistence.findAnnualReportByChartAndYear as any).mockResolvedValue({ markdown: '# Cũ' });
+
+    const res = await service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026, true);
+    expect(providerRouter.generate).toHaveBeenCalledOnce();
+    expect(persistence.upsertAnnualReport).toHaveBeenCalledOnce();
+    expect(res.markdown).toBe('# Báo cáo năm 2026 mới\n\nNăm này...');
+  });
+
   it('cache-miss + AI_ANNUAL_REPORT_ENABLED=false → 402 PAYMENT_REQUIRED', async () => {
     (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = true;
     (apiEnv as any).AI_ANNUAL_REPORT_ENABLED = false;
     const { service, providerRouter } = makeService();
     await expect(service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026)).rejects.toMatchObject({
-      status: HttpStatus.PAYMENT_REQUIRED,
+      status: HttpStatus.FORBIDDEN,
     });
     expect(providerRouter.generate).not.toHaveBeenCalled();
   });
@@ -80,7 +92,8 @@ describe('AnnualReportService', () => {
   it('cache-miss + AI_EXPLANATION_FREE_FOR_ALL=false → 402 (gate kép)', async () => {
     (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = false;
     (apiEnv as any).AI_ANNUAL_REPORT_ENABLED = true;
-    const { service } = makeService();
+    const { service, walletEngine } = makeService();
+    walletEngine.deductXU.mockResolvedValue(false);
     await expect(service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026)).rejects.toMatchObject({
       status: HttpStatus.PAYMENT_REQUIRED,
     });
@@ -114,7 +127,7 @@ describe('AnnualReportService', () => {
     (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = true;
     (apiEnv as any).AI_ANNUAL_REPORT_ENABLED = true;
     const { service, quotas } = makeService();
-    (quotas.assertCanCreateAnnualReport as any).mockRejectedValue(new Error('Daily annual report quota exceeded.'));
+    (quotas.assertCanExecute as any).mockRejectedValue(new Error('Daily annual report quota exceeded.'));
     await expect(service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026)).rejects.toMatchObject({
       status: HttpStatus.TOO_MANY_REQUESTS,
     });
@@ -142,5 +155,30 @@ describe('AnnualReportService', () => {
     await expect(service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026)).rejects.toMatchObject({
       status: HttpStatus.BAD_REQUEST,
     });
+  });
+
+  it('lá số có blocksExactReading=true → 400 INVALID_INPUT', async () => {
+    const { service } = makeService({
+      ...ziweiSnapshot,
+      calculationConfidence: { ...ziweiSnapshot.calculationConfidence, blocksExactReading: true },
+    });
+    await expect(service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026)).rejects.toMatchObject({
+      status: HttpStatus.BAD_REQUEST,
+    });
+  });
+
+  it('hoàn 1 XU tự động khi provider generate ném lỗi trong annual report', async () => {
+    (apiEnv as any).AI_EXPLANATION_FREE_FOR_ALL = false;
+    (apiEnv as any).AI_ANNUAL_REPORT_ENABLED = true;
+    const { service, providerRouter, walletEngine } = makeService();
+    (walletEngine as any).addXU = vi.fn().mockResolvedValue(true);
+    (providerRouter.generate as any).mockRejectedValue(new ProviderTimeoutError('timeout'));
+
+    await expect(service.createAnnualReport(user, '1.2.3.4', CHART_ID, 2026)).rejects.toMatchObject({
+      status: HttpStatus.GATEWAY_TIMEOUT,
+    });
+
+    expect(walletEngine.deductXU).toHaveBeenCalledWith(user.userId, 15, 'ai_usage');
+    expect((walletEngine as any).addXU).toHaveBeenCalledWith(user.userId, 15, 'ai_refund');
   });
 });

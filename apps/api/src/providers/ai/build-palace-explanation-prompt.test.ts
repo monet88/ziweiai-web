@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CJK_TEXT_PATTERN, type ChartSnapshot } from '@ziweiai/core';
+import { CJK_TEXT_PATTERN } from '@ziweiai/core';
+import type { ZiweiChartSnapshot } from '@ziweiai/contracts';
 import { buildPalaceExplanationPrompt } from './build-palace-explanation-prompt';
 
-function buildZiweiSnapshot(): ChartSnapshot {
+function buildZiweiSnapshot(): ZiweiChartSnapshot {
   return {
     snapshotId: 'fixture',
     birth: {
@@ -85,10 +86,12 @@ describe('buildPalaceExplanationPrompt', () => {
 
     expect(prompt).not.toMatch(CJK_TEXT_PATTERN);
     expect(prompt).toContain('Mệnh');
-    expect(prompt).toContain('Tử Vi (Miếu, Hóa Lộc)');
-    expect(prompt).toContain('Tam phương tứ chính');
+    expect(prompt).toContain('Tam phương tứ chính & Liên cung');
     expect(prompt).toContain('Đối cung');
     expect(prompt).toContain('Tam hợp');
+    expect(prompt).toContain('Nhị hợp');
+    expect(prompt).toContain('Giáp cung (trước)');
+    expect(prompt).toContain('Giáp cung (sau)');
   });
 
   it('builds a decadal (Đại Vận) prompt', () => {
@@ -116,10 +119,9 @@ describe('buildPalaceExplanationPrompt', () => {
   it('handles incomplete horoscope (missing age for yearly) without crash - defensive branch coverage', () => {
     const snapshot = buildZiweiSnapshot();
     // incomplete: no age for Tiểu Vận
-    snapshot.horoscope = {
-      ...snapshot.horoscope,
-      age: undefined,
-    };
+    if (snapshot.horoscope) {
+      delete (snapshot.horoscope as any).age;
+    }
     const prompt = buildPalaceExplanationPrompt(snapshot, 'yearly');
 
     expect(prompt).not.toMatch(CJK_TEXT_PATTERN);
@@ -129,10 +131,9 @@ describe('buildPalaceExplanationPrompt', () => {
 
   it('handles incomplete horoscope (missing decadal item) - defensive !item branch', () => {
     const snapshot = buildZiweiSnapshot();
-    snapshot.horoscope = {
-      ...snapshot.horoscope,
-      decadal: undefined,
-    };
+    if (snapshot.horoscope) {
+      delete (snapshot.horoscope as any).decadal;
+    }
     const prompt = buildPalaceExplanationPrompt(snapshot, 'decadal');
 
     expect(prompt).not.toMatch(CJK_TEXT_PATTERN);

@@ -3,6 +3,9 @@ harness.db
 harness.db-wal
 harness.db-shm
 
+# macOS local metadata.
+.DS_Store
+
 # Rust build output for harness tooling.
 target/
 
@@ -10,19 +13,39 @@ target/
 scripts/bin/harness-cli
 scripts/bin/harness-cli.exe
 
-# Agent / tooling local dirs.
-.claude/*
-.codex/*
-.agents/*
-.agent
+# ---------------------------------------------------------------------------
+# AI agent tooling — ignore junk / logs / cache; KEEP durable skills & config.
+# ---------------------------------------------------------------------------
+# Full local agent homes (session state, caches, private config).
+.claude/
+.codex/
+.gemini/
+.agent/
+agent/
 .kiro
 .codegraph/
+.gitnexus/
 .playwright-mcp/
 .codepilot-uploads/
 .headroom/
 .serena/
 .vscode/
 mcps/
+
+# .agents: ignore transient dirs only — skills/workflows/rules stay trackable.
+.agents/logs/
+.agents/cache/
+.agents/tmp/
+.agents/**/logs/
+.agents/**/cache/
+.agents/**/tmp/
+!.agents/skills/
+!.agents/skills/**
+!.agents/workflows/
+!.agents/workflows/**
+!.agents/rules/
+!.agents/rules/**
+!.agents/AGENTS.md
 
 # Impeccable skill scratch TODO list (local-only).
 /TODOS.md
@@ -38,6 +61,14 @@ pnpm-lock.yaml.tmp
 dist/
 build/
 coverage/
+out/
+.next/
+.vercel
+
+# Playwright E2E output.
+test-results/
+playwright-report/
+.playwright/
 
 # Playwright E2E output.
 test-results/
@@ -51,15 +82,51 @@ whyzod.txt
 # HTML UI preview reference (không phải nguồn build) + báo cáo review nội bộ.
 templates/ui-reference/
 plans/reports/
+tmp/
+temp/
+temp-envs/
 
-# Environment / secrets — never commit real values.
+# HTML UI preview reference (không phải nguồn build) + báo cáo review nội bộ.
+templates/ui-reference/
+plans/reports/
+
+# ---------------------------------------------------------------------------
+# Environment / secrets / credentials — never commit real values.
+# ---------------------------------------------------------------------------
 .env
 .env.*
-!.env.example
+*.env
+*.env.*
+!**/.env.example
+*.local
+*.secret
+*.secrets
+*.credentials
+*credentials*.json
+*credential*.json
+*service-account*.json
+*service_account*.json
+firebase-adminsdk*.json
+google-services.json
+GoogleService-Info.plist
+*.pem
+*.key
+*.p12
+*.p8
+*.keystore
+*.jks
+*.mobileprovision
+*.cer
+*.crt
+*.token
+**/secrets/
+**/credentials/
 
-# Supabase local temp.
+# Supabase local temp / link state (may contain project refs).
 apps/api/supabase/.temp/
 apps/api/supabase/.branches/
+supabase/.temp/
+**/.temp/
 
 # Deploy SSH keys — never commit private keys.
 docs/deploy/*.pem
@@ -71,3 +138,37 @@ docs/deploy/lightsail-ssh-key.txt
 /AGENTS.md
 AGENTS.md.orig.bak
 .mcp.json
+# ---------------------------------------------------------------------------
+# Large binaries / release media / debug dumps — never push to GitHub.
+# ---------------------------------------------------------------------------
+*.apk
+*.aab
+*.ipa
+*.mp4
+*.mov
+*.m4v
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+*.dmg
+*.iso
+ziweiai-demo.zip
+**/logcat.txt
+**/window_dump.xml
+*.log
+logs/
+
+# Local-only root agent scratch files.
+/CLAUDE.md
+AGENTS.md.orig.bak
+.mcp.json
+galatuvi
+
+# Additional explicit ignores for service keys requested by user
+*service-key*.json
+*service_key*.json
+*service_key*.pem
+*service-key*.pem

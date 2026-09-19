@@ -17,9 +17,16 @@ export function createQuotaCounterStore(env: ApiEnv = apiEnv): QuotaCounterStore
   switch (driver) {
     case 'upstash': {
       if (!env.QUOTA_UPSTASH_REST_URL || !env.QUOTA_UPSTASH_REST_TOKEN) {
-        throw new Error(
-          'QUOTA_STORE_DRIVER=upstash requires QUOTA_UPSTASH_REST_URL and QUOTA_UPSTASH_REST_TOKEN',
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error(
+            '[quotas] CRITICAL: QUOTA_STORE_DRIVER=upstash requires QUOTA_UPSTASH_REST_URL and QUOTA_UPSTASH_REST_TOKEN in production.',
+          );
+        }
+        Logger.warn(
+          '[quotas] QUOTA_STORE_DRIVER=upstash requires QUOTA_UPSTASH_REST_URL and QUOTA_UPSTASH_REST_TOKEN. Falling back to memory driver to prevent server crash.',
         );
+        logDriver('memory (fallback)');
+        return new MemoryQuotaCounterStore();
       }
       logDriver('upstash');
       return new UpstashRestQuotaCounterStore({
@@ -33,12 +40,25 @@ export function createQuotaCounterStore(env: ApiEnv = apiEnv): QuotaCounterStore
       // Chưa triển khai: chốt một driver thật (upstash) ở MVP để tránh thêm dependency native.
       throw new Error('QUOTA_STORE_DRIVER=redis not implemented yet — use "upstash" or "memory"');
     case 'memory':
-    default:
+    default: {
+      if (process.env.NODE_ENV === 'production') {
+        if (process.env.ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD !== 'true') {
+          throw new Error(
+            '[quotas] CRITICAL: QUOTA_STORE_DRIVER=memory is strictly forbidden in production unless ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD=true is explicitly set as a break-glass policy.',
+          );
+        }
+        Logger.warn(
+          '⚠️ [quotas] SECURITY WARNING: Running with QUOTA_STORE_DRIVER=memory in production (break-glass flag ALLOW_INSECURE_MEMORY_QUOTA_IN_PROD=true is enabled).',
+        );
+      }
       logDriver('memory');
       return new MemoryQuotaCounterStore();
+    }
   }
 }
 
+import { Logger } from '@nestjs/common';
+
 function logDriver(name: string): void {
-  console.log(`[quotas] counter store driver=${name}`);
+  Logger.log(`[quotas] counter store driver=${name}`);
 }

@@ -5,7 +5,10 @@ and validation work.
 
 ## Story packets hiện có
 
-Trạng thái proof sống: `scripts/bin/harness-cli query matrix`.
+Trạng thái dưới đây là operational snapshot ngày 2026-07-12, đối chiếu từ
+code/tests/routes hiện có. Một số story packet con vẫn còn dòng `## Status:
+planned`; đó là doc drift cần dọn khi có thời gian. Binary harness được nhắc
+trong docs cũ hiện không có trong workspace.
 
 | Epic | Story | Trạng thái |
 | --- | --- | --- |
@@ -16,11 +19,21 @@ Trạng thái proof sống: `scripts/bin/harness-cli query matrix`.
 | E05-dashboard | `US-005-dashboard-and-birth-form` | implemented |
 | E06-ziwei-detail | `US-006-ziwei-chart-detail-and-explanation` | implemented |
 | E07-other-systems-history | `US-007-other-systems-and-history` | implemented |
-| E08-ziwei-visual-board | `US-008-ziwei-visual-board` | planned |
-| E09-anonymous-access | `US-009-anonymous-access` | planned |
-| E10-premium-ai-gating | `US-010-premium-ai-gating` | planned |
+| E08-ziwei-visual-board | `US-008-ziwei-visual-board` | implemented in code/tests |
+| E08-ziwei-visual-board | `US-011-ziwei-aspect-lines` | implemented |
+| E09-anonymous-access | `US-009-anonymous-access` | implemented in code/tests |
+| E10-premium-ai-gating | `US-010-premium-ai-gating` | implemented in code/tests |
+| E12-ziwei-star-coloring | `US-012-ziwei-star-coloring` | implemented in code/tests |
+| E13-anon-quota-persistence | `US-013-anon-quota-persistence` | implemented in code/tests |
+| E14-ziwei-flow-info | `US-014-ziwei-flow-info` | implemented in code/tests |
+| E15-ziwei-horoscope-panel | `US-015-ziwei-horoscope-panel` | implemented in code/tests |
+| E16-time-fortune-reports | `US-016-time-fortune-reports` | implemented in code/tests |
+| E17-extended-divination-systems | `US-017 extended systems + B6 follow-ups` | implemented in code/tests |
+| E18-ai-conversation | `US-018-ai-conversation` | implemented in code/tests |
+| E19-monetization-premium | `overview` | deferred |
 | E20-supabase-cloud | `US-019-supabase-cloud-migration` | implemented |
 | E21-e2e-stabilization | `US-020-e2e-ziwei-flow-stabilization` | implemented |
+| E22-website-redesign | `US-041-luvsa-inspired-website-redesign` | in_progress |
 
 ## Normal Story
 

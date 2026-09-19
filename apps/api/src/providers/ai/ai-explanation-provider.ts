@@ -18,6 +18,8 @@ export interface ExplanationProviderResult {
 }
 
 export interface ExplanationPromptPayload {
+  userId?: string;
+  sessionId?: string;
   // US-017e: vision (face/palm) không có lá số → chartSnapshot/explanationContext optional. Chúng chỉ
   // được dùng khi KHÔNG có promptOverride (provider gọi buildExplanationPrompt). Đường vision luôn set
   // promptOverride nên hai field này vắng mặt là hợp lệ; buildExplanationPrompt sẽ tự guard.
@@ -30,6 +32,8 @@ export interface ExplanationPromptPayload {
   // nguồn public nào set (luôn undefined) — provider fallback về ENV model mặc định.
   // Khi expose qua public input sau này phải kèm allowlist + đưa model vào idempotency key.
   modelOverride?: string;
+  // Sprint 96: Dynamic Model Tiering (light: micro tasks / chat / tarot, deep: annual report / natal charts)
+  tier?: 'light' | 'deep';
   // US-016: prompt user dựng sẵn (vd báo cáo năm) để tái dùng provider chain (timeout + CJK
   // guard + failover) thay vì viết provider riêng. Khi set, provider dùng chuỗi này làm user
   // message thay cho `buildExplanationPrompt(payload)`. System prompt vẫn là EXPLANATION_SYSTEM_PROMPT.
@@ -60,15 +64,25 @@ export interface AiExplanationProvider {
   // cho phép kiểm tra theo model được ép riêng cho đường vision thay vì model ENV mặc định.
   isVisionCapable(modelOverride?: string): boolean;
   generateExplanation(payload: ExplanationPromptPayload): Promise<ExplanationProviderResult>;
+  // Sprint 61: REAL token streaming cho luận giải lá số.
+  generateExplanationStream?(
+    payload: ExplanationPromptPayload,
+    signal?: AbortSignal,
+  ): AsyncGenerator<string, ExplanationProviderResult, void>;
 }
 
 export interface ConversationPromptPayload {
+  userId?: string;
+  sessionId?: string;
   chartSnapshot: ChartSnapshot;
   explanationContext: ExplanationContext;
   messages: ConversationMessageRecord[];
   userMessage: string;
   quickPromptKey?: QuickPromptKey;
+  // Sprint 61: Cho phép truyền cung vị trọng điểm đang đàm luận
+  palaceScope?: PalaceScope;
   modelOverride?: string;
+  tier?: 'light' | 'deep';
   // US-025 (decision 0021): for the four time-based divination systems, the stored
   // question + purpose are threaded so the conversation prompt targets the original
   // inquiry even when a quick prompt or follow-up does not restate it. Absent for

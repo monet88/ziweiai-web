@@ -18,6 +18,9 @@ Run from repo root. pnpm@10.17.1, Node >=22, Turbo.
 | `pnpm -F @ziweiai/web check` | svelte-check + tsc |
 | `pnpm -F @ziweiai/web e2e` | Playwright E2E (stubbed); auto-starts api + web preview |
 | `pnpm -F @ziweiai/web e2e:live` | Playwright E2E hitting real LLM providers (`@live` specs) |
+| `pnpm check:supabase-migrations` | Check local Supabase migration names/versions; set `SUPABASE_VERIFY_LINKED=1` for linked ledger |
+| `pnpm smoke:vercel-demo` | Safe smoke Vercel demo: inspect alias, public API and SPA fallback; no Supabase writes |
+| `pnpm smoke:vercel-live-mutation` | Guarded production smoke for anonymous auth + Lục Hào + AI explanation; default skips unless explicit env confirm is set |
 | `pnpm why zod` | Confirm single zod v4 version |
 
 ## Playwright IS runnable here — do not skip it

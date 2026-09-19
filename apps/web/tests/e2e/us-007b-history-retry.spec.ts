@@ -29,11 +29,10 @@ test('US-007 hardening: lỗi tải lịch sử hiện nút "Thử lại" và re
     });
   });
 
-  // ---- Điều hướng client-side sang /history → HistoryList fetch → vào nhánh lỗi ----
-  await page
-    .getByRole('navigation', { name: 'Hệ thuật số khác' })
-    .getByRole('link', { name: 'Xem toàn bộ lịch sử', exact: true })
-    .click();
+  // ---- Mở trực tiếp /history → HistoryList fetch → vào nhánh lỗi ----
+  // Link lịch sử trên dashboard chỉ hiện cho member; anonymous session vẫn được phép
+  // dùng /history nên test không bám vào CTA có điều kiện.
+  await page.goto('/history');
   await page.waitForURL(/\/history$/, { timeout: 15_000 });
 
   // ---- Banner danger (role=alert) + nút "Thử lại" hiện ra ----

@@ -8,16 +8,27 @@
     "pnpm": ">=10.0.0"
   },
   "scripts": {
+    "vercel-build": "pnpm rebuild esbuild && pnpm --filter @ziweiai/contracts build && pnpm --filter @ziweiai/core build && pnpm --filter @ziweiai/xuanshu-runtime build && pnpm --filter @ziweiai/astro-engine build && pnpm --filter @ziweiai/api build && pnpm --filter @ziweiai/web build",
     "build": "turbo run build",
+    "check:supabase-migrations": "scripts/check-supabase-migrations.zsh",
+    "check:db": "pnpm dlx tsx scripts/verify-live-db-integrity.ts",
+    "monitor:xu": "pnpm dlx tsx scripts/monitor-xu-economy.ts",
+    "generate:sitemap": "pnpm dlx tsx scripts/generate-sitemap.ts",
+    "deploy:vercel-demo": "scripts/deploy-vercel-demo.zsh",
     "dev": "turbo run dev --parallel",
+    "dev:host": "turbo run dev --parallel -- --host",
     "lint": "eslint . --max-warnings=0",
+    "prepare": "bash scripts/install-git-hooks.sh",
+    "smoke:vercel-demo": "scripts/smoke-vercel-demo.zsh",
+    "smoke:vercel-live-mutation": "scripts/smoke-vercel-live-mutation.zsh",
     "test": "turbo run test",
+    "test:journey": "pnpm -F @ziweiai/web e2e:journey",
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
-    "@vitest/coverage-v8": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9.39.1",
     "eslint-plugin-svelte": "^3.19.0",
     "prettier": "^3.6.2",
@@ -25,6 +36,28 @@
     "turbo": "^2.6.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vitest": "^4.0.14"
+    "vitest": "^4.1.11"
+  },
+  "pnpm": {
+    "overrides": {
+      "body-parser": "^2.3.0",
+      "multer": "^2.3.0",
+      "qs": "^6.16.0",
+      "esbuild": "^0.28.1",
+      "cookie": "^0.7.2",
+      "fast-uri": "^3.1.6",
+      "nanoid": "^3.3.18",
+      "brace-expansion": "^2.0.2",
+      "fflate": "^0.7.5",
+      "baseline-browser-mapping": "^2.11.0",
+      "browserslist": "^4.28.7",
+      "postcss": "^8.5.23",
+      "@sveltejs/kit": "^2.70.2",
+      "undici": "^7.28.0",
+      "js-yaml": "^4.3.2",
+      "vitest": "^4.1.11",
+      "@vitest/mocker": "^4.1.11",
+      "@vitest/coverage-v8": "^4.1.11"
+    }
   }
 }

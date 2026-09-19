@@ -24,14 +24,14 @@ describe('AlmanacService — phân loại lỗi từ điển (Han-gate)', () => 
   const originalEnabled = apiEnv.EXTENDED_SYSTEM_ALMANAC_ENABLED;
   const originalFreeForAll = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
   const user: AuthenticatedUser = { userId: '11111111-1111-1111-1111-111111111111', email: 'user@example.com' };
-  let quotasService: Pick<QuotasService, 'assertCanCreateAlmanacSelection'>;
+  let quotasService: Pick<QuotasService, 'assertCanExecute'>;
   let providerRouter: Pick<ExplanationProviderRouter, 'generate'>;
   let service: InstanceType<typeof AlmanacService>;
 
   beforeEach(() => {
     apiEnv.EXTENDED_SYSTEM_ALMANAC_ENABLED = true;
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
-    quotasService = { assertCanCreateAlmanacSelection: vi.fn().mockResolvedValue(undefined) };
+    quotasService = { assertCanExecute: vi.fn().mockResolvedValue(undefined) };
     providerRouter = { generate: vi.fn() };
     service = new AlmanacService(quotasService as QuotasService, providerRouter as ExplanationProviderRouter);
   });

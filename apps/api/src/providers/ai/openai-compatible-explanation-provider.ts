@@ -92,6 +92,21 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
     });
   }
 
+  // Sprint 61: REAL token streaming cho Luận giải lá số.
+  async *generateExplanationStream(
+    payload: ExplanationPromptPayload,
+    signal?: AbortSignal,
+  ): AsyncGenerator<string, ExplanationProviderResult, void> {
+    if (!this.isAvailable()) {
+      throw new ProviderUnavailableError('Chưa cấu hình nhà cung cấp OpenAI-compatible.');
+    }
+    const model = payload.modelOverride ?? apiEnv.OPENAI_COMPAT_MODEL;
+    const emptyMessage = 'Nhà cung cấp OpenAI-compatible không trả về nội dung luận giải.';
+    const prompt = payload.promptOverride ?? buildExplanationPrompt(payload);
+    const timeoutMs = payload.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
+    return yield* this.streamFromUpstream(prompt, emptyMessage, model, timeoutMs, signal);
+  }
+
   // US-027 (decision 0026): REAL token streaming. POST with stream:true, read the upstream SSE
   // body, parse `data:` frames, and yield each delta as it arrives. The accumulated text is run
   // through the CJK guard before the final result is returned, mirroring the non-stream path.
@@ -104,11 +119,19 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
     if (!this.isAvailable()) {
       throw new ProviderUnavailableError('Chưa cấu hình nhà cung cấp OpenAI-compatible.');
     }
-
     const emptyMessage = 'Nhà cung cấp OpenAI-compatible không trả về nội dung hội thoại.';
     const model = payload.modelOverride ?? apiEnv.OPENAI_COMPAT_MODEL;
     const timeoutMs = apiEnv.AI_PROVIDER_TIMEOUT_MS;
+    return yield* this.streamFromUpstream(buildConversationPrompt(payload), emptyMessage, model, timeoutMs, signal);
+  }
 
+  private async *streamFromUpstream(
+    prompt: string,
+    emptyMessage: string,
+    model: string,
+    timeoutMs: number,
+    signal?: AbortSignal,
+  ): AsyncGenerator<string, ExplanationProviderResult, void> {
     // Combine the per-request timeout with the optional caller signal: either firing aborts the
     // upstream fetch. AbortSignal.any is available on Node >=20; the repo targets Node >=22.
     const timeoutSignal = AbortSignal.timeout(timeoutMs);
@@ -126,7 +149,7 @@ export class OpenAiCompatibleExplanationProvider implements AiConversationProvid
           model,
           messages: [
             { role: 'system', content: EXPLANATION_SYSTEM_PROMPT },
-            { role: 'user', content: buildConversationPrompt(payload) },
+            { role: 'user', content: prompt },
           ],
           stream: true,
           temperature: 0.7,

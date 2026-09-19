@@ -9,7 +9,6 @@ import { RateLimitWindowError } from '../quotas/quota-errors';
 import type { QuotasService } from '../quotas/quotas.service';
 import { VisionAnalysisService } from './vision-analysis.service';
 import type { VisionStorageGateway } from './vision-storage.gateway';
-import type { SupabasePersistenceGateway } from '../../database/supabase-persistence.gateway';
 
 function expectApiError(error: unknown, status: HttpStatus, code: string): void {
   expect(error).toBeInstanceOf(ApiErrorHttpException);
@@ -26,11 +25,11 @@ describe('VisionAnalysisService', () => {
   const anonUser: AuthenticatedUser = { userId: '22222222-2222-2222-2222-222222222222', email: null };
   const imageBytes = new Uint8Array([1, 2, 3, 4]);
 
-  let quotasService: Pick<QuotasService, 'assertCanCreateVisionAnalysis'>;
+  let quotasService: Pick<QuotasService, 'assertCanExecute'>;
   let providerRouter: Pick<ExplanationProviderRouter, 'generate'>;
   let storageGateway: Pick<VisionStorageGateway, 'uploadVisionImage' | 'deleteVisionImage'>;
   let persistence: Pick<
-    SupabasePersistenceGateway,
+    any,
     'createVisionResult' | 'createHistoryView' | 'findVisionResultById' | 'deleteVisionResult'
   >;
   let service: VisionAnalysisService;
@@ -38,7 +37,7 @@ describe('VisionAnalysisService', () => {
   beforeEach(() => {
     apiEnv.EXTENDED_SYSTEM_FACE_ENABLED = true;
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
-    quotasService = { assertCanCreateVisionAnalysis: vi.fn().mockResolvedValue(undefined) };
+    quotasService = { assertCanExecute: vi.fn().mockResolvedValue(undefined) };
     providerRouter = {
       generate: vi.fn().mockResolvedValue({ renderedMarkdown: 'Phân tích tướng mặt.', providerMetadata: { provider: 'deepseek' } }),
     };
@@ -56,7 +55,8 @@ describe('VisionAnalysisService', () => {
       quotasService as QuotasService,
       providerRouter as ExplanationProviderRouter,
       storageGateway as VisionStorageGateway,
-      persistence as SupabasePersistenceGateway,
+      persistence as any,
+      persistence as any,
     );
   });
 
@@ -96,22 +96,13 @@ describe('VisionAnalysisService', () => {
     } catch (error) {
       expectApiError(error, HttpStatus.FORBIDDEN, 'IDENTITY_REQUIRED');
     }
-    expect(quotasService.assertCanCreateVisionAnalysis).not.toHaveBeenCalled();
+    expect(quotasService.assertCanExecute).not.toHaveBeenCalled();
   });
 
-  it('chặn PAYMENT_REQUIRED khi AI gate không free-for-all (trước quota)', async () => {
-    apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
-    try {
-      await service.analyze(baseInput());
-      throw new Error('expected premium gate to throw');
-    } catch (error) {
-      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'PAYMENT_REQUIRED');
-    }
-    expect(quotasService.assertCanCreateVisionAnalysis).not.toHaveBeenCalled();
-  });
+
 
   it('map lỗi quota vision thành 429 VISION_QUOTA_EXCEEDED', async () => {
-    quotasService.assertCanCreateVisionAnalysis = vi.fn().mockRejectedValue(new Error('Daily vision quota exceeded.'));
+    quotasService.assertCanExecute = vi.fn().mockRejectedValue(new Error('Daily vision quota exceeded.'));
     try {
       await service.analyze(baseInput());
       throw new Error('expected vision quota to throw');
@@ -122,7 +113,7 @@ describe('VisionAnalysisService', () => {
   });
 
   it('rate-limit per-phút (RateLimitWindowError) map thành 429 RATE_LIMITED, KHÔNG phải VISION_QUOTA_EXCEEDED', async () => {
-    quotasService.assertCanCreateVisionAnalysis = vi.fn().mockRejectedValue(new RateLimitWindowError());
+    quotasService.assertCanExecute = vi.fn().mockRejectedValue(new RateLimitWindowError());
     try {
       await service.analyze(baseInput());
       throw new Error('expected rate-limit to throw');

@@ -8,13 +8,13 @@ export const birthDateSchema = z.object({
   year: z.number().int().min(1).max(9999),
   month: z.number().int().min(1).max(12),
   day: z.number().int().min(1).max(31),
-  isLeapMonth: z.boolean().nullable(),
+  isLeapMonth: z.boolean().nullish(),
 });
 
 export const birthTimeSchema = z
   .object({
-    hour: z.number().int().min(0).max(23).nullable(),
-    minute: z.number().int().min(0).max(59).nullable(),
+    hour: z.number().int().min(0).max(23).nullish(),
+    minute: z.number().int().min(0).max(59).nullish(),
     isUnknown: z.boolean(),
   })
   .superRefine((value, ctx) => {
@@ -22,7 +22,7 @@ export const birthTimeSchema = z
       return;
     }
 
-    if (value.hour === null || value.minute === null) {
+    if (value.hour == null || value.minute == null) {
       ctx.addIssue({
         code: 'custom',
         message: 'Known birth time requires both hour and minute.',
@@ -38,8 +38,8 @@ export const manualCoordinatesSchema = z.object({
 
 export const birthPlaceSchema = z
   .object({
-    label: z.string().trim().min(1).nullable(),
-    manual: manualCoordinatesSchema.nullable(),
+    label: z.string().trim().min(1).nullish(),
+    manual: manualCoordinatesSchema.nullish(),
   })
   .superRefine((value, ctx) => {
     if (value.label || value.manual) {
@@ -63,7 +63,7 @@ export const birthInputSchema = z
     source: z.enum(birthInputSources),
   })
   .superRefine((value, ctx) => {
-    if (value.calendar === 'lunar' && value.date.isLeapMonth === null) {
+    if (value.calendar === 'lunar' && value.date.isLeapMonth == null) {
       ctx.addIssue({
         code: 'custom',
         path: ['date', 'isLeapMonth'],
@@ -71,7 +71,7 @@ export const birthInputSchema = z
       });
     }
 
-    if (value.calendar === 'gregorian' && value.date.isLeapMonth !== null) {
+    if (value.calendar === 'gregorian' && value.date.isLeapMonth != null) {
       ctx.addIssue({
         code: 'custom',
         path: ['date', 'isLeapMonth'],

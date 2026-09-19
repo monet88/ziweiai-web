@@ -1,12 +1,14 @@
 import { HttpStatus } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { tarotDrawSchema, type AuthenticatedUser } from '@ziweiai/contracts';
+import type { WalletEngineService } from '../wallet/wallet-engine.service';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
 import type { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
 import type { QuotasService } from '../quotas/quotas.service';
 import { DrawsTarotService } from './draws-tarot.service';
+import { AiFeatureExecutionOrchestrator } from '../../providers/ai/ai-feature-execution.orchestrator';
 
 function expectApiError(error: unknown, status: HttpStatus, code: string): void {
   expect(error).toBeInstanceOf(ApiErrorHttpException);
@@ -21,15 +23,17 @@ describe('DrawsTarotService', () => {
   const originalTarotEnabled = apiEnv.EXTENDED_SYSTEM_TAROT_ENABLED;
   const originalFreeForAll = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
   const user: AuthenticatedUser = { userId: '11111111-1111-1111-1111-111111111111', email: 'user@example.com' };
-  let quotasService: Pick<QuotasService, 'assertCanCreateTarotDraw'>;
+  let quotasService: Pick<QuotasService, 'assertCanExecute'>;
   let providerRouter: Pick<ExplanationProviderRouter, 'generate'>;
+  let walletEngine: Pick<WalletEngineService, 'deductXU'>;
   let service: DrawsTarotService;
 
   beforeEach(() => {
     apiEnv.EXTENDED_SYSTEM_TAROT_ENABLED = true;
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
+    walletEngine = { deductXU: vi.fn().mockResolvedValue(true) };
     quotasService = {
-      assertCanCreateTarotDraw: vi.fn().mockResolvedValue(undefined),
+      assertCanExecute: vi.fn().mockResolvedValue(undefined),
     };
     providerRouter = {
       generate: vi.fn().mockResolvedValue({
@@ -37,9 +41,17 @@ describe('DrawsTarotService', () => {
         providerMetadata: { provider: 'mock' },
       }),
     };
-    service = new DrawsTarotService(
+    const orchestrator = new AiFeatureExecutionOrchestrator(
       quotasService as QuotasService,
       providerRouter as ExplanationProviderRouter,
+      walletEngine as WalletEngineService
+    );
+    const tarotGroundingAdapter = {
+      getGroundingContext: vi.fn().mockResolvedValue('Grounding context for Celtic Cross'), // mock resolve for tests
+    };
+    service = new DrawsTarotService(
+      orchestrator,
+      tarotGroundingAdapter as any
     );
   });
 
@@ -59,17 +71,18 @@ describe('DrawsTarotService', () => {
       expectApiError(error, HttpStatus.FORBIDDEN, 'FEATURE_DISABLED');
     }
 
-    expect(quotasService.assertCanCreateTarotDraw).not.toHaveBeenCalled();
+    expect(quotasService.assertCanExecute).not.toHaveBeenCalled();
   });
 
-  it('chặn PAYMENT_REQUIRED khi đã bật Tarot nhưng AI gate không free-for-all', async () => {
+  it('chặn INSUFFICIENT_FUNDS khi đã bật Tarot nhưng AI gate không free-for-all', async () => {
+    walletEngine.deductXU = vi.fn().mockResolvedValue(false);
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
 
     try {
       await service.drawTarot(user, '127.0.0.1', 'Tôi nên tập trung điều gì?', 'three-card', 'seed-1');
       throw new Error('expected premium gate to throw');
     } catch (error) {
-      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'PAYMENT_REQUIRED');
+      expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'INSUFFICIENT_FUNDS');
     }
   });
 
@@ -81,7 +94,7 @@ describe('DrawsTarotService', () => {
     expect(result.cards.map((card) => card.position)).toEqual([0, 1, 2]);
     expect(result.narrative).toContain('Diễn giải Tarot từ LLM.');
     expect(providerRouter.generate).toHaveBeenCalledTimes(1);
-    expect(quotasService.assertCanCreateTarotDraw).toHaveBeenCalledWith(user.userId, '127.0.0.1', false);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledWith('tarot-draw', user.userId, '127.0.0.1', false);
   });
 
   it('dùng quota anon khi user không có email', async () => {
@@ -89,7 +102,7 @@ describe('DrawsTarotService', () => {
 
     await service.drawTarot(anonymousUser, '10.0.0.1', 'Một câu hỏi ngắn', 'three-card', 'seed-2');
 
-    expect(quotasService.assertCanCreateTarotDraw).toHaveBeenCalledWith(anonymousUser.userId, '10.0.0.1', true);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledWith('tarot-draw', anonymousUser.userId, '10.0.0.1', true);
   });
 
   it('coi email="" là anon (anon JWT có email rỗng) → dùng quota anon', async () => {
@@ -97,11 +110,11 @@ describe('DrawsTarotService', () => {
 
     await service.drawTarot(emptyEmailUser, '10.0.0.9', 'Một câu hỏi', 'three-card', 'seed-9');
 
-    expect(quotasService.assertCanCreateTarotDraw).toHaveBeenCalledWith(emptyEmailUser.userId, '10.0.0.9', true);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledWith('tarot-draw', emptyEmailUser.userId, '10.0.0.9', true);
   });
 
   it('map lỗi quota (raw Error) thành 429 RATE_LIMITED', async () => {
-    quotasService.assertCanCreateTarotDraw = vi
+    quotasService.assertCanExecute = vi
       .fn()
       .mockRejectedValue(new Error('Daily explanation quota exceeded.'));
 

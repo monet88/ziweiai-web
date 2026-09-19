@@ -5,23 +5,23 @@ import {
   type AuthenticatedUser,
   type TarotDraw,
   type TarotSpread,
+  FEATURE_PRICING,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
-import { throwQuotaRateLimited } from '../quotas/quota-http';
 import { apiEnv } from '../../config/env';
-import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
-import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
-import { QuotasService } from '../quotas/quotas.service';
+import { AiFeatureExecutionOrchestrator } from '../../providers/ai/ai-feature-execution.orchestrator';
 import { drawDeterministic, type TarotCardDraw } from './tarot-deck';
-import { buildTarotReadingPrompt, SPREAD_LABELS_VI } from './tarot-prompts';
+import { SPREAD_LABELS_VI } from './tarot-prompts';
+
+import { TarotGroundingAdapter } from './adapters/tarot-grounding.adapter';
 
 @Injectable()
 export class DrawsTarotService {
   private readonly logger = new Logger(DrawsTarotService.name);
 
   constructor(
-    private readonly quotasService: QuotasService,
-    private readonly providerRouter: ExplanationProviderRouter,
+    private readonly orchestrator: AiFeatureExecutionOrchestrator,
+    private readonly tarotGroundingAdapter: TarotGroundingAdapter,
   ) {}
 
   async drawTarot(
@@ -50,16 +50,29 @@ export class DrawsTarotService {
       );
     }
 
-    // Gate AI (premium) TRƯỚC quota: nếu không free-for-all thì chặn 402 ngay, không để
-    // user non-premium "tiêu" lần kiểm tra quota cho thao tác chắc chắn bị từ chối.
-    this.assertPremiumEntitlement();
-    // email rỗng/null ⟺ phiên ẩn danh (decision 0009): anon JWT có thể mang email="" (không chỉ
-    // null), nên dùng !user.email để không bỏ lọt nhánh anon. Đồng bộ với assertEmailIdentityRequired.
-    await this.assertCanCreateTarotDraw(user.userId, ipAddress, !user.email);
-
     const count = TAROT_SPREAD_CARD_COUNTS[spread];
     const cards = drawDeterministic(seed, count).map((card, index) => ({ ...card, position: index }));
-    const narrative = await this.generateNarrative(normalizedQuestion, cards, spread);
+
+    const promptOverride = await this.tarotGroundingAdapter.getGroundingContext({
+      question: normalizedQuestion,
+      spread,
+      cards,
+    });
+
+    const narrative = await this.orchestrator.executeFeature({
+      userId: user.userId,
+      ipAddress,
+      isAnonymous: !user.email,
+      quotaFeatureKey: 'tarot-draw',
+      quotaErrorMessage: 'Đã vượt hạn mức rút Tarot.',
+      explanationKind: 'tarot-reading',
+      cost: FEATURE_PRICING.TAROT_LENORMAND,
+      paymentErrorMessage: 'Tính năng gieo quẻ Tarot yêu cầu đăng nhập và có XU. Vui lòng đăng nhập hoặc nạp XU.',
+      paymentInsufficientFundsMessage: `Tính năng rút Tarot yêu cầu ${FEATURE_PRICING.TAROT_LENORMAND} XU. Số dư XU của bạn không đủ, vui lòng nạp thêm XU.`,
+      promptOverride,
+      generateFallback: () => this.generateDeterministicNarrative(normalizedQuestion, cards, spread),
+      tier: 'light',
+    });
 
     return tarotDrawSchema.parse({
       question: normalizedQuestion,
@@ -68,64 +81,6 @@ export class DrawsTarotService {
       narrative,
       seed,
     });
-  }
-
-  private assertPremiumEntitlement(): void {
-    if (apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
-      this.logger.warn('AI_EXPLANATION_FREE_FOR_ALL=true — Tarot AI gate bypassed (free for all). Set false in production.');
-      return;
-    }
-
-    throw new ApiErrorHttpException(
-      HttpStatus.PAYMENT_REQUIRED,
-      'PAYMENT_REQUIRED',
-      'Tính năng luận giải AI yêu cầu gói trả phí. Vui lòng nâng cấp để tiếp tục.',
-    );
-  }
-
-  // Bọc lỗi quota (raw Error từ QuotasService) thành 429 RATE_LIMITED cho đồng bộ với /charts và
-  // /explanations; nếu không bọc, raw Error sẽ rơi xuống ApiErrorFilter và trả 500 INTERNAL_ERROR.
-  private async assertCanCreateTarotDraw(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
-    try {
-      await this.quotasService.assertCanCreateTarotDraw(userId, ipAddress, isAnonymous);
-    } catch (error) {
-      throwQuotaRateLimited(error, 'Đã vượt hạn mức rút Tarot.');
-    }
-  }
-
-  // US-017i: diễn giải Tarot do LLM sinh. Rút lá vẫn deterministic (seed + cards không đổi); chỉ
-  // phần narrative dùng provider chain (tái dùng ExplanationProviderRouter như vision/annual-report).
-  // Nếu provider chưa cấu hình / timeout / 5xx → rơi về diễn giải template tiếng Việt để lượt rút
-  // KHÔNG bị 500 (lá bài đã rút xong là kết quả chính). Lỗi CJK guard cũng rơi về fallback an toàn.
-  private async generateNarrative(
-    question: string,
-    cards: ReadonlyArray<TarotCardDraw & { position: number }>,
-    spread: TarotSpread,
-  ): Promise<string> {
-    try {
-      const providerResult = await this.providerRouter.generate('auto', {
-        explanationKind: 'tarot-reading',
-        promptOverride: buildTarotReadingPrompt(question, spread, cards),
-      });
-      // Chốt sớm payload provider: nếu null/thiếu renderedMarkdown hợp lệ → ném
-      // ProviderUnavailableError để rơi về template tiếng Việt, tránh trả narrative
-      // rỗng/undefined xuống tarotDrawSchema.parse (sẽ 500 khó truy nguyên).
-      if (!providerResult || typeof providerResult.renderedMarkdown !== 'string') {
-        throw new ProviderUnavailableError('LLM provider returned an empty or invalid narrative response.');
-      }
-      this.logger.log(
-        `[tarot] outcome=generated provider=${providerResult.providerMetadata.provider ?? 'unknown'} cards=${cards.length} spread=${spread}`,
-      );
-      return providerResult.renderedMarkdown;
-    } catch (error) {
-      if (error instanceof ProviderTimeoutError || error instanceof ProviderUnavailableError) {
-        this.logger.warn(
-          `[tarot] outcome=fallback reason=${error.constructor.name} message=${error.message}`,
-        );
-        return this.generateDeterministicNarrative(question, cards, spread);
-      }
-      throw error;
-    }
   }
 
   private generateDeterministicNarrative(

@@ -4,6 +4,7 @@ import {
   assertNoCjk,
   buildProviderMetadata,
   type LlmChatAdapter,
+  type LlmParsedResult,
 } from './llm-chat-adapter';
 import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
 
@@ -18,12 +19,107 @@ import { ProviderTimeoutError, ProviderUnavailableError } from './provider-error
 @Injectable()
 export class LlmExchange {
   private readonly logger = new Logger(LlmExchange.name);
+  private static globalDailyCount = 0;
+  private static currentDayKey = '';
+
+  private static async trackAndAssertSpend(logger: Logger) {
+    const today = new Date().toISOString().slice(0, 10);
+    const limit = apiEnv.AI_GLOBAL_DAILY_REQUEST_LIMIT;
+
+    // 1. Kiểm tra qua Upstash REST (chia sẻ toàn cục qua mọi Vercel instance/lambda)
+    if (apiEnv.QUOTA_UPSTASH_REST_URL && apiEnv.QUOTA_UPSTASH_REST_TOKEN) {
+      try {
+        const restUrl = apiEnv.QUOTA_UPSTASH_REST_URL.replace(/\/+$/, '');
+        const key = `ai:global:daily:${today}`;
+        const res = await fetch(`${restUrl}/pipeline`, {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${apiEnv.QUOTA_UPSTASH_REST_TOKEN}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify([
+            ['INCR', key],
+            ['EXPIRE', key, '86400', 'NX'],
+          ]),
+          signal: AbortSignal.timeout(3000),
+        });
+
+        if (res.ok) {
+          const payload = (await res.json()) as Array<{ result?: number; error?: string }>;
+          const firstItem = Array.isArray(payload) ? payload[0] : null;
+          const count = firstItem?.result !== undefined ? Number(firstItem.result) : NaN;
+
+          if (!Array.isArray(payload) || payload.length === 0 || !Number.isFinite(count)) {
+            const errDetail = firstItem?.error ? ` (Upstash error: ${firstItem.error})` : '';
+            logger.error(`Upstash counter returned malformed or unparseable payload${errDetail}: ${JSON.stringify(payload)}`);
+            if (process.env.NODE_ENV === 'production') {
+              throw new ProviderUnavailableError(
+                'Dịch vụ AI tạm thời không khả dụng do phản hồi kiểm soát ngân sách không hợp lệ. Vui lòng thử lại sau.',
+              );
+            }
+            return;
+          }
+
+          if (count > limit) {
+            logger.error(
+              `CRITICAL: Upstash Global AI daily budget reached (${count}/${limit}). Circuit breaker tripped.`,
+            );
+            throw new ProviderUnavailableError(
+              'Hệ thống AI đã đạt giới hạn an toàn toàn cục trong ngày để bảo vệ ngân sách dịch vụ. Vui lòng quay lại vào ngày mai.',
+            );
+          }
+          return;
+        }
+
+        // Lỗi HTTP non-OK từ Upstash
+        logger.error(`Upstash counter returned HTTP ${res.status}: ${res.statusText}`);
+        if (process.env.NODE_ENV === 'production') {
+          throw new ProviderUnavailableError(
+            'Dịch vụ AI tạm thời không khả dụng do hệ thống kiểm soát ngân sách toàn cục gặp sự cố. Vui lòng thử lại sau.',
+          );
+        }
+      } catch (err) {
+        if (err instanceof ProviderUnavailableError) throw err;
+        logger.error(`Upstash global counter check failed: ${err}`);
+        if (process.env.NODE_ENV === 'production') {
+          throw new ProviderUnavailableError(
+            'Dịch vụ AI tạm thời không khả dụng do hệ thống kiểm soát ngân sách toàn cục gặp sự cố. Vui lòng thử lại sau.',
+          );
+        }
+        logger.warn(`Fallback to process static counter in non-production: ${err}`);
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      logger.error(
+        'CRITICAL: QUOTA_UPSTASH_REST_URL and QUOTA_UPSTASH_REST_TOKEN are required in production for global AI budget circuit breaker. Failing closed.',
+      );
+      throw new ProviderUnavailableError(
+        'Dịch vụ AI chưa được cấu hình bộ kiểm soát ngân sách toàn cục trên môi trường production.',
+      );
+    }
+
+    // 2. Static process-level counter (chia sẻ giữa 100% provider instances trong runtime)
+    if (LlmExchange.currentDayKey !== today) {
+      LlmExchange.currentDayKey = today;
+      LlmExchange.globalDailyCount = 0;
+    }
+
+    if (LlmExchange.globalDailyCount >= limit) {
+      logger.error(
+        `CRITICAL: Process Global daily AI request budget exceeded (${LlmExchange.globalDailyCount}/${limit}). Circuit breaker triggered.`,
+      );
+      throw new ProviderUnavailableError(
+        'Hệ thống AI đã đạt giới hạn an toàn toàn cục trong ngày để bảo vệ ngân sách dịch vụ. Vui lòng quay lại vào ngày mai.',
+      );
+    }
+    LlmExchange.globalDailyCount++;
+  }
 
   async run(params: {
     adapter: LlmChatAdapter;
     prompt: string;
     emptyMessage: string;
     modelOverride?: string;
+    tier?: 'light' | 'deep';
     imageInput?: { base64: string; mimeType: string };
     timeoutMsOverride?: number;
     kind?: 'explanation' | 'conversation';
@@ -33,18 +129,50 @@ export class LlmExchange {
       throw new ProviderUnavailableError(adapter.notConfiguredMessage);
     }
 
-    try {
-      const model = adapter.resolveModel(params.modelOverride);
-      const timeoutMs = params.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
-      const { url, init } = adapter.buildRequest({
-        prompt: params.prompt,
-        imageInput: params.imageInput,
-        model,
-        signal: AbortSignal.timeout(timeoutMs),
-      });
+    const MAX_PROMPT_INPUT_CHARS = 16000;
+    if (params.prompt && params.prompt.length > MAX_PROMPT_INPUT_CHARS) {
+      throw new ProviderUnavailableError(
+        `Nội dung đầu vào vượt quá giới hạn an toàn (${params.prompt.length} > ${MAX_PROMPT_INPUT_CHARS} ký tự). Vui lòng rút gọn câu hỏi.`,
+      );
+    }
 
-      const response = await fetch(url, init);
-      const { text, usage } = await adapter.parseResult(response);
+    try {
+      const model = adapter.resolveModel(params.modelOverride, params.tier);
+      const timeoutMs = params.timeoutMsOverride ?? apiEnv.AI_PROVIDER_TIMEOUT_MS;
+
+      const executeFetch = async (attempt: number): Promise<LlmParsedResult> => {
+        // Đếm chính xác mọi lượt request thực tế tới LLM (bao gồm cả attempt 0 và retry)
+        await LlmExchange.trackAndAssertSpend(this.logger);
+
+        const { url, init } = adapter.buildRequest({
+          prompt: params.prompt,
+          imageInput: params.imageInput,
+          model,
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+
+        try {
+          const response = await fetch(url, init);
+          return await adapter.parseResult(response);
+        } catch (err) {
+          const isTransient =
+            err instanceof Error &&
+            !err.message.includes('chữ Hán') &&
+            !err.message.includes('nội dung không hợp lệ') &&
+            err.name !== 'TimeoutError' &&
+            err.name !== 'AbortError' &&
+            /fetch failed|ECONNRESET|ETIMEDOUT|503|ENOTFOUND/i.test(err.message);
+
+          if (attempt === 0 && isTransient) {
+            this.logger.warn(`AI Provider [${adapter.providerName}] transient error, retrying in 400ms... (${err.message})`);
+            await new Promise((r) => setTimeout(r, 400));
+            return executeFetch(1);
+          }
+          throw err;
+        }
+      };
+
+      const { text, usage } = await executeFetch(0);
 
       const renderedMarkdown = text.trim();
       if (!renderedMarkdown) {

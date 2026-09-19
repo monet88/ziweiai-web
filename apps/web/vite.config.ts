@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { sentrySvelteKit } from '@sentry/sveltekit';
 import { defineConfig } from 'vite';
 
 // envDir tro ve workspace root: chi giu MOT file .env duy nhat o root (PUBLIC_* cho web). Vite mac
@@ -8,5 +9,14 @@ const workspaceRoot = fileURLToPath(new URL('../..', import.meta.url));
 
 export default defineConfig({
   envDir: workspaceRoot,
-  plugins: [sveltekit()],
+  plugins: [
+    sentrySvelteKit({
+      sourceMapsUploadOptions: {
+        org: process.env.SENTRY_ORG || 'ziweiai',
+        project: process.env.SENTRY_PROJECT || 'ziweiai-web',
+        authToken: process.env.SENTRY_AUTH_TOKEN
+      }
+    }),
+    sveltekit()
+  ],
 });

@@ -13,6 +13,7 @@ import {
   conversationMessageRecordSchema,
   divinationContextRecordSchema,
   divinationPurposeKeySchema,
+  annualReportRecordSchema,
 } from '../persistence/persistence-records';
 import { implementedChartSystems } from '../chart/chart-system';
 import { liuyaoLineStateKeys } from '../chart/liuyao-terms';
@@ -32,6 +33,7 @@ export const apiErrorCodeSchema = z.enum([
   'PROVIDER_UNAVAILABLE',
   'INTERNAL_ERROR',
   'PAYMENT_REQUIRED',
+  'INSUFFICIENT_FUNDS',     // Phase 3: missing XU for premium features
   // US-017: new error codes for extended systems
   'IDENTITY_REQUIRED',      // anon user hit face/palm (requires email identity)
   'FEATURE_DISABLED',       // feature flag off for a system
@@ -49,19 +51,8 @@ export const quickPromptKeySchema = z.enum(['overview', 'love', 'career', 'healt
 
 export const createConversationRequestSchema = z.object({
   chartSnapshotId: z.uuid(),
-  title: z.string().trim().min(1).max(120).optional(),
+  title: z.string().trim().min(1).max(120).nullish(),
 });
-
-export const createConversationMessageRequestSchema = z
-  .object({
-    content: z.string().trim().min(1).max(2_000).optional(),
-    quickPromptKey: quickPromptKeySchema.optional(),
-    providerPreference: providerPreferenceSchema.default('auto'),
-  })
-  .refine((value) => Boolean(value.content) !== Boolean(value.quickPromptKey), {
-    message: 'Gửi đúng một trong content hoặc quickPromptKey.',
-    path: ['content'],
-  });
 
 // Phạm vi luận giải theo từng cung (12 cung an theo iztro nameKey) cộng hai mục vận hạn
 // (decadal = Đại Vận, yearly = Lưu Niên — mục Lưu Niên gói luôn dữ liệu Tiểu Vận theo
@@ -84,6 +75,18 @@ export const palaceScopeSchema = z.enum([
   'yearly',
 ]);
 
+export const createConversationMessageRequestSchema = z
+  .object({
+    content: z.string().trim().min(1).max(2_000).nullish(),
+    quickPromptKey: quickPromptKeySchema.nullish(),
+    providerPreference: providerPreferenceSchema.default('auto'),
+    palaceScope: palaceScopeSchema.nullish(),
+  })
+  .refine((value) => Boolean(value.content) !== Boolean(value.quickPromptKey), {
+    message: 'Gửi đúng một trong content hoặc quickPromptKey.',
+    path: ['content'],
+  });
+
 export const apiErrorSchema = z.object({
   code: apiErrorCodeSchema,
   message: z.string().min(1),
@@ -99,11 +102,22 @@ export const conversationStreamEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('error'), error: apiErrorSchema }),
 ]);
 
+export const explanationStreamEventSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('chunk'), delta: z.string().min(1) }),
+  z.object({
+    type: z.literal('done'),
+    request: explanationRequestRecordSchema,
+    result: explanationResultRecordSchema,
+    explanationContext: explanationContextSchema,
+  }),
+  z.object({ type: z.literal('error'), error: apiErrorSchema }),
+]);
+
 export const createChartRequestSchema = z.object({
   birthInput: birthInputSchema,
   chartSystem: createChartSystemSchema,
   makeActiveBirthProfile: z.boolean().default(true),
-  viewYear: z.int().min(1900).max(2200).optional(),
+  viewYear: z.int().min(1900).max(2200).nullish(),
 });
 
 export const createChartResponseSchema = z.object({
@@ -148,10 +162,10 @@ export const createDivinationRequestSchema = z
     question: z.string().trim().min(1).max(500),
     purposeKey: divinationPurposeKeySchema,
     // Required (and only allowed) when purposeKey === 'custom'.
-    purposeCustom: z.string().trim().min(1).max(120).optional(),
+    purposeCustom: z.string().trim().min(1).max(120).nullish(),
     castMethod: divinationCastMethodSchema.default('time'),
-    meihuaManual: meihuaManualCastSchema.optional(),
-    liuyaoManual: liuyaoManualCastSchema.optional(),
+    meihuaManual: meihuaManualCastSchema.nullish(),
+    liuyaoManual: liuyaoManualCastSchema.nullish(),
   })
   .superRefine((value, ctx) => {
     if (value.purposeKey === 'custom' && !value.purposeCustom) {
@@ -207,7 +221,7 @@ export const createExplanationRequestSchema = z.object({
   explanationKind: explanationKindSchema,
   // Khi có palaceScope, luận giải sinh riêng cho cung/vận hạn đó (14 mục Tử Vi).
   // Bỏ trống = luận giải tổng quan cả lá số (luồng overview cũ, giữ tương thích).
-  palaceScope: palaceScopeSchema.optional(),
+  palaceScope: palaceScopeSchema.nullish(),
   providerPreference: providerPreferenceSchema.default('auto'),
   userConsentedToStorePrompt: z.boolean().default(false),
 });
@@ -235,6 +249,8 @@ export const chartDetailResponseSchema = z.object({
   chartRecord: chartSnapshotRecordSchema,
   snapshot: chartSnapshotSchema,
   explanationResults: z.array(explanationResultRecordSchema),
+  isOwner: z.boolean().default(true),
+  latestAnnualReport: annualReportRecordSchema.nullable().default(null),
 });
 
 export const historyItemSchema = z.object({
@@ -251,10 +267,16 @@ export const historyItemSchema = z.object({
   // read by path on the client). Generated per list request; null for non-vision views or
   // when signing fails. The web renders the image from this, never from visionResult.imagePath.
   visionImageUrl: z.url().nullable(),
+  // US-016: Báo cáo năm nếu đã có cho lá số này.
+  annualReport: annualReportRecordSchema.nullable().default(null),
 });
 
 export const historyListResponseSchema = z.object({
   items: z.array(historyItemSchema),
+});
+
+export const walletBalanceResponseSchema = z.object({
+  xuBalance: z.number().int().min(0),
 });
 
 export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>;
@@ -278,8 +300,11 @@ export type CreateConversationRequest = z.infer<typeof createConversationRequest
 export type CreateConversationResponse = z.infer<typeof createConversationResponseSchema>;
 export type CreateConversationMessageRequest = z.infer<typeof createConversationMessageRequestSchema>;
 export type ConversationStreamEvent = z.infer<typeof conversationStreamEventSchema>;
+export type ExplanationStreamEvent = z.infer<typeof explanationStreamEventSchema>;
 export type ConversationDetailResponse = z.infer<typeof conversationDetailResponseSchema>;
 export type ConversationListResponse = z.infer<typeof conversationListResponseSchema>;
 export type ChartDetailResponse = z.infer<typeof chartDetailResponseSchema>;
 export type HistoryItem = z.infer<typeof historyItemSchema>;
 export type HistoryListResponse = z.infer<typeof historyListResponseSchema>;
+export type WalletBalanceResponse = z.infer<typeof walletBalanceResponseSchema>;
+

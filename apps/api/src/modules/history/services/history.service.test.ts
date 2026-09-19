@@ -6,7 +6,7 @@ import type {
   HistoryViewRecord,
   VisionResultRecord,
 } from '@ziweiai/contracts';
-import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+
 import { VisionStorageGateway } from '../../vision-shared/vision-storage.gateway';
 import { HistoryService } from './history.service';
 
@@ -54,7 +54,7 @@ function createExplanationResult(overrides: Partial<ExplanationResultRecord> = {
   };
 }
 
-function createGateway(overrides: Partial<Record<keyof SupabasePersistenceGateway, unknown>> = {}) {
+function createGateway(overrides: Partial<Record<keyof any, unknown>> = {}) {
   const gateway = {
     listHistoryViews: vi.fn(async () => []),
     findChartSnapshotsByIds: vi.fn(async () => ({} as Record<string, ChartSnapshotRecord>)),
@@ -69,7 +69,7 @@ function createGateway(overrides: Partial<Record<keyof SupabasePersistenceGatewa
     ...overrides,
   };
 
-  return gateway as unknown as SupabasePersistenceGateway;
+  return gateway as unknown as any;
 }
 
 function createVisionStorage(signedUrl: string | null = 'https://signed.example/vision.jpg') {
@@ -88,7 +88,7 @@ describe('HistoryService', () => {
       listHistoryViews: vi.fn(async () => [view]),
       findLatestExplanationResultsForCharts: vi.fn(async () => ({ [CHART_ID]: latestResult })),
     });
-    const service = new HistoryService(gateway, createVisionStorage());
+    const service = new HistoryService(gateway, gateway, gateway, gateway, gateway, createVisionStorage());
 
     const response = await service.listHistory(USER_ID, 20);
 
@@ -104,7 +104,7 @@ describe('HistoryService', () => {
       listHistoryViews: vi.fn(async () => [view]),
       findExplanationResultsByIds: vi.fn(async () => ({ [directResult.id]: directResult })),
     });
-    const service = new HistoryService(gateway, createVisionStorage());
+    const service = new HistoryService(gateway, gateway, gateway, gateway, gateway, createVisionStorage());
 
     const response = await service.listHistory(USER_ID, 20);
 
@@ -121,7 +121,7 @@ describe('HistoryService', () => {
       findExplanationResultsByIds: vi.fn(async () => ({})),
       findLatestExplanationResultsForCharts: vi.fn(async () => ({ [CHART_ID]: latestResult })),
     });
-    const service = new HistoryService(gateway, createVisionStorage());
+    const service = new HistoryService(gateway, gateway, gateway, gateway, gateway, createVisionStorage());
 
     const response = await service.listHistory(USER_ID, 20);
 
@@ -146,7 +146,7 @@ describe('HistoryService', () => {
       findExplanationResultsByIds: vi.fn(async () => ({ [directResult.id]: directResult })),
       findLatestExplanationResultsForCharts: vi.fn(async () => ({ [CHART_ID]: directResult, [chartTwoId]: latestResult })),
     });
-    const service = new HistoryService(gateway, createVisionStorage());
+    const service = new HistoryService(gateway, gateway, gateway, gateway, gateway, createVisionStorage());
 
     const response = await service.listHistory(USER_ID, 20);
 
@@ -173,7 +173,7 @@ describe('HistoryService', () => {
       findVisionResultsByIds: vi.fn(async () => ({ [visionResult.id]: visionResult })),
     });
     const visionStorage = createVisionStorage('https://signed.example/palm.jpg');
-    const service = new HistoryService(gateway, visionStorage);
+    const service = new HistoryService(gateway, gateway, gateway, gateway, gateway, visionStorage);
 
     const response = await service.listHistory(USER_ID, 20);
 
@@ -197,7 +197,7 @@ describe('HistoryService', () => {
       findVisionResultsByIds: vi.fn(async () => ({ [visionResult.id]: visionResult })),
     });
     const visionStorage = createVisionStorage(null);
-    const service = new HistoryService(gateway, visionStorage);
+    const service = new HistoryService(gateway, gateway, gateway, gateway, gateway, visionStorage);
 
     const response = await service.listHistory(USER_ID, 20);
 
@@ -233,7 +233,7 @@ describe('HistoryService', () => {
     } as unknown as VisionStorageGateway;
     const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     const errorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-    const service = new HistoryService(gateway, visionStorage);
+    const service = new HistoryService(gateway, gateway, gateway, gateway, gateway, visionStorage);
 
     await service.listHistory(USER_ID, 20);
 
@@ -264,7 +264,7 @@ describe('HistoryService', () => {
     const visionStorage = createVisionStorage(null);
     const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     const errorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-    const service = new HistoryService(gateway, visionStorage);
+    const service = new HistoryService(gateway, gateway, gateway, gateway, gateway, visionStorage);
 
     await service.listHistory(USER_ID, 20);
 
@@ -285,7 +285,7 @@ describe('HistoryService', () => {
     const visionStorage = createVisionStorage(null);
     const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
     const errorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-    const service = new HistoryService(gateway, visionStorage);
+    const service = new HistoryService(gateway, gateway, gateway, gateway, gateway, visionStorage);
 
     await service.listHistory(USER_ID, 20);
 
@@ -293,6 +293,34 @@ describe('HistoryService', () => {
     expect(errorSpy).not.toHaveBeenCalled();
 
     warnSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it('vẫn trả về kết quả an toàn khi 1 subquery trong Promise.all bị reject (lỗi subquery không làm sập history)', async () => {
+    const view = createHistoryView();
+    const gateway = createGateway({
+      listHistoryViews: vi.fn(async () => [view]),
+      findChartSnapshotsByIds: vi.fn().mockRejectedValue(new Error('Supabase 502 Bad Gateway')),
+    });
+    const service = new HistoryService(gateway, gateway, gateway, gateway, gateway, createVisionStorage());
+
+    const response = await service.listHistory(USER_ID, 20);
+
+    expect(response.items).toHaveLength(1);
+    expect(response.items[0]?.chartRecord).toBeNull();
+  });
+
+  it('fallback trả về { items: [] } khi listHistoryViews ném ngoại lệ nghiêm trọng (không bao giờ trả 500)', async () => {
+    const gateway = createGateway({
+      listHistoryViews: vi.fn().mockRejectedValue(new Error('Database Connection Lost')),
+    });
+    const errorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const service = new HistoryService(gateway, gateway, gateway, gateway, gateway, createVisionStorage());
+
+    const response = await service.listHistory(USER_ID, 20);
+
+    expect(response).toEqual({ items: [] });
+    expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
   });
 });

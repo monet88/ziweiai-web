@@ -26,12 +26,7 @@
   import { buildAspectLines, type AspectLine, type GridCell } from '$lib/features/chart/palace-board-geometry';
   import { buildPalaceFlowFlagsMap, type PalaceFlowView } from '$lib/features/chart/palace-flow-flags';
   import type { HoroscopeOverlay } from '$lib/features/chart/horoscope-overlay';
-  import {
-    fetchChartHoroscope,
-    DEFAULT_HOROSCOPE_SCOPES,
-    HOROSCOPE_QUERY_STALE_MS,
-    HOROSCOPE_QUERY_GC_MS,
-  } from '$lib/api-client';
+  import { fetchChartHoroscope, DEFAULT_HOROSCOPE_SCOPES, HOROSCOPE_QUERY_STALE_MS, HOROSCOPE_QUERY_GC_MS } from '$lib/api-client/charts';;
   import { getAuthStore } from '$lib/auth/auth-context';
   import PalaceCell from './PalaceCell.svelte';
 
@@ -221,73 +216,330 @@
       isInDaily: overlay.dailyPalaceIndex === palace.index,
     };
   }
+
+  // Smart Mobile View Modes
+  type ViewMode = 'board' | 'list' | 'groups';
+  let viewMode = $state<ViewMode>('board');
+  let fitMobile = $state(true);
+  let activeGroupIndex = $state(0);
+
+  const PALACE_GROUPS = [
+    {
+      id: 'menh-tai-quan',
+      title: 'Mệnh · Tài · Quan · Di',
+      desc: 'Bản mệnh, tài lộc, sự nghiệp & đối ngoại',
+      keys: ['soulPalace', 'wealthPalace', 'careerPalace', 'surfacePalace', 'travelPalace'],
+      names: ['Mệnh', 'Tài Bạch', 'Quan Lộc', 'Thiên Di'],
+    },
+    {
+      id: 'phuc-the-di',
+      title: 'Phúc · Phối · Di',
+      desc: 'Phúc đức tổ tiên, hôn nhân tình duyên & xuất hành',
+      keys: ['spiritPalace', 'blessingPalace', 'spousePalace', 'surfacePalace', 'travelPalace'],
+      names: ['Phúc Đức', 'Phu Thê', 'Thiên Di'],
+    },
+    {
+      id: 'dien-huynh-tat',
+      title: 'Điền · Huynh · Tật',
+      desc: 'Đất đai điền sản, huynh đệ bạn bè & sức khỏe bệnh tật',
+      keys: ['propertyPalace', 'siblingsPalace', 'siblingPalace', 'healthPalace'],
+      names: ['Điền Trạch', 'Huynh Đệ', 'Tật Ách'],
+    },
+    {
+      id: 'phu-tu-no',
+      title: 'Phụ · Tử · Nô',
+      desc: 'Cha mẹ phụ mẫu, con cái tử tức & bằng hữu nô bộc',
+      keys: ['parentsPalace', 'parentPalace', 'childrenPalace', 'friendsPalace'],
+      names: ['Phụ Mẫu', 'Tử Tức', 'Tử Nữ', 'Nô Bộc'],
+    },
+  ];
+
+  const currentGroupPalaces = $derived.by(() => {
+    const group = PALACE_GROUPS[activeGroupIndex];
+    if (!group) return [];
+    return palaces.filter(
+      (p) => group.keys.includes(p.nameKey) || group.names.some((n) => p.name.includes(n)),
+    );
+  });
 </script>
 
-{#if useSquareBoard}
-  <div class="board-scroll">
-    <div class="board" role="group" aria-label="Bàn 12 cung">
-      <!-- Lớp đường nối tam phương tứ chính: SVG phủ tuyệt đối lên bàn, toạ độ viewBox 0–100
-           khớp lưới co giãn (preserveAspectRatio="none"). Trang trí thuần → aria-hidden +
-           pointer-events none để không chắn click/hover của ô. -->
-      {#if aspectLines.length > 0}
-        <svg
-          class="aspect-overlay"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden="true"
+<div class="palace-grid-container">
+  <!-- Smart View Switcher: Bàn Cờ Cổ Điển vs Danh Sách Dọc vs Bộ Tam Hợp -->
+  <header class="view-switcher-bar">
+    <div class="view-tabs" role="tablist" aria-label="Chế độ hiển thị 12 cung">
+      <button
+        type="button"
+        class="view-tab"
+        class:active={viewMode === 'board'}
+        onclick={() => (viewMode = 'board')}
+        role="tab"
+        aria-selected={viewMode === 'board'}
+      >
+        <span class="tab-icon">⊞</span>
+        <span>Bàn cờ 4x4</span>
+      </button>
+
+      <button
+        type="button"
+        class="view-tab"
+        class:active={viewMode === 'list'}
+        onclick={() => (viewMode = 'list')}
+        role="tab"
+        aria-selected={viewMode === 'list'}
+      >
+        <span class="tab-icon">☰</span>
+        <span>Danh sách cung</span>
+      </button>
+
+      <button
+        type="button"
+        class="view-tab"
+        class:active={viewMode === 'groups'}
+        onclick={() => (viewMode = 'groups')}
+        role="tab"
+        aria-selected={viewMode === 'groups'}
+      >
+        <span class="tab-icon">❖</span>
+        <span>Bộ Tam Hợp</span>
+      </button>
+    </div>
+
+    {#if viewMode === 'board'}
+      <div class="board-toggles">
+        <button
+          type="button"
+          class="btn-fit-toggle"
+          class:active={fitMobile}
+          onclick={() => (fitMobile = !fitMobile)}
+          title="Bật/tắt co giãn vừa khít màn hình trên mobile"
         >
-          {#each aspectLines as line (`${line.x1}-${line.y1}-${line.x2}-${line.y2}`)}
-            <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+          <span>{fitMobile ? '⇲ Vừa màn hình' : '⇄ Cuộn ngang'}</span>
+        </button>
+      </div>
+    {/if}
+  </header>
+
+  {#if viewMode === 'board'}
+    {#if useSquareBoard}
+      <div class="board-scroll" class:fit-width={fitMobile}>
+        <div class="board" class:fit-width={fitMobile} role="group" aria-label="Bàn 12 cung">
+          {#if aspectLines.length > 0}
+            <svg
+              class="aspect-overlay"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              {#each aspectLines as line (`${line.x1}-${line.y1}-${line.x2}-${line.y2}`)}
+                <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} />
+              {/each}
+            </svg>
+          {/if}
+          {#each palaces as palace (palace.nameKey)}
+            {@const flags = horoscopeFlags(palace)}
+            <div class="board-slot" style={cellStyle(palace)}>
+              <PalaceCell
+                {palace}
+                selected={palace.nameKey === selectedPalaceKey}
+                inAspect={isInAspect(palace)}
+                dimmed={isDimmed(palace)}
+                flowFlags={flagsByIndex.get(palace.index) ?? null}
+                isInDecadal={flags.isInDecadal}
+                isInYearly={flags.isInYearly}
+                isInMonthly={flags.isInMonthly}
+                isInDaily={flags.isInDaily}
+                {onSelect}
+                onHover={handleHover}
+              />
+            </div>
           {/each}
-        </svg>
-      {/if}
-      {#each palaces as palace (palace.nameKey)}
-        {@const flags = horoscopeFlags(palace)}
-        <div class="board-slot" style={cellStyle(palace)}>
+          {#if center}
+            <div class="board-center">{@render center()}</div>
+          {/if}
+        </div>
+      </div>
+    {:else}
+      <div class="grid" role="group" aria-label="Bàn 12 cung">
+        {#each palaces as palace (palace.nameKey)}
+          {@const flags = horoscopeFlags(palace)}
           <PalaceCell
             {palace}
             selected={palace.nameKey === selectedPalaceKey}
             inAspect={isInAspect(palace)}
-            dimmed={isDimmed(palace)}
             flowFlags={flagsByIndex.get(palace.index) ?? null}
             isInDecadal={flags.isInDecadal}
             isInYearly={flags.isInYearly}
             isInMonthly={flags.isInMonthly}
             isInDaily={flags.isInDaily}
             {onSelect}
-            onHover={handleHover}
           />
-        </div>
-      {/each}
+        {/each}
+      </div>
+    {/if}
+  {:else if viewMode === 'list'}
+    <div class="list-view-container">
       {#if center}
-        <div class="board-center">{@render center()}</div>
+        <div class="list-view-summary">
+          {@render center()}
+        </div>
       {/if}
+      <div class="palaces-vertical-list">
+        {#each palaces as palace (palace.nameKey)}
+          {@const flags = horoscopeFlags(palace)}
+          <div class="list-palace-item">
+            <PalaceCell
+              {palace}
+              selected={palace.nameKey === selectedPalaceKey}
+              inAspect={isInAspect(palace)}
+              dimmed={false}
+              flowFlags={flagsByIndex.get(palace.index) ?? null}
+              isInDecadal={flags.isInDecadal}
+              isInYearly={flags.isInYearly}
+              isInMonthly={flags.isInMonthly}
+              isInDaily={flags.isInDaily}
+              {onSelect}
+            />
+          </div>
+        {/each}
+      </div>
     </div>
-  </div>
-{:else}
-  <div class="grid" role="group" aria-label="Bàn 12 cung">
-    {#each palaces as palace (palace.nameKey)}
-      {@const flags = horoscopeFlags(palace)}
-      <PalaceCell
-        {palace}
-        selected={palace.nameKey === selectedPalaceKey}
-        inAspect={isInAspect(palace)}
-        flowFlags={flagsByIndex.get(palace.index) ?? null}
-        isInDecadal={flags.isInDecadal}
-        isInYearly={flags.isInYearly}
-        isInMonthly={flags.isInMonthly}
-        isInDaily={flags.isInDaily}
-        {onSelect}
-      />
-    {/each}
-  </div>
-{/if}
+  {:else if viewMode === 'groups'}
+    <div class="groups-view-container">
+      <div class="groups-nav" role="tablist">
+        {#each PALACE_GROUPS as group, idx (group.title)}
+          <button
+            type="button"
+            class="group-nav-btn"
+            class:active={activeGroupIndex === idx}
+            onclick={() => (activeGroupIndex = idx)}
+            role="tab"
+            aria-selected={activeGroupIndex === idx}
+          >
+            <span class="group-nav-title">{group.title}</span>
+          </button>
+        {/each}
+      </div>
+
+      <div class="group-description">
+        <p>✦ {PALACE_GROUPS[activeGroupIndex]?.desc}</p>
+      </div>
+
+      <div class="group-palaces-grid">
+        {#each currentGroupPalaces as palace (palace.nameKey)}
+          {@const flags = horoscopeFlags(palace)}
+          <div class="group-palace-slot">
+            <PalaceCell
+              {palace}
+              selected={palace.nameKey === selectedPalaceKey}
+              inAspect={isInAspect(palace)}
+              dimmed={false}
+              flowFlags={flagsByIndex.get(palace.index) ?? null}
+              isInDecadal={flags.isInDecadal}
+              isInYearly={flags.isInYearly}
+              isInMonthly={flags.isInMonthly}
+              isInDaily={flags.isInDaily}
+              {onSelect}
+            />
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
+</div>
 
 <style>
-  /* Cho bàn vuông cuộn ngang khi màn quá hẹp thay vì vỡ layout (US-008: hiển thị cả mobile). */
+  .palace-grid-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    width: 100%;
+  }
+
+  /* View Switcher Toolbar */
+  .view-switcher-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    padding: 6px 10px;
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .view-tabs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .view-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .view-tab:hover {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .view-tab.active {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.08) 100%);
+    border-color: rgba(212, 175, 55, 0.4);
+    color: #d4af37;
+    font-weight: 600;
+  }
+
+  .tab-icon {
+    font-size: 14px;
+  }
+
+  .btn-fit-toggle {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-fit-toggle:hover {
+    color: var(--color-text-primary);
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .btn-fit-toggle.active {
+    color: #d4af37;
+    border-color: rgba(212, 175, 55, 0.3);
+  }
+
+  /* Cho bàn vuông cuộn ngang khi màn quá hẹp */
   .board-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  .board-scroll.fit-width {
+    overflow-x: hidden;
   }
 
   .board {
@@ -296,12 +548,21 @@
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(4, minmax(116px, auto));
     gap: var(--space-sm);
-    /* Bàn co giãn theo container nhưng không bóp các ô dưới mức đọc được → cuộn ngang. */
     min-width: 560px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
-  /* Đường nối phủ toàn bàn, nằm trên ô (z) nhưng không chắn tương tác. preserveAspectRatio
-     none cho phép toạ độ 0–100 co giãn khớp lưới. */
+  @media (max-width: 640px) {
+    .board.fit-width {
+      min-width: 0;
+      width: 100%;
+      gap: 3px;
+      grid-template-rows: repeat(4, minmax(85px, auto));
+    }
+  }
+
+  /* Đường nối phủ toàn bàn */
   .aspect-overlay {
     position: absolute;
     inset: 0;
@@ -320,6 +581,7 @@
 
   .board-slot {
     display: flex;
+    width: 100%;
   }
 
   .board-center {
@@ -333,9 +595,178 @@
     background: var(--color-bg-elevated);
   }
 
+  @media (max-width: 640px) {
+    .board.fit-width .board-center {
+      padding: var(--space-xs);
+    }
+  }
+
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: var(--space-sm);
+  }
+
+  /* Danh Sách 12 Cung (Dọc) */
+  .list-view-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    width: 100%;
+  }
+
+  .list-view-summary {
+    padding: var(--space-md);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.05) 0%, rgba(15, 23, 42, 0.4) 100%);
+  }
+
+  .palaces-vertical-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    width: 100%;
+  }
+
+  .list-palace-item {
+    width: 100%;
+  }
+
+  /* Bộ Tam Hợp */
+  .groups-view-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    width: 100%;
+  }
+
+  .groups-nav {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    width: 100%;
+  }
+
+  @media (min-width: 768px) {
+    .groups-nav {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .group-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .group-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-primary);
+  }
+
+  .group-nav-btn.active {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.06) 100%);
+    border-color: rgba(212, 175, 55, 0.45);
+    color: #d4af37;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.15);
+  }
+
+  .group-nav-title {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .group-description {
+    padding: 8px 12px;
+    background: rgba(212, 175, 55, 0.06);
+    border-left: 3px solid #d4af37;
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+
+  .group-description p {
+    margin: 0;
+  }
+
+  .group-palaces-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: var(--space-sm);
+    width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .group-palaces-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .group-palace-slot {
+    width: 100%;
+  }
+
+  /* Dual-Theme Light Mode */
+  :global([data-theme="light"]) .view-switcher-bar {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+  }
+
+  :global([data-theme="light"]) .view-tab {
+    color: #475569;
+  }
+
+  :global([data-theme="light"]) .view-tab:hover {
+    color: #0f172a;
+    background: #f1f5f9;
+  }
+
+  :global([data-theme="light"]) .view-tab.active {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #b45309;
+  }
+
+  :global([data-theme="light"]) .btn-fit-toggle {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #64748b;
+  }
+
+  :global([data-theme="light"]) .btn-fit-toggle.active {
+    color: #b45309;
+    border-color: #f59e0b;
+  }
+
+  :global([data-theme="light"]) .list-view-summary {
+    background: #fffbeb;
+    border-color: rgba(180, 83, 9, 0.25);
+  }
+
+  :global([data-theme="light"]) .group-nav-btn {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #475569;
+  }
+
+  :global([data-theme="light"]) .group-nav-btn.active {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #b45309;
+  }
+
+  :global([data-theme="light"]) .group-description {
+    background: #fffbeb;
+    border-left-color: #b45309;
+    color: #78350f;
   }
 </style>

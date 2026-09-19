@@ -11,9 +11,12 @@ import {
   type AstrologyChartAdapter,
 } from '@ziweiai/astro-engine';
 import { buildChartSnapshotDedupeKey } from '../../../database/idempotency';
-import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+import { ChartsRepository } from '../../../database/repositories/charts.repository';
+import { HistoryRepository } from '../../../database/repositories/history.repository';
+import { ExplanationsRepository } from '../../../database/repositories/explanations.repository';
+import { AnnualReportsRepository } from '../../../database/repositories/annual-reports.repository';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
-import { assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
+
 import { apiEnv } from '../../../config/env';
 import { QuotasService } from '../../quotas/quotas.service';
 import { throwQuotaRateLimited } from '../../quotas/quota-http';
@@ -42,8 +45,11 @@ export class ChartsService {
   };
 
   constructor(
-    private readonly persistenceGateway: SupabasePersistenceGateway,
+    private readonly chartsRepository: ChartsRepository,
+    private readonly historyRepository: HistoryRepository,
+    private readonly explanationsRepository: ExplanationsRepository,
     private readonly quotasService: QuotasService,
+    private readonly annualReportsRepository?: AnnualReportsRepository,
   ) {}
 
   async createChart(userId: string, ipAddress: string, input: CreateChartRequest, isAnonymous = false): Promise<CreateChartResponse> {
@@ -53,7 +59,8 @@ export class ChartsService {
     // mới tiêu quota (429). 6 hệ cũ giữ nguyên: chỉ qua quota như trước.
     if (input.chartSystem === 'mangpai') {
       this.assertMangpaiEnabled();
-      assertCanUseAiExplanation(this.logger);
+      // GATE 3: Trừ XU cho tính năng premium (Mạnh Phái). Tốn 1 XU.
+      // NOTE: Đã được chuyển sang BillingInterceptor để tránh Domain Leak.
     }
 
     await this.assertCanCreateChart(userId, ipAddress, isAnonymous);
@@ -72,7 +79,7 @@ export class ChartsService {
       viewYear,
     });
 
-    const existingChartRecord = await this.persistenceGateway.findChartSnapshotByDedupeKey(userId, dedupeKey);
+    const existingChartRecord = await this.chartsRepository.findChartSnapshotByDedupeKey(userId, dedupeKey);
     if (existingChartRecord) {
       return createChartResponseSchema.parse({
         snapshot: existingChartRecord.snapshot,
@@ -82,7 +89,7 @@ export class ChartsService {
       });
     }
 
-    const chartRecord = await this.persistenceGateway.createChartSnapshot({
+    const chartRecord = await this.chartsRepository.createChartSnapshot({
       ownerUserId: userId,
       birthProfileId: birthProfile.id,
       snapshotDedupeKey: dedupeKey,
@@ -98,22 +105,46 @@ export class ChartsService {
   }
 
   async getChartDetail(userId: string, chartSnapshotId: string) {
-    const chartRecord = await this.persistenceGateway.findChartSnapshotById(userId, chartSnapshotId);
+    let chartRecord = await this.chartsRepository.findChartSnapshotById(userId, chartSnapshotId);
+    let isOwner = true;
+
+    // Hỗ trợ chia sẻ: nếu không phải owner, tìm qua unguessable UUID công khai
+    if (!chartRecord) {
+      chartRecord = await this.chartsRepository.findPublicChartSnapshotById(chartSnapshotId);
+      isOwner = false;
+    }
+
     if (!chartRecord) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số đã lưu.');
     }
 
-    await this.persistenceGateway.createHistoryView({
-      ownerUserId: userId,
-      chartSnapshotId,
-      explanationResultId: null,
-    });
+    // Ghi nhận lịch sử xem cho caller hiện tại (không làm ô nhiễm lịch sử của chủ lá số)
+    if (userId) {
+      await this.historyRepository.createHistoryView({
+        ownerUserId: userId,
+        chartSnapshotId,
+        explanationResultId: null,
+      });
+    }
 
-    const explanationResults = await this.persistenceGateway.listExplanationResultsForChart(userId, chartSnapshotId);
+    const explanationResults = await this.explanationsRepository.listExplanationResultsForChart(
+      chartRecord.ownerUserId,
+      chartSnapshotId,
+    );
+
+    const latestAnnualReport = this.annualReportsRepository
+      ? await this.annualReportsRepository.findLatestAnnualReportByChartId(
+          chartRecord.ownerUserId,
+          chartSnapshotId,
+        )
+      : null;
+
     return {
       chartRecord,
       snapshot: chartRecord.snapshot,
       explanationResults,
+      isOwner,
+      latestAnnualReport,
     };
   }
 
@@ -136,7 +167,11 @@ export class ChartsService {
   ): Promise<HoroscopeResponse> {
     await this.assertCanCreateChart(userId, ipAddress, isAnonymous);
 
-    const chartRecord = await this.persistenceGateway.findChartSnapshotById(userId, chartId);
+    let chartRecord = await this.chartsRepository.findChartSnapshotById(userId, chartId);
+    if (!chartRecord) {
+      chartRecord = await this.chartsRepository.findPublicChartSnapshotById(chartId);
+    }
+
     if (!chartRecord) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số đã lưu.');
     }
@@ -155,12 +190,12 @@ export class ChartsService {
   }
 
   private async ensureBirthProfile(userId: string, input: CreateChartRequest, snapshot: CreateChartResponse['snapshot']) {
-    const existing = await this.persistenceGateway.findLatestBirthProfileByInputHash(userId, snapshot.inputHash.digest);
+    const existing = await this.chartsRepository.findLatestBirthProfileByInputHash(userId, snapshot.inputHash.digest);
     if (existing && (!input.makeActiveBirthProfile || existing.isActive)) {
       return existing;
     }
 
-    return this.persistenceGateway.createBirthProfile({
+    return this.chartsRepository.createBirthProfile({
       ownerUserId: userId,
       rawBirthInput: input.birthInput,
       normalizedBirth: snapshot.birth,
@@ -184,7 +219,7 @@ export class ChartsService {
 
   private async assertCanCreateChart(userId: string, ipAddress: string, isAnonymous = false): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateChart(userId, ipAddress, isAnonymous);
+      await this.quotasService.assertCanExecute('chart', userId, ipAddress, isAnonymous);
     } catch (error) {
       throwQuotaRateLimited(error, 'Đã vượt hạn mức lập lá số.');
     }

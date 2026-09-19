@@ -1,0 +1,9 @@
+# Root analysis options for Monorepo
+analyzer:
+  exclude:
+    - "apps/web/**"
+    - "apps/api/**"
+    - "packages/**"
+    - "dist/**"
+    - "build/**"
+    - "scratch/**"

@@ -12,10 +12,10 @@
  * SSE parsing dùng streamConversationMessage + collectAssistantStream từ api-client.
  */
 
-import type { ConversationMessageRecord, CreateConversationMessageRequest, QuickPromptKey } from '@ziweiai/contracts';
+import type { ConversationMessageRecord, CreateConversationMessageRequest, PalaceScope, QuickPromptKey } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
 import type { QueryClient } from '@tanstack/svelte-query';
-import { streamConversationMessage, createConversation } from '$lib/api-client';
+import { streamConversationMessage, createConversation } from '$lib/api-client/conversations';;
 import { QUICK_PROMPT_LABELS } from './quick-prompts';
 import { viCopy } from '$lib/i18n/vi';
 
@@ -28,6 +28,8 @@ export interface AssistantModelOptions {
   getConversationId: () => string | null;
   /** Setter để lưu conversationId sau khi tạo. */
   setConversationId: (id: string) => void;
+  /** Getter cung vị trọng điểm đang chọn trên lá số (Tam Phương Tứ Chính & Liên Cung). */
+  getActivePalaceScope?: () => PalaceScope | null;
 }
 
 export interface AssistantMessageView {
@@ -35,6 +37,7 @@ export interface AssistantMessageView {
   role: 'user' | 'assistant';
   content: string;
   quickPromptKey?: QuickPromptKey | null;
+  palaceScope?: PalaceScope | null;
   isStreaming?: boolean;
 }
 
@@ -47,6 +50,7 @@ export function createAssistantModel(options: AssistantModelOptions) {
   let currentConversationId = $state<string | null>(null);
   let isGenerating = $state(false);
   let lastError = $state<string | null>(null);
+  let currentAbortController: AbortController | null = null;
 
   function getTokenOrThrow(): string {
     const token = auth.getAccessToken();
@@ -81,6 +85,7 @@ export function createAssistantModel(options: AssistantModelOptions) {
     if (isGenerating) return false;
     isGenerating = true;
     lastError = null;
+    currentAbortController = new AbortController();
 
     // Optimistic user message
     const displayContent = request.content ?? (request.quickPromptKey ? (QUICK_PROMPT_LABELS[request.quickPromptKey] ?? '') : '');
@@ -89,6 +94,7 @@ export function createAssistantModel(options: AssistantModelOptions) {
       role: 'user',
       content: displayContent,
       quickPromptKey: request.quickPromptKey ?? null,
+      palaceScope: request.palaceScope ?? null,
     };
     messages = [...messages, userView];
 
@@ -110,7 +116,7 @@ export function createAssistantModel(options: AssistantModelOptions) {
 
       let streamedText = '';
 
-      for await (const evt of streamConversationMessage(token, conversationId, request)) {
+      for await (const evt of streamConversationMessage(token, conversationId, request, currentAbortController.signal)) {
         if (evt.type === 'chunk') {
           streamedText += evt.delta;
           messages = [
@@ -137,40 +143,70 @@ export function createAssistantModel(options: AssistantModelOptions) {
         }
       }
 
-        // Invalidate detail queries so other views (future list) sync
-        await queryClient.invalidateQueries({ queryKey: ['conversation-detail', conversationId] });
-        return true;
+      // Invalidate detail queries so other views (future list) sync
+      await queryClient.invalidateQueries({ queryKey: ['conversation-detail', conversationId] });
+      return true;
     } catch (err) {
-      // Roll back the optimistic turn ONLY if generation failed before completion (placeholder still
-      // streaming): drop BOTH the user message and the assistant placeholder so a retry does not
-      // duplicate the prompt or leave it orphaned without an answer. If the stream already emitted
-      // `done` (placeholder replaced by the real message, isStreaming=false) a late error — e.g. a
-      // network close after completion — must NOT discard the completed answer, so leave it intact.
+      if (currentAbortController?.signal.aborted) {
+        // User aborted intentionally: keep streamed text, stop streaming flag
+        const lastIdx = messages.length - 1;
+        if (lastIdx >= 0 && messages[lastIdx].role === 'assistant') {
+          messages = [
+            ...messages.slice(0, lastIdx),
+            {
+              ...messages[lastIdx],
+              isStreaming: false,
+            },
+          ];
+        }
+        return true;
+      }
+
+      // SSE Stream Resilience (Sprint 64):
+      // Nếu lỗi xảy ra khi đang stream nhưng ĐÃ nhận được một phần nội dung (last.content.length > 0):
+      // Tuyệt đối không rollback xóa bỏ tin nhắn của user và câu trả lời dở dang!
+      // Giữ lại nội dung đã stream, tắt cờ isStreaming và hiển thị thông báo gián đoạn nhẹ nhàng.
+      // Chỉ khi chưa nhận được bất kỳ token nào (content rỗng) mới rollback 2 message để user có thể gửi lại.
       const last = messages[messages.length - 1];
       if (last?.role === 'assistant' && last.isStreaming) {
-        messages = messages.slice(0, -2);
+        if (last.content.trim().length > 0) {
+          messages = [
+            ...messages.slice(0, -1),
+            {
+              ...last,
+              isStreaming: false,
+            },
+          ];
+          lastError = 'Kết nối gián đoạn. Đoạn văn bản đàm đạo đã nhận được bảo toàn an toàn.';
+        } else {
+          messages = messages.slice(0, -2);
+          lastError = err instanceof Error ? err.message : viCopy.explanation.statusFailed;
+        }
+      } else {
+        lastError = err instanceof Error ? err.message : viCopy.explanation.statusFailed;
       }
-      lastError = err instanceof Error ? err.message : viCopy.explanation.statusFailed;
-      // Do NOT rethrow: callers are UI event handlers, and an unawaited rejection would surface as an
-      // unhandled promise rejection. The error is already captured in `lastError` for display; return
-      // false so callers can react (e.g. restore the composer input).
       return false;
     } finally {
+      currentAbortController = null;
       isGenerating = false;
     }
   }
 
-  async function sendText(content: string): Promise<boolean> {
+  async function sendText(content: string, overridePalaceScope?: PalaceScope | null): Promise<boolean> {
+    const palaceScope = overridePalaceScope !== undefined ? overridePalaceScope : (options.getActivePalaceScope?.() ?? null);
     return appendUserAndStream({
       content,
       providerPreference: 'auto',
+      ...(palaceScope ? { palaceScope } : {}),
     });
   }
 
-  async function sendQuickPrompt(quickPromptKey: QuickPromptKey): Promise<boolean> {
+  async function sendQuickPrompt(quickPromptKey: QuickPromptKey, overridePalaceScope?: PalaceScope | null): Promise<boolean> {
+    const palaceScope = overridePalaceScope !== undefined ? overridePalaceScope : (options.getActivePalaceScope?.() ?? null);
     return appendUserAndStream({
       quickPromptKey,
       providerPreference: 'auto',
+      ...(palaceScope ? { palaceScope } : {}),
     });
   }
 
@@ -189,6 +225,24 @@ export function createAssistantModel(options: AssistantModelOptions) {
     }));
   }
 
+  function abort(): void {
+    if (currentAbortController) {
+      currentAbortController.abort();
+      currentAbortController = null;
+    }
+    isGenerating = false;
+    const lastIdx = messages.length - 1;
+    if (lastIdx >= 0 && messages[lastIdx].role === 'assistant' && messages[lastIdx].isStreaming) {
+      messages = [
+        ...messages.slice(0, lastIdx),
+        {
+          ...messages[lastIdx],
+          isStreaming: false,
+        },
+      ];
+    }
+  }
+
   return {
     get messages(): AssistantMessageView[] {
       return messages;
@@ -202,8 +256,12 @@ export function createAssistantModel(options: AssistantModelOptions) {
     get conversationId(): string | null {
       return ensureConversationId();
     },
+    get activePalaceScope(): PalaceScope | null {
+      return options.getActivePalaceScope?.() ?? null;
+    },
     sendText,
     sendQuickPrompt,
+    abort,
     resetForNewConversation,
     loadFromRecords,
   };

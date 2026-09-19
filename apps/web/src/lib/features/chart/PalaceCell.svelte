@@ -242,8 +242,15 @@
   }
 
   .cell.selected {
-    border-color: var(--color-accent-primary);
-    background: var(--color-bg-elevated);
+    border-color: #d97706;
+    background: #fffbeb;
+    box-shadow: 0 0 12px rgba(217, 119, 6, 0.15);
+  }
+
+  :global([data-theme="dark"]) .cell.selected {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, #1a1d27 100%);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
   }
 
   .cell-head {
@@ -405,5 +412,46 @@
   .flow-chip--daily {
     background: var(--color-flow-daily-soft);
     color: var(--color-flow-daily);
+  }
+
+  /* Tối ưu hiển thị vừa khít trên Mobile */
+  @media (max-width: 640px) {
+    .cell {
+      min-height: 85px;
+      padding: 4px 5px;
+      gap: 2px;
+    }
+
+    .palace-name {
+      font-size: 12px;
+    }
+
+    .stem-branch {
+      font-size: 10px;
+    }
+
+    .star.major {
+      font-size: 11px;
+    }
+
+    .star {
+      font-size: 10px;
+    }
+
+    .star-meta,
+    .star-mutagen {
+      font-size: 9px;
+    }
+
+    .cell-foot {
+      font-size: 9px;
+      gap: 2px 4px;
+    }
+
+    .flow-chip {
+      font-size: 9px;
+      padding: 0 4px;
+      gap: 2px;
+    }
   }
 </style>

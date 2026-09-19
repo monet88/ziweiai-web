@@ -27,6 +27,7 @@ export function loadWorkspaceEnvFile(searchRoots: string[] = [process.cwd(), __d
     return null;
   }
 
+  let loadedEnvPath: string | null = null;
   const visitedRoots = new Set<string>();
   for (const root of searchRoots) {
     const normalizedRoot = path.resolve(root);
@@ -35,10 +36,24 @@ export function loadWorkspaceEnvFile(searchRoots: string[] = [process.cwd(), __d
     }
     visitedRoots.add(normalizedRoot);
 
-    const envPath = walkUpForEnvFile(normalizedRoot);
+    // Nạp .env.local trước (nếu có) khi chạy runtime (tránh làm lệch mock trong unit test)
+    if (process.env.NODE_ENV !== 'test') {
+      const envLocalPath = walkUpForEnvFile(normalizedRoot, '.env.local');
+      if (envLocalPath) {
+        process.loadEnvFile(envLocalPath);
+        loadedEnvPath = envLocalPath;
+      }
+    }
+
+    // Nạp tiếp .env (những biến chưa có trong process.env sẽ được điền từ .env)
+    const envPath = walkUpForEnvFile(normalizedRoot, '.env');
     if (envPath) {
       process.loadEnvFile(envPath);
-      return envPath;
+      loadedEnvPath = loadedEnvPath ?? envPath;
+    }
+
+    if (loadedEnvPath) {
+      return loadedEnvPath;
     }
   }
 
@@ -55,12 +70,13 @@ export const apiEnvSchema = z.object({
   // app cũ — không còn dùng sau khi migrate sang SvelteKit). Khớp với .env.example.
   API_CORS_ORIGINS: z
     .string()
-    .default('http://localhost:5173,http://localhost:4173,http://localhost:3000'),
+    .default('http://localhost:5173,http://localhost:4173,http://localhost:3000,https://tuvitoantap.vercel.app,https://tuvitoantap.online,https://www.tuvitoantap.online'),
+  PUBLIC_ORIGIN: z.string().default('https://tuvitoantap.online'),
   API_REQUESTS_PER_MINUTE_PER_IP: z.coerce.number().int().positive().default(60),
   API_REQUESTS_PER_MINUTE_PER_USER: z.coerce.number().int().positive().default(30),
   API_CHARTS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(20),
   API_EXPLANATIONS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(50),
-  AI_PROVIDER_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
+  AI_PROVIDER_TIMEOUT_MS: z.coerce.number().int().positive().default(55000),
   // US-016: timeout riêng cho đường báo cáo năm. Báo cáo năm tổng hợp lưu niên + 12 lưu nguyệt
   // (~600-1200 từ) nên thời gian sinh thực tế của LLM thường vượt 15s mặc định (đo deepseek ~18s) →
   // 504 PROVIDER_TIMEOUT, tính năng gần như không dùng được. Cho phép phanh độc lập, mặc định 60s.
@@ -85,16 +101,20 @@ export const apiEnvSchema = z.object({
     const val = value ?? process.env.GEMINI_API_BASE_URL;
     return val === '' ? undefined : val;
   }, z.url().optional()),
-  GEMINI_MODEL: z.string().min(1).default('gemini-3.5-flash'),
+  GEMINI_MODEL: z.string().min(1).default('gemini-2.5-flash'),
+  GEMINI_MODEL_LIGHT: z.string().min(1).default('gemini-2.0-flash-lite'),
+  GEMINI_MODEL_DEEP: z.preprocess(
+    (val) => val ?? process.env.GEMINI_MODEL,
+    z.string().min(1).default('gemini-2.5-flash'),
+  ),
   // 'auto' dùng thứ tự chain gốc của router: [openai-compat, deepseek, gemini]
   // (openai-compat mặc định, deepseek fallback kế, gemini cuối). Đặt giá trị khác để ép một
   // provider cụ thể lên đầu chain mà vẫn giữ phần còn lại làm fallback.
   AI_DEFAULT_PROVIDER: z.enum(['auto', 'deepseek', 'openai-compat', 'gemini']).default('auto'),
   // z.stringbool (zod v4): "false"/"0"/"no" → false, "true"/"1"/"yes" → true.
-  // KHÔNG dùng z.coerce.boolean() — nó chạy Boolean(string) nên mọi chuỗi non-empty
-  // (kể cả "false") đều thành true, khiến AI_EXPLANATION_FREE_FOR_ALL=false vô hiệu ở prod.
-  AI_EXPLANATION_FREE_FOR_ALL: z.stringbool().default(true),
-  AI_CONVERSATION_ENABLED: z.stringbool().default(false),
+  // MẶC ĐỊNH LÀ FALSE (fail-closed, tính phí XU). Chỉ mở miễn phí khi biến môi trường được đặt tường minh là true (dev/demo).
+  AI_EXPLANATION_FREE_FOR_ALL: z.stringbool().default(false),
+  AI_CONVERSATION_ENABLED: z.stringbool().default(true),
   // z.preprocess '' → undefined: env khai báo nhưng để trống (VAR=) đọc ra '' khiến
   // z.coerce.number() ép thành 0, fail .positive() → crash khởi động và .default() KHÔNG áp
   // (vì '' ≠ undefined). Chuẩn hoá '' → undefined để default(30)/default(12) áp đúng.
@@ -105,6 +125,11 @@ export const apiEnvSchema = z.object({
   AI_CONVERSATION_BUFFER_MESSAGES: z.preprocess(
     (val) => (val === '' ? undefined : val),
     z.coerce.number().int().positive().default(12),
+  ),
+  // Global spend budget / circuit breaker: giới hạn tổng số lượt gọi LLM toàn hệ thống / ngày
+  AI_GLOBAL_DAILY_REQUEST_LIMIT: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.coerce.number().int().positive().default(10000),
   ),
 
   // US-017 + B6: feature flags for extended divination systems. US-042: default `true` =
@@ -129,7 +154,7 @@ export const apiEnvSchema = z.object({
   // gấp ~3-5 lần một explanation nên cần phanh độc lập với AI_EXPLANATION_FREE_FOR_ALL. Mặc định
   // `false` (fail-closed): bật lên mới sinh báo cáo mới được. Dùng z.stringbool cùng lý do ở trên
   // (z.coerce.boolean() khiến "false" → true). Annual gate fail-closed cả hai cờ: một on một off → 402.
-  AI_ANNUAL_REPORT_ENABLED: z.stringbool().default(false),
+  AI_ANNUAL_REPORT_ENABLED: z.stringbool().default(true),
   // US-016: quota riêng cho báo cáo năm, KHÔNG dùng chung API_EXPLANATIONS_PER_DAY_PER_USER.
   // Số thấp (mặc định 2/ngày/user) vì mỗi báo cáo đốt token đáng kể.
   API_ANNUAL_REPORTS_PER_DAY_PER_USER: z.coerce.number().int().positive().default(2),
@@ -146,6 +171,34 @@ export const apiEnvSchema = z.object({
   // Khi store ngoài mất kết nối: open = cho qua + log warn (mặc định, ưu tiên ổn định —
   // quota là chống lạm dụng, không phải hàng rào bảo mật); closed = chặn (ném quota error).
   QUOTA_FAIL_MODE: z.enum(['open', 'closed']).default('open'),
+
+  // SePay Webhook Authentication (supports API Key, Secret Key, and HMAC-SHA256)
+  SEPAY_WEBHOOK_SECRET: z.preprocess(
+    (val) =>
+      (typeof val === 'string' && val.trim().length > 0
+        ? val.trim()
+        : process.env.SEPAY_SECRET_KEY ||
+          process.env.SEPAY_SERECT_KEY ||
+          process.env.SEPAY_API_KEY ||
+          undefined),
+    z.string().optional(),
+  ),
+  SEPAY_API_KEY: z.string().optional(),
+  SEPAY_TESTMODE_API: z.string().optional(),
+  REVENUECAT_WEBHOOK_SECRET: z.string().optional(),
+  SENTRY_DSN: z.string().optional(),
+  // Optional ops push (Telegram sendMessage URL, Slack/Discord webhook, etc.).
+  // Empty string → undefined so local/demo boots without alert channel.
+  OPS_ALERT_WEBHOOK_URL: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? undefined : val),
+    z.url().optional(),
+  ),
+  // Telegram Alert configuration for operational monitoring
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_CHAT_ID: z.string().optional(),
+  ADMIN_EMAILS: z.string().default(''),
+  CRON_SECRET: z.string().optional(),
+  FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
   npm_package_version: z.string().min(1).optional(),
 });
 
@@ -156,3 +209,7 @@ export const apiVersion = apiEnv.npm_package_version ?? '0.1.0';
 export const allowedCorsOrigins = apiEnv.API_CORS_ORIGINS.split(',')
   .map((origin) => origin.trim())
   .filter((origin) => origin.length > 0);
+
+export const adminEmailsList = apiEnv.ADMIN_EMAILS.split(',')
+  .map((email) => email.trim())
+  .filter((email) => email.length > 0);

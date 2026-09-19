@@ -5,12 +5,16 @@ import {
   type AnnualReportResponse,
   type AuthenticatedUser,
   type ChartSnapshot,
+  FEATURE_PRICING,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
+import { assertChartSnapshotEligibleForAi } from '../../../common/entitlement/ai-snapshot-eligibility';
 import { throwQuotaRateLimited } from '../../quotas/quota-http';
-import { assertAnnualReportEnabled, assertCanUseAiExplanation } from '../../../common/entitlement/ai-entitlement.guard';
+import { assertAnnualReportEnabled } from '../../../common/entitlement/ai-entitlement.guard';
 import { apiEnv } from '../../../config/env';
-import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+import { AnnualReportsRepository } from '../../../database/repositories/annual-reports.repository';
+import { ChartsRepository } from '../../../database/repositories/charts.repository';
+import { WalletEngineService } from '../../wallet/wallet-engine.service';
 import { buildAnnualReportPrompt } from '../../../providers/ai/build-annual-report-prompt';
 import { ExplanationProviderRouter } from '../../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../../providers/ai/provider-errors';
@@ -29,29 +33,67 @@ export class AnnualReportService {
   private readonly logger = new Logger(AnnualReportService.name);
 
   constructor(
-    private readonly persistenceGateway: SupabasePersistenceGateway,
+    private readonly annualReportsRepository: AnnualReportsRepository,
+    private readonly chartsRepository: ChartsRepository,
     private readonly quotasService: QuotasService,
     private readonly providerRouter: ExplanationProviderRouter,
     private readonly engine: HoroscopeEngineAdapter,
+    private readonly walletEngine: WalletEngineService,
   ) {}
 
-  async createAnnualReport(user: AuthenticatedUser, ipAddress: string, chartId: string, year: number): Promise<AnnualReportResponse> {
+  async getAnnualReport(user: AuthenticatedUser, chartId: string, year?: number): Promise<AnnualReportResponse | null> {
+    const snapshot = await this.loadZiweiSnapshot(user, chartId);
+    const targetYear = year ?? new Date().getFullYear();
+    const cached = await this.annualReportsRepository.findAnnualReportByChartAndYear(user.userId, chartId, targetYear);
+    if (!cached) {
+      return null;
+    }
+    const frame = this.engine.computeAnnualFrame(snapshot, targetYear);
+    return annualReportResponseSchema.parse({ chartId, year: targetYear, frame, markdown: cached.markdown });
+  }
+
+  async createAnnualReport(user: AuthenticatedUser, ipAddress: string, chartId: string, year: number, force = false): Promise<AnnualReportResponse> {
     const snapshot = await this.loadZiweiSnapshot(user, chartId);
 
-    // CACHE-HIT BYPASS GATE (decision 0010): có row rồi thì trả lại, không re-gate, không gọi LLM.
-    const cached = await this.persistenceGateway.findAnnualReportByChartAndYear(user.userId, chartId, year);
-    if (cached) {
-      this.logger.log(`[fortune.annual] outcome=cache-hit chartId=${chartId} year=${year} userId=${user.userId}`);
-      const frame = this.engine.computeAnnualFrame(snapshot, year);
-      return annualReportResponseSchema.parse({ chartId, year, frame, markdown: cached.markdown });
+    // CACHE-HIT BYPASS GATE (decision 0010): có row rồi thì trả lại (trừ khi force=true), không re-gate, không gọi LLM.
+    if (!force) {
+      const cached = await this.annualReportsRepository.findAnnualReportByChartAndYear(user.userId, chartId, year);
+      if (cached) {
+        this.logger.log(`[fortune.annual] outcome=cache-hit chartId=${chartId} year=${year} userId=${user.userId}`);
+        const frame = this.engine.computeAnnualFrame(snapshot, year);
+        return annualReportResponseSchema.parse({ chartId, year, frame, markdown: cached.markdown });
+      }
     }
 
     // ===== GATES (chỉ áp khi sinh mới) — fail-closed cả hai cờ =====
-    assertCanUseAiExplanation(this.logger);
     assertAnnualReportEnabled(this.logger);
+
+    // GATE 3: Trừ XU cho tính năng premium (Báo cáo năm).
+    let didDeductXu = false;
+    const cost = FEATURE_PRICING.ANNUAL_REPORT;
+    if (!apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
+      const success = await this.walletEngine.deductXU(user.userId, cost, 'ai_usage');
+      if (!success) {
+        throw new ApiErrorHttpException(
+          HttpStatus.PAYMENT_REQUIRED,
+          'PAYMENT_REQUIRED',
+          `Tính năng Báo cáo năm yêu cầu ${cost} XU. Vui lòng nạp thêm XU để tiếp tục.`
+        );
+      }
+      didDeductXu = true;
+    }
+
     try {
-      await this.quotasService.assertCanCreateAnnualReport(user.userId, ipAddress, user.email === null);
+      await this.quotasService.assertCanExecute('annual-report', user.userId, ipAddress, user.email === null);
     } catch (error) {
+      if (didDeductXu) {
+        try {
+          await this.walletEngine.addXU(user.userId, cost, 'ai_refund');
+          this.logger.log(`Refunded ${cost} XU to user due to quota error`, { userId: user.userId, chartId });
+        } catch (e) {
+          this.logger.error('Failed to refund XU on quota error', e);
+        }
+      }
       this.logger.warn(`[annual] quota exceeded userId=${user.userId}`);
       throwQuotaRateLimited(error, 'Đã vượt hạn mức báo cáo năm.');
     }
@@ -69,8 +111,17 @@ export class AnnualReportService {
         // Báo cáo năm dài (~600-1200 từ) sinh lâu hơn explanation thường — đo deepseek ~18s, vượt
         // AI_PROVIDER_TIMEOUT_MS mặc định 15s → 504. Dùng timeout riêng để không khóa tính năng.
         timeoutMsOverride: apiEnv.AI_ANNUAL_REPORT_TIMEOUT_MS,
+        tier: 'deep',
       });
     } catch (error) {
+      if (didDeductXu) {
+        try {
+          await this.walletEngine.addXU(user.userId, cost, 'ai_refund');
+          this.logger.log(`Refunded ${cost} XU to user due to annual-report provider failure`, { userId: user.userId, chartId });
+        } catch (e) {
+          this.logger.error('Failed to refund XU on provider error', e);
+        }
+      }
       if (error instanceof ProviderTimeoutError) {
         throw new ApiErrorHttpException(HttpStatus.GATEWAY_TIMEOUT, 'PROVIDER_TIMEOUT', error.message);
       }
@@ -80,16 +131,23 @@ export class AnnualReportService {
       throw error;
     }
 
-    // Race hai caller cùng (chart, year): createAnnualReport bắt unique-violation rồi đọc lại row
-    // của caller thắng → trả Markdown đó (idempotent). Caller thua "phí" một lần gọi LLM nhưng không
-    // ghi đè cache — chấp nhận được vì annual chỉ sinh 1 lần/lifetime mỗi (chart, year).
-    const row = await this.persistenceGateway.createAnnualReport({
-      ownerUserId: user.userId,
-      chartSnapshotId: chartId,
-      year,
-      markdown: providerResult.renderedMarkdown,
-      providerMetadata: providerResult.providerMetadata,
-    });
+    // Khi force=true (ví dụ người dùng bấm Lập lại): dùng upsert để ghi đè báo cáo cũ hoàn chỉnh.
+    // Khi force=false: createAnnualReport bắt unique-violation rồi đọc lại row của caller thắng.
+    const row = force
+      ? await this.annualReportsRepository.upsertAnnualReport({
+          ownerUserId: user.userId,
+          chartSnapshotId: chartId,
+          year,
+          markdown: providerResult.renderedMarkdown,
+          providerMetadata: providerResult.providerMetadata,
+        })
+      : await this.annualReportsRepository.createAnnualReport({
+          ownerUserId: user.userId,
+          chartSnapshotId: chartId,
+          year,
+          markdown: providerResult.renderedMarkdown,
+          providerMetadata: providerResult.providerMetadata,
+        });
 
     this.logger.log(
       `[fortune.annual] outcome=generated chartId=${chartId} year=${year} userId=${user.userId} providerName=${providerResult.providerMetadata.provider} tokensIn=${providerResult.providerMetadata.promptTokens} tokensOut=${providerResult.providerMetadata.completionTokens}`,
@@ -98,13 +156,14 @@ export class AnnualReportService {
   }
 
   private async loadZiweiSnapshot(user: AuthenticatedUser, chartId: string): Promise<ChartSnapshot> {
-    const chartRecord = await this.persistenceGateway.findChartSnapshotById(user.userId, chartId);
+    const chartRecord = await this.chartsRepository.findChartSnapshotById(user.userId, chartId);
     if (!chartRecord) {
       throw new ApiErrorHttpException(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'Không tìm thấy lá số đã lưu.');
     }
     if (chartRecord.snapshot.chartSystem !== 'zi-wei-dou-shu') {
       throw new ApiErrorHttpException(HttpStatus.BAD_REQUEST, 'INVALID_INPUT', 'Báo cáo năm chỉ áp dụng cho lá số Tử Vi.');
     }
+    assertChartSnapshotEligibleForAi(chartRecord.snapshot);
     return chartRecord.snapshot;
   }
 

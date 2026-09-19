@@ -6,7 +6,7 @@
   import { createQuery } from '@tanstack/svelte-query';
   import type { DailyFortuneResponse } from '@ziweiai/contracts';
   import type { AuthStore } from '$lib/auth/auth-store.svelte';
-  import { fetchDailyFortune, DAILY_FORTUNE_QUERY_STALE_MS } from '$lib/api-client';
+  import { fetchDailyFortune, DAILY_FORTUNE_QUERY_STALE_MS } from '$lib/api-client/charts';;
   import { createCurrentDate } from './current-date.svelte';
   import { viCopy } from '$lib/i18n/vi';
 
@@ -40,7 +40,7 @@
   });
 </script>
 
-<article class="fortune-card" aria-labelledby="daily-fortune-title">
+<article class="fortune-card surface-glass" data-reveal aria-labelledby="daily-fortune-title">
   <header class="fortune-card__head">
     <h3 class="fortune-card__title" id="daily-fortune-title">{copy.title}</h3>
     <span class="fortune-card__date">{date.today}</span>
@@ -63,14 +63,24 @@
     flex-direction: column;
     gap: var(--space-sm);
     padding: var(--space-lg);
-    border: 1px solid var(--color-border-hairline);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-surface);
+    border-radius: var(--radius-lg, 16px);
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .fortune-card:hover {
+    border-color: rgba(245, 158, 11, 0.3);
+    box-shadow: 0 8px 30px rgba(245, 158, 11, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
   }
 
   .fortune-card__head {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: var(--space-sm);
   }
@@ -78,29 +88,40 @@
   .fortune-card__title {
     margin: 0;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 650;
     color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .fortune-card__date {
-    font-size: 13px;
-    color: var(--color-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    color: #f59e0b;
     font-variant-numeric: tabular-nums;
   }
 
   .fortune-card__summary {
     margin: 0;
-    line-height: 1.6;
+    line-height: 1.65;
     color: var(--color-text-primary);
+    font-size: 14px;
   }
 
   .fortune-card__status {
     margin: 0;
     color: var(--color-text-secondary);
+    font-size: 14px;
   }
 
   .fortune-card__error {
     margin: 0;
     color: var(--color-accent-danger);
+    font-size: 14px;
   }
 </style>

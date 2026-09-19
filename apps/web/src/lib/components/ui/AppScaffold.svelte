@@ -1,10 +1,14 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { resolve } from '$app/paths';
+  import WalletIndicator from '$lib/features/payment/WalletIndicator.svelte';
+  import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
+  import NotificationBell from '$lib/features/notifications/NotificationBell.svelte';
+  import { fadeUp } from '$lib/animations/gsap';
+  import { ArrowLeft, Compass } from 'lucide-svelte';
 
-  // AppScaffold: khung layout nền cho các màn hình US-006..008. Header (eyebrow/title/
-  // subtitle + slot action) + <main> semantic + container responsive. Bố cục 2 cột
-  // (main + sidebar) bật ở >=1080px qua CSS media query — KHÔNG đo width bằng JS
-  // (useWindowDimensions của RN → media query).
+  // AppScaffold: khung layout nền cho các màn hình subpages.
+  // Đồng bộ chuẩn ngôn ngữ thiết kế Celestial Luxury của ViOS.
   interface Props {
     eyebrow?: string;
     title: string;
@@ -12,17 +16,53 @@
     action?: Snippet;
     sidebar?: Snippet;
     children: Snippet;
+    /** default = monochrome light product; mystical = dark glass chart surfaces */
+    tone?: 'default' | 'mystical';
+    /** Cho phép container mở rộng 1200px cho các trang lá số/bảng biểu rộng */
+    wide?: boolean;
   }
 
-  let { eyebrow, title, subtitle, action, sidebar, children }: Props = $props();
+  let {
+    eyebrow,
+    title,
+    subtitle,
+    action,
+    sidebar,
+    children,
+    tone = 'default',
+    wide = false
+  }: Props = $props();
 </script>
 
-<div class="screen">
-  <div class="container" class:has-sidebar={Boolean(sidebar)}>
+<div class="screen" class:theme-mystical={tone === 'mystical'} data-tone={tone}>
+  <div
+    class="container"
+    class:has-sidebar={Boolean(sidebar)}
+    class:is-wide={wide}
+    use:fadeUp={{ duration: 0.8, y: 30 }}
+  >
+    <!-- Top Nav Bar Hoàng Gia -->
+    <div class="top-nav-bar">
+      <a href={resolve('/')} class="vios-back-btn">
+        <ArrowLeft class="back-icon" />
+        <span>Trang Chủ ViOS</span>
+      </a>
+
+      <div class="nav-actions">
+        <ThemeToggle />
+        <NotificationBell />
+        <WalletIndicator />
+      </div>
+    </div>
+
+    <!-- Hero Header Hoàng Gia -->
     <header class="hero">
       <div class="hero-text">
         {#if eyebrow}
-          <p class="eyebrow">{eyebrow}</p>
+          <div class="eyebrow-badge">
+            <Compass class="badge-icon" />
+            <span>{eyebrow}</span>
+          </div>
         {/if}
         <h1 class="title">{title}</h1>
         {#if subtitle}
@@ -30,7 +70,9 @@
         {/if}
       </div>
       {#if action}
-        <div class="hero-action">{@render action()}</div>
+        <div class="hero-action-slot">
+          {@render action()}
+        </div>
       {/if}
     </header>
 
@@ -45,11 +87,15 @@
 
 <style>
   .screen {
+    position: relative;
     min-height: 100dvh;
     background:
-      linear-gradient(180deg, var(--color-bg-surface) 0%, var(--color-bg-primary) 260px),
-      var(--color-bg-primary);
-    color: var(--color-text-primary);
+      radial-gradient(ellipse 70% 35% at 50% 0%, rgba(212, 175, 55, 0.16), transparent 70%),
+      radial-gradient(ellipse 55% 30% at 85% 15%, rgba(192, 132, 252, 0.12), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 15% 35%, rgba(212, 175, 55, 0.08), transparent 55%),
+      linear-gradient(180deg, #090615 0%, #130c2b 30%, #070512 100%);
+    color: #f7eed8;
+    overflow-x: hidden;
   }
 
   .container {
@@ -57,10 +103,149 @@
     width: 100%;
     max-width: 1180px;
     margin: 0 auto;
-    padding: 28px var(--space-lg) 56px;
+    padding: 20px var(--space-lg) 64px;
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 28px;
+  }
+
+  /* Top Nav Bar */
+  .top-nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+  }
+
+  .vios-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: #e8dcc4;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .vios-back-btn:hover {
+    background: rgba(212, 175, 55, 0.18);
+    border-color: rgba(212, 175, 55, 0.6);
+    color: #ffd700;
+    transform: translateX(-2px);
+    box-shadow: 0 0 16px rgba(212, 175, 55, 0.2);
+  }
+
+  :global(.back-icon) {
+    width: 15px;
+    height: 15px;
+    color: #ffd700;
+    transition: transform 0.2s ease;
+  }
+
+  .vios-back-btn:hover :global(.back-icon) {
+    transform: translateX(-2px);
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(22, 16, 42, 0.65);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Hero Header */
+  .hero {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.18);
+  }
+
+  @media (min-width: 960px) {
+    .hero {
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 32px;
+    }
+  }
+
+  .hero-text {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    flex: 1 1 360px;
+  }
+
+  .eyebrow-badge {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: #ffd700;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  :global(.badge-icon) {
+    width: 12px;
+    height: 12px;
+    color: #ffd700;
+  }
+
+  .title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: clamp(24px, 3.2vw, 36px);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    background: linear-gradient(135deg, #ffffff 0%, #fce99f 50%, #d4af37 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-wrap: balance;
+  }
+
+  .subtitle {
+    margin: 0;
+    max-width: 65ch;
+    color: rgba(226, 216, 184, 0.8);
+    font-size: 15px;
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  .hero-action-slot {
+    flex: 0 1 auto;
+  }
+
+  @media (min-width: 960px) {
+    .hero-action-slot {
+      display: flex;
+      justify-content: flex-end;
+    }
   }
 
   .body-layout {
@@ -69,49 +254,6 @@
     flex-direction: column;
     gap: 32px;
     width: 100%;
-  }
-
-  .hero {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-lg);
-    padding-bottom: 28px;
-    border-bottom: 1px solid var(--color-border-hairline);
-  }
-
-  .hero-text {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-width: 0;
-  }
-
-  .eyebrow {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: var(--text-eyebrow);
-    font-weight: 700;
-    letter-spacing: var(--tracking-eyebrow);
-  }
-
-  .title {
-    margin: 0;
-    color: var(--color-text-primary);
-    max-width: 13ch;
-    font-size: var(--text-h1);
-    font-weight: 700;
-    letter-spacing: 0;
-    line-height: var(--text-h1-line);
-    text-wrap: balance;
-  }
-
-  .subtitle {
-    margin: 0;
-    max-width: 62ch;
-    color: var(--color-text-secondary);
-    font-size: var(--text-body);
-    line-height: var(--text-body-line);
-    text-wrap: pretty;
   }
 
   .content {
@@ -130,34 +272,17 @@
     min-width: 0;
   }
 
-  .hero-action {
-    display: flex;
-    align-items: flex-start;
-    flex-shrink: 0;
-  }
-
-  /* >=768px: hero title + action nằm cùng hàng. */
-  @media (min-width: 768px) {
-    .hero {
-      flex-direction: row;
-      align-items: flex-start;
-      justify-content: space-between;
-    }
-
-    .container {
-      padding-top: 40px;
-      padding-bottom: 72px;
-    }
-  }
-
-  /* >=1080px (DESIGN.md desktop): 2 cột main + sidebar (thay đo width bằng JS của RN). */
   @media (min-width: 1080px) {
     .container {
       max-width: 1120px;
     }
 
-    .container:not(.has-sidebar) {
-      max-width: 820px;
+    .container.is-wide {
+      max-width: 1200px;
+    }
+
+    .container:not(.has-sidebar):not(.is-wide) {
+      max-width: 840px;
     }
 
     .container.has-sidebar .body-layout {
@@ -178,38 +303,107 @@
     }
   }
 
-  /* >=1440px: Mở rộng trên màn hình Ultrawide để tránh bị "chìm" và "kì cục" */
-  @media (min-width: 1440px) {
-    .container {
-      max-width: 1280px;
-    }
-
-    .container:not(.has-sidebar) {
-      max-width: 880px;
-    }
-
-    .container.has-sidebar .content {
-      max-width: 780px;
-    }
-
-    .container.has-sidebar .sidebar {
-      width: 420px;
-    }
-  }
-
   @media (max-width: 520px) {
     .container {
       padding-inline: var(--space-md);
-      padding-top: var(--space-lg);
-      gap: 28px;
+      padding-top: var(--space-md);
+      gap: 20px;
     }
 
-    .hero {
-      padding-bottom: var(--space-lg);
+    .vios-back-btn span {
+      font-size: 12px;
     }
 
-    .title {
-      max-width: none;
+    .subtitle {
+      font-size: 13.5px;
+    }
+  }
+
+  @media (max-width: 374px) {
+    .container {
+      padding-inline: 12px;
+      padding-top: 14px;
+      gap: 16px;
+    }
+  }
+
+  /* Đồng bộ Theme Light Hoàng Gia */
+  :global([data-theme="light"]) .screen {
+    background:
+      radial-gradient(ellipse 75% 50% at 15% 0%, rgba(212, 175, 55, 0.1), transparent 60%),
+      radial-gradient(ellipse 60% 45% at 85% 10%, rgba(168, 85, 247, 0.08), transparent 55%),
+      linear-gradient(180deg, #faf8f5 0%, #f4f0e6 100%);
+    color: #1a162b;
+  }
+
+  :global([data-theme="light"]) .vios-back-btn {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(212, 175, 55, 0.4);
+    color: #451a03;
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.12);
+  }
+
+  :global([data-theme="light"]) .vios-back-btn:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #b45309;
+    color: #78350f;
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.25);
+  }
+
+  :global([data-theme="light"]) :global(.back-icon) {
+    color: #b45309;
+  }
+
+  :global([data-theme="light"]) .nav-actions {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(212, 175, 55, 0.35);
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.12);
+  }
+
+  :global([data-theme="light"]) .hero {
+    border-bottom-color: rgba(212, 175, 55, 0.25);
+  }
+
+  :global([data-theme="light"]) .eyebrow-badge {
+    background: rgba(212, 175, 55, 0.18);
+    border-color: rgba(212, 175, 55, 0.5);
+    color: #854d0e;
+  }
+
+  :global([data-theme="light"]) :global(.badge-icon) {
+    color: #854d0e;
+  }
+
+  :global([data-theme="light"]) .title {
+    background: linear-gradient(135deg, #180d38 0%, #78350f 60%, #b45309 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  :global([data-theme="light"]) .subtitle {
+    color: #57534e;
+  }
+
+  @media print {
+    .screen {
+      min-height: 0 !important;
+      height: auto !important;
+      overflow: visible !important;
+      position: static !important;
+      background: #ffffff !important;
+    }
+
+    .container {
+      max-width: 100% !important;
+      padding: 0 !important;
+      gap: 0 !important;
+      transform: none !important;
+    }
+
+    .top-nav-bar {
+      display: none !important;
     }
   }
 </style>
+

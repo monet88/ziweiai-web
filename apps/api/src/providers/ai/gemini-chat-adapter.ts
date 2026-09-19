@@ -10,7 +10,10 @@ import {
 import { ProviderUnavailableError } from './provider-errors';
 
 type GeminiNativeResponse = {
-  candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  candidates?: Array<{
+    content?: { parts?: Array<{ text?: string }> };
+    finishReason?: string;
+  }>;
   usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number };
   error?: { message?: string; code?: number | string; status?: string };
 };
@@ -68,8 +71,17 @@ export class GeminiChatAdapter implements LlmChatAdapter {
     return apiEnv.GEMINI_API_KEY.length > 0;
   }
 
-  resolveModel(modelOverride?: string): string {
-    return modelOverride ?? apiEnv.GEMINI_MODEL;
+  resolveModel(modelOverride?: string, tier?: 'light' | 'deep'): string {
+    if (modelOverride) {
+      return modelOverride;
+    }
+    if (tier === 'light') {
+      return apiEnv.GEMINI_MODEL_LIGHT;
+    }
+    if (tier === 'deep') {
+      return apiEnv.GEMINI_MODEL_DEEP;
+    }
+    return apiEnv.GEMINI_MODEL;
   }
 
   buildRequest(params: LlmChatAdapterBuildParams): LlmChatRequest {
@@ -100,6 +112,19 @@ export class GeminiChatAdapter implements LlmChatAdapter {
             parts: [{ text: EXPLANATION_SYSTEM_PROMPT }],
           },
           contents: [{ parts }],
+          generationConfig: {
+            maxOutputTokens: 8192,
+            temperature: 0.7,
+            thinkingConfig: {
+              thinkingBudget: 0,
+            },
+          },
+          safetySettings: [
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+          ],
         }),
         signal: params.signal,
       },
@@ -121,7 +146,19 @@ export class GeminiChatAdapter implements LlmChatAdapter {
       throw new ProviderUnavailableError('Gemini trả về phản hồi rỗng.');
     }
 
-    const text = (body.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '') ?? []).join('');
+    const candidate = body.candidates?.[0];
+    const finishReason = candidate?.finishReason;
+    if (finishReason && finishReason !== 'STOP') {
+      if (finishReason === 'MAX_TOKENS') {
+        throw new ProviderUnavailableError('Phản hồi từ Gemini bị vượt quá giới hạn độ dài token.');
+      }
+      if (finishReason === 'SAFETY') {
+        throw new ProviderUnavailableError('Phản hồi từ Gemini bị chặn bởi bộ lọc an toàn.');
+      }
+      throw new ProviderUnavailableError(`Gemini dừng đột ngột với lý do: ${finishReason}.`);
+    }
+
+    const text = (candidate?.content?.parts?.map((part) => part.text ?? '') ?? []).join('');
     const usage: LlmUsage = {
       promptTokens: body.usageMetadata?.promptTokenCount,
       completionTokens: body.usageMetadata?.candidatesTokenCount,

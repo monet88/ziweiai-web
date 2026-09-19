@@ -1,4 +1,9 @@
-import type { BirthInput, ChartSnapshot, LiuyaoLineStateKey, LiuyaoMethod } from '@ziweiai/contracts';
+import type {
+  BirthInput,
+  ChartSnapshot,
+  LiuyaoLineStateKey,
+  LiuyaoMethod,
+} from '@ziweiai/contracts';
 import { chartSystemRequiresGender } from '@ziweiai/contracts';
 
 // US-026: map a Lục Hào line state to the vendored runtime's manualYaoShu code
@@ -15,10 +20,8 @@ import { createBaseSnapshotFields, createBlockedChartSnapshot } from './runtime-
 import type { AstrologyChartAdapter, ChartCalculationOptions } from './astro-adapter';
 import {
   buildXuanshuBridgeSettings,
-  buildXuanshuRuntimeUnavailableConfidence,
-  isXuanshuReferenceRuntimeAvailable,
-  runXuanshuBridge,
 } from './xuanshu-bridge';
+import { createLiuYaoPaiPan } from '@ziweiai/xuanshu-runtime';
 import {
   buildDerivedNuclearHexagram,
   buildHexagramFromXuanshuLines,
@@ -27,6 +30,7 @@ import {
   buildLiuyaoRoleLineLabel,
   buildPillarsFromGanZhi,
 } from './liuyao-maps';
+
 
 const LIUYAO_ADAPTER_VERSION = {
   name: 'xuanshu-liuyao-bridge',
@@ -98,6 +102,8 @@ function extractBaseStateKeys(result: XuanshuLiuyaoResult): LiuyaoLineStateKey[]
   });
 }
 
+
+
 export class LiuyaoAdapter implements AstrologyChartAdapter {
   readonly system = 'liu-yao' as const;
   readonly adapterName = 'xuanshu-liuyao-bridge';
@@ -121,32 +127,14 @@ export class LiuyaoAdapter implements AstrologyChartAdapter {
       });
     }
 
-    if (!isXuanshuReferenceRuntimeAvailable()) {
-      return createBlockedChartSnapshot({
-        input,
-        normalizedBirth,
-        chartSystem: 'liu-yao',
-        canonicalLibrary: { name: 'xuanshu', version: 'liuyao-reference' },
-        adapterVersion: LIUYAO_ADAPTER_VERSION,
-        confidence: buildXuanshuRuntimeUnavailableConfidence(normalizedBirth.normalizationConfidence),
-        warnings: [...warnings, 'XUANSHU_REFERENCE_RUNTIME_UNAVAILABLE'],
-      });
-    }
-
-    const result = await runXuanshuBridge<XuanshuLiuyaoResult>(
-      'xuanshu-liuyao-runner.js',
-      {
-        ...buildXuanshuBridgeSettings(input),
-        sex: toXuanshuSex(input),
-        // US-026: paiPanType 2 = manual line input (manualYaoShu codes bottom-to-top);
-        // 0 = time-based (default). Manual states map to the runtime's 0-3 codes.
-        paiPanType: manualLineStates ? 2 : 0,
-        ...(manualLineStates
-          ? { manualYaoShu: manualLineStates.map((state) => LIUYAO_STATE_TO_MANUAL_CODE[state]) }
-          : {}),
-      },
-      'Lục Hào',
-    );
+    const result = createLiuYaoPaiPan({
+      ...buildXuanshuBridgeSettings(input),
+      sex: toXuanshuSex(input),
+      paiPanType: manualLineStates ? 2 : 0,
+      ...(manualLineStates
+        ? { manualYaoShu: manualLineStates.map((state) => LIUYAO_STATE_TO_MANUAL_CODE[state]) }
+        : {}),
+    }) as XuanshuLiuyaoResult;
     const method: LiuyaoMethod = manualLineStates ? 'manual' : 'time-based';
     const baseHexagram = buildHexagramFromXuanshuLines({
       lineData: result.liuYao.benGua,

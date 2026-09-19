@@ -19,13 +19,13 @@
 
 <div class="cards">
   {#if metaItems.length > 0}
-    <SummaryCard title="Cục Kỳ Môn" items={metaItems} />
+    <SummaryCard variant="glass" title="Cục Kỳ Môn" items={metaItems} />
   {/if}
 
   {#if cells.length > 0}
-    <section class="board" aria-label="Bàn cửu cung Kỳ Môn">
+    <section class="board surface-glass" data-reveal aria-label="Bàn cửu cung Kỳ Môn">
       {#each cells as cell (cell.palaceIndex)}
-        <div class="cell" class:center={cell.palaceIndex === 5}>
+        <div class="cell" class:center={cell.palaceIndex === 5} data-reveal-line>
           <span class="cell-index">Cung {cell.palaceIndex}</span>
           {#if cell.spirit}<span class="cell-line spirit">{cell.spirit}</span>{/if}
           {#if cell.star}<span class="cell-line star">{cell.star}{#if cell.companionStar} · {cell.companionStar}{/if}</span>{/if}
@@ -50,6 +50,8 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: var(--space-sm);
+    padding: var(--space-md);
+    border-radius: var(--radius-xl);
   }
 
   .cell {
@@ -60,7 +62,7 @@
     padding: var(--space-md);
     border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-md);
-    background: var(--color-bg-surface);
+    background: var(--glass-bg-strong);
   }
 
   .cell.center {

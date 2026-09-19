@@ -10,6 +10,10 @@ import { GeminiExplanationProvider } from './gemini-explanation-provider';
 import { OpenAiCompatibleExplanationProvider } from './openai-compatible-explanation-provider';
 import { ProviderUnavailableError } from './provider-errors';
 import { ProviderRouterBase } from './provider-router-base';
+import { LangfuseAiProviderWrapper } from './langfuse-ai-provider-wrapper';
+
+export type StreamingExplanationProvider = AiExplanationProvider &
+  Required<Pick<AiExplanationProvider, 'generateExplanationStream'>>;
 
 @Injectable()
 export class ExplanationProviderRouter extends ProviderRouterBase<AiExplanationProvider> {
@@ -18,7 +22,26 @@ export class ExplanationProviderRouter extends ProviderRouterBase<AiExplanationP
     openAiCompatProvider: OpenAiCompatibleExplanationProvider,
     geminiProvider: GeminiExplanationProvider,
   ) {
-    super(deepseekProvider, openAiCompatProvider, geminiProvider);
+    super(
+      new LangfuseAiProviderWrapper(deepseekProvider),
+      new LangfuseAiProviderWrapper(openAiCompatProvider),
+      new LangfuseAiProviderWrapper(geminiProvider)
+    );
+  }
+
+  resolveStreamingProvider(
+    preference: ProviderPreference,
+    payload?: ExplanationPromptPayload,
+  ): StreamingExplanationProvider | null {
+    const chain = payload?.imageInput
+      ? this.getProviderChain(preference).filter((provider) => provider.isVisionCapable(payload.modelOverride))
+      : this.getProviderChain(preference);
+
+    const firstAvailable = chain.find((provider) => provider.isAvailable());
+    if (firstAvailable && typeof firstAvailable.generateExplanationStream === 'function') {
+      return firstAvailable as StreamingExplanationProvider;
+    }
+    return null;
   }
 
   async generate(preference: ProviderPreference, payload: ExplanationPromptPayload): Promise<ExplanationProviderResult> {
@@ -29,6 +52,8 @@ export class ExplanationProviderRouter extends ProviderRouterBase<AiExplanationP
       ? this.getProviderChain(preference).filter((provider) => provider.isVisionCapable(payload.modelOverride))
       : this.getProviderChain(preference);
 
+    // Khi có ảnh và preference === 'auto', chain sẽ giữ nguyên order mặc định (openai-compat -> deepseek -> gemini)
+    // Các provider ở đầu chain (như openai-compat) sẽ đảm nhiệm xử lý ảnh, vì Gemini từ chối phân tích sinh trắc học.
     if (payload.imageInput && providers.length === 0) {
       throw new ProviderUnavailableError('Chưa cấu hình nhà cung cấp AI có khả năng đọc ảnh.');
     }

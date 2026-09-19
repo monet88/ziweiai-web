@@ -21,6 +21,9 @@ export const profileRecordSchema = z.object({
   displayName: z.string().min(1).nullable(),
   locale: z.string().min(2),
   timezone: z.string().min(1).nullable(),
+  xuBalance: z.number().nonnegative().default(0),
+  referralCode: z.string().min(1).nullable(),
+  referredBy: z.string().nullable(),
 });
 
 export const birthProfileRecordSchema = z.object({
@@ -94,6 +97,14 @@ export const visionResultRecordSchema = z.object({
   providerMetadata: z.record(z.string(), z.string()),
   createdAt: z.iso.datetime(),
 });
+export const annualReportRecordSchema = z.object({
+  id: z.uuid(),
+  ownerUserId: z.uuid(),
+  chartSnapshotId: z.uuid(),
+  year: z.number().int(),
+  markdown: z.string().min(1),
+  createdAt: z.iso.datetime(),
+});
 
 export const conversationStatusSchema = z.enum(['active', 'archived']);
 export const conversationMessageRoleSchema = z.enum(['user', 'assistant']);
@@ -128,6 +139,17 @@ export const historyViewRecordSchema = z.object({
   // US-017 follow-up (decision 0023): links a history row to a vision (face/palm) reading.
   visionResultId: z.uuid().nullable(),
   viewedAt: z.iso.datetime(),
+});
+
+export const referralRecordSchema = z.object({
+  id: z.uuid(),
+  referrerId: z.uuid(),
+  refereeId: z.uuid(),
+  rewardXu: z.number().nonnegative(),
+  status: z.enum(['pending', 'completed']),
+  createdAt: z.iso.datetime(),
+  completedAt: z.iso.datetime().nullable(),
+  refereeEmailMasked: z.string().optional().nullable(),
 });
 
 // US-025 (decision 0021): the four time-based divination systems are cast "now"
@@ -189,3 +211,5 @@ export type ConversationMessageRecord = z.infer<typeof conversationMessageRecord
 export type HistoryViewRecord = z.infer<typeof historyViewRecordSchema>;
 export type DivinationPurposeKey = z.infer<typeof divinationPurposeKeySchema>;
 export type DivinationContextRecord = z.infer<typeof divinationContextRecordSchema>;
+export type ReferralRecord = z.infer<typeof referralRecordSchema>;
+export type AnnualReportRecord = z.infer<typeof annualReportRecordSchema>;

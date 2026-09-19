@@ -27,19 +27,19 @@
 
 <div class="cards">
   {#if title}
-    <section class="reading" aria-labelledby="mangpai-title">
+    <section class="reading surface-glass" data-reveal aria-labelledby="mangpai-title">
       <h3 class="reading-title" id="mangpai-title">{title}</h3>
       <p class="reading-narrative">{narrative}</p>
     </section>
   {/if}
   {#if insightItems.length > 0}
-    <SummaryCard title="Luận giải Mạnh Phái" items={insightItems} />
+    <SummaryCard variant="glass" title="Luận giải Mạnh Phái" items={insightItems} />
   {/if}
   {#if pillarRows.length > 0}
-    <SummaryCard title="Tứ trụ" items={pillarRows} />
+    <SummaryCard variant="glass" title="Tứ trụ" items={pillarRows} />
   {/if}
   {#if metaItems.length > 0}
-    <SummaryCard title="Mệnh bàn" items={metaItems} />
+    <SummaryCard variant="glass" title="Mệnh bàn" items={metaItems} />
   {/if}
 </div>
 
@@ -52,9 +52,7 @@
 
   .reading {
     padding: var(--space-lg);
-    border: 1px solid var(--color-border-hairline);
     border-radius: var(--radius-lg);
-    background: var(--color-bg-surface);
   }
 
   .reading-title {

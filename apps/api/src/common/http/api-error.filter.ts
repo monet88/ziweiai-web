@@ -2,6 +2,8 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logge
 import { apiErrorSchema } from '@ziweiai/contracts';
 import type { Response } from 'express';
 import { ZodError } from 'zod';
+import { apiEnv } from '../../config/env';
+import { reportOpsAlert, shouldAlertHttpStatus } from '../../observability/ops-alert';
 import type { RequestWithRequestId } from '../request-id.middleware';
 
 @Catch()
@@ -13,6 +15,7 @@ export class ApiErrorFilter implements ExceptionFilter {
     const request = context.getRequest<RequestWithRequestId>();
     const response = context.getResponse<Response>();
     const requestId = request.requestId ?? null;
+    const path = request.originalUrl ?? request.url ?? null;
 
     if (exception instanceof ZodError) {
       response.status(HttpStatus.BAD_REQUEST).json(
@@ -28,22 +31,28 @@ export class ApiErrorFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const payload = exception.getResponse();
+      let code = status === HttpStatus.UNAUTHORIZED ? 'UNAUTHORIZED' : 'INTERNAL_ERROR';
+      let message = exception.message;
 
       if (typeof payload === 'object' && payload !== null) {
         const parsed = apiErrorSchema.safeParse(payload);
         if (parsed.success) {
+          code = parsed.data.code;
+          message = parsed.data.message;
           response.status(status).json(parsed.data);
+          this.maybeAlert({ status, code, message, requestId, path, exception });
           return;
         }
       }
 
       response.status(status).json(
         apiErrorSchema.parse({
-          code: status === HttpStatus.UNAUTHORIZED ? 'UNAUTHORIZED' : 'INTERNAL_ERROR',
-          message: exception.message,
+          code,
+          message,
           requestId,
         }),
       );
+      this.maybeAlert({ status, code, message, requestId, path, exception });
       return;
     }
 
@@ -54,13 +63,52 @@ export class ApiErrorFilter implements ExceptionFilter {
         requestId,
       }),
     );
-    // Nhánh fallback (non-HttpException/non-Zod): lỗi ngoài dự kiến phải để lại thông tin,
-    // không nuốt im lặng. requestId giúp truy vết theo header x-request-id. Chi tiết lỗi đưa
-    // vào message (param 1); param 2 chỉ nhận stack trace thật để không làm nhiễu log
-    // aggregation (Datadog/Kibana mong đợi stack ở đây). Non-Error → stack undefined.
+
+    // Unexpected non-HttpException — always alert.
+    void reportOpsAlert(
+      {
+        level: 'error',
+        code: 'INTERNAL_ERROR',
+        message:
+          exception instanceof Error ? exception.message : String(exception),
+        requestId,
+        path,
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        cause: exception,
+      },
+      { webhookUrl: apiEnv.OPS_ALERT_WEBHOOK_URL },
+    );
+
     this.logger.error(
       `Lỗi máy chủ ngoài dự kiến (requestId=${requestId ?? 'null'}): ${exception instanceof Error ? exception.message : String(exception)}`,
       exception instanceof Error ? exception.stack : undefined,
     );
   }
+
+  private maybeAlert(input: {
+    status: number;
+    code: string;
+    message: string;
+    requestId: string | null;
+    path: string | null;
+    exception: unknown;
+  }): void {
+    if (!shouldAlertHttpStatus(input.status, input.code)) {
+      return;
+    }
+
+    void reportOpsAlert(
+      {
+        level: 'error',
+        code: input.code,
+        message: input.message,
+        requestId: input.requestId,
+        path: input.path,
+        status: input.status,
+        cause: input.exception,
+      },
+      { webhookUrl: apiEnv.OPS_ALERT_WEBHOOK_URL },
+    );
+  }
 }
+

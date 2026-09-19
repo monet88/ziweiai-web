@@ -8,9 +8,10 @@ import { ConversationProviderRouter } from './conversation-provider-router';
 import { DeepseekExplanationProvider } from './deepseek-explanation-provider';
 import { GeminiExplanationProvider } from './gemini-explanation-provider';
 import { OpenAiCompatibleExplanationProvider } from './openai-compatible-explanation-provider';
+import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
 
 // Build a router with hand-rolled provider doubles so we can flip availability + streaming support
-// per case without going through env. The real chain order is openai-compat -> deepseek -> gemini.
+// per case without going through env. The real chain order is gemini -> openai-compat -> deepseek.
 function buildRouter(overrides: {
   openAiCompat?: Partial<AiConversationProvider>;
   deepseek?: Partial<AiConversationProvider>;
@@ -50,14 +51,14 @@ describe('ConversationProviderRouter.resolveStreamingProvider', () => {
     vi.restoreAllMocks();
   });
 
-  it('returns the openai-compat provider when it is available and supports streaming (auto)', () => {
+  it('returns the gemini provider when it is available and supports streaming (auto)', () => {
     apiEnv.AI_DEFAULT_PROVIDER = 'auto';
     const router = buildRouter({
-      openAiCompat: { generateConversationStream: () => fakeStream(['a']) },
+      gemini: { generateConversationStream: () => fakeStream(['a']) },
     });
 
     const provider = router.resolveStreamingProvider('auto');
-    expect(provider?.providerName).toBe('openai-compat');
+    expect(provider?.providerName).toBe('gemini');
   });
 
   it('returns null when the first available provider does not support streaming', () => {
@@ -77,5 +78,56 @@ describe('ConversationProviderRouter.resolveStreamingProvider', () => {
 
     // First available is deepseek (no streaming) -> null, controller falls back to non-stream.
     expect(router.resolveStreamingProvider('auto')).toBeNull();
+  });
+});
+
+describe('ConversationProviderRouter.generate', () => {
+  const originalDefault = apiEnv.AI_DEFAULT_PROVIDER;
+
+  afterEach(() => {
+    apiEnv.AI_DEFAULT_PROVIDER = originalDefault;
+    vi.restoreAllMocks();
+  });
+
+  it('falls back to the next configured provider when the first provider times out', async () => {
+    apiEnv.AI_DEFAULT_PROVIDER = 'auto';
+    const router = buildRouter({
+      gemini: {
+        generateConversation: vi.fn(async () => {
+          throw new ProviderTimeoutError('gemini slow');
+        }),
+      },
+      openAiCompat: {
+        generateConversation: vi.fn(async () => ({
+          renderedMarkdown: 'openai fallback',
+          providerMetadata: { provider: 'openai-compat' },
+        })),
+      },
+    });
+
+    const result = await router.generate('auto', {} as never);
+
+    expect(result.renderedMarkdown).toBe('openai fallback');
+  });
+
+  it('does not fail over when a provider returns CJK-guard content', async () => {
+    apiEnv.AI_DEFAULT_PROVIDER = 'auto';
+    const openaiGenerate = vi.fn(async () => ({
+      renderedMarkdown: 'openai fallback',
+      providerMetadata: { provider: 'openai-compat' },
+    }));
+    const router = buildRouter({
+      gemini: {
+        generateConversation: vi.fn(async () => {
+          throw new ProviderUnavailableError('Provider returned chữ Hán; nội dung không hợp lệ.');
+        }),
+      },
+      openAiCompat: {
+        generateConversation: openaiGenerate,
+      },
+    });
+
+    await expect(router.generate('auto', {} as never)).rejects.toThrow('chữ Hán');
+    expect(openaiGenerate).not.toHaveBeenCalled();
   });
 });

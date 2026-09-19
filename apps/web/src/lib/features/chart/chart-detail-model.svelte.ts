@@ -14,7 +14,7 @@
 import { createQuery } from '@tanstack/svelte-query';
 import type { ChartDetailResponse } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { fetchChartDetail } from '$lib/api-client';
+import { fetchChartDetail } from '$lib/api-client/charts';;
 import { viCopy } from '$lib/i18n/vi';
 import { buildPalaceViews, type PalaceView } from './palace-view-builder';
 
@@ -84,6 +84,8 @@ export function createChartDetailModel(options: ChartDetailModelOptions) {
   const explanationResults = $derived<ChartDetailResponse['explanationResults']>(
     query.data?.explanationResults ?? [],
   );
+  const isOwner = $derived(query.data?.isOwner ?? true);
+  const latestAnnualReport = $derived(query.data?.latestAnnualReport ?? null);
 
   return {
     get chartId(): string {
@@ -94,6 +96,12 @@ export function createChartDetailModel(options: ChartDetailModelOptions) {
     },
     get isError(): boolean {
       return query.isError;
+    },
+    get isOwner(): boolean {
+      return isOwner;
+    },
+    get latestAnnualReport() {
+      return latestAnnualReport;
     },
     get snapshot(): ChartDetailResponse['snapshot'] | null {
       return snapshot;

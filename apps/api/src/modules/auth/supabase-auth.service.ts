@@ -134,6 +134,35 @@ export class SupabaseAuthService {
   private async refreshJwks(): Promise<void> {
     if (!this.jwksFetchPromise) {
       this.jwksFetchPromise = (async () => {
+        // [HOTFIX] Bypass hanging fetch on newtop-vpn for Supabase Gala project
+        // since newtop firewall blocks outbound HTTPS to Cloudflare/Supabase IPs.
+        if (apiEnv.SUPABASE_URL.includes('nachzhkeuzwiqmbtelrp.supabase.co')) {
+          const payload = {
+            "keys": [
+              {
+                "alg": "ES256",
+                "crv": "P-256",
+                "ext": true,
+                "key_ops": ["verify"],
+                "kid": "30beac59-cba7-4541-9a89-ee136304e4b4",
+                "kty": "EC",
+                "use": "sig",
+                "x": "vTk6EZcRHmIR5OkRHeRRTJVmEs5tegdeJHFYEInP42Q",
+                "y": "DJ4xxyFcRWKRGSZcN_T0GNyXb5xFeuTxrHv-VlgJwbo"
+              }
+            ]
+          };
+          const nextJwksByKid = new Map<string, JwkShape>();
+          for (const jwk of payload.keys) {
+            if (jwk.kid) {
+              nextJwksByKid.set(jwk.kid, jwk as any);
+            }
+          }
+          this.jwksByKid = nextJwksByKid;
+          this.jwksFetchedAt = Date.now();
+          return;
+        }
+
         const response = await fetch(`${apiEnv.SUPABASE_URL}/auth/v1/.well-known/jwks.json`);
         if (!response.ok) {
           throw new Error(`Failed to fetch Supabase JWKS: ${response.status}`);

@@ -15,7 +15,8 @@ import {
 } from '@ziweiai/contracts';
 import { randomUUID } from 'node:crypto';
 import { buildChartSnapshotDedupeKey } from '../../../database/idempotency';
-import { SupabasePersistenceGateway } from '../../../database/supabase-persistence.gateway';
+import { ChartsRepository } from '../../../database/repositories/charts.repository';
+import { DivinationsRepository } from '../../../database/repositories/divinations.repository';
 import { ApiErrorHttpException } from '../../../common/http/api-error';
 import { QuotasService } from '../../quotas/quotas.service';
 import { DailyQuotaExceededError, RateLimitWindowError } from '../../quotas/quota-errors';
@@ -39,7 +40,8 @@ export class DivinationsService {
   };
 
   constructor(
-    private readonly persistenceGateway: SupabasePersistenceGateway,
+    private readonly chartsRepository: ChartsRepository,
+    private readonly divinationsRepository: DivinationsRepository,
     private readonly quotasService: QuotasService,
   ) {}
 
@@ -58,8 +60,8 @@ export class DivinationsService {
     // the manual payload matches the system, so we pass both through; other adapters
     // ignore them. Time method leaves both undefined (cast by server "now").
     const snapshot = await adapter.calculateChart(birthInput, {
-      meihuaManual: input.castMethod === 'manual' ? input.meihuaManual : undefined,
-      liuyaoManual: input.castMethod === 'manual' ? input.liuyaoManual : undefined,
+      meihuaManual: input.castMethod === 'manual' ? (input.meihuaManual ?? undefined) : undefined,
+      liuyaoManual: input.castMethod === 'manual' ? (input.liuyaoManual ?? undefined) : undefined,
     });
 
     const dedupeKey = buildChartSnapshotDedupeKey({
@@ -76,14 +78,14 @@ export class DivinationsService {
     // persist the snapshot via the same path and link a fresh context record.
     // The random UUID suffix guarantees a unique dedupe key even if two casts land
     // in the same millisecond for the same user (avoids a 23505 unique violation).
-    const chartRecord = await this.persistenceGateway.createChartSnapshot({
+    const chartRecord = await this.chartsRepository.createChartSnapshot({
       ownerUserId: userId,
       birthProfileId: null,
       snapshotDedupeKey: `${dedupeKey}-${castAt.getTime()}-${randomUUID()}`,
       snapshot,
     });
 
-    const divinationContext = await this.persistenceGateway.createDivinationContext({
+    const divinationContext = await this.divinationsRepository.createDivinationContext({
       ownerUserId: userId,
       chartSnapshotId: chartRecord.id,
       question: input.question,
@@ -143,7 +145,7 @@ export class DivinationsService {
 
   private async assertCanCreateChart(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateChart(userId, ipAddress, isAnonymous);
+      await this.quotasService.assertCanExecute('chart', userId, ipAddress, isAnonymous);
     } catch (error) {
       // Only typed quota errors map to 429. Unexpected failures (e.g. a DB error
       // while counting quota) must propagate, not be disguised as RATE_LIMITED.

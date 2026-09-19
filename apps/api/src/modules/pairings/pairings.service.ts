@@ -8,7 +8,7 @@ import {
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { throwQuotaRateLimited } from '../quotas/quota-http';
-import { assertCanUseAiExplanation } from '../../common/entitlement/ai-entitlement.guard';
+import { WalletEngineService } from '../wallet/wallet-engine.service';
 import { apiEnv } from '../../config/env';
 import { QuotasService } from '../quotas/quotas.service';
 
@@ -18,7 +18,10 @@ export class PairingsService {
   // Hợp Hôn ghép 2 lá số Tử Vi (decision 0012): dùng cùng adapter iztro như POST /charts.
   private readonly ziweiAdapter = new IztroChartAdapter();
 
-  constructor(private readonly quotasService: QuotasService) {}
+  constructor(
+    private readonly quotasService: QuotasService,
+    private readonly walletEngine: WalletEngineService
+  ) {}
 
   async createPairing(user: AuthenticatedUser, ipAddress: string, input: PairingRequest): Promise<PairingSnapshot> {
     if (!apiEnv.EXTENDED_SYSTEM_HEPAN_ENABLED) {
@@ -30,8 +33,15 @@ export class PairingsService {
       );
     }
 
-    // Gate AI (premium) TRƯỚC quota qua guard dùng chung (decision 0010), rồi mới tiêu quota.
-    assertCanUseAiExplanation(this.logger);
+    // GATE 3: Trừ XU cho tính năng premium (Hợp Hôn). Tốn 1 XU.
+    const success = await this.walletEngine.deductXU(user.userId, 1, 'ai_usage');
+    if (!success) {
+      throw new ApiErrorHttpException(
+        HttpStatus.PAYMENT_REQUIRED,
+        'PAYMENT_REQUIRED',
+        'Tính năng Hợp Hôn yêu cầu 1 XU. Vui lòng nạp thêm XU để tiếp tục.'
+      );
+    }
     // email rỗng/null ⟺ phiên ẩn danh (decision 0009): dùng !user.email để không bỏ lọt anon.
     await this.assertCanCreatePairing(user.userId, ipAddress, !user.email);
 
@@ -63,7 +73,7 @@ export class PairingsService {
   // Bọc lỗi quota (raw Error từ QuotasService) thành 429 RATE_LIMITED cho đồng bộ với các đường khác.
   private async assertCanCreatePairing(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
     try {
-      await this.quotasService.assertCanCreatePairing(userId, ipAddress, isAnonymous);
+      await this.quotasService.assertCanExecute('pairing', userId, ipAddress, isAnonymous);
     } catch (error) {
       throwQuotaRateLimited(error, 'Đã vượt hạn mức ghép Hợp Hôn.');
     }

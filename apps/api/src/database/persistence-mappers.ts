@@ -8,6 +8,7 @@ import {
   conversationRecordSchema,
   conversationMessageRecordSchema,
   divinationContextRecordSchema,
+  profileRecordSchema,
   type BirthProfileRecord,
   type ChartSnapshotRecord,
   type ExplanationRequestRecord,
@@ -17,6 +18,9 @@ import {
   type ConversationRecord,
   type ConversationMessageRecord,
   type DivinationContextRecord,
+  type ProfileRecord,
+  type ReferralRecord,
+  referralRecordSchema,
 } from '@ziweiai/contracts';
 import { normalizePostgresTimestamp } from './postgres-timestamp';
 
@@ -44,6 +48,18 @@ function coerceProviderMetadata(providerMetadataRow: unknown): Record<string, st
         Object.entries(providerMetadataRow as Record<string, unknown>).map(([key, value]) => [key, String(value)]),
       )
     : {};
+}
+
+export function toProfileRecord(row: SupabaseRow): ProfileRecord {
+  return profileRecordSchema.parse({
+    userId: row.user_id,
+    displayName: row.display_name,
+    locale: row.locale,
+    timezone: row.timezone,
+    xuBalance: row.xu_balance,
+    referralCode: row.referral_code ?? null,
+    referredBy: row.referred_by ?? null,
+  });
 }
 
 export function toBirthProfileRecord(row: SupabaseRow): BirthProfileRecord {
@@ -166,6 +182,19 @@ export function toConversationMessageRecord(row: SupabaseRow): ConversationMessa
     providerName: row.provider_name ?? null,
     providerMetadata: coerceProviderMetadata(row.provider_metadata),
     createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
+  });
+}
+
+export function toReferralRecord(row: SupabaseRow, refereeEmailMasked?: string | null): ReferralRecord {
+  return referralRecordSchema.parse({
+    id: row.id,
+    referrerId: row.referrer_id,
+    refereeId: row.referee_id,
+    rewardXu: row.reward_xu,
+    status: row.status,
+    createdAt: normalizePostgresTimestamp(row.created_at as string | null | undefined),
+    completedAt: normalizePostgresTimestamp(row.completed_at as string | null | undefined),
+    refereeEmailMasked: refereeEmailMasked ?? (row.referee_email_masked as string | null | undefined) ?? null,
   });
 }
 

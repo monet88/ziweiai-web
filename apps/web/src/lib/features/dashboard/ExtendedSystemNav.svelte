@@ -6,7 +6,7 @@
   // danh sách EXTENDED_LINKS.
   import { createQuery } from '@tanstack/svelte-query';
   import { resolve } from '$app/paths';
-  import { fetchFeatures } from '$lib/api-client';
+  import { fetchFeatures } from '$lib/api-client/system';;
   import { viCopy } from '$lib/i18n/vi';
   import type { FeaturesResponse } from '@ziweiai/contracts';
 
@@ -22,6 +22,7 @@
     { route: '/dream', flag: 'dream', label: viCopy.dream.navOpen },
     { route: '/stick', flag: 'sticks', label: viCopy.stick.navOpen },
     { route: '/almanac', flag: 'almanac', label: viCopy.almanac.navOpen },
+    { route: '/numerology', flag: 'numerology', label: viCopy.numerology.navOpen },
   ] as const satisfies ReadonlyArray<{ route: string; flag: keyof FeaturesResponse; label: string }>;
 
   // staleTime dài: trạng thái cờ ít đổi trong một phiên. enabled mặc định (không cần token —

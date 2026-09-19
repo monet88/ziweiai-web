@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const visionKindSchema = z.enum(['face', 'palm']);
+export const visionKindSchema = z.enum(['face', 'palm', 'tarot']);
 
 export const visionAnalysisSchema = z.object({
   kind: visionKindSchema,

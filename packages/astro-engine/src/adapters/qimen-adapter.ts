@@ -6,10 +6,8 @@ import { createBaseSnapshotFields, createBlockedChartSnapshot } from './runtime-
 import type { AstrologyChartAdapter, ChartCalculationOptions } from './astro-adapter';
 import {
   buildXuanshuBridgeSettings,
-  buildXuanshuRuntimeUnavailableConfidence,
-  isXuanshuReferenceRuntimeAvailable,
-  runXuanshuBridge,
 } from './xuanshu-bridge';
+import { createQiMenPaiPan } from '@ziweiai/xuanshu-runtime';
 import {
   buildQimenChartFromXuanshu,
   buildQimenPillarsFromGanZhi,
@@ -60,23 +58,7 @@ export class QimenAdapter implements AstrologyChartAdapter {
       });
     }
 
-    if (!isXuanshuReferenceRuntimeAvailable()) {
-      return createBlockedChartSnapshot({
-        input,
-        normalizedBirth,
-        chartSystem: 'qi-men-dun-jia',
-        canonicalLibrary: CANONICAL_LIBRARY,
-        adapterVersion: QIMEN_ADAPTER_VERSION,
-        confidence: buildXuanshuRuntimeUnavailableConfidence(normalizedBirth.normalizationConfidence),
-        warnings: [...warnings, 'XUANSHU_REFERENCE_RUNTIME_UNAVAILABLE'],
-      });
-    }
-
-    const result = await runXuanshuBridge<XuanshuQimenResult>(
-      'xuanshu-qimen-runner.js',
-      { ...buildXuanshuBridgeSettings(input), ...DEFAULT_QIMEN_SETTINGS },
-      'Kỳ Môn',
-    );
+    const result = createQiMenPaiPan({ ...buildXuanshuBridgeSettings(input), ...DEFAULT_QIMEN_SETTINGS }) as XuanshuQimenResult;
     const { chart, summary } = buildQimenChartFromXuanshu(result);
     const normalizedBirthWithGanZhi = {
       ...normalizedBirth,

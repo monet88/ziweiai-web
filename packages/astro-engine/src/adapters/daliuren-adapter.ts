@@ -6,10 +6,8 @@ import { createBaseSnapshotFields, createBlockedChartSnapshot } from './runtime-
 import type { AstrologyChartAdapter, ChartCalculationOptions } from './astro-adapter';
 import {
   buildXuanshuBridgeSettings,
-  buildXuanshuRuntimeUnavailableConfidence,
-  isXuanshuReferenceRuntimeAvailable,
-  runXuanshuBridge,
 } from './xuanshu-bridge';
+import { createDaLiuRenPaiPan } from '@ziweiai/xuanshu-runtime';
 import {
   buildDaliurenChartFromXuanshu,
   buildDaliurenPillarsFromGanZhi,
@@ -46,23 +44,7 @@ export class DaliurenAdapter implements AstrologyChartAdapter {
       });
     }
 
-    if (!isXuanshuReferenceRuntimeAvailable()) {
-      return createBlockedChartSnapshot({
-        input,
-        normalizedBirth,
-        chartSystem: 'da-liu-ren',
-        canonicalLibrary: CANONICAL_LIBRARY,
-        adapterVersion: DALIUREN_ADAPTER_VERSION,
-        confidence: buildXuanshuRuntimeUnavailableConfidence(normalizedBirth.normalizationConfidence),
-        warnings: [...warnings, 'XUANSHU_REFERENCE_RUNTIME_UNAVAILABLE'],
-      });
-    }
-
-    const result = await runXuanshuBridge<XuanshuDaliurenResult>(
-      'xuanshu-daliuren-runner.js',
-      buildXuanshuBridgeSettings(input),
-      'Đại Lục Nhâm',
-    );
+    const result = createDaLiuRenPaiPan(buildXuanshuBridgeSettings(input)) as XuanshuDaliurenResult;
     const { chart, summary } = buildDaliurenChartFromXuanshu(result);
     const normalizedBirthWithGanZhi = {
       ...normalizedBirth,

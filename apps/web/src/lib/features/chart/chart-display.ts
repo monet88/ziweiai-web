@@ -88,7 +88,7 @@ function guardFreeText(value: string | null | undefined): string {
   return normalizeLegacyDisplayName(value);
 }
 
-function formatStructuredLunarDate(value: unknown): string {
+export function formatStructuredLunarDate(value: unknown): string {
   if (!value) {
     return '';
   }

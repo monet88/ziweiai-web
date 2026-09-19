@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ConversationPromptPayload, ExplanationPromptPayload } from './ai-explanation-provider';
+import type {
+  ConversationPromptPayload,
+  ConversationProviderResult,
+  ExplanationPromptPayload,
+} from './ai-explanation-provider';
 
 function buildPayload(): ExplanationPromptPayload {
   return {
@@ -120,7 +124,7 @@ async function collectStream(
   const deltas: string[] = [];
   let next = await generator.next();
   while (!next.done) {
-    deltas.push(next.value);
+    deltas.push(next.value as string);
     next = await generator.next();
   }
   return { deltas, result: next.value };
@@ -155,8 +159,9 @@ describe('OpenAiCompatibleExplanationProvider', () => {
     const result = await provider.generateExplanation(buildPayload());
 
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://vps.monet.uno/api-cli/v1/chat/completions');
-    expect((fetchMock.mock.calls[0]?.[1] as RequestInit | undefined)?.headers).toMatchObject({
+    const firstCall = (fetchMock.mock.calls as unknown as [string, RequestInit?][])[0];
+    expect(firstCall?.[0]).toBe('https://vps.monet.uno/api-cli/v1/chat/completions');
+    expect(firstCall?.[1]?.headers).toMatchObject({
       Authorization: 'Bearer sk-test-key',
     });
     expect(result.renderedMarkdown).toBe('ok');
@@ -181,7 +186,8 @@ describe('OpenAiCompatibleExplanationProvider', () => {
     const provider = await loadProvider();
     await provider.generateExplanation(buildPayload());
 
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://vps.monet.uno/api-cli/v1/chat/completions');
+    const firstCall = (fetchMock.mock.calls as unknown as [string, RequestInit?][])[0];
+    expect(firstCall?.[0]).toBe('https://vps.monet.uno/api-cli/v1/chat/completions');
   });
 
   it('rejects content that contains Han script', async () => {
@@ -252,8 +258,7 @@ describe('OpenAiCompatibleExplanationProvider', () => {
   it('reports unavailable when the API key is not configured', async () => {
     const originalLoadEnvFile = process.loadEnvFile;
     // Chặn re-import nạp lại .env local (có thể chứa key thật) để giữ đúng case "chưa cấu hình".
-    // @ts-expect-error Node expose loadEnvFile lúc runtime trong dự án này.
-    process.loadEnvFile = undefined;
+    (process as any).loadEnvFile = undefined;
     try {
       delete process.env.OPENAI_COMPAT_API_KEY;
       vi.resetModules();
@@ -292,12 +297,35 @@ describe('OpenAiCompatibleExplanationProvider.generateConversationStream', () =>
     const { deltas, result } = await collectStream(provider.generateConversationStream(buildConversationPayload()));
 
     expect(fetchMock).toHaveBeenCalledOnce();
-    const requestInit = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+    const firstCall = (fetchMock.mock.calls as unknown as [string, RequestInit?][])[0];
+    const requestInit = firstCall?.[1];
     expect(JSON.parse(String(requestInit?.body))).toMatchObject({ stream: true });
     expect(deltas).toEqual(['Xin ', 'chao ', 'ban']);
     expect(result?.renderedMarkdown).toBe('Xin chao ban');
     expect(result?.providerMetadata.provider).toBe('openai-compat');
     expect(result?.providerMetadata.model).toBe('gemini-3.1-flash-lite');
+  });
+
+  it('streams explanation chunks live and yields tokens via generateExplanationStream', async () => {
+    process.env.OPENAI_COMPAT_API_KEY = 'sk-test-key';
+    process.env.OPENAI_COMPAT_BASE_URL = 'https://vps.monet.uno/api-cli';
+    process.env.OPENAI_COMPAT_MODEL = 'gemini-3.1-flash-lite';
+    vi.resetModules();
+
+    const fetchMock = vi.fn(async () =>
+      streamingResponse([deltaFrame('Luận '), deltaFrame('giải '), deltaFrame('lá số'), 'data: [DONE]\n\n']),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const provider = await loadProvider();
+    const { deltas, result } = await collectStream(
+      provider.generateExplanationStream(buildPayload()),
+    );
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(deltas).toEqual(['Luận ', 'giải ', 'lá số']);
+    expect(result?.renderedMarkdown).toBe('Luận giải lá số');
+    expect(result?.providerMetadata.provider).toBe('openai-compat');
   });
 
   it('buffers a JSON frame split across two reads', async () => {
@@ -503,7 +531,8 @@ describe('OpenAiCompatibleExplanationProvider.generateConversationStream', () =>
     callerAbort.abort();
     const final = await generator.next();
     expect(final.done).toBe(true);
-    expect(final.value?.renderedMarkdown).toBe('Xin chao');
+    const finalResult = final.value as ConversationProviderResult | undefined;
+    expect(finalResult?.renderedMarkdown).toBe('Xin chao');
   });
 
   it('flushes a trailing frame the upstream sent without a final blank line or [DONE]', async () => {

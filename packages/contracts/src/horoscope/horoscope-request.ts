@@ -34,9 +34,10 @@ export const monthlyFortuneRequestSchema = z.object({
 
 export type MonthlyFortuneRequest = z.infer<typeof monthlyFortuneRequestSchema>;
 
-/** Query cho `POST /charts/:id/annual-report?year=YYYY` (US-016). */
+/** Query cho `POST /charts/:id/annual-report?year=YYYY&force=true` (US-016). */
 export const annualReportRequestSchema = z.object({
   year: z.number().int().min(1900).max(2100),
+  force: z.boolean().optional(),
 });
 
 export type AnnualReportRequest = z.infer<typeof annualReportRequestSchema>;

@@ -21,7 +21,8 @@ import {
   type PalaceScope,
 } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { ApiError, createExplanation } from '$lib/api-client';
+import { ApiError } from '$lib/api-client/core';
+import { streamExplanation } from '$lib/api-client/conversations';
 import { buildPalaceExplanationRequest, CHART_DETAIL_EXPLANATION_KIND } from '$lib/features/chart/chart-explanation-intent';
 import { buildHydrationResultByScope, OVERVIEW_SCOPE_KEY } from '$lib/features/explanation/explanation-sections';
 import { viCopy } from '$lib/i18n/vi';
@@ -60,6 +61,13 @@ export interface ExplanationModelOptions {
   getExplanationResults: () => readonly ExplanationResultRecord[];
 }
 
+class UserAbortError extends Error {
+  constructor() {
+    super('USER_ABORTED');
+    this.name = 'UserAbortError';
+  }
+}
+
 export function createExplanationModel(options: ExplanationModelOptions) {
   const auth = options.auth;
   const queryClient = options.queryClient;
@@ -69,6 +77,8 @@ export function createExplanationModel(options: ExplanationModelOptions) {
   // lại" (TanStack reset mutation.data về undefined lúc pending) — UI vẫn hiện kết quả cũ của
   // scope đó tới khi kết quả mới về. Cập nhật qua onSuccess (callback, KHÔNG $effect ghi ngược).
   let sessionMarkdownByScope = $state<Record<string, string>>({});
+  let abortController: AbortController | null = null;
+  let isStreaming = $state(false);
 
   // Hydrate kết quả ĐÃ LƯU theo scope từ chart-detail query (lọc đúng kind overview của trang
   // chi tiết). Đây là mảnh sửa lỗi "luận giải không được lưu": mở lá số cũ sẽ hiện lại nội dung
@@ -96,7 +106,44 @@ export function createExplanationModel(options: ExplanationModelOptions) {
         throw new ApiError('not-found', viCopy.chart.chartNotAvailableFallback);
       }
       const scope = resolvePalaceScope(options.getSelectedPalaceKey());
-      return createExplanation(token, buildPalaceExplanationRequest(chartSnapshotId, scope));
+      const targetScopeKey = scope ?? OVERVIEW_SCOPE_KEY;
+      const request = buildPalaceExplanationRequest(chartSnapshotId, scope);
+
+      sessionMarkdownByScope = { ...sessionMarkdownByScope, [targetScopeKey]: '' };
+      abortController = new AbortController();
+      isStreaming = true;
+
+      try {
+        let finalResponse: CreateExplanationResponse | undefined;
+        for await (const evt of streamExplanation(token, request, abortController.signal)) {
+          if (evt.type === 'chunk') {
+            sessionMarkdownByScope = {
+              ...sessionMarkdownByScope,
+              [targetScopeKey]: (sessionMarkdownByScope[targetScopeKey] ?? '') + evt.delta,
+            };
+          } else if (evt.type === 'done') {
+            finalResponse = {
+              request: evt.request,
+              result: evt.result,
+              explanationContext: evt.explanationContext,
+            };
+          } else if (evt.type === 'error') {
+            throw new ApiError('server', evt.error.message);
+          }
+        }
+
+        if (!finalResponse) {
+          if (abortController?.signal.aborted) {
+            throw new UserAbortError();
+          }
+          throw new ApiError('server', viCopy.explanation.statusFailed);
+        }
+
+        return finalResponse;
+      } finally {
+        isStreaming = false;
+        abortController = null;
+      }
     },
     onSuccess: async (data: CreateExplanationResponse): Promise<void> => {
       // Key theo scope của chính kết quả (providerMetadata.palaceScope; overview khi vắng) để
@@ -117,12 +164,24 @@ export function createExplanationModel(options: ExplanationModelOptions) {
     mutation.mutate();
   }
 
+  function abort(): void {
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
+    }
+    isStreaming = false;
+  }
+
   return {
     get isPending(): boolean {
       return mutation.isPending;
     },
+    get isStreaming(): boolean {
+      return isStreaming;
+    },
     get isError(): boolean {
-      return mutation.isError;
+      if (!mutation.isError) return false;
+      return !(mutation.error instanceof UserAbortError);
     },
     get hasResult(): boolean {
       return renderedMarkdown !== null;
@@ -130,11 +189,8 @@ export function createExplanationModel(options: ExplanationModelOptions) {
     get renderedMarkdown(): string | null {
       return renderedMarkdown;
     },
-    get isPaymentRequired(): boolean {
-      return mutation.isError && mutation.error instanceof ApiError && mutation.error.kind === 'payment-required';
-    },
     get errorMessage(): string | null {
-      if (!mutation.isError) {
+      if (!mutation.isError || mutation.error instanceof UserAbortError) {
         return null;
       }
       // Chỉ ApiError đảm bảo message tiếng Việt (fetch-json map mọi lỗi HTTP/mạng/parse).
@@ -146,6 +202,7 @@ export function createExplanationModel(options: ExplanationModelOptions) {
       return viCopy.explanation.statusFailed;
     },
     generate,
+    abort,
   };
 }
 

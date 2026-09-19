@@ -14,7 +14,8 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 import type { ImplementedChartSystem, CreateChartResponse } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { ApiError, createChart } from '$lib/api-client';
+import { ApiError } from '$lib/api-client/core';
+import { createChart } from '$lib/api-client/charts';;
 import {
   buildCreateChartRequest,
   createBirthFormDraft,
@@ -23,6 +24,7 @@ import {
   type BirthFormFieldErrors,
 } from '$lib/features/birth-profile/birth-profile-draft';
 import { viCopy } from '$lib/i18n/vi';
+import { sheetStore } from '$lib/stores/sheet.svelte';
 
 export interface DashboardModelOptions {
   auth: AuthStore;
@@ -40,7 +42,22 @@ export function createDashboardModel(options: DashboardModelOptions) {
   const queryClient = options.queryClient;
 
   // draft: state thuần. Khởi tạo từ factory (US-007 truyền initialChartSystem qua wrapper).
-  let draft = $state<BirthFormDraft>(createBirthFormDraft(options.initialChartSystem));
+  // Đọc từ localStorage nếu có để phục hồi dữ liệu khi người dùng vô tình đóng Bottom Sheet.
+  let draft = $state<BirthFormDraft>((() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('ziwei_birth_form_draft');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          // Cơ bản merge với defaults phòng hờ schema lỗi thời thiếu trường
+          return { ...createBirthFormDraft(options.initialChartSystem), ...parsed };
+        } catch (e) {
+          console.warn('Failed to parse draft from localStorage', e);
+        }
+      }
+    }
+    return createBirthFormDraft(options.initialChartSystem);
+  })());
 
   // Validity dẫn xuất hoàn toàn từ draft — không ghi ngược.
   const fieldErrors = $derived<BirthFormFieldErrors>(validateBirthFormDraft(draft));
@@ -62,13 +79,23 @@ export function createDashboardModel(options: DashboardModelOptions) {
       // Danh sách lịch sử cũ (staleTime 30s) giờ thiếu lá số vừa tạo → invalidate để lần
       // mở /history (hoặc sidebar dashboard) kế tiếp fetch lại và thấy ngay item mới.
       await queryClient.invalidateQueries({ queryKey: ['history'] });
+      // Đóng sheet nếu đang mở; truyền true để không trigger history.back()
+      // vì ta sẽ replaceState ngay bên dưới sang trang chi tiết lá số (tránh race condition).
+      sheetStore.close(true);
+      // Xoá bản nháp vì đã tạo thành công
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('ziwei_birth_form_draft');
+      }
       // id thật từ bản ghi lá số; mọi hệ vào chung route chi tiết /charts/[chartId].
-      await goto(resolve(`/charts/${response.chartRecord.id}`));
+      await goto(resolve(`/charts/${response.chartRecord.id}`), { replaceState: true });
     },
   }));
 
   function setField<K extends keyof BirthFormDraft>(key: K, value: BirthFormDraft[K]): void {
     draft = { ...draft, [key]: value };
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('ziwei_birth_form_draft', JSON.stringify(draft));
+    }
   }
 
   function submit(): void {

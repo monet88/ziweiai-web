@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Architecture review — ziweiai-web</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+    </script>
+    <style>
+      .seam { stroke-dasharray: 4 4; }
+      .leak { stroke: #dc2626 !important; }
+      .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
+    </style>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <main class="max-w-5xl mx-auto px-6 py-12 space-y-12">
+      <header>
+        <h1 class="text-3xl font-serif font-bold">Architecture Review — ziweiai-web</h1>
+        <p class="text-slate-500">Generated: 2026-07-19</p>
+        <div class="mt-4 flex gap-4 text-sm font-mono uppercase tracking-wider text-slate-500">
+          <span class="flex items-center gap-2"><div class="w-4 h-4 border border-slate-900"></div> Module</span>
+          <span class="flex items-center gap-2"><div class="w-4 h-0 border-t-2 border-dashed border-slate-900"></div> Seam</span>
+          <span class="flex items-center gap-2 text-red-600"><div class="w-4 h-0 border-t-2 border-red-600"></div> Leakage</span>
+          <span class="flex items-center gap-2"><div class="w-4 h-4 deep"></div> Deep Module</span>
+        </div>
+      </header>
+      
+      <section id="candidates" class="space-y-10">
+        
+        <!-- Candidate 1 -->
+        <article class="p-6 bg-white border border-slate-200 rounded-xl shadow-sm" id="candidate-1">
+          <div class="flex items-start justify-between mb-4">
+            <h2 class="text-2xl font-bold">Deepen UsersService Database Seam</h2>
+            <div class="flex gap-2">
+              <span class="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider rounded-full">Strong</span>
+              <span class="px-3 py-1 bg-slate-100 text-slate-800 text-xs font-bold uppercase tracking-wider rounded-full">Ports & Adapters</span>
+            </div>
+          </div>
+          
+          <div class="font-mono text-sm text-slate-600 mb-6">
+            apps/api/src/modules/users/users.service.ts<br/>
+            apps/api/src/database/supabase-persistence.gateway.ts
+          </div>
+          
+          <div class="grid grid-cols-2 gap-6 mb-6">
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <h3 class="text-xs uppercase tracking-wider mb-2 font-bold">Before: Shallow Module</h3>
+              <pre class="mermaid">
+                flowchart TD
+                  A[UsersService] --> B[SupabaseClient]
+                  A -.leak.-> C[(profiles table)]
+                  classDef leak stroke:#dc2626,stroke-width:2px;
+                  class A,C leak
+              </pre>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <h3 class="text-xs uppercase tracking-wider mb-2 font-bold">After: Deepened Gateway</h3>
+              <pre class="mermaid">
+                flowchart TD
+                  A[UsersService] --> B[SupabasePersistenceGateway]
+                  B --> C[SupabaseClient]
+                  C --> D[(profiles table)]
+                  style B fill:#0f172a,color:#fff
+              </pre>
+            </div>
+          </div>
+          
+          <div class="space-y-4">
+            <p><strong>Problem:</strong> <code class="bg-slate-100 px-1">UsersService</code> bypasses the persistence gateway, directly leaking SQL schema (the <code>profiles</code> table) into business logic.</p>
+            <p><strong>Solution:</strong> Deepen the <code class="bg-slate-100 px-1">SupabasePersistenceGateway</code> by adding a <code class="bg-slate-100 px-1">findProfileBalance</code> method, and inject it into <code class="bg-slate-100 px-1">UsersService</code> instead of <code class="bg-slate-100 px-1">SupabaseClient</code>.</p>
+            <ul class="list-disc list-inside space-y-1 text-slate-700">
+              <li>Locality: All queries concentrate in the gateway.</li>
+              <li>Leverage: One interface covers all DB access.</li>
+              <li>Tests hit one interface (the gateway mock).</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- Candidate 2 -->
+        <article class="p-6 bg-white border border-slate-200 rounded-xl shadow-sm" id="candidate-2">
+          <div class="flex items-start justify-between mb-4">
+            <h2 class="text-2xl font-bold">Collapse Mobile ApiClient God Object</h2>
+            <div class="flex gap-2">
+              <span class="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-wider rounded-full">Worth exploring</span>
+              <span class="px-3 py-1 bg-slate-100 text-slate-800 text-xs font-bold uppercase tracking-wider rounded-full">In-process</span>
+            </div>
+          </div>
+          
+          <div class="font-mono text-sm text-slate-600 mb-6">
+            apps/mobile/lib/core/api/api_client.dart<br/>
+            apps/mobile/lib/features/wallet/data/wallet_repository.dart
+          </div>
+          
+          <div class="grid grid-cols-2 gap-6 mb-6">
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <h3 class="text-xs uppercase tracking-wider mb-2 font-bold">Before: Shallow Client</h3>
+              <pre class="mermaid">
+                flowchart TD
+                  A[WalletScreen] -.leak.-> B[ApiClient.getWalletBalance]
+                  B --> C[Dio]
+                  classDef leak stroke:#dc2626,stroke-width:2px;
+                  class A,B leak
+              </pre>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <h3 class="text-xs uppercase tracking-wider mb-2 font-bold">After: Deep Repository</h3>
+              <pre class="mermaid">
+                flowchart TD
+                  A[WalletScreen] --> B[WalletRepository]
+                  B --> C[ApiClient (Dio config)]
+                  style B fill:#0f172a,color:#fff
+              </pre>
+            </div>
+          </div>
+          
+          <div class="space-y-4">
+            <p><strong>Problem:</strong> <code class="bg-slate-100 px-1">ApiClient</code> is shallow — its interface is a wide list of specific feature endpoints, bleeding domain logic into infrastructure configuration.</p>
+            <p><strong>Solution:</strong> Deepen the repository pattern. <code class="bg-slate-100 px-1">ApiClient</code> becomes a strict HTTP adapter (Dio config), and a <code class="bg-slate-100 px-1">WalletRepository</code> manages domain requests.</p>
+            <ul class="list-disc list-inside space-y-1 text-slate-700">
+              <li>Locality: Domain logic stays in features.</li>
+              <li>Interface shrinks; implementation absorbs complexity.</li>
+              <li>Clean seam for adapter substitution.</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- Candidate 3 -->
+        <article class="p-6 bg-white border border-slate-200 rounded-xl shadow-sm" id="candidate-3">
+          <div class="flex items-start justify-between mb-4">
+            <h2 class="text-2xl font-bold">Deepen Vision Analysis Input Seam</h2>
+            <div class="flex gap-2">
+              <span class="px-3 py-1 bg-slate-100 text-slate-800 text-xs font-bold uppercase tracking-wider rounded-full">Speculative</span>
+              <span class="px-3 py-1 bg-slate-100 text-slate-800 text-xs font-bold uppercase tracking-wider rounded-full">In-process</span>
+            </div>
+          </div>
+          
+          <div class="font-mono text-sm text-slate-600 mb-6">
+            apps/api/src/modules/vision-shared/vision-analysis.controller.ts<br/>
+            apps/api/src/modules/vision-shared/vision-analysis.service.ts
+          </div>
+          
+          <div class="grid grid-cols-2 gap-6 mb-6">
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <h3 class="text-xs uppercase tracking-wider mb-2 font-bold">Before: Leaky Controller</h3>
+              <pre class="mermaid">
+                flowchart LR
+                  A[Controller] -.leak.-> B[Mime validation]
+                  A -.leak.-> C[Missing file validation]
+                  A --> D[VisionAnalysisService]
+                  classDef leak stroke:#dc2626,stroke-width:2px;
+                  class A,B,C leak
+              </pre>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-stone-50 p-4">
+              <h3 class="text-xs uppercase tracking-wider mb-2 font-bold">After: Deep Service</h3>
+              <pre class="mermaid">
+                flowchart LR
+                  A[Controller] --> B[VisionAnalysisService]
+                  B --> C[Internal Validation]
+                  style B fill:#0f172a,color:#fff
+              </pre>
+            </div>
+          </div>
+          
+          <div class="space-y-4">
+            <p><strong>Problem:</strong> <code class="bg-slate-100 px-1">VisionAnalysisController</code> handles explicit business-level validation (mimetypes, missing images), reducing the leverage of the underlying service.</p>
+            <p><strong>Solution:</strong> Deepen the <code class="bg-slate-100 px-1">VisionAnalysisService</code> interface to accept raw request artifacts and handle its own integrity checks internally.</p>
+            <ul class="list-disc list-inside space-y-1 text-slate-700">
+              <li>Leverage: Controller becomes a thin HTTP adapter.</li>
+              <li>Locality: Validation logic lives with the service.</li>
+            </ul>
+          </div>
+        </article>
+
+      </section>
+      
+      <section id="top-recommendation" class="bg-slate-900 text-white p-8 rounded-xl">
+        <h2 class="text-2xl font-bold mb-2">Top Recommendation: Deepen UsersService Database Seam</h2>
+        <p class="text-slate-300">
+          The <a href="#candidate-1" class="text-emerald-400 underline decoration-emerald-400/30 underline-offset-4">UsersService Database Seam</a> presents the most urgent friction. By bypassing the persistence gateway, <code class="bg-slate-800 px-1">UsersService</code> ruins the established testing seam and leaks SQL specifics. Fixing this increases leverage immediately and restores the integrity of the persistence adapter.
+        </p>
+      </section>
+      
+    </main>
+  </body>
+</html>

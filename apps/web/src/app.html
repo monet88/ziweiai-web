@@ -3,7 +3,109 @@
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="preconnect" href="https://nachzhkeuzwiqmbtelrp.supabase.co" crossorigin />
+    <link rel="dns-prefetch" href="https://nachzhkeuzwiqmbtelrp.supabase.co" />
+    <link rel="dns-prefetch" href="https://challenges.cloudflare.com" />
+    <meta name="theme-color" content="#0D0B14" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ViOS" />
+    <meta name="description" content="ViOS Tử Vi Toàn Tập — Nền tảng thuật số AI hoàng triều đỉnh cao: Lập lá số Tử Vi chính tông, Bát Tự Tứ Trụ, Thần Số Học, Kinh Dịch Lục Hào, Xem Tướng Mặt & Chỉ Tay AI. Trải nghiệm miễn phí 100%!" />
+    <meta name="keywords" content="tử vi, bát tự, tứ trụ, thần số học, kinh dịch, lục hào, xem tướng ai, xem chỉ tay, vios, tử vi toàn tập, phong thủy, bói bài tarot" />
+    <meta name="author" content="ViOS Hoàng Gia" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+    <!-- Open Graph / Facebook / Zalo -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ViOS — Tử Vi Toàn Tập" />
+    <meta property="og:url" content="https://tuvitoantap.online/" />
+    <meta property="og:title" content="ViOS — Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia" />
+    <meta property="og:description" content="Khám phá vận mệnh cùng ViOS: Lập lá số Tử Vi, Tứ Trụ Bát Tự, Thần Số Học, Kinh Dịch, Nhân Tướng AI. Trải nghiệm miễn phí 100% & Điểm danh nhận 5 XU mỗi ngày!" />
+    <meta property="og:image" content="https://tuvitoantap.online/og-image.png" />
+    <meta property="og:image:secure_url" content="https://tuvitoantap.online/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ViOS - Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia" />
+    <meta property="og:locale" content="vi_VN" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:domain" content="tuvitoantap.online" />
+    <meta name="twitter:url" content="https://tuvitoantap.online/" />
+    <meta name="twitter:title" content="ViOS — Hệ Điều Hành Mệnh Lý & Thuật Số AI Hoàng Gia" />
+    <meta name="twitter:description" content="Khám phá vận mệnh cùng ViOS: Lập lá số Tử Vi, Tứ Trụ Bát Tự, Thần Số Học, Kinh Dịch, Nhân Tướng AI. Trải nghiệm miễn phí 100% & Điểm danh nhận 5 XU mỗi ngày!" />
+    <meta name="twitter:image" content="https://tuvitoantap.online/og-image.png" />
+
+    <!-- Structured Data Schema.org (JSON-LD) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "ViOS — Tử Vi Toàn Tập",
+        "url": "https://tuvitoantap.online",
+        "applicationCategory": "LifestyleApplication",
+        "operatingSystem": "All",
+        "description": "Hệ điều hành mệnh lý và thuật số AI hoàng gia: Tử Vi Đẩu Số, Bát Tự Tứ Trụ, Thần Số Học, Kinh Dịch Lục Hào, Xem Tướng AI.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "VND"
+        }
+      }
+    </script>
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('ziweiai_theme');
+          var theme = (saved === 'dark' || saved === 'light') ? saved : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {}
+      })();
+
+      // Self-healing: Tự động dọn Service Worker & Cache cũ khi gặp chunk module mismatch sau deploy
+      window.addEventListener('error', function(event) {
+        var msg = event.message || '';
+        if (
+          msg.indexOf('dynamically imported module') !== -1 ||
+          msg.indexOf('Expected a JavaScript-or-Wasm module script') !== -1 ||
+          msg.indexOf('Failed to fetch dynamically imported module') !== -1
+        ) {
+          if (!sessionStorage.getItem('vios_chunk_reloaded')) {
+            sessionStorage.setItem('vios_chunk_reloaded', '1');
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(regs) {
+                for (var i = 0; i < regs.length; i++) {
+                  regs[i].unregister();
+                }
+                if ('caches' in window) {
+                  caches.keys().then(function(keys) {
+                    return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+                  }).then(function() {
+                    window.location.reload();
+                  });
+                } else {
+                  window.location.reload();
+                }
+              });
+            } else {
+              window.location.reload();
+            }
+          }
+        }
+      });
+
+      if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').catch(function() {});
+        });
+      }
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

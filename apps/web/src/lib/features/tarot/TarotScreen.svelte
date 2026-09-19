@@ -10,7 +10,9 @@
   import { PrimaryButton, NoticeBanner } from '$lib/components/ui';
   import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
   import TarotCardBack from './TarotCardBack.svelte';
+  import { playCardFlip, playSingingBowl } from '$lib/audio/ritual-audio';
   import { createTarotModel, type TarotCopy } from './tarot-model.svelte';
+  import RoyalTarotPosterModal from '$lib/features/poster/RoyalTarotPosterModal.svelte';
 
   interface Props {
     copy: TarotCopy;
@@ -19,9 +21,16 @@
   let { copy }: Props = $props();
 
   const auth = getAuthStore();
+  let isPosterModalOpen = $state(false);
   // copy là prop tĩnh do route truyền literal (copy={viCopy.tarot}); model tạo một lần lúc mount nên
   // dùng giá trị hiện tại là đúng — bọc untrack để Svelte 5 không cảnh báo state_referenced_locally.
   const model = untrack(() => createTarotModel({ auth, copy }));
+
+  $effect(() => {
+    if (model.result) {
+      playSingingBowl();
+    }
+  });
 
   // copy là prop tĩnh (route truyền literal) nên nhãn không đổi sau mount → bọc untrack để Svelte 5
   // không cảnh báo state_referenced_locally.
@@ -75,7 +84,18 @@
       {#if model.result}
         {@const draw = model.result}
         <section class="result" aria-live="polite">
-          <p class="result-eyebrow">{copy.resultTitle}</p>
+          <div class="result-header-row">
+            <p class="result-eyebrow">{copy.resultTitle}</p>
+            <button
+              type="button"
+              class="btn-royal-poster"
+              onclick={() => (isPosterModalOpen = true)}
+              title="Xuất ảnh Poster Tarot Hoàng Gia độ phân giải cao"
+            >
+              <span class="poster-icon">🖼️</span>
+              <span>Xuất Poster</span>
+            </button>
+          </div>
           <ul class="card-grid">
             {#each draw.cards as card (card.position)}
               <li class="card">
@@ -104,6 +124,14 @@
           <NoticeBanner message={copy.safetyNotice} tone="info" />
           <PrimaryButton label={copy.retakeButton} variant="surface" onclick={() => model.reset()} />
         </section>
+
+        {#if isPosterModalOpen && model.result}
+          <RoyalTarotPosterModal
+            draw={model.result}
+            userName={auth.user?.email ? auth.user.email.split('@')[0] : 'Đương Số'}
+            onClose={() => (isPosterModalOpen = false)}
+          />
+        {/if}
       {:else}
         <section class="form">
           <div class="field">
@@ -157,7 +185,10 @@
               aria-label={copy.submitButton}
               aria-busy={model.isSubmitting}
               disabled={model.isSubmitting}
-              onclick={() => model.submit()}
+              onclick={() => {
+                playCardFlip();
+                model.submit();
+              }}
             >
               <TarotCardBack>
                 {#if model.isSubmitting}
@@ -182,89 +213,104 @@
   .tarot-screen {
     min-height: 100dvh;
     overflow-x: hidden;
-    background: var(--color-bg-primary);
-    color: var(--color-text-primary);
+    background:
+      radial-gradient(ellipse 70% 35% at 50% 0%, rgba(212, 175, 55, 0.16), transparent 70%),
+      radial-gradient(ellipse 55% 30% at 85% 15%, rgba(192, 132, 252, 0.15), transparent 60%),
+      linear-gradient(180deg, #090615 0%, #130c2b 30%, #070512 100%);
+    color: #f7eed8;
   }
 
   .shell {
     box-sizing: border-box;
     width: 100%;
-    max-width: 640px;
+    max-width: 720px;
     margin: 0 auto;
     padding: 0 var(--space-lg) var(--space-xxl);
     display: flex;
     flex-direction: column;
-    gap: var(--space-lg);
+    gap: var(--space-xl);
   }
 
   .band {
     position: relative;
     margin-top: var(--space-lg);
     padding: var(--space-xl) var(--space-lg) var(--space-lg);
-    border-radius: var(--radius-lg);
+    border-radius: 24px;
     text-align: center;
-    background: linear-gradient(
-      160deg,
-      var(--color-tarot-band-top) 0%,
-      var(--color-tarot-band-mid) 48%,
-      var(--color-tarot-band-bottom) 100%
-    );
-    border: 1px solid var(--color-border-hairline);
+    background: rgba(22, 16, 42, 0.75);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.6), 0 0 30px rgba(212, 175, 55, 0.12);
   }
 
   .band-back {
     position: absolute;
     top: var(--space-md);
     left: var(--space-md);
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: none;
-    border-radius: var(--radius-pill);
-    background: transparent;
-    color: var(--color-text-primary);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    color: #f7eed8;
     cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .band-back svg {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
   }
 
   .band-back:hover {
-    background: var(--color-bg-elevated);
+    border-color: #ffd700;
+    background: rgba(212, 175, 55, 0.2);
+    color: #ffd700;
+    transform: translateX(-2px);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
   }
 
   .band-back:focus-visible {
-    outline: 2px solid var(--color-accent-primary);
+    outline: 2px solid #d4af37;
     outline-offset: 2px;
   }
 
   .band-eyebrow {
-    margin: 0;
-    color: var(--color-text-muted);
+    display: inline-flex;
+    margin: 0 auto;
+    padding: 3px 12px;
+    border-radius: 999px;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: #ffd700;
     font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.125px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
   .band-title {
-    margin: 6px 0 0;
-    font-size: 26px;
-    font-weight: 700;
-    line-height: 1.23;
-    letter-spacing: 0;
-    color: var(--color-text-primary);
+    margin: 10px 0 0;
+    font-family: var(--font-serif);
+    font-size: clamp(26px, 4vw, 36px);
+    font-weight: 800;
+    line-height: 1.25;
+    background: linear-gradient(135deg, #ffffff 0%, #fce99f 50%, #d4af37 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   .band-sub {
     margin: var(--space-sm) auto 0;
-    max-width: 460px;
-    color: var(--color-text-muted);
-    font-size: 14px;
-    line-height: 1.55;
+    max-width: 520px;
+    color: rgba(226, 216, 184, 0.8);
+    font-size: 14.5px;
+    line-height: 1.6;
   }
 
   .content {
@@ -278,6 +324,13 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-lg);
+    background: rgba(22, 16, 42, 0.65);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 20px;
+    padding: var(--space-xl);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
   .field {
@@ -287,24 +340,27 @@
   }
 
   .field-label {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
+    color: #e2e8f0;
   }
 
   .question-input {
-    border: 1px solid var(--color-border-hairline);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--radius-md);
     padding: var(--space-sm) var(--space-md);
-    background: var(--color-bg-surface);
+    background: rgba(11, 13, 20, 0.6);
     color: var(--color-text-primary);
     font-size: 15px;
     font-family: inherit;
     resize: vertical;
+    transition: all 0.2s ease;
   }
 
   .question-input:focus-visible {
-    outline: 2px solid var(--color-accent-primary);
-    outline-offset: 1px;
+    outline: none;
+    border-color: #c084fc;
+    box-shadow: 0 0 16px rgba(192, 132, 252, 0.25);
   }
 
   .spread-options {
@@ -317,35 +373,40 @@
     flex: 1 1 0;
     min-width: 140px;
     padding: var(--space-sm) var(--space-md);
-    border: 1px solid var(--color-border-hairline);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--radius-md);
-    background: var(--color-bg-surface);
-    color: var(--color-text-primary);
-    font-size: 14px;
+    background: rgba(11, 13, 20, 0.5);
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
+    transition: all 0.2s ease;
   }
 
   .spread-option:hover {
-    border-color: var(--color-accent-primary);
+    border-color: rgba(192, 132, 252, 0.5);
+    color: #fff;
   }
 
   .spread-option.selected {
-    border-color: var(--color-accent-primary);
-    background: var(--color-accent-primary-soft);
-    color: var(--color-text-primary);
-    font-weight: 600;
+    border-color: #c084fc;
+    background: linear-gradient(135deg, rgba(192, 132, 252, 0.2), rgba(147, 51, 234, 0.1));
+    color: #f3e8ff;
+    font-weight: 700;
+    box-shadow: 0 0 12px rgba(192, 132, 252, 0.3);
   }
 
   .spread-option:focus-visible {
-    outline: 2px solid var(--color-accent-primary);
+    outline: 2px solid #c084fc;
     outline-offset: 1px;
   }
 
+  /* CELESTIAL DECK FAN */
   .deck {
     position: relative;
-    width: 240px;
+    width: 220px;
     max-width: 70%;
-    margin: var(--space-sm) auto 0;
+    margin: var(--space-md) auto;
     display: flex;
     justify-content: center;
   }
@@ -354,21 +415,30 @@
     position: absolute;
     top: 8px;
     width: 86%;
-    opacity: 0.45;
-    filter: saturate(0.8);
+    opacity: 0.5;
+    filter: drop-shadow(0 4px 12px rgba(192, 132, 252, 0.3));
     pointer-events: none;
+    transition: transform 0.3s ease;
   }
 
   .fan-left {
     left: -16%;
-    transform: rotate(-9deg);
+    transform: rotate(-12deg);
     transform-origin: bottom center;
   }
 
   .fan-right {
     right: -16%;
-    transform: rotate(9deg);
+    transform: rotate(12deg);
     transform-origin: bottom center;
+  }
+
+  .deck:hover .fan-left {
+    transform: rotate(-18deg) translateX(-8px);
+  }
+
+  .deck:hover .fan-right {
+    transform: rotate(18deg) translateX(8px);
   }
 
   .deck-draw {
@@ -380,18 +450,16 @@
     border-radius: var(--radius-lg);
     background: transparent;
     cursor: pointer;
-    transition:
-      transform 150ms ease,
-      filter 150ms ease;
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.25s ease;
   }
 
   .deck-draw:hover:not(:disabled) {
-    transform: translateY(-4px);
-    filter: drop-shadow(0 8px 18px color-mix(in srgb, var(--color-text-primary) 18%, transparent));
+    transform: translateY(-8px) scale(1.03);
+    filter: drop-shadow(0 12px 24px rgba(192, 132, 252, 0.4));
   }
 
   .deck-draw:focus-visible {
-    outline: 2px solid var(--color-accent-primary);
+    outline: 2px solid #c084fc;
     outline-offset: 4px;
     border-radius: var(--radius-lg);
   }
@@ -403,23 +471,25 @@
 
   .draw-cta {
     font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0;
-    color: var(--color-text-primary);
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #fce99f;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
   }
 
   .draw-hint {
     font-size: 12px;
-    letter-spacing: 0.125px;
-    color: var(--color-text-muted);
+    letter-spacing: 0.2px;
+    color: #e2e8f0;
+    opacity: 0.85;
   }
 
   .spinner {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     border-radius: var(--radius-pill);
-    border: 3px solid color-mix(in srgb, var(--color-accent-primary) 30%, transparent);
-    border-top-color: var(--color-accent-primary);
+    border: 3px solid rgba(212, 175, 55, 0.3);
+    border-top-color: #d4af37;
     animation: spin 720ms linear infinite;
   }
 
@@ -441,9 +511,10 @@
   .breathe {
     margin: 0;
     text-align: center;
-    color: var(--color-text-muted);
+    color: #c084fc;
     font-size: 14px;
     font-style: italic;
+    letter-spacing: 0.3px;
   }
 
   .card-grid {
@@ -451,8 +522,8 @@
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: var(--space-md);
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-lg);
     justify-items: center;
   }
 
@@ -464,14 +535,22 @@
     text-align: center;
     width: 100%;
     max-width: 200px;
+    animation: card-reveal 0.5s ease both;
   }
 
   .card-frame {
     width: 100%;
-    border-radius: var(--radius-md);
-    padding: 4px;
-    background: var(--color-tarot-glow);
-    border: 1px solid var(--color-border-hairline);
+    border-radius: var(--radius-lg);
+    padding: 5px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.4), rgba(192, 132, 252, 0.3));
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s ease;
+  }
+
+  .card-frame:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(212, 175, 55, 0.25);
   }
 
   .card-image {
@@ -479,7 +558,7 @@
     width: 100%;
     aspect-ratio: 100 / 171;
     object-fit: cover;
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-sm);
     background: var(--color-bg-surface);
   }
 
@@ -488,42 +567,45 @@
   }
 
   .card-name {
-    margin: 0;
+    margin: 4px 0 0;
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.3;
-    color: var(--color-text-primary);
+    color: #fce99f;
   }
 
   .orient {
     display: inline-block;
     padding: 2px 10px;
     border-radius: var(--radius-pill);
-    border: 1px solid var(--color-accent-purple-deep);
-    color: var(--color-accent-purple-deep);
+    border: 1px solid rgba(192, 132, 252, 0.4);
+    background: rgba(192, 132, 252, 0.1);
+    color: #c084fc;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
   }
 
   .orient.is-reversed {
-    border-color: var(--color-accent-danger);
-    color: var(--color-accent-danger);
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
   }
 
   .result-eyebrow {
     margin: 0;
     text-align: center;
-    color: var(--color-text-muted);
+    color: #c084fc;
     font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.125px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
   }
 
   .reading {
     padding: var(--space-lg);
     border-radius: var(--radius-lg);
-    background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border-hairline);
+    background: rgba(11, 13, 20, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
@@ -532,7 +614,155 @@
   .reading-title {
     margin: 0;
     font-size: 18px;
-    font-weight: 600;
-    color: var(--color-text-primary);
+    font-weight: 700;
+    color: #fce99f;
+  }
+
+  @keyframes card-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(16px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Đồng bộ Theme Light Hoàng Gia */
+  :global([data-theme="light"]) .tarot-screen {
+    background:
+      radial-gradient(ellipse 75% 50% at 15% 0%, rgba(212, 175, 55, 0.1), transparent 60%),
+      radial-gradient(ellipse 60% 45% at 85% 10%, rgba(168, 85, 247, 0.08), transparent 55%),
+      linear-gradient(180deg, #faf8f5 0%, #f4f0e6 100%);
+    color: #1a162b;
+  }
+
+  :global([data-theme="light"]) .band {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(212, 175, 55, 0.45);
+    box-shadow: 0 16px 45px rgba(212, 175, 55, 0.12);
+  }
+
+  :global([data-theme="light"]) .band-back {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(212, 175, 55, 0.4);
+    color: #78350f;
+  }
+
+  :global([data-theme="light"]) .band-back:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #b45309;
+    color: #451a03;
+  }
+
+  :global([data-theme="light"]) .band-eyebrow {
+    background: rgba(212, 175, 55, 0.18);
+    border-color: rgba(212, 175, 55, 0.5);
+    color: #854d0e;
+  }
+
+  :global([data-theme="light"]) .band-title {
+    background: linear-gradient(135deg, #180d38 0%, #78350f 60%, #b45309 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  :global([data-theme="light"]) .band-sub {
+    color: #57534e;
+  }
+
+  :global([data-theme="light"]) .form,
+  :global([data-theme="light"]) .result {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(212, 175, 55, 0.45);
+    box-shadow: 0 16px 45px rgba(212, 175, 55, 0.12);
+  }
+
+  :global([data-theme="light"]) .field-label {
+    color: #78350f;
+  }
+
+  :global([data-theme="light"]) .question-input {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(212, 175, 55, 0.35);
+    color: #1c1917;
+  }
+
+  :global([data-theme="light"]) .spread-option {
+    background: rgba(248, 246, 240, 0.85);
+    border-color: rgba(212, 175, 55, 0.35);
+    color: #292524;
+  }
+
+  :global([data-theme="light"]) .spread-option:hover {
+    border-color: #b45309;
+    background: rgba(254, 243, 199, 0.6);
+  }
+
+  :global([data-theme="light"]) .card {
+    background: rgba(248, 246, 240, 0.85);
+    border-color: rgba(212, 175, 55, 0.35);
+    color: #1c1917;
+  }
+
+  :global([data-theme="light"]) .card-name {
+    color: #180d38;
+  }
+
+  :global([data-theme="light"]) .reading {
+    background: rgba(248, 246, 240, 0.85);
+    border-color: rgba(212, 175, 55, 0.25);
+  }
+
+  :global([data-theme="light"]) .reading-title {
+    color: #78350f;
+  }
+
+  :global([data-theme="light"]) .result-eyebrow {
+    color: #6b21a8;
+  }
+
+  :global([data-theme="light"]) .orient {
+    background: rgba(147, 51, 234, 0.1);
+    border-color: rgba(147, 51, 234, 0.35);
+    color: #6b21a8;
+  }
+
+  .result-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .btn-royal-poster {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(168, 85, 247, 0.25));
+    border: 1px solid rgba(212, 175, 55, 0.6);
+    color: #ffd700;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+  }
+
+  .btn-royal-poster:hover {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.4), rgba(168, 85, 247, 0.4));
+    border-color: #ffd700;
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .poster-icon {
+    font-size: 1rem;
   }
 </style>

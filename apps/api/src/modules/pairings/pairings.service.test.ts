@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type AuthenticatedUser, type BirthInput, type PairingRequest } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
+import type { WalletEngineService } from '../wallet/wallet-engine.service';
 import type { QuotasService } from '../quotas/quotas.service';
 import { PairingsService } from './pairings.service';
 
@@ -36,14 +37,16 @@ describe('PairingsService', () => {
   const originalHepanEnabled = apiEnv.EXTENDED_SYSTEM_HEPAN_ENABLED;
   const originalFreeForAll = apiEnv.AI_EXPLANATION_FREE_FOR_ALL;
   const user: AuthenticatedUser = { userId: '11111111-1111-1111-1111-111111111111', email: 'user@example.com' };
-  let quotasService: Pick<QuotasService, 'assertCanCreatePairing'>;
+  let quotasService: Pick<QuotasService, 'assertCanExecute'>;
+  let walletEngine: Pick<WalletEngineService, 'deductXU'>;
   let service: PairingsService;
 
   beforeEach(() => {
     apiEnv.EXTENDED_SYSTEM_HEPAN_ENABLED = true;
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = true;
-    quotasService = { assertCanCreatePairing: vi.fn().mockResolvedValue(undefined) };
-    service = new PairingsService(quotasService as QuotasService);
+    quotasService = { assertCanExecute: vi.fn().mockResolvedValue(undefined) };
+    walletEngine = { deductXU: vi.fn().mockResolvedValue(true) };
+    service = new PairingsService(quotasService as QuotasService, walletEngine as WalletEngineService);
   });
 
   afterEach(() => {
@@ -62,11 +65,12 @@ describe('PairingsService', () => {
       expectApiError(error, HttpStatus.FORBIDDEN, 'FEATURE_DISABLED');
     }
 
-    expect(quotasService.assertCanCreatePairing).not.toHaveBeenCalled();
+    expect(quotasService.assertCanExecute).not.toHaveBeenCalled();
   });
 
   it('chặn PAYMENT_REQUIRED khi đã bật nhưng AI gate không free-for-all', async () => {
     apiEnv.AI_EXPLANATION_FREE_FOR_ALL = false;
+    walletEngine.deductXU = vi.fn().mockResolvedValue(false);
 
     try {
       await service.createPairing(user, '127.0.0.1', request);
@@ -75,12 +79,12 @@ describe('PairingsService', () => {
       expectApiError(error, HttpStatus.PAYMENT_REQUIRED, 'PAYMENT_REQUIRED');
     }
 
-    expect(quotasService.assertCanCreatePairing).not.toHaveBeenCalled();
+    expect(quotasService.assertCanExecute).not.toHaveBeenCalled();
   });
 
   it('bọc lỗi quota raw thành 429 RATE_LIMITED', async () => {
-    quotasService.assertCanCreatePairing = vi.fn().mockRejectedValue(new Error('Daily explanation quota exceeded.'));
-    service = new PairingsService(quotasService as QuotasService);
+    quotasService.assertCanExecute = vi.fn().mockRejectedValue(new Error('Daily explanation quota exceeded.'));
+    service = new PairingsService(quotasService as QuotasService, walletEngine as WalletEngineService);
 
     try {
       await service.createPairing(user, '127.0.0.1', request);
@@ -98,7 +102,7 @@ describe('PairingsService', () => {
     expect(result.partner.chartSystem).toBe('zi-wei-dou-shu');
     expect(result.compatibility.overallScore).toBeGreaterThanOrEqual(0);
     expect(result.compatibility.dimensions.length).toBeGreaterThanOrEqual(1);
-    expect(quotasService.assertCanCreatePairing).toHaveBeenCalledWith(user.userId, '127.0.0.1', false);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledWith('pairing', user.userId, '127.0.0.1', false);
   });
 
   it('coi email rỗng là phiên ẩn danh (isAnonymous=true cho quota)', async () => {
@@ -106,6 +110,6 @@ describe('PairingsService', () => {
 
     await service.createPairing(anon, '127.0.0.1', request);
 
-    expect(quotasService.assertCanCreatePairing).toHaveBeenCalledWith(anon.userId, '127.0.0.1', true);
+    expect(quotasService.assertCanExecute).toHaveBeenCalledWith('pairing', anon.userId, '127.0.0.1', true);
   });
 });

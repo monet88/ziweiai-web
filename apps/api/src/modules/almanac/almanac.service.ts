@@ -12,6 +12,7 @@ import { apiEnv } from '../../config/env';
 import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
 import { QuotasService } from '../quotas/quotas.service';
+import { WalletEngineService } from '../wallet/wallet-engine.service';
 import { AlmanacEngineError, generateAlmanacSelection, type AlmanacSelectionResult } from './almanac-engine';
 import { buildAlmanacSelectionPrompt } from './almanac-prompts';
 
@@ -22,6 +23,7 @@ export class AlmanacService {
   constructor(
     private readonly quotasService: QuotasService,
     private readonly providerRouter: ExplanationProviderRouter,
+    private readonly walletEngine: WalletEngineService,
   ) {}
 
   async select(
@@ -44,7 +46,7 @@ export class AlmanacService {
     // Validate + chạy engine (tất định, rẻ, không tốn LLM) TRƯỚC quota: nếu ngày sai định dạng/đảo
     // ngược/vượt trần thì trả 400 ngay, KHÔNG tăng counter quota — tránh đốt hạn mức ngày của user
     // bằng một request lỗi input. Gate premium vẫn đứng trước cả hai (chặn 402 sớm nhất).
-    this.assertPremiumEntitlement();
+    await this.assertPremiumEntitlement(user.userId);
     const selection = this.runEngine({ topic, topicLabel, startDate, endDate });
     // email rỗng/null ⟺ phiên ẩn danh (decision 0009); !user.email bắt cả email="".
     await this.assertCanCreate(user.userId, ipAddress, !user.email);
@@ -80,24 +82,33 @@ export class AlmanacService {
     }
   }
 
-  private assertPremiumEntitlement(): void {
+  private async assertPremiumEntitlement(userId?: string): Promise<void> {
     if (apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
-      this.logger.warn(
-        'AI_EXPLANATION_FREE_FOR_ALL=true — Almanac AI gate bypassed (free for all). Set false in production.',
-      );
       return;
     }
 
-    throw new ApiErrorHttpException(
-      HttpStatus.PAYMENT_REQUIRED,
-      'PAYMENT_REQUIRED',
-      'Tính năng luận giải AI yêu cầu gói trả phí. Vui lòng nâng cấp để tiếp tục.',
-    );
+    if (!userId) {
+      throw new ApiErrorHttpException(
+        HttpStatus.PAYMENT_REQUIRED,
+        'PAYMENT_REQUIRED',
+        'Tính năng chọn ngày Hoàng lịch yêu cầu đăng nhập và có XU. Vui lòng đăng nhập hoặc nạp XU.',
+      );
+    }
+
+    const cost = 3;
+    const success = await this.walletEngine.deductXU(userId, cost, 'ai_usage');
+    if (!success) {
+      throw new ApiErrorHttpException(
+        HttpStatus.PAYMENT_REQUIRED,
+        'INSUFFICIENT_FUNDS',
+        `Tính năng chọn ngày Hoàng lịch yêu cầu ${cost} XU. Số dư XU của bạn không đủ, vui lòng nạp thêm XU.`,
+      );
+    }
   }
 
   private async assertCanCreate(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateAlmanacSelection(userId, ipAddress, isAnonymous);
+      await this.quotasService.assertCanExecute('almanac-selection', userId, ipAddress, isAnonymous);
     } catch (error) {
       throwQuotaRateLimited(error, 'Đã vượt hạn mức chọn ngày Hoàng lịch.');
     }

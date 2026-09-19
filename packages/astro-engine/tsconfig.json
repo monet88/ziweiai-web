@@ -10,7 +10,8 @@
     "baseUrl": ".",
     "paths": {
       "@ziweiai/contracts": ["../contracts/dist/index.d.ts"],
-      "@ziweiai/core": ["../core/dist/index.d.ts"]
+      "@ziweiai/core": ["../core/dist/index.d.ts"],
+      "@ziweiai/xuanshu-runtime": ["../xuanshu-runtime/dist/lib/index.d.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts"],

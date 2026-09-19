@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+import * as opsAlert from '../../observability/ops-alert';
 import { ExplanationProviderRouter } from './explanation-provider-router';
+import { ProviderTimeoutError, ProviderUnavailableError } from './provider-errors';
 
 // US-017e: helper dựng provider mock có đủ isVisionCapable (interface mới). visionCapable mặc định
 // true để không phá các test cũ; test vision đặt false cho provider text-only.
@@ -8,25 +10,31 @@ function mockProvider(opts: {
   available?: boolean;
   visionCapable?: boolean;
   text?: string;
+  rejectWith?: Error;
 }) {
   return {
     providerName: opts.name,
     isAvailable: () => opts.available ?? true,
     isVisionCapable: () => opts.visionCapable ?? true,
-    generateExplanation: async () => ({ renderedMarkdown: opts.text ?? opts.name, providerMetadata: { provider: opts.name } }),
+    generateExplanation: vi.fn(async () => {
+      if (opts.rejectWith) {
+        throw opts.rejectWith;
+      }
+      return { renderedMarkdown: opts.text ?? opts.name, providerMetadata: { provider: opts.name } };
+    }),
   } as never;
 }
 
 describe('ExplanationProviderRouter', () => {
-  it('prefers the first available auto provider (openai-compat by default)', () => {
+  it('prefers the first available auto provider (gemini by default)', () => {
     const router = new ExplanationProviderRouter(
       { providerName: 'deepseek', isAvailable: () => true, generateExplanation: async () => ({ renderedMarkdown: 'a', providerMetadata: {} }) } as never,
       { providerName: 'openai-compat', isAvailable: () => true, generateExplanation: async () => ({ renderedMarkdown: 'c', providerMetadata: {} }) } as never,
       { providerName: 'gemini', isAvailable: () => true, generateExplanation: async () => ({ renderedMarkdown: 'b', providerMetadata: {} }) } as never,
     );
 
-    // AI_DEFAULT_PROVIDER mặc định 'auto'; 'auto' resolve theo chain = [openai-compat, deepseek, gemini].
-    expect(router.resolveProviderName('auto')).toBe('openai-compat');
+    // AI_DEFAULT_PROVIDER mặc định 'auto'; 'auto' resolve theo chain = [gemini, openai-compat, deepseek].
+    expect(router.resolveProviderName('auto')).toBe('gemini');
   });
 
   it('resolves the openai-compat provider for the openai-compat preference', () => {
@@ -167,5 +175,81 @@ describe('ExplanationProviderRouter', () => {
         imageInput: { base64: 'YWJj', mimeType: 'image/png' },
       }),
     ).rejects.toThrow('đọc ảnh');
+  });
+
+  it('falls back to the next configured provider when the first provider times out', async () => {
+    const gemini = mockProvider({ name: 'gemini', rejectWith: new ProviderTimeoutError('gemini slow') });
+    const openAiCompat = mockProvider({ name: 'openai-compat', text: 'openai fallback' });
+    const router = new ExplanationProviderRouter(
+      mockProvider({ name: 'deepseek', text: 'deepseek fallback' }),
+      openAiCompat,
+      gemini,
+    );
+
+    const result = await router.generate('auto', {
+      explanationKind: 'overview',
+      promptOverride: 'luận giải',
+    });
+
+    expect(result.renderedMarkdown).toBe('openai fallback');
+    expect((gemini as { generateExplanation: ReturnType<typeof vi.fn> }).generateExplanation).toHaveBeenCalledTimes(1);
+    expect((openAiCompat as { generateExplanation: ReturnType<typeof vi.fn> }).generateExplanation).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not fail over when a provider returns CJK-guard content', async () => {
+    const gemini = mockProvider({
+      name: 'gemini',
+      rejectWith: new ProviderUnavailableError('Provider returned chữ Hán; nội dung không hợp lệ.'),
+    });
+    const openAiCompat = mockProvider({ name: 'openai-compat', text: 'openai fallback' });
+    const router = new ExplanationProviderRouter(
+      mockProvider({ name: 'deepseek', text: 'deepseek fallback' }),
+      openAiCompat,
+      gemini,
+    );
+
+    await expect(
+      router.generate('auto', {
+        explanationKind: 'overview',
+        promptOverride: 'luận giải',
+      }),
+    ).rejects.toThrow('chữ Hán');
+
+    expect((gemini as { generateExplanation: ReturnType<typeof vi.fn> }).generateExplanation).toHaveBeenCalledTimes(1);
+    expect((openAiCompat as { generateExplanation: ReturnType<typeof vi.fn> }).generateExplanation).not.toHaveBeenCalled();
+  });
+
+  it('emits AI_FALLBACK_ALERT ops alert when Gemini fails with 429/timeout and falls back to openai-compat', async () => {
+    opsAlert.resetOpsAlertThrottleForTests();
+    const reportOpsAlertSpy = vi.spyOn(opsAlert, 'reportOpsAlert').mockResolvedValue(undefined);
+    const gemini = mockProvider({
+      name: 'gemini',
+      rejectWith: new ProviderUnavailableError('Gemini 429: Resource has been exhausted (rate limit)'),
+    });
+    const openAiCompat = mockProvider({ name: 'openai-compat', text: 'openai fallback narrative' });
+    const router = new ExplanationProviderRouter(
+      mockProvider({ name: 'deepseek', text: 'deepseek fallback' }),
+      openAiCompat,
+      gemini,
+    );
+
+    const result = await router.generate('auto', {
+      explanationKind: 'overview',
+      promptOverride: 'luận giải',
+    });
+
+    expect(result.renderedMarkdown).toBe('openai fallback narrative');
+    expect(reportOpsAlertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'warning',
+        code: 'AI_FALLBACK_ALERT',
+        status: 429,
+        tags: expect.objectContaining({
+          from_provider: 'gemini',
+          to_provider: 'openai-compat',
+          error_type: 'RATE_LIMIT_429',
+        }),
+      }),
+    );
   });
 });

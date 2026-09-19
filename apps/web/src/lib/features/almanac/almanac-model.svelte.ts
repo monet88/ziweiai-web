@@ -9,7 +9,8 @@
 import { createMutation } from '@tanstack/svelte-query';
 import type { AlmanacSelection, AlmanacTopic } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { ApiError, selectAlmanac } from '$lib/api-client';
+import { ApiError } from '$lib/api-client/core';
+import { selectAlmanac } from '$lib/api-client/divinations';;
 import { viCopy } from '$lib/i18n/vi';
 
 export type AlmanacCopy = { readonly [K in keyof typeof viCopy.almanac]: string };

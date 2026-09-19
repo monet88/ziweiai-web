@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { LiuyaoLineStateKey } from '@ziweiai/contracts';
+import { type LiuyaoLineStateKey } from '@ziweiai/contracts';
 import { buildNumberBasedNumbers } from './adapters/meihua-maps';
 import { IztroChartAdapter } from './adapters/iztro-chart-adapter';
 import { DaliurenAdapter } from './adapters/daliuren-adapter';
@@ -369,6 +369,7 @@ describe('runtime adapters', () => {
     expect(snapshot.summary.baseHexagram).not.toMatch(CJK_TEXT_PATTERN);
     expect(snapshot.summary.changedHexagram).not.toMatch(CJK_TEXT_PATTERN);
   });
+
 
   it('casts a manual Liuyao hexagram from 6 line states bottom-to-top (US-026)', async () => {
     const adapter = new LiuyaoAdapter();

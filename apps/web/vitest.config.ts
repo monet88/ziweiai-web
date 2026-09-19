@@ -15,11 +15,20 @@ export default defineConfig({
       '$env/static/public': fileURLToPath(
         new URL('./src/test/env-static-public-stub.ts', import.meta.url),
       ),
+      '$env/dynamic/public': fileURLToPath(
+        new URL('./src/test/env-dynamic-public-stub.ts', import.meta.url),
+      ),
       '$app/navigation': fileURLToPath(
         new URL('./src/test/app-navigation-stub.ts', import.meta.url),
       ),
       '$app/paths': fileURLToPath(
         new URL('./src/test/app-paths-stub.ts', import.meta.url),
+      ),
+      '$app/environment': fileURLToPath(
+        new URL('./src/test/app-environment-stub.ts', import.meta.url),
+      ),
+      '$app/stores': fileURLToPath(
+        new URL('./src/test/app-stores-stub.ts', import.meta.url),
       ),
     },
   },

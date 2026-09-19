@@ -1,0 +1,61 @@
+{
+  "framework": null,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm run vercel-build",
+  "outputDirectory": "apps/web/build",
+  "functions": {
+    "api/[...path].ts": {
+      "includeFiles": "{vendor/xuanshu-runtime/**,packages/astro-engine/dist/adapters/xuanshu-*-runner.js,node_modules/tsx/dist/**}",
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/notifications/cron/daily-morning",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(fonts|tarot|icons)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(og-image.png|favicon.png|manifest.json)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/(robots.txt|sitemap.xml)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/share/:path*",
+      "destination": "/api/share/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/[...path]"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
+    }
+  ]
+}

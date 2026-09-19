@@ -116,4 +116,11 @@
   .select::-ms-expand {
     display: none;
   }
+
+  .select option {
+    background: var(--color-bg-surface, #ffffff);
+    color: var(--color-text-primary, #1c1917);
+    font-size: 16px;
+    padding: 10px 14px;
+  }
 </style>

@@ -10,6 +10,7 @@ import { apiEnv } from '../../config/env';
 import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
 import { QuotasService } from '../quotas/quotas.service';
+import { WalletEngineService } from '../wallet/wallet-engine.service';
 import { matchDreamSymbols, type DreamSymbolData } from './dream-symbol-matcher';
 import { buildDreamInterpretationPrompt } from './dream-prompts';
 
@@ -20,6 +21,7 @@ export class DreamsService {
   constructor(
     private readonly quotasService: QuotasService,
     private readonly providerRouter: ExplanationProviderRouter,
+    private readonly walletEngine: WalletEngineService,
   ) {}
 
   async interpretDream(
@@ -45,8 +47,8 @@ export class DreamsService {
       );
     }
 
-    // Gate AI (premium) TRƯỚC quota: đồng bộ tarot — chặn 402 ngay nếu không free-for-all.
-    this.assertPremiumEntitlement();
+    // Gate AI (premium) TRƯỚC quota: kiểm tra/trừ XU nếu không free-for-all
+    await this.assertPremiumEntitlement(user.userId);
     // email rỗng/null ⟺ phiên ẩn danh (decision 0009); !user.email bắt cả email="".
     await this.assertCanCreate(user.userId, ipAddress, !user.email);
 
@@ -60,24 +62,33 @@ export class DreamsService {
     });
   }
 
-  private assertPremiumEntitlement(): void {
+  private async assertPremiumEntitlement(userId?: string): Promise<void> {
     if (apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
-      this.logger.warn(
-        'AI_EXPLANATION_FREE_FOR_ALL=true — Dream AI gate bypassed (free for all). Set false in production.',
-      );
       return;
     }
 
-    throw new ApiErrorHttpException(
-      HttpStatus.PAYMENT_REQUIRED,
-      'PAYMENT_REQUIRED',
-      'Tính năng luận giải AI yêu cầu gói trả phí. Vui lòng nâng cấp để tiếp tục.',
-    );
+    if (!userId) {
+      throw new ApiErrorHttpException(
+        HttpStatus.PAYMENT_REQUIRED,
+        'PAYMENT_REQUIRED',
+        'Tính năng giải mộng yêu cầu đăng nhập và có XU. Vui lòng đăng nhập hoặc nạp XU.',
+      );
+    }
+
+    const cost = 3;
+    const success = await this.walletEngine.deductXU(userId, cost, 'ai_usage');
+    if (!success) {
+      throw new ApiErrorHttpException(
+        HttpStatus.PAYMENT_REQUIRED,
+        'INSUFFICIENT_FUNDS',
+        `Tính năng giải mộng yêu cầu ${cost} XU. Số dư XU của bạn không đủ, vui lòng nạp thêm XU.`,
+      );
+    }
   }
 
   private async assertCanCreate(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
     try {
-      await this.quotasService.assertCanCreateDreamReading(userId, ipAddress, isAnonymous);
+      await this.quotasService.assertCanExecute('dream-reading', userId, ipAddress, isAnonymous);
     } catch (error) {
       throwQuotaRateLimited(error, 'Đã vượt hạn mức giải mộng.');
     }

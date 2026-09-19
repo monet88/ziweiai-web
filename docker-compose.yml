@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: ziweiai-api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+    env_file:
+      - .env.production

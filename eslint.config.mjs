@@ -59,38 +59,45 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/app/**/*.{js,mjs,cjs,ts,tsx}'],
+    files: ['apps/mobile/**/*.{js,mjs,cjs,ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
         {
           paths: [
             {
+              name: '@ziweiai/core',
+              message:
+                'Boundary client/server: @ziweiai/core là server-only. Gọi API thay vì import vào apps/mobile.',
+            },
+            {
               name: '@ziweiai/astro-engine',
               message:
-                'Astrology engine is server-only. Call the API instead of importing it into the Expo app.',
+                'Boundary client/server: @ziweiai/astro-engine là server-only. Gọi API thay vì import vào apps/mobile.',
+            },
+            {
+              name: 'iztro',
+              message:
+                'Boundary client/server: iztro là engine tính lá số server-only. Không import vào mobile client.',
+            },
+            {
+              name: 'lunar-javascript',
+              message:
+                'Boundary client/server: lunar-javascript là server-only. Không import vào mobile client.',
             },
           ],
           patterns: [
             {
-              group: ['.ref/**', '**/.ref/**'],
-              message:
-                'Reference repositories are study-only. Import contracts/core or server adapters instead of .ref sources.',
-            },
-            {
               group: [
-                'sweph-wasm',
-                'swisseph',
-                'swisseph-v2',
+                '@ziweiai/core/**',
+                '@ziweiai/astro-engine/**',
+                '**/packages/core',
+                '**/packages/core/**',
                 '**/packages/astro-engine',
                 '**/packages/astro-engine/**',
-                '../../packages/astro-engine',
-                '../../packages/astro-engine/**',
-                '../../../packages/astro-engine',
-                '../../../packages/astro-engine/**',
               ],
               message:
-                'Astrology engine and ephemeris code are server-only. Call the API instead of importing them into the Expo app.',
+                'Boundary client/server: core/astro-engine là server-only. Gọi API thay vì import vào apps/mobile.',
             },
           ],
         },
@@ -141,19 +148,6 @@ export default tseslint.config(
           ],
         },
       ],
-    },
-  },
-  {
-    files: ['apps/app/*.config.js'],
-    languageOptions: {
-      globals: {
-        __dirname: 'readonly',
-        module: 'readonly',
-        require: 'readonly',
-      },
-    },
-    rules: {
-      '@typescript-eslint/no-require-imports': 'off',
     },
   },
   {

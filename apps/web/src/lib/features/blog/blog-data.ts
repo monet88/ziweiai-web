@@ -129,7 +129,7 @@ export const BLOG_POSTS: readonly BlogPost[] = [
     contentHtml: `
       <section id="bat-tu-la-gi">
         <h2>1. Bát Tự Tứ Trụ Là Gì?</h2>
-        <p><strong>Bát Tự (八字)</strong>, hay còn gọi là <strong>Tứ Trụ (四柱)</strong>, là hệ thống dự đoán vận mệnh cổ xưa dựa trên 4 trụ thời gian sinh của một người: <em>Trụ Năm, Trụ Tháng, Trụ Ngày và Trụ Giờ</em>. Mỗi trụ gồm 1 Thiên Can và 1 Địa Chi, kết hợp thành 8 chữ (Bát Tự).</p>
+        <p><strong>Bát Tự</strong>, hay còn gọi là <strong>Tứ Trụ</strong>, là hệ thống dự đoán vận mệnh cổ xưa dựa trên 4 trụ thời gian sinh của một người: <em>Trụ Năm, Trụ Tháng, Trụ Ngày và Trụ Giờ</em>. Mỗi trụ gồm 1 Thiên Can và 1 Địa Chi, kết hợp thành 8 chữ (Bát Tự).</p>
         <p>Khác với Tử Vi chú trọng vào hệ thống sao, Bát Tự đi sâu vào <strong>quy luật tương sinh tương khắc của Ngũ Hành (Kim, Mộc, Thủy, Hỏa, Thổ)</strong> và Thập Thần (Chính Quan, Thất Sát, Chính Ấn, Thiên Ấn, Chính Tài, Thiên Tài, Thực Thần, Thương Quan, Tỷ Kiên, Kiếp Tài).</p>
       </section>
 

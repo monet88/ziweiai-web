@@ -19,21 +19,6 @@ agent/
 .vscode/
 mcps/
 
-# .agents: ignore transient dirs only — skills/workflows/rules stay trackable.
-.agents/logs/
-.agents/cache/
-.agents/tmp/
-.agents/**/logs/
-.agents/**/cache/
-.agents/**/tmp/
-!.agents/skills/
-!.agents/skills/**
-!.agents/workflows/
-!.agents/workflows/**
-!.agents/rules/
-!.agents/rules/**
-!.agents/AGENTS.md
-
 # Impeccable skill scratch TODO list (local-only).
 /TODOS.md
 
@@ -57,11 +42,6 @@ test-results/
 playwright-report/
 .playwright/
 
-# Playwright E2E output.
-test-results/
-playwright-report/
-.playwright/
-
 # Temp tooling output.
 whyzod.txt
 .tmp-review/
@@ -72,10 +52,6 @@ plans/reports/
 tmp/
 temp/
 temp-envs/
-
-# HTML UI preview reference (không phải nguồn build) + báo cáo review nội bộ.
-templates/ui-reference/
-plans/reports/
 
 # ---------------------------------------------------------------------------
 # Environment / secrets / credentials — never commit real values.
@@ -108,6 +84,10 @@ GoogleService-Info.plist
 *.token
 **/secrets/
 **/credentials/
+*service-key*.json
+*service_key*.json
+*service_key*.pem
+*service-key*.pem
 
 # Supabase local temp / link state (may contain project refs).
 apps/api/supabase/.temp/
@@ -120,11 +100,13 @@ docs/deploy/*.pem
 docs/deploy/*.key
 docs/deploy/lightsail-ssh-key.txt
 
-# Root agent instruction files (local-only, not per-folder AGENTS.md).
+# Root agent instruction & scratch files (local-only).
 /CLAUDE.md
 /AGENTS.md
 AGENTS.md.orig.bak
 .mcp.json
+galatuvi
+
 # ---------------------------------------------------------------------------
 # Large binaries / release media / debug dumps — never push to GitHub.
 # ---------------------------------------------------------------------------
@@ -147,15 +129,3 @@ ziweiai-demo.zip
 **/window_dump.xml
 *.log
 logs/
-
-# Local-only root agent scratch files.
-/CLAUDE.md
-AGENTS.md.orig.bak
-.mcp.json
-galatuvi
-
-# Additional explicit ignores for service keys requested by user
-*service-key*.json
-*service_key*.json
-*service_key*.pem
-*service-key*.pem

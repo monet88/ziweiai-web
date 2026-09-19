@@ -10,19 +10,16 @@ Repo này được migrate từ monorepo gốc `ziweiai` (NestJS + Expo). Phần
 apps/
   api/                    # NestJS backend (+ supabase/ migrations bên trong)
   web/                    # SvelteKit SPA — Svelte 5 runes
+  mobile/                 # Flutter mobile client (Android + iOS)
 packages/
   config/                 # tsconfig/base + eslint/base (không có runtime dep)
   contracts/              # Zod schemas + types — DÙNG CHUNG bởi api + web (zod v4)
   core/                   # logic, kéo theo iztro — SERVER-ONLY
   astro-engine/           # iztro + lunar-javascript + temporal — SERVER-ONLY
-vendor/xuanshu-runtime/   # runtime SERVER-ONLY (LiuYao/DaLiuRen/QiMen bridge)
-docs/                     # SPEC, product contract, story packets, decisions
-scripts/bin/harness-cli.exe   # CLI lớp durable (intake/story/trace/matrix)
-SPEC.md                   # nguồn chân lý duy nhất — full spec 8 phase
-```
-
-Tài liệu nền tảng nên đọc theo thứ tự: `SPEC.md` → `docs/product/invariants.md` → `docs/HARNESS.md` + `docs/ARCHITECTURE.md` → story packets trong `docs/stories/epics/` → `docs/decisions/`.
-
+  xuanshu-runtime/        # runtime SERVER-ONLY (LiuYao/DaLiuRen/QiMen bridge)
+docs/
+  adr/                    # Architecture Decision Records (ADRs)
+  deploy/                 # hướng dẫn deploy AWS Lightsail / VPS
 ## Stack
 
 | Lớp | Công nghệ |
@@ -36,7 +33,7 @@ Tài liệu nền tảng nên đọc theo thứ tự: `SPEC.md` → `docs/produc
 
 ## Hai bất biến bắt buộc
 
-Đây là ràng buộc cốt lõi, vi phạm là blocker. Chi tiết: `docs/product/invariants.md`.
+Đây là hai ràng buộc cốt lõi, vi phạm là blocker:
 
 **1. Biên giới server (security).** `apps/web` chỉ được import `@ziweiai/contracts` từ workspace nội bộ. TUYỆT ĐỐI không import `@ziweiai/core`, `@ziweiai/astro-engine`, `iztro`, `lunar-javascript` — chúng kéo engine tính lá số + ephemeris + chữ Hán vào bundle client. ESLint `no-restricted-imports` chặn ở mức lint. Cần một hằng/regex nhỏ từ core (vd `CJK_TEXT_PATTERN`) → copy giá trị vào `apps/web/src/lib/text/cjk.ts`, không import core.
 
@@ -53,7 +50,6 @@ Tài liệu nền tảng nên đọc theo thứ tự: `SPEC.md` → `docs/produc
 | `useRouter` | `goto` |
 | `EXPO_PUBLIC_*` / `process.env` | `$env/static/public` (`PUBLIC_*`) |
 
-Mapping đầy đủ: `SPEC.md` Part A8.
 
 ## API backend
 
@@ -67,7 +63,7 @@ Mapping đầy đủ: `SPEC.md` Part A8.
 | Trợ lý AI hội thoại | `POST /conversations`, `GET /conversations`, `GET /conversations/:id`, `POST /conversations/:id/messages`, `POST /conversations/:id/messages/stream` |
 | Các hệ thuật số mở rộng | `POST /divinations`, `POST /draws/tarot`, `POST /vision/face`, `POST /vision/palm`, `POST /quizzes/mbti`, `POST /pairings` |
 
-Mọi response UI dùng phải `parse()` bằng schema từ `@ziweiai/contracts` (tên camelCase: `historyListResponseSchema`, `chartDetailResponseSchema`, ...) — web không tự định nghĩa DTO. Token = `session.access_token` gửi qua header `Authorization: Bearer`. Chi tiết: `docs/product/api-contract.md`.
+Mọi response UI dùng phải `parse()` bằng schema từ `@ziweiai/contracts` (tên camelCase: `historyListResponseSchema`, `chartDetailResponseSchema`, ...) — web không tự định nghĩa DTO. Token = `session.access_token` gửi qua header `Authorization: Bearer`.
 
 ## Cấu hình env
 
@@ -103,8 +99,3 @@ Nền tảng 8 phase đầu (US-001..US-007) đã xong: scaffold → auth + rout
 
 Sau đó tiếp tục mở rộng (US-008 trở đi): lá số Tử Vi trực quan + đường nối tam phương tứ chính, tô màu sao, highlight đa màu vận hạn, panel vận hạn (đại vận/lưu niên/lưu nguyệt/lưu nhật); quota anon qua Redis/Upstash; khung 6 hệ luận giải mở rộng (Hợp Hôn, Manh Phái, Tarot, MBTI, Xem Tướng, Xem Tay) + trợ lý AI hội thoại multi-turn; ví XU + ledger + thanh toán VietQR; re-theme Notion paper-calm; flow gieo quẻ (Lục Hào / Mai Hoa). Mặc định AI provider là **openai-compat**, fallback **deepseek**.
 
-Xem proof status từng story: `scripts/bin/harness-cli.exe query matrix`.
-
-## Quy trình harness
-
-Repo chạy harness workflow bắt buộc (lane normal/high-risk), theo thứ tự: intake → story breakdown → (fix doc drift nếu có) → implement → validate + update matrix → trace; thay đổi kiến trúc → decision. Chi tiết: `docs/HARNESS.md`, `docs/FEATURE_INTAKE.md`. CLI ở `scripts/bin/harness-cli.exe`.

@@ -380,24 +380,6 @@
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
-  .content {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .form,
-  .result {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    background: rgba(20, 14, 40, 0.72);
-    border: 1px solid rgba(212, 175, 55, 0.28);
-    border-radius: 18px;
-    padding: 24px;
-    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(12px);
-  }
 
   .six-palaces-guide {
     display: flex;

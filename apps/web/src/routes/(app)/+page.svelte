@@ -85,6 +85,7 @@
         { route: '/liuyao' as const, label: 'Kinh Dịch Lục Hào', badge: 'MIỄN PHÍ 100%', tier: 'free', desc: 'Gieo Quẻ Cổ Tự Động & Hào Động Biến Dịch' },
         { route: '/meihua' as const, label: 'Mai Hoa Dịch Số', badge: 'MIỄN PHÍ 100%', tier: 'free', desc: 'Khởi Quẻ Theo Thời Khắc & Hiện Tượng' },
         { route: '/stick' as const, label: 'Xin Xăm Quán Âm', badge: 'MIỄN PHÍ', tier: 'free', desc: 'Cầu Điềm Lành & Thỉnh Lời Khuyên Hóa Giải' },
+        { route: '/xiaoliuren' as const, label: 'Tiểu Lục Nhâm', badge: 'MIỄN PHÍ', tier: 'free', desc: 'Bấm Độn Gia Cát 6 Cung Định Cát Hung' },
         { route: '/dream' as const, label: 'Giải Mộng Triêm Bốc', badge: 'MIỄN PHÍ', tier: 'free', desc: 'Giải Mã Điềm Báo Trong Giấc Chiêm Bao' }
       ]
     },

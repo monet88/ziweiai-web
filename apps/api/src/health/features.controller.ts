@@ -16,6 +16,7 @@ export interface FeaturesStatus {
   sticks: boolean;
   // B6 Hoàng lịch (US-040)
   almanac: boolean;
+  xiaoliuren?: boolean;
 }
 
 @Controller('features')
@@ -34,6 +35,7 @@ export class FeaturesController {
       dream: apiEnv.EXTENDED_SYSTEM_DREAM_ENABLED,
       sticks: apiEnv.EXTENDED_SYSTEM_STICKS_ENABLED,
       almanac: apiEnv.EXTENDED_SYSTEM_ALMANAC_ENABLED,
+      xiaoliuren: apiEnv.EXTENDED_SYSTEM_XIAOLIUREN_ENABLED,
     };
   }
 }

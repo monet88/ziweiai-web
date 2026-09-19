@@ -16,6 +16,7 @@ export * from './chart/almanac-selection';
 export * from './chart/vision-analysis';
 export * from './chart/iching-draw';
 export * from './chart/numerology';
+export * from './chart/xiaoliuren-draw';
 export {
   meihuaTrigramKeys,
   meihuaElementKeys,

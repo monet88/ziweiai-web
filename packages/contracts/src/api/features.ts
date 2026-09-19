@@ -16,6 +16,7 @@ export const featuresResponseSchema = z.object({
   sticks: z.boolean(),
   almanac: z.boolean(),
   numerology: z.boolean().optional().default(true),
+  xiaoliuren: z.boolean().optional().default(true),
 });
 
 export type FeaturesResponse = z.infer<typeof featuresResponseSchema>;

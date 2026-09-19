@@ -36,6 +36,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { RoyalGalleryModule } from './modules/royal-gallery/royal-gallery.module';
 import { SynthesisModule } from './modules/synthesis/synthesis.module';
 import { JournalModule } from './modules/journal/journal.module';
+import { DrawsXiaoLiuRenModule } from './modules/draws-xiaoliuren/draws-xiaoliuren.module';
 
 @Module({
   imports: [
@@ -44,7 +45,7 @@ import { JournalModule } from './modules/journal/journal.module';
       limit: 10,
     }]),
     DatabaseModule,
-    WalletModule, AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsIchingModule, DrawsTarotModule, NumerologyModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule, ShareModule, AdminModule, RewardsModule, TurnstileModule, DossierModule, NotificationsModule, RoyalGalleryModule, SynthesisModule, JournalModule
+    WalletModule, AlmanacModule, AuthModule, ChartsModule, ConversationsModule, DivinationsModule, DrawsIchingModule, DrawsTarotModule, NumerologyModule, DrawsLenormandModule, DreamsModule, DrawsSticksModule, DrawsXiaoLiuRenModule, ExplanationsModule, FortuneModule, HealthModule, HistoryModule, PairingsModule, QuizzesMbtiModule, QuotasModule, VisionSharedModule, PaymentModule, UsersModule, ShareModule, AdminModule, RewardsModule, TurnstileModule, DossierModule, NotificationsModule, RoyalGalleryModule, SynthesisModule, JournalModule
   ],
   providers: [
     {

@@ -23,6 +23,7 @@
     { route: '/stick', flag: 'sticks', label: viCopy.stick.navOpen },
     { route: '/almanac', flag: 'almanac', label: viCopy.almanac.navOpen },
     { route: '/numerology', flag: 'numerology', label: viCopy.numerology.navOpen },
+    { route: '/xiaoliuren', flag: 'xiaoliuren', label: viCopy.xiaoliuren.navOpen },
   ] as const satisfies ReadonlyArray<{ route: string; flag: keyof FeaturesResponse; label: string }>;
 
   // staleTime dài: trạng thái cờ ít đổi trong một phiên. enabled mặc định (không cần token —

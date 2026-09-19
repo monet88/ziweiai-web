@@ -8,6 +8,7 @@ import {
   dreamInterpretationSchema,
   stickDrawSchema,
   almanacSelectionSchema,
+  xiaoLiuRenDrawSchema,
   type CreateDivinationRequest,
   type CreateDivinationResponse,
   type MbtiAnswer,
@@ -24,6 +25,8 @@ import {
   type StickDraw,
   type AlmanacSelection,
   type AlmanacTopic,
+  type XiaoLiuRenDraw,
+  type XiaoLiuRenDrawRequest,
   numerologyExplainResponseSchema,
   type NumerologyExplainRequest,
   type NumerologyExplainResponse,
@@ -149,6 +152,17 @@ export function explainNumerology(
   params: NumerologyExplainRequest,
 ): Promise<NumerologyExplainResponse> {
   return fetchJson('/numerology/explain', numerologyExplainResponseSchema, {
+    method: 'POST',
+    token,
+    body: params,
+  });
+}
+
+export function drawXiaoLiuRen(
+  token: string,
+  params: XiaoLiuRenDrawRequest,
+): Promise<XiaoLiuRenDraw> {
+  return fetchJson('/draws/xiaoliuren', xiaoLiuRenDrawSchema, {
     method: 'POST',
     token,
     body: params,

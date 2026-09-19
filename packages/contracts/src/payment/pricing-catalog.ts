@@ -17,6 +17,7 @@ export const FEATURE_PRICING = {
   FACE_PALM_VISION: 10,
   ICHING_DIVINATION: 5,
   TAROT_LENORMAND: 3,
+  XIAOLIUREN: 3,
   ANNUAL_REPORT: 15,
   SYNTHESIS_REPORT: 15,
   ROYAL_DOSSIER: 50,
@@ -64,6 +65,14 @@ export const FEATURE_PRICING_CATALOG: readonly FeaturePricingItem[] = [
     displayCost: `${FEATURE_PRICING.TAROT_LENORMAND} XU / lượt`,
     tag: 'Lời khuyên ngày',
     desc: 'Trải bài trực giác đón nhận thông điệp chỉ dẫn và hành động',
+  },
+  {
+    id: 'xiaoliuren',
+    name: 'Bấm Độn Tiểu Lục Nhâm',
+    xuCost: FEATURE_PRICING.XIAOLIUREN,
+    displayCost: `${FEATURE_PRICING.XIAOLIUREN} XU / lượt`,
+    tag: 'Bấm độn nhanh',
+    desc: 'Bấm độn 6 cung Gia Cát Lượng định hướng xuất hành, tài lộc, sự vụ',
   },
   {
     id: 'annual_report',

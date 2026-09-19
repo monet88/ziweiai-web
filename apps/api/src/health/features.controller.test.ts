@@ -80,6 +80,7 @@ describe('FeaturesController', () => {
       dream: false,
       sticks: true,
       almanac: true,
+      numerology: true,
       xiaoliuren: true,
     });
   });

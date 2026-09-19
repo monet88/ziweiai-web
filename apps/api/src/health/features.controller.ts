@@ -1,29 +1,15 @@
 import { Controller, Get } from '@nestjs/common';
+import type { FeaturesResponse } from '@ziweiai/contracts';
 import { Public } from '../modules/auth/decorators/public.decorator';
 import { apiEnv } from '../config/env';
 
-export interface FeaturesStatus {
-  // 6 extended systems flags (US-017)
-  hepan: boolean;
-  mangpai: boolean;
-  tarot: boolean;
-  mbti: boolean;
-  face: boolean;
-  palm: boolean;
-  // B6 net-new systems (US-037/038/039)
-  lenormand: boolean;
-  dream: boolean;
-  sticks: boolean;
-  // B6 Hoàng lịch (US-040)
-  almanac: boolean;
-  xiaoliuren?: boolean;
-}
+export type FeaturesStatus = FeaturesResponse;
 
 @Controller('features')
 export class FeaturesController {
   @Public()
   @Get()
-  getFeatures(): FeaturesStatus {
+  getFeatures(): FeaturesResponse {
     return {
       hepan: apiEnv.EXTENDED_SYSTEM_HEPAN_ENABLED,
       mangpai: apiEnv.EXTENDED_SYSTEM_MANGPAI_ENABLED,
@@ -35,6 +21,7 @@ export class FeaturesController {
       dream: apiEnv.EXTENDED_SYSTEM_DREAM_ENABLED,
       sticks: apiEnv.EXTENDED_SYSTEM_STICKS_ENABLED,
       almanac: apiEnv.EXTENDED_SYSTEM_ALMANAC_ENABLED,
+      numerology: true,
       xiaoliuren: apiEnv.EXTENDED_SYSTEM_XIAOLIUREN_ENABLED,
     };
   }

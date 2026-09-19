@@ -34,10 +34,10 @@
 
   const sixPalaces = [
     { key: 'dai_an', name: 'Đại An', num: 1, auspice: 'Cát', element: 'Mộc', note: 'Bình an, vững chãi, mọi sự thuận hòa' },
-    { key: 'luu_nien', name: 'Lưu Niên', num: 2, auspice: 'Bình hòa', element: 'Thổ', note: 'Chưa xong, chậm lại, kiên nhẫn tích lũy' },
+    { key: 'luu_nien', name: 'Lưu Niên', num: 2, auspice: 'Bình hòa', element: 'Thủy', note: 'Chưa xong, chậm lại, kiên nhẫn tích lũy' },
     { key: 'toc_hy', name: 'Tốc Hỷ', num: 3, auspice: 'Đại Cát', element: 'Hỏa', note: 'Tin vui nhanh chóng, việc tốt đến ngay' },
     { key: 'xich_khau', name: 'Xích Khẩu', num: 4, auspice: 'Tiểu Hung', element: 'Kim', note: 'Tranh chấp, thị phi, phòng ngừa rủi ro' },
-    { key: 'tieu_cat', name: 'Tiểu Cát', num: 5, auspice: 'Cát', element: 'Thủy', note: 'May mắn nhỏ, có quý nhân giúp đỡ' },
+    { key: 'tieu_cat', name: 'Tiểu Cát', num: 5, auspice: 'Cát', element: 'Mộc', note: 'May mắn nhỏ, có quý nhân giúp đỡ' },
     { key: 'khong_vong', name: 'Không Vong', num: 6, auspice: 'Hung', element: 'Thổ', note: 'Trống rỗng, lỡ dở, nên phòng thủ bảo toàn' },
   ];
 

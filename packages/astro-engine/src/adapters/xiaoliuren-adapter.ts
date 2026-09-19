@@ -130,27 +130,28 @@ export function hourToShichenIndex(hour: number): number {
 /**
  * Phân tích tương tác ngũ hành giữa 2 cung (sinh, khắc, tị hòa).
  */
+const ELEMENT_GENERATING_MAP: Readonly<Record<string, string>> = {
+  Mộc: 'Hỏa',
+  Hỏa: 'Thổ',
+  Thổ: 'Kim',
+  Kim: 'Thủy',
+  Thủy: 'Mộc',
+};
+
+const ELEMENT_OVERCOMING_MAP: Readonly<Record<string, string>> = {
+  Mộc: 'Thổ',
+  Thổ: 'Thủy',
+  Thủy: 'Hỏa',
+  Hỏa: 'Kim',
+  Kim: 'Mộc',
+};
+
 function getElementRelation(elem1: string, elem2: string): string {
   if (elem1 === elem2) return 'tị hòa (đồng hành)';
-  const generatingMap: Record<string, string> = {
-    Mộc: 'Hỏa',
-    Hỏa: 'Thổ',
-    Thổ: 'Kim',
-    Kim: 'Thủy',
-    Thủy: 'Mộc',
-  };
-  const overcomingMap: Record<string, string> = {
-    Mộc: 'Thổ',
-    Thổ: 'Thủy',
-    Thủy: 'Hỏa',
-    Hỏa: 'Kim',
-    Kim: 'Mộc',
-  };
-
-  if (generatingMap[elem1] === elem2) return `${elem1} sinh ${elem2} (sinh xuất)`;
-  if (generatingMap[elem2] === elem1) return `${elem2} sinh ${elem1} (sinh nhập)`;
-  if (overcomingMap[elem1] === elem2) return `${elem1} khắc ${elem2} (khắc xuất)`;
-  if (overcomingMap[elem2] === elem1) return `${elem2} khắc ${elem1} (khắc nhập)`;
+  if (ELEMENT_GENERATING_MAP[elem1] === elem2) return `${elem1} sinh ${elem2} (sinh xuất)`;
+  if (ELEMENT_GENERATING_MAP[elem2] === elem1) return `${elem2} sinh ${elem1} (sinh nhập)`;
+  if (ELEMENT_OVERCOMING_MAP[elem1] === elem2) return `${elem1} khắc ${elem2} (khắc xuất)`;
+  if (ELEMENT_OVERCOMING_MAP[elem2] === elem1) return `${elem2} khắc ${elem1} (khắc nhập)`;
   return 'bình hòa';
 }
 

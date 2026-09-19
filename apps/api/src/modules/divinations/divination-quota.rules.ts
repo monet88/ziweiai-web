@@ -44,5 +44,12 @@ export class DivinationQuotaRules implements OnModuleInit {
       dailyLimit: defaultDailyLimit,
       dailyErrorMessage: defaultErrorMessage,
     });
+
+    // Xiao Liu Ren Draw
+    this.registry.register({
+      featureKey: 'xiaoliuren-draw',
+      dailyLimit: defaultDailyLimit,
+      dailyErrorMessage: defaultErrorMessage,
+    });
   }
 }

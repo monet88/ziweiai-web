@@ -60,15 +60,27 @@ export const xiaoLiuRenDrawSchema = z.object({
 
 export type XiaoLiuRenDraw = z.infer<typeof xiaoLiuRenDrawSchema>;
 
-export const xiaoLiuRenDrawRequestSchema = z.object({
-  question: z.string().trim().min(1).max(500),
-  method: xiaoLiuRenMethodSchema.default('time'),
-  numbers: z.tuple([
-    z.number().int().positive(),
-    z.number().int().positive(),
-    z.number().int().positive(),
-  ]).optional(),
-  seed: z.string().optional(),
-});
+export const xiaoLiuRenDrawRequestSchema = z
+  .object({
+    question: z.string().trim().min(1).max(500),
+    method: xiaoLiuRenMethodSchema.default('time'),
+    numbers: z
+      .tuple([
+        z.number().int().positive(),
+        z.number().int().positive(),
+        z.number().int().positive(),
+      ])
+      .optional(),
+    seed: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.method === 'numbers' && (!data.numbers || data.numbers.length !== 3)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Vui lòng cung cấp đủ 3 số nguyên dương khi gieo quẻ theo số.',
+        path: ['numbers'],
+      });
+    }
+  });
 
 export type XiaoLiuRenDrawRequest = z.infer<typeof xiaoLiuRenDrawRequestSchema>;

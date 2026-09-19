@@ -19,6 +19,16 @@ export interface XiaoLiuRenModelOptions {
   copy: XiaoLiuRenCopy;
 }
 
+function parseNumbers(a: unknown, b: unknown, c: unknown): [number, number, number] | null {
+  const n1 = Math.floor(Number(a));
+  const n2 = Math.floor(Number(b));
+  const n3 = Math.floor(Number(c));
+  if (isNaN(n1) || isNaN(n2) || isNaN(n3) || n1 <= 0 || n2 <= 0 || n3 <= 0) {
+    return null;
+  }
+  return [n1, n2, n3];
+}
+
 export function createXiaoLiuRenModel(options: XiaoLiuRenModelOptions) {
   const { auth, copy } = options;
 
@@ -42,16 +52,14 @@ export function createXiaoLiuRenModel(options: XiaoLiuRenModelOptions) {
 
       let payload: XiaoLiuRenDrawRequest;
       if (method === 'numbers') {
-        const n1 = Math.floor(Number(number1));
-        const n2 = Math.floor(Number(number2));
-        const n3 = Math.floor(Number(number3));
-        if (isNaN(n1) || isNaN(n2) || isNaN(n3) || n1 <= 0 || n2 <= 0 || n3 <= 0) {
+        const nums = parseNumbers(number1, number2, number3);
+        if (!nums) {
           throw new ApiError('validation', copy.numbersRequired);
         }
         payload = {
           question: trimmed,
           method: 'numbers',
-          numbers: [n1, n2, n3],
+          numbers: nums,
         };
       } else {
         payload = {
@@ -124,10 +132,8 @@ export function createXiaoLiuRenModel(options: XiaoLiuRenModelOptions) {
         return;
       }
       if (method === 'numbers') {
-        const n1 = Math.floor(Number(number1));
-        const n2 = Math.floor(Number(number2));
-        const n3 = Math.floor(Number(number3));
-        if (isNaN(n1) || isNaN(n2) || isNaN(n3) || n1 <= 0 || n2 <= 0 || n3 <= 0) {
+        const nums = parseNumbers(number1, number2, number3);
+        if (!nums) {
           validationMessage = copy.numbersRequired;
           return;
         }

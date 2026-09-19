@@ -61,4 +61,89 @@ describe('NotificationsService', () => {
     expect(res.successCount).toBe(1);
     expect(res.dryRun).toBe(true);
   });
+
+  describe('getUserInAppNotifications', () => {
+    it('should return empty list when Supabase client is not available', async () => {
+      const res = await service.getUserInAppNotifications('user-1');
+      expect(res.data).toEqual([]);
+      expect(res.unreadCount).toBe(0);
+    });
+
+    it('should remind checkin with +1 XU when user has not checked in today (streak 0)', async () => {
+      const mockSupabase = {
+        from: vi.fn((table: string) => {
+          if (table === 'xu_transactions') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              order: vi.fn().mockReturnThis(),
+              limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+            };
+          }
+          if (table === 'profiles') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { last_checkin_date: '2026-01-01', checkin_streak: 0 },
+                error: null,
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      const customService = new NotificationsService(
+        mockProfilesRepo as unknown as ProfilesRepository,
+        mockSupabase as any,
+      );
+
+      const res = await customService.getUserInAppNotifications('user-1');
+      const reminder = res.data.find((n) => n.id.startsWith('daily-reminder'));
+
+      expect(reminder).toBeDefined();
+      expect(reminder?.amountXu).toBe(1);
+      expect(reminder?.body).toContain('1 XU');
+      expect(reminder?.body).not.toContain('5 XU');
+    });
+
+    it('should remind checkin with +3 XU jackpot when next streak is day 7', async () => {
+      const mockSupabase = {
+        from: vi.fn((table: string) => {
+          if (table === 'xu_transactions') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              order: vi.fn().mockReturnThis(),
+              limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+            };
+          }
+          if (table === 'profiles') {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { last_checkin_date: '2026-01-01', checkin_streak: 6 },
+                error: null,
+              }),
+            };
+          }
+          return {};
+        }),
+      };
+
+      const customService = new NotificationsService(
+        mockProfilesRepo as unknown as ProfilesRepository,
+        mockSupabase as any,
+      );
+
+      const res = await customService.getUserInAppNotifications('user-1');
+      const reminder = res.data.find((n) => n.id.startsWith('daily-reminder'));
+
+      expect(reminder).toBeDefined();
+      expect(reminder?.amountXu).toBe(3);
+      expect(reminder?.body).toContain('3 XU Jackpot');
+    });
+  });
 });

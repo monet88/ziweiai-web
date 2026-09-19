@@ -227,12 +227,19 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
       const today = formatter.format(new Date());
 
       if (!profile?.last_checkin_date || profile.last_checkin_date < today) {
+        const streak = profile?.checkin_streak || 0;
+        const nextStreak = streak + 1;
+        const rewardXu = nextStreak % 7 === 0 ? 3 : 1;
+
         notifications.unshift({
           id: `daily-reminder-${today}`,
           type: 'system_reminder',
           title: 'Khí Vận Nhật Khóa — Điểm Danh Nhận XU',
-          body: 'Hôm nay bạn chưa điểm danh. Hãy nhận 5 XU miễn phí để duy trì chuỗi hoàng đạo!',
-          amountXu: 5,
+          body:
+            rewardXu === 3
+              ? 'Hôm nay là ngày thứ 7 hoàng đạo! Hãy nhận 3 XU Jackpot miễn phí để hoàn tất chuỗi!'
+              : 'Hôm nay bạn chưa điểm danh. Hãy nhận 1 XU miễn phí để duy trì chuỗi hoàng đạo!',
+          amountXu: rewardXu,
           link: '/wallet',
           createdAt: new Date().toISOString(),
           isRead: false,

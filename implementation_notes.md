@@ -17,4 +17,12 @@
   - `apps/web/src/lib/features/timeline/DestinyTimelineCard.svelte`
   - `apps/web/src/lib/features/fortune/AnnualReportButton.svelte`
   - `apps/web/src/lib/features/chart/ChartDetailScreen.svelte`
-- Kiểm thử: Đã pass toàn bộ 414 unit tests, `svelte-check: 0 errors`, `pnpm lint: 0 warnings`, production build thành công.
+  - `apps/api/src/modules/notifications/notifications.service.ts`
+  - `apps/api/src/modules/notifications/notifications.service.test.ts`
+  - `docs/sprint-95-notifications-checkin-economy-synchronization.md`
+- Tokenomics Check-in Notification Synchronized:
+  - Đã chuẩn hóa `getUserInAppNotifications` trong `NotificationsService`: tính toán `rewardXu` dựa trên streak ngày kế tiếp (`(streak + 1) % 7 === 0 ? 3 : 1`).
+  - Ngày 1 - 6: Badge hiển thị `+1 XU`, nội dung nhắc nhở `nhận 1 XU miễn phí`.
+  - Ngày 7: Badge hiển thị `+3 XU`, nội dung nhắc nhở `nhận 3 XU Jackpot miễn phí`.
+  - Hoàn toàn khớp với `DailyCheckinWidget.svelte` và `RewardsService`.
+- Kiểm thử: Đã pass 18/18 API notifications unit tests, 430/430 Web tests, API typecheck sạch, `svelte-check: 0 errors`.

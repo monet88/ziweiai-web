@@ -85,16 +85,24 @@ export default tseslint.config(
               message:
                 'Boundary client/server: lunar-javascript là server-only. Không import vào mobile client.',
             },
+            {
+              name: '@ziweiai/xuanshu-runtime',
+              message:
+                'Boundary client/server: @ziweiai/xuanshu-runtime là server-only. Gọi API thay vì import vào apps/mobile.',
+            },
           ],
           patterns: [
             {
               group: [
                 '@ziweiai/core/**',
                 '@ziweiai/astro-engine/**',
+                '@ziweiai/xuanshu-runtime/**',
                 '**/packages/core',
                 '**/packages/core/**',
                 '**/packages/astro-engine',
                 '**/packages/astro-engine/**',
+                '**/packages/xuanshu-runtime',
+                '**/packages/xuanshu-runtime/**',
               ],
               message:
                 'Boundary client/server: core/astro-engine là server-only. Gọi API thay vì import vào apps/mobile.',
@@ -131,16 +139,24 @@ export default tseslint.config(
               message:
                 'Boundary client/server (decision 0007): lunar-javascript là server-only (chữ Hán + lịch). Không import vào client bundle.',
             },
+            {
+              name: '@ziweiai/xuanshu-runtime',
+              message:
+                'Boundary client/server: @ziweiai/xuanshu-runtime là server-only (runtime thuật số). Gọi API thay vì import vào apps/web.',
+            },
           ],
           patterns: [
             {
               group: [
                 '@ziweiai/core/**',
                 '@ziweiai/astro-engine/**',
+                '@ziweiai/xuanshu-runtime/**',
                 '**/packages/core',
                 '**/packages/core/**',
                 '**/packages/astro-engine',
                 '**/packages/astro-engine/**',
+                '**/packages/xuanshu-runtime',
+                '**/packages/xuanshu-runtime/**',
               ],
               message:
                 'Boundary client/server (decision 0007): core/astro-engine là server-only. Gọi API thay vì import vào apps/web.',

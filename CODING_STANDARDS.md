@@ -8,14 +8,14 @@ Tài liệu quy chuẩn kỹ thuật cho reviewer agent và kiểm duyệt mã n
 
 - **Web Client (`apps/web`)**:
   - CHỈ ĐƯỢC PHÉP import `@ziweiai/contracts` từ các internal package.
-  - **TUYỆT ĐỐI KHÔNG import**: `@ziweiai/core`, `@ziweiai/astro-engine`, `iztro`, `lunar-javascript` vào web client (kéo ephemeris, iztro và chữ Hán làm phình bundle client).
+  - **TUYỆT ĐỐI KHÔNG import**: `@ziweiai/core`, `@ziweiai/astro-engine`, `@ziweiai/xuanshu-runtime`, `iztro`, `lunar-javascript` vào web client (kéo ephemeris, iztro, runtime và chữ Hán làm phình bundle client).
   - Mọi dữ liệu lá số / tính toán thuật số phải gọi thông qua HTTP API của `apps/api`.
   - Được kiểm soát tự động bởi rule `no-restricted-imports` trong `eslint.config.mjs`.
 
 - **Mobile Client (`apps/mobile`)**:
   - Tương tự web client: chỉ giao tiếp qua API hoặc schema chuẩn, không kéo server engines.
 
-- **Server Modules (`apps/api`, `packages/core`, `packages/astro-engine`)**:
+- **Server Modules (`apps/api`, `packages/core`, `packages/astro-engine`, `packages/xuanshu-runtime`)**:
   - Giữ ranh giới rõ ràng giữa adapter (iztro, lunar-javascript, xuanshu-runtime) và domain logic.
 
 ---
@@ -25,7 +25,7 @@ Tài liệu quy chuẩn kỹ thuật cho reviewer agent và kiểm duyệt mã n
 - **Frontend không bao giờ chứa chữ Hán**: Mọi nhãn, thuật ngữ thuật số hiển thị trên giao diện người dùng đều phải bằng tiếng Việt chuẩn.
 - **Fail-fast translation**: Hàm `translateZiweiKey` và các từ điển ánh xạ phải ném lỗi (throw) khi gặp key thiếu, cấm fallback ngầm về chữ Hán nguyên bản.
 - **Kiểm duyệt tự động**:
-  - Lệnh `pnpm check:hanzi` (được tích hợp trong `pnpm lint`) tự động quét biểu thức chính quy `\p{Script=Han}` trên toàn bộ `apps/web/src` (ngoại trừ các file test và bảng tra cứu legacy đã được whitelist).
+  - Lệnh `pnpm check:hanzi` (tích hợp trong `pnpm lint` và `.githooks/pre-commit`) tự động quét biểu thức chính quy `\p{Script=Han}` trên toàn bộ `apps/web/src` (ngoại trừ các file test và bảng tra cứu legacy đã được whitelist).
   - Mọi template `.svelte` phải đạt 0 ký tự chữ Hán.
 
 ---

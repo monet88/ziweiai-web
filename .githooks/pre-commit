@@ -79,4 +79,14 @@ if [[ $fail -ne 0 ]]; then
   exit 1
 fi
 
+# Language invariant guard: enforce zero Hanzi characters in apps/web/src
+if echo "$staged" | grep -q '^apps/web/src/'; then
+  echo "Checking language invariant (zero Hanzi in apps/web/src)..."
+  if ! node scripts/check-hanzi.mjs; then
+    echo >&2
+    echo "Commit aborted by .githooks/pre-commit (Hanzi language invariant violated)." >&2
+    exit 1
+  fi
+fi
+
 exit 0

@@ -6,7 +6,8 @@ import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
 import type { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
-import type { QuotasService } from '../quotas/quotas.service';
+import { QuotasService } from '../quotas/quotas.service';
+import { AiFeatureExecutionOrchestrator } from '../../providers/ai/ai-feature-execution.orchestrator';
 import { DrawsLenormandService } from './draws-lenormand.service';
 
 function expectApiError(error: unknown, status: HttpStatus, code: string): void {
@@ -37,11 +38,12 @@ describe('DrawsLenormandService', () => {
         providerMetadata: { provider: 'mock' },
       }),
     };
-    service = new DrawsLenormandService(
+    const orchestrator = new AiFeatureExecutionOrchestrator(
       quotasService as QuotasService,
       providerRouter as ExplanationProviderRouter,
-      walletEngine as WalletEngineService
+      walletEngine as WalletEngineService,
     );
+    service = new DrawsLenormandService(orchestrator);
   });
 
   afterEach(() => {

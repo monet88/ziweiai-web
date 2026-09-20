@@ -6,7 +6,8 @@ import { ApiErrorHttpException } from '../../common/http/api-error';
 import { apiEnv } from '../../config/env';
 import type { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
 import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
-import type { QuotasService } from '../quotas/quotas.service';
+import { QuotasService } from '../quotas/quotas.service';
+import { AiFeatureExecutionOrchestrator } from '../../providers/ai/ai-feature-execution.orchestrator';
 import { DrawsSticksService } from './draws-sticks.service';
 
 function expectApiError(error: unknown, status: HttpStatus, code: string): void {
@@ -40,11 +41,12 @@ describe('DrawsSticksService', () => {
         providerMetadata: { provider: 'mock' },
       }),
     };
-    service = new DrawsSticksService(
+    const orchestrator = new AiFeatureExecutionOrchestrator(
       quotasService as QuotasService,
       providerRouter as ExplanationProviderRouter,
-      walletEngine as WalletEngineService
+      walletEngine as WalletEngineService,
     );
+    service = new DrawsSticksService(orchestrator);
   });
 
   afterEach(() => {

@@ -1,8 +1,11 @@
-import type {
-  XiaoLiuRenMethod,
-  XiaoLiuRenPalace,
+import {
+  XIAO_LIU_REN_PALACES,
+  type XiaoLiuRenMethod,
+  type XiaoLiuRenPalace,
 } from '@ziweiai/contracts';
 import { Solar } from 'lunar-javascript';
+
+export { XIAO_LIU_REN_PALACES };
 
 export interface XiaoLiuRenCalculationResult {
   question: string;
@@ -22,87 +25,6 @@ export interface CalculateXiaoLiuRenInput {
   numbers?: [number, number, number];
   date?: Date;
 }
-
-export const XIAO_LIU_REN_PALACES: readonly XiaoLiuRenPalace[] = [
-  {
-    key: 'dai_an',
-    index: 0,
-    name: 'Đại An',
-    element: 'Mộc',
-    direction: 'Đông',
-    auspice: 'dai_cat',
-    auspiceLabel: 'Đại Cát',
-    deity: 'Thanh Long',
-    meaning: 'Thân tâm an định, mưu sự vững bền, cầu tài ở phương Đông. Mọi sự bình an, lấy tĩnh chế động.',
-    poem: 'Đại An sự sự xương, cầu mưu tại đông phương. Thất vật khứ bất viễn, trạch xá bảo an khang. Hành nhân thân vị động, bệnh giả chủ vô phương.',
-    advice: 'Giữ vững tâm thế tĩnh tại, kiên định với mục tiêu đã định. Thuận theo tự nhiên, không nên nóng vội thay đổi.',
-  },
-  {
-    key: 'luu_nien',
-    index: 1,
-    name: 'Lưu Niên',
-    element: 'Thủy',
-    direction: 'Bắc',
-    auspice: 'binh',
-    auspiceLabel: 'Bình (Thứ Hung)',
-    deity: 'Huyền Vũ',
-    meaning: 'Dây dưa chậm trễ, sự việc kéo dài chưa rõ hồi kết. Việc quan nên hoãn, người đi xa chưa về.',
-    poem: 'Lưu Niên sự nan thành, cầu mưu nhật vị minh. Quan sự phàm nghi hoãn, khứ giả vị hồi trình. Thất vật nam phương kiến, cấp thảo phương tâm xưng.',
-    advice: 'Kiên nhẫn chờ thời, không nên cưỡng cầu đốt cháy giai đoạn. Kiểm tra kỹ kế hoạch, đề phòng khẩu thiệt thị phi.',
-  },
-  {
-    key: 'toc_hy',
-    index: 2,
-    name: 'Tốc Hỷ',
-    element: 'Hỏa',
-    direction: 'Nam',
-    auspice: 'cat',
-    auspiceLabel: 'Cát',
-    deity: 'Chu Tước',
-    meaning: 'Niềm vui đến mau, tin mừng báo hỷ, mưu sự cầu tài hướng Nam có lộc. Diễn tiến nhanh chóng, khởi sắc.',
-    poem: 'Tốc Hỷ hỷ lai lâm, cầu tài hướng nam hành. Thất vật thân mùi ngọ, phùng nhân lộ thượng tầm. Quan sự hữu phúc đức, bệnh giả vô họa xâm.',
-    advice: 'Nắm bắt thời cơ chớp nhoáng, hành động quyết đoán không chần chừ. Lan tỏa tinh thần tích cực và chia sẻ niềm vui.',
-  },
-  {
-    key: 'xich_khau',
-    index: 3,
-    name: 'Xích Khẩu',
-    element: 'Kim',
-    direction: 'Tây',
-    auspice: 'hung',
-    auspiceLabel: 'Hung',
-    deity: 'Bạch Hổ',
-    meaning: 'Chủ về khẩu thiệt tranh chấp, thị phi, kiện tụng hoặc bất hòa. Mưu sự dễ gặp trở ngại, kinh hoảng.',
-    poem: 'Xích Khẩu chủ khẩu thiệt, quan phi thiết nghi phòng. Thất vật tốc tốc thảo, hành nhân hữu kinh hoang. Lục súc đa tác quái, bệnh giả xuất tây phương.',
-    advice: 'Cẩn trọng lời ăn tiếng nói, nhẫn nhịn tránh đôi co tranh cãi. Giữ mình kín kẽ, phòng ngừa rủi ro tranh chấp pháp lý.',
-  },
-  {
-    key: 'tieu_cat',
-    index: 4,
-    name: 'Tiểu Cát',
-    element: 'Mộc',
-    direction: 'Tây Nam',
-    auspice: 'tieu_cat',
-    auspiceLabel: 'Tiểu Cát',
-    deity: 'Lục Hợp',
-    meaning: 'Gặp điều tốt lành, hòa hợp, có quý nhân tương trợ. Mưu sự thuận hòa, đón nhận tin vui hoặc cơ hội hợp tác.',
-    poem: 'Tiểu Cát tối cát xương, lộ thượng hảo thương lượng. Âm nhân lai báo hỷ, thất vật tại khôn phương. Hành nhân lập tiện chí, giao quan thậm thị cường.',
-    advice: 'Tích cực giao lưu kết nối, tìm kiếm sự đồng thuận và hợp tác đôi bên cùng có lợi. Lấy chân thành làm gốc.',
-  },
-  {
-    key: 'khong_vong',
-    index: 5,
-    name: 'Không Vong',
-    element: 'Thổ',
-    direction: 'Trung ương',
-    auspice: 'dai_hung',
-    auspiceLabel: 'Đại Hung',
-    deity: 'Câu Trần',
-    meaning: 'Trống rỗng, hư hao, mưu sự khó thành, tin tức bặt tăm. Tránh xuất tiền lớn hoặc khởi sự mạo hiểm.',
-    poem: 'Không Vong sự bất tường, âm nhân đa quái trương. Cầu tài vô lợi ích, hành nhân hữu tai ương. Thất vật tầm bất kiến, quan sự hữu hình thương.',
-    advice: 'Thu liễm phòng thủ, bảo toàn lực lượng. Không nên đầu tư mạo hiểm hay cưỡng cầu lúc này; hãy bình tâm tu dưỡng.',
-  },
-] as const;
 
 export const SHICHEN_NAMES_VI = [
   'Tý',

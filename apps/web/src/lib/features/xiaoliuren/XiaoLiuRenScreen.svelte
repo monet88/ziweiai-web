@@ -6,13 +6,16 @@
   import { PrimaryButton, NoticeBanner } from '$lib/components/ui';
   import MarkdownView from '$lib/features/explanation/MarkdownView.svelte';
   import { createXiaoLiuRenModel, type XiaoLiuRenCopy } from './xiaoliuren-model.svelte';
-  import type { XiaoLiuRenAuspice } from '@ziweiai/contracts';
+  import {
+    XIAO_LIU_REN_PALACES,
+    type XiaoLiuRenAuspice,
+  } from '@ziweiai/contracts';
 
   const AUSPICE_LABEL_MAP: Record<XiaoLiuRenAuspice, string> = {
     dai_cat: 'Đại Cát',
     cat: 'Cát',
     tieu_cat: 'Tiểu Cát',
-    binh: 'Bình hòa',
+    binh: 'Bình (Thứ Hung)',
     hung: 'Hung',
     dai_hung: 'Đại Hung',
   };
@@ -31,15 +34,6 @@
 
   const auth = getAuthStore();
   const model = untrack(() => createXiaoLiuRenModel({ auth, copy }));
-
-  const sixPalaces = [
-    { key: 'dai_an', name: 'Đại An', num: 1, auspice: 'Cát', element: 'Mộc', note: 'Bình an, vững chãi, mọi sự thuận hòa' },
-    { key: 'luu_nien', name: 'Lưu Niên', num: 2, auspice: 'Bình hòa', element: 'Thủy', note: 'Chưa xong, chậm lại, kiên nhẫn tích lũy' },
-    { key: 'toc_hy', name: 'Tốc Hỷ', num: 3, auspice: 'Đại Cát', element: 'Hỏa', note: 'Tin vui nhanh chóng, việc tốt đến ngay' },
-    { key: 'xich_khau', name: 'Xích Khẩu', num: 4, auspice: 'Tiểu Hung', element: 'Kim', note: 'Tranh chấp, thị phi, phòng ngừa rủi ro' },
-    { key: 'tieu_cat', name: 'Tiểu Cát', num: 5, auspice: 'Cát', element: 'Mộc', note: 'May mắn nhỏ, có quý nhân giúp đỡ' },
-    { key: 'khong_vong', name: 'Không Vong', num: 6, auspice: 'Hung', element: 'Thổ', note: 'Trống rỗng, lỡ dở, nên phòng thủ bảo toàn' },
-  ];
 
   function goToDashboard(): void {
     void goto(resolve('/'));
@@ -145,17 +139,17 @@
           <div class="six-palaces-guide">
             <p class="guide-title">Sơ đồ 6 cung bấm độn trên bàn tay</p>
             <div class="palaces-grid">
-              {#each sixPalaces as p (p.key)}
+              {#each XIAO_LIU_REN_PALACES as p (p.key)}
                 <div class="palace-tile">
                   <div class="tile-top">
-                    <span class="tile-num">{p.num}</span>
+                    <span class="tile-num">{p.index + 1}</span>
                     <span class="tile-name">{p.name}</span>
                   </div>
                   <div class="tile-badges">
-                    <span class="badge-auspice">{p.auspice}</span>
+                    <span class="badge-auspice auspice-{getAuspiceClass(p.auspice)}">{p.auspiceLabel}</span>
                     <span class="badge-elem">{p.element}</span>
                   </div>
-                  <p class="tile-note">{p.note}</p>
+                  <p class="tile-note">{p.meaning}</p>
                 </div>
               {/each}
             </div>

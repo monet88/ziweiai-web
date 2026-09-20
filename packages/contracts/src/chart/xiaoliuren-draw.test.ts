@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   xiaoLiuRenDrawRequestSchema,
   xiaoLiuRenDrawSchema,
+  xiaoLiuRenPalaceSchema,
+  XIAO_LIU_REN_PALACES,
   type XiaoLiuRenDraw,
 } from './xiaoliuren-draw';
 
@@ -84,5 +86,45 @@ describe('xiaoliuren-draw schemas', () => {
     });
     expect(req.method).toBe('numbers');
     expect(req.numbers).toEqual([3, 8, 9]);
+  });
+
+  describe('canonical XIAO_LIU_REN_PALACES catalog', () => {
+    const CJK_TEXT_PATTERN =
+      /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Bopomofo}\u3000-\u303F\uFF00-\uFFEF]/u;
+
+    it('defines exactly 6 palaces matching xiaoLiuRenPalaceSchema with no CJK', () => {
+      expect(XIAO_LIU_REN_PALACES).toHaveLength(6);
+
+      const keys = XIAO_LIU_REN_PALACES.map((p) => p.key);
+      expect(keys).toEqual([
+        'dai_an',
+        'luu_nien',
+        'toc_hy',
+        'xich_khau',
+        'tieu_cat',
+        'khong_vong',
+      ]);
+
+      XIAO_LIU_REN_PALACES.forEach((palace, idx) => {
+        expect(palace.index).toBe(idx);
+        const parsed = xiaoLiuRenPalaceSchema.safeParse(palace);
+        expect(parsed.success).toBe(true);
+      });
+
+      expect(CJK_TEXT_PATTERN.test(JSON.stringify(XIAO_LIU_REN_PALACES))).toBe(false);
+    });
+
+    it('contains valid elements, directions, auspices, deities and meanings', () => {
+      for (const palace of XIAO_LIU_REN_PALACES) {
+        expect(palace.name.length).toBeGreaterThan(0);
+        expect(palace.element.length).toBeGreaterThan(0);
+        expect(palace.direction.length).toBeGreaterThan(0);
+        expect(palace.auspiceLabel.length).toBeGreaterThan(0);
+        expect(palace.deity.length).toBeGreaterThan(0);
+        expect(palace.meaning.length).toBeGreaterThan(0);
+        expect(palace.poem.length).toBeGreaterThan(0);
+        expect(palace.advice.length).toBeGreaterThan(0);
+      }
+    });
   });
 });

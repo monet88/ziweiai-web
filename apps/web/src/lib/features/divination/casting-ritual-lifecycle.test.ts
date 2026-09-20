@@ -1,5 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
-import { ApiError } from '$lib/api-client/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { viCopy } from '$lib/i18n/vi';
 
 let currentOptionsFn: (() => any) | null = null;
@@ -57,6 +56,16 @@ vi.mock('@tanstack/svelte-query', () => ({
 import { createCastingRitualLifecycle } from './casting-ritual-lifecycle.svelte';
 
 describe('createCastingRitualLifecycle', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    currentMutationState = {
+      isPending: false,
+      isError: false,
+      error: null,
+      data: null,
+    };
+  });
+
   function setup(initialToken: string | null = 'init-token') {
     let currentToken = initialToken;
     const auth = {
@@ -136,7 +145,7 @@ describe('createCastingRitualLifecycle', () => {
   });
 
   it('throws unauthorized ApiError in mutationFn if token is missing', async () => {
-    const { lifecycle, setToken } = setup(null);
+    const { lifecycle } = setup(null);
 
     lifecycle.submit();
     await new Promise((r) => setTimeout(r, 0));

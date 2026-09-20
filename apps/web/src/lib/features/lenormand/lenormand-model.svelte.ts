@@ -3,12 +3,12 @@
  * giữ câu hỏi + kiểu trải bài (mặc định ba lá) + seed tuỳ chọn; submit gọi POST /draws/lenormand.
  * Token đọc tươi trong mutationFn (invariants §3), không snapshot lúc mount. Rút lá deterministic
  * server-side; bài đọc do LLM sinh. Validate tối thiểu phía client (câu hỏi không rỗng).
+ * Dùng createCastingRitualLifecycle (Issue #68) cho lifecycle submit/reset/token/validation lặp lại.
  */
-import { createMutation } from '@tanstack/svelte-query';
 import type { LenormandDraw, LenormandSpread } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { ApiError } from '$lib/api-client/core';
-import { drawLenormand } from '$lib/api-client/divinations';;
+import { drawLenormand } from '$lib/api-client/divinations';
+import { createCastingRitualLifecycle } from '$lib/features/divination/casting-ritual-lifecycle.svelte';
 import { viCopy } from '$lib/i18n/vi';
 
 export type LenormandCopy = { readonly [K in keyof typeof viCopy.lenormand]: string };
@@ -23,21 +23,22 @@ export function createLenormandModel(options: LenormandModelOptions) {
 
   let question = $state('');
   let spread = $state<LenormandSpread>('three');
-  let validationMessage = $state<string | null>(null);
 
-  const mutation = createMutation<LenormandDraw, ApiError, void>(() => ({
-    mutationFn: async () => {
-      const token = auth.getAccessToken();
-      if (!token) {
-        throw new ApiError('unauthorized', viCopy.errors.sessionRequired);
-      }
+  const lifecycle = createCastingRitualLifecycle<LenormandDraw>({
+    auth,
+    validate: () => {
       const trimmed = question.trim();
       if (!trimmed) {
-        throw new ApiError('validation', copy.questionRequired);
+        return copy.questionRequired;
       }
-      return drawLenormand(token, { question: trimmed, spread });
+      return null;
     },
-  }));
+    execute: (token) => drawLenormand(token, { question: question.trim(), spread }),
+    onReset: () => {
+      question = '';
+      spread = 'three';
+    },
+  });
 
   return {
     get question() {
@@ -47,19 +48,19 @@ export function createLenormandModel(options: LenormandModelOptions) {
       return spread;
     },
     get validationMessage() {
-      return validationMessage;
+      return lifecycle.validationMessage;
     },
     get isSubmitting() {
-      return mutation.isPending;
+      return lifecycle.isSubmitting;
     },
     get isError() {
-      return mutation.isError;
+      return lifecycle.isError;
     },
     get errorMessage() {
-      return mutation.error?.message ?? null;
+      return lifecycle.errorMessage;
     },
     get result(): LenormandDraw | null {
-      return mutation.data ?? null;
+      return lifecycle.result;
     },
 
     setQuestion(next: string): void {
@@ -70,21 +71,8 @@ export function createLenormandModel(options: LenormandModelOptions) {
       spread = next;
     },
 
-    submit(): void {
-      if (!question.trim()) {
-        validationMessage = copy.questionRequired;
-        return;
-      }
-      validationMessage = null;
-      mutation.mutate();
-    },
-
-    reset(): void {
-      question = '';
-      spread = 'three';
-      validationMessage = null;
-      mutation.reset();
-    },
+    submit: lifecycle.submit,
+    reset: lifecycle.reset,
   };
 }
 

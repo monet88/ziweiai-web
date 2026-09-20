@@ -6,12 +6,12 @@
  * Token đọc tươi trong mutationFn (invariants §3), không snapshot lúc mount. Rút lá là deterministic
  * server-side; diễn giải do LLM sinh. Validate tối thiểu phía client (câu hỏi không rỗng) để báo
  * lỗi sớm, KHÔNG thay cho gate server.
+ * Dùng createCastingRitualLifecycle (Issue #68) cho lifecycle submit/reset/token/validation lặp lại.
  */
-import { createMutation } from '@tanstack/svelte-query';
 import type { TarotDraw, TarotSpread } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { ApiError } from '$lib/api-client/core';
-import { drawTarot } from '$lib/api-client/divinations';;
+import { drawTarot } from '$lib/api-client/divinations';
+import { createCastingRitualLifecycle } from '$lib/features/divination/casting-ritual-lifecycle.svelte';
 import { viCopy } from '$lib/i18n/vi';
 
 export type TarotCopy = { readonly [K in keyof typeof viCopy.tarot]: string };
@@ -26,21 +26,22 @@ export function createTarotModel(options: TarotModelOptions) {
 
   let question = $state('');
   let spread = $state<TarotSpread>('three-card');
-  let validationMessage = $state<string | null>(null);
 
-  const mutation = createMutation<TarotDraw, ApiError, void>(() => ({
-    mutationFn: async () => {
-      const token = auth.getAccessToken();
-      if (!token) {
-        throw new ApiError('unauthorized', viCopy.errors.sessionRequired);
-      }
+  const lifecycle = createCastingRitualLifecycle<TarotDraw>({
+    auth,
+    validate: () => {
       const trimmed = question.trim();
       if (!trimmed) {
-        throw new ApiError('validation', copy.questionRequired);
+        return copy.questionRequired;
       }
-      return drawTarot(token, { question: trimmed, spread });
+      return null;
     },
-  }));
+    execute: (token) => drawTarot(token, { question: question.trim(), spread }),
+    onReset: () => {
+      question = '';
+      spread = 'three-card';
+    },
+  });
 
   return {
     get question() {
@@ -50,19 +51,19 @@ export function createTarotModel(options: TarotModelOptions) {
       return spread;
     },
     get validationMessage() {
-      return validationMessage;
+      return lifecycle.validationMessage;
     },
     get isSubmitting() {
-      return mutation.isPending;
+      return lifecycle.isSubmitting;
     },
     get isError() {
-      return mutation.isError;
+      return lifecycle.isError;
     },
     get errorMessage() {
-      return mutation.error?.message ?? null;
+      return lifecycle.errorMessage;
     },
     get result(): TarotDraw | null {
-      return mutation.data ?? null;
+      return lifecycle.result;
     },
 
     setQuestion(next: string): void {
@@ -73,21 +74,8 @@ export function createTarotModel(options: TarotModelOptions) {
       spread = next;
     },
 
-    submit(): void {
-      if (!question.trim()) {
-        validationMessage = copy.questionRequired;
-        return;
-      }
-      validationMessage = null;
-      mutation.mutate();
-    },
-
-    reset(): void {
-      question = '';
-      spread = 'three-card';
-      validationMessage = null;
-      mutation.reset();
-    },
+    submit: lifecycle.submit,
+    reset: lifecycle.reset,
   };
 }
 

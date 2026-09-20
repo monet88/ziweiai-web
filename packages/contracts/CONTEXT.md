@@ -52,6 +52,10 @@ _Avoid_: Sổ mơ, bói giấc mơ.
 Lịch cát hung tra cứu ngày giờ hoàng đạo, hắc đạo, trực, sao chiếu và việc nên làm hoặc nên kiêng cữ.
 _Avoid_: Lịch âm, nông lịch.
 
+**Lục Cung Tiểu Lục Nhâm (Xiao Liu Ren Six Palaces)**:
+Sáu cung cố định dùng trong Tiểu Lục Nhâm gồm Đại An, Lưu Niên, Tốc Hỷ, Xích Khẩu, Tiểu Cát và Không Vong; mỗi cung mang một bộ thuộc tính công khai nhất quán như ngũ hành, phương vị, mức cát hung, thần sát, ý nghĩa, thơ quyết và lời khuyên.
+_Avoid_: Sáu ô giao diện, danh sách minh họa Tiểu Lục Nhâm.
+
 **Tướng Diện (Face Analysis)**:
 Thuật phân tích diện mạo khuôn mặt qua ngũ quan, tam đình để nhận định tính cách và vận khí.
 _Avoid_: Xem tướng, bói mặt.

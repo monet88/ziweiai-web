@@ -9,6 +9,7 @@ import {
   stickDrawSchema,
   almanacSelectionSchema,
   xiaoLiuRenDrawSchema,
+  chuVanVuongDrawSchema,
   type CreateDivinationRequest,
   type CreateDivinationResponse,
   type MbtiAnswer,
@@ -27,6 +28,8 @@ import {
   type AlmanacTopic,
   type XiaoLiuRenDraw,
   type XiaoLiuRenDrawRequest,
+  type ChuVanVuongDraw,
+  type ChuVanVuongDrawRequest,
   numerologyExplainResponseSchema,
   type NumerologyExplainRequest,
   type NumerologyExplainResponse,
@@ -163,6 +166,17 @@ export function drawXiaoLiuRen(
   params: XiaoLiuRenDrawRequest,
 ): Promise<XiaoLiuRenDraw> {
   return fetchJson('/draws/xiaoliuren', xiaoLiuRenDrawSchema, {
+    method: 'POST',
+    token,
+    body: params,
+  });
+}
+
+export function drawChuVanVuong(
+  token: string,
+  params: ChuVanVuongDrawRequest,
+): Promise<ChuVanVuongDraw> {
+  return fetchJson('/draws/chuvanvuong', chuVanVuongDrawSchema, {
     method: 'POST',
     token,
     body: params,

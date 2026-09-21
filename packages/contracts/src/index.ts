@@ -17,6 +17,7 @@ export * from './chart/vision-analysis';
 export * from './chart/iching-draw';
 export * from './chart/numerology';
 export * from './chart/xiaoliuren-draw';
+export * from './chart/chuvanvuong-draw';
 export {
   meihuaTrigramKeys,
   meihuaElementKeys,

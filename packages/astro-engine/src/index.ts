@@ -11,6 +11,7 @@ export * from './adapters/lunar-javascript-bazi-adapter';
 export * from './adapters/meihua-adapter';
 export * from './adapters/mangpai-adapter';
 export * from './adapters/xiaoliuren-adapter';
+export * from './adapters/chuvanvuong-adapter';
 export * from './hepan-compatibility';
 export * from './mangpai-reading';
 export * from './fixtures/phase-3-fixture-catalog';

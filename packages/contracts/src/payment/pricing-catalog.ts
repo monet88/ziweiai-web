@@ -19,6 +19,7 @@ export const FEATURE_PRICING = {
   TAROT_LENORMAND: 3,
   XIAOLIUREN: 3,
   STICKS: 3,
+  CHUVANVUONG: 3,
   ANNUAL_REPORT: 15,
   SYNTHESIS_REPORT: 15,
   ROYAL_DOSSIER: 50,
@@ -74,6 +75,14 @@ export const FEATURE_PRICING_CATALOG: readonly FeaturePricingItem[] = [
     displayCost: `${FEATURE_PRICING.XIAOLIUREN} XU / lượt`,
     tag: 'Bấm độn nhanh',
     desc: 'Bấm độn 6 cung Gia Cát Lượng định hướng xuất hành, tài lộc, sự vụ',
+  },
+  {
+    id: 'chuvanvuong',
+    name: 'Gieo Quẻ Chu Văn Vương',
+    xuCost: FEATURE_PRICING.CHUVANVUONG,
+    displayCost: `${FEATURE_PRICING.CHUVANVUONG} XU / lượt`,
+    tag: '64 Quẻ Thần Đoán',
+    desc: 'Bói quẻ Chu Văn Vương 64 quẻ định hướng tài lộc, công danh, gia đạo, sức khỏe',
   },
   {
     id: 'annual_report',

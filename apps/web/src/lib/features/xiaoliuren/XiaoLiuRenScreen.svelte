@@ -11,14 +11,6 @@
     type XiaoLiuRenAuspice,
   } from '@ziweiai/contracts';
 
-  const AUSPICE_LABEL_MAP: Record<XiaoLiuRenAuspice, string> = {
-    dai_cat: 'Đại Cát',
-    cat: 'Cát',
-    tieu_cat: 'Tiểu Cát',
-    binh: 'Bình (Thứ Hung)',
-    hung: 'Hung',
-    dai_hung: 'Đại Hung',
-  };
 
   function getAuspiceClass(auspice: XiaoLiuRenAuspice): 'good' | 'neutral' | 'bad' {
     if (auspice === 'dai_cat' || auspice === 'cat' || auspice === 'tieu_cat') return 'good';
@@ -64,7 +56,7 @@
               <span class="palace-badge">{copy.targetPalaceTitle}</span>
               <h2 class="palace-name">{draw.targetPalace.name}</h2>
               <span class="palace-auspice auspice-{getAuspiceClass(draw.targetPalace.auspice)}">
-                {AUSPICE_LABEL_MAP[draw.targetPalace.auspice] ?? draw.targetPalace.auspice}
+                {draw.targetPalace.auspiceLabel}
               </span>
             </div>
 

@@ -5,8 +5,6 @@ import {
 } from '@ziweiai/contracts';
 import { Solar } from 'lunar-javascript';
 
-export { XIAO_LIU_REN_PALACES };
-
 export interface XiaoLiuRenCalculationResult {
   question: string;
   method: XiaoLiuRenMethod;

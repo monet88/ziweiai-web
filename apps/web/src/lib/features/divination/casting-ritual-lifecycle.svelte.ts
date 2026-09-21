@@ -62,10 +62,6 @@ export function createCastingRitualLifecycle<TResult>(
     onReset?.();
   }
 
-  function clearValidation(): void {
-    validationMessage = null;
-  }
-
   return {
     get validationMessage() {
       return validationMessage;
@@ -82,7 +78,6 @@ export function createCastingRitualLifecycle<TResult>(
     get result(): TResult | null {
       return mutation.data ?? null;
     },
-    clearValidation,
     submit,
     reset,
   };

@@ -70,3 +70,4 @@ export * from './wallet/referral-hub';
 export * from './horoscope/palace-deep-dive';
 export * from './journal/astrological-journal';
 export * from './payment/pricing-catalog';
+export * from './b2b/inquiry';

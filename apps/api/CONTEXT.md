@@ -43,3 +43,11 @@ _Avoid_: Bói năm, sấm ký tương lai.
 **Hồ Sơ Vận Mệnh (Astrological Dossier)**:
 Tập tài liệu số định dạng PDF đúc kết toàn diện các bình diện của lá số bản mệnh, trình bày theo chuẩn thẩm mỹ trang trọng.
 _Avoid_: File in, bản in tóm tắt.
+
+**Yêu Cầu Đối Tác Doanh Nghiệp (B2B Inquiry)**:
+Bản ghi nhận thông tin liên hệ và nhu cầu hợp tác của chuyên viên bất động sản, nhà thầu hoặc chủ doanh nghiệp gửi qua cổng đối tác.
+_Avoid_: Lead bán hàng, tin nhắn rác, form tư vấn lẻ.
+
+**Hội Viên Hoàng Thân (VIP Membership)**:
+Hạng định danh cao cấp bảo chứng trọn đời, được máy chủ kích hoạt tự động khi người dùng đạt điều kiện nạp tích lũy hoặc lan tỏa cộng đồng.
+_Avoid_: Khách vip, tài khoản trả phí, gói thuê bao.

@@ -1,8 +1,9 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { Coins, ArrowRight, X, ShieldCheck } from 'lucide-svelte';
+  import { Coins, ArrowRight, X, ShieldCheck, Crown, Sparkles } from 'lucide-svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
+  import { resolveVipPromotion } from './vip-tier';
 
   interface Props {
     show: boolean;
@@ -12,6 +13,8 @@
   }
 
   let { show, addedXu, newBalance, onClose }: Props = $props();
+
+  let vipPromo = $derived(resolveVipPromotion(addedXu));
 
   // Tạo 28 hạt pháo hoa đồng tiền vàng
   const particles = Array.from({ length: 28 }, (_, i) => ({
@@ -68,22 +71,41 @@
         <X size={18} />
       </button>
 
-      <!-- Biểu tượng Đồng Tiền Vàng Khâm Thiên Bảo Giám -->
-      <div class="hero-coin-wrapper">
-        <div class="coin-aura"></div>
-        <div class="coin-icon-ring">
-          <Coins size={44} class="gold-coin-svg" />
+      {#if vipPromo.isVip}
+        <!-- Biểu tượng Vương Miện Hội Viên Hoàng Thân VIP -->
+        <div class="hero-coin-wrapper hero-vip-wrapper">
+          <div class="coin-aura vip-aura"></div>
+          <div class="coin-icon-ring vip-ring">
+            <Crown size={48} class="gold-crown-svg" />
+          </div>
         </div>
-      </div>
 
-      <!-- Tiêu đề Hoàng Gia -->
-      <div class="modal-header">
-        <span class="sub-badge">
-          <ShieldCheck size={14} /> Giao dịch VietQR Hoàn Tất
-        </span>
-        <h2 id="modal-title" class="title-gold">Nạp XU Thành Công!</h2>
-        <p class="subtitle">Thiên cơ hanh thông, ví bản mệnh của bạn đã được tiếp thêm năng lượng.</p>
-      </div>
+        <!-- Tiêu đề Thăng Hạng VIP Hoàng Gia -->
+        <div class="modal-header">
+          <span class="sub-badge vip-badge-royal">
+            <Sparkles size={14} /> {vipPromo.vipBadge}
+          </span>
+          <h2 id="modal-title" class="title-gold vip-title">{vipPromo.vipTitle}</h2>
+          <p class="subtitle vip-sub">{vipPromo.vipDescription}</p>
+        </div>
+      {:else}
+        <!-- Biểu tượng Đồng Tiền Vàng Khâm Thiên Bảo Giám -->
+        <div class="hero-coin-wrapper">
+          <div class="coin-aura"></div>
+          <div class="coin-icon-ring">
+            <Coins size={44} class="gold-coin-svg" />
+          </div>
+        </div>
+
+        <!-- Tiêu đề Hoàng Gia -->
+        <div class="modal-header">
+          <span class="sub-badge">
+            <ShieldCheck size={14} /> Giao dịch VietQR Hoàn Tất
+          </span>
+          <h2 id="modal-title" class="title-gold">Nạp XU Thành Công!</h2>
+          <p class="subtitle">Thiên cơ hanh thông, ví bản mệnh của bạn đã được tiếp thêm năng lượng.</p>
+        </div>
+      {/if}
 
       <!-- Hộp Số XU Nạp -->
       <div class="reward-box">
@@ -445,5 +467,59 @@
   :global([data-theme="light"]) .btn-secondary:hover {
     color: #111827;
     background: #f3f4f6;
+  }
+
+  /* VIP Royal Upgrade Enhancements */
+  .hero-vip-wrapper .vip-aura {
+    background: radial-gradient(circle, rgba(234, 179, 8, 0.4) 0%, rgba(168, 85, 247, 0.2) 60%, transparent 80%);
+    filter: blur(24px);
+  }
+
+  .hero-vip-wrapper .vip-ring {
+    background: linear-gradient(135deg, #fef08a 0%, #eab308 50%, #ca8a04 100%);
+    box-shadow: 0 0 35px rgba(234, 179, 8, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.8);
+    animation: vipPulse 2.5s infinite ease-in-out;
+  }
+
+  :global(.gold-crown-svg) {
+    color: #78350f;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  }
+
+  .vip-badge-royal {
+    background: linear-gradient(90deg, rgba(234, 179, 8, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+    border: 1px solid rgba(234, 179, 8, 0.5);
+    color: #ca8a04;
+    font-weight: 800;
+  }
+
+  :global(.dark) .vip-badge-royal {
+    color: #fef08a;
+    border-color: rgba(234, 179, 8, 0.6);
+  }
+
+  .vip-title {
+    font-size: 24px;
+    letter-spacing: -0.01em;
+  }
+
+  .vip-sub {
+    color: var(--color-text-secondary, #475569);
+    font-weight: 500;
+  }
+
+  :global(.dark) .vip-sub {
+    color: #cbd5e1;
+  }
+
+  @keyframes vipPulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 30px rgba(234, 179, 8, 0.4);
+    }
+    50% {
+      transform: scale(1.06);
+      box-shadow: 0 0 45px rgba(234, 179, 8, 0.7);
+    }
   }
 </style>

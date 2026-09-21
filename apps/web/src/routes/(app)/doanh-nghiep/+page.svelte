@@ -9,6 +9,8 @@
     ArrowRight,
     Compass
   } from 'lucide-svelte';
+  import DossierPreviewGallery from '$lib/features/b2b/DossierPreviewGallery.svelte';
+  import B2bInquiryForm from '$lib/features/b2b/B2bInquiryForm.svelte';
 </script>
 
 <svelte:head>
@@ -72,6 +74,9 @@
       </div>
     </div>
 
+    <!-- Widget xem trước ấn bản Hồ Sơ Hoàng Gia 19 Trang (ADR-0009 / Q2=A) -->
+    <DossierPreviewGallery />
+
     <!-- Pricing Box -->
     <div class="pricing-box">
       <div class="pricing-box-content">
@@ -91,6 +96,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Form Đăng Ký Hợp Tác B2B (ADR-0009 / Q1=A) -->
+    <B2bInquiryForm />
   </div>
 </AppScaffold>
 

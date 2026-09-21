@@ -27,3 +27,7 @@ _Avoid_: Vận lớn, đại hạn.
 **Lưu Niên (Annual Horizon)**:
 Sự tương tác của trường khí trong một năm nhất định lên cấu trúc lá số gốc.
 _Avoid_: Tiểu hạn, năm hạn.
+
+**Lục Cung Tiểu Lục Nhâm (Xiao Liu Ren Six Palaces)**:
+Sáu cung cố định dùng trong Tiểu Lục Nhâm gồm Đại An, Lưu Niên, Tốc Hỷ, Xích Khẩu, Tiểu Cát và Không Vong; tiêu chuẩn hóa metadata công khai từ `@ziweiai/contracts`, còn thuật toán tính quẻ thuộc Astro Engine.
+_Avoid_: Sáu ô giao diện, danh sách minh họa Tiểu Lục Nhâm.

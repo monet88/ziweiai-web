@@ -4,12 +4,12 @@
  * Hỗ trợ 2 phương thức:
  * 1. 'time': Bấm độn theo giờ âm lịch hiện tại (tự động quy đổi)
  * 2. 'numbers': Bấm độn theo 3 số ngẫu nhiên do người dùng chọn/nhập
+ * Dùng createCastingRitualLifecycle (Issue #68) cho lifecycle submit/reset/token/validation lặp lại.
  */
-import { createMutation } from '@tanstack/svelte-query';
 import type { XiaoLiuRenDraw, XiaoLiuRenDrawRequest } from '@ziweiai/contracts';
 import type { AuthStore } from '$lib/auth/auth-store.svelte';
-import { ApiError } from '$lib/api-client/core';
 import { drawXiaoLiuRen } from '$lib/api-client/divinations';
+import { createCastingRitualLifecycle } from '$lib/features/divination/casting-ritual-lifecycle.svelte';
 import { viCopy } from '$lib/i18n/vi';
 
 export type XiaoLiuRenCopy = { readonly [K in keyof typeof viCopy.xiaoliuren]: string };
@@ -37,40 +37,41 @@ export function createXiaoLiuRenModel(options: XiaoLiuRenModelOptions) {
   let number1 = $state<number>(1);
   let number2 = $state<number>(1);
   let number3 = $state<number>(1);
-  let validationMessage = $state<string | null>(null);
 
-  const mutation = createMutation<XiaoLiuRenDraw, ApiError, void>(() => ({
-    mutationFn: async () => {
-      const token = auth.getAccessToken();
-      if (!token) {
-        throw new ApiError('unauthorized', viCopy.errors.sessionRequired);
-      }
+  const lifecycle = createCastingRitualLifecycle<XiaoLiuRenDraw>({
+    auth,
+    validate: () => {
       const trimmed = question.trim();
       if (!trimmed) {
-        throw new ApiError('validation', copy.questionRequired);
+        return copy.questionRequired;
       }
-
-      let payload: XiaoLiuRenDrawRequest;
       if (method === 'numbers') {
         const nums = parseNumbers(number1, number2, number3);
         if (!nums) {
-          throw new ApiError('validation', copy.numbersRequired);
+          return copy.numbersRequired;
         }
-        payload = {
-          question: trimmed,
-          method: 'numbers',
-          numbers: nums,
-        };
-      } else {
-        payload = {
-          question: trimmed,
-          method: 'time',
-        };
       }
-
+      return null;
+    },
+    execute: (token) => {
+      const trimmed = question.trim();
+      const payload: XiaoLiuRenDrawRequest =
+        method === 'numbers'
+          ? {
+              question: trimmed,
+              method: 'numbers',
+              numbers: parseNumbers(number1, number2, number3)!,
+            }
+          : {
+              question: trimmed,
+              method: 'time',
+            };
       return drawXiaoLiuRen(token, payload);
     },
-  }));
+    onReset: () => {
+      question = '';
+    },
+  });
 
   return {
     get question() {
@@ -89,19 +90,19 @@ export function createXiaoLiuRenModel(options: XiaoLiuRenModelOptions) {
       return number3;
     },
     get validationMessage() {
-      return validationMessage;
+      return lifecycle.validationMessage;
     },
     get isSubmitting() {
-      return mutation.isPending;
+      return lifecycle.isSubmitting;
     },
     get isError() {
-      return mutation.isError;
+      return lifecycle.isError;
     },
     get errorMessage() {
-      return mutation.error?.message ?? null;
+      return lifecycle.errorMessage;
     },
     get result(): XiaoLiuRenDraw | null {
-      return mutation.data ?? null;
+      return lifecycle.result;
     },
 
     setQuestion(next: string): void {
@@ -124,26 +125,9 @@ export function createXiaoLiuRenModel(options: XiaoLiuRenModelOptions) {
       number2 = Math.floor(Math.random() * 64) + 1;
       number3 = Math.floor(Math.random() * 64) + 1;
     },
-    submit(): void {
-      validationMessage = null;
-      const trimmed = question.trim();
-      if (!trimmed) {
-        validationMessage = copy.questionRequired;
-        return;
-      }
-      if (method === 'numbers') {
-        const nums = parseNumbers(number1, number2, number3);
-        if (!nums) {
-          validationMessage = copy.numbersRequired;
-          return;
-        }
-      }
-      mutation.mutate();
-    },
-    reset(): void {
-      mutation.reset();
-      question = '';
-      validationMessage = null;
-    },
+    submit: lifecycle.submit,
+    reset: lifecycle.reset,
   };
 }
+
+export type XiaoLiuRenModel = ReturnType<typeof createXiaoLiuRenModel>;

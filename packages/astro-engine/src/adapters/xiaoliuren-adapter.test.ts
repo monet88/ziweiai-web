@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  calculateXiaoLiuRen,
-  hourToShichenIndex,
-  XIAO_LIU_REN_PALACES,
-} from './xiaoliuren-adapter';
+import { XIAO_LIU_REN_PALACES } from '@ziweiai/contracts';
+import { calculateXiaoLiuRen, hourToShichenIndex } from './xiaoliuren-adapter';
 
 const CJK_TEXT_PATTERN =
   /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Bopomofo}\u3000-\u303F\uFF00-\uFFEF]/u;

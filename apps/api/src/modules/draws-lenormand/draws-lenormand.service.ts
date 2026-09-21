@@ -1,5 +1,6 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import {
+  FEATURE_PRICING,
   lenormandDrawSchema,
   LENORMAND_SPREAD_CARD_COUNTS,
   type AuthenticatedUser,
@@ -7,12 +8,8 @@ import {
   type LenormandSpread,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
-import { throwQuotaRateLimited } from '../quotas/quota-http';
 import { apiEnv } from '../../config/env';
-import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
-import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
-import { QuotasService } from '../quotas/quotas.service';
-import { WalletEngineService } from '../wallet/wallet-engine.service';
+import { AiFeatureExecutionOrchestrator } from '../../providers/ai/ai-feature-execution.orchestrator';
 import {
   drawLenormandDeterministic,
   getLenormandSpread,
@@ -24,12 +21,8 @@ type DrawnCardWithPosition = LenormandCardDraw & { position: number; positionLab
 
 @Injectable()
 export class DrawsLenormandService {
-  private readonly logger = new Logger(DrawsLenormandService.name);
-
   constructor(
-    private readonly quotasService: QuotasService,
-    private readonly providerRouter: ExplanationProviderRouter,
-    private readonly walletEngine: WalletEngineService,
+    private readonly orchestrator: AiFeatureExecutionOrchestrator,
   ) {}
 
   async drawLenormand(
@@ -57,11 +50,6 @@ export class DrawsLenormandService {
       );
     }
 
-    // Gate AI (premium) TRƯỚC quota: kiểm tra/trừ XU nếu không free-for-all
-    await this.assertPremiumEntitlement(user.userId);
-    // email rỗng/null ⟺ phiên ẩn danh (decision 0009); !user.email bắt cả email="".
-    await this.assertCanCreate(user.userId, ipAddress, !user.email);
-
     const spreadDef = getLenormandSpread(spread);
     const count = LENORMAND_SPREAD_CARD_COUNTS[spread];
     const cards: DrawnCardWithPosition[] = drawLenormandDeterministic(seed, count).map((card, index) => ({
@@ -69,7 +57,21 @@ export class DrawsLenormandService {
       position: index,
       positionLabel: spreadDef.positions[index] ?? `Vị trí ${index + 1}`,
     }));
-    const narrative = await this.generateNarrative(normalizedQuestion, cards, spread, spreadDef.name);
+
+    const narrative = await this.orchestrator.executeFeature({
+      userId: user.userId,
+      ipAddress,
+      isAnonymous: !user.email,
+      quotaFeatureKey: 'lenormand-draw',
+      quotaErrorMessage: 'Đã vượt hạn mức rút Lenormand.',
+      explanationKind: 'lenormand-reading',
+      cost: FEATURE_PRICING.TAROT_LENORMAND,
+      paymentErrorMessage: 'Tính năng rút Lenormand yêu cầu đăng nhập và có XU. Vui lòng đăng nhập hoặc nạp XU.',
+      paymentInsufficientFundsMessage: `Tính năng rút Lenormand yêu cầu ${FEATURE_PRICING.TAROT_LENORMAND} XU. Số dư XU của bạn không đủ, vui lòng nạp thêm XU.`,
+      promptOverride: buildLenormandReadingPrompt(normalizedQuestion, spread, cards),
+      generateFallback: () => this.generateDeterministicNarrative(normalizedQuestion, cards, spreadDef.name),
+      tier: 'light',
+    });
 
     return lenormandDrawSchema.parse({
       question: normalizedQuestion,
@@ -87,67 +89,6 @@ export class DrawsLenormandService {
       narrative,
       seed,
     });
-  }
-
-  private async assertPremiumEntitlement(userId?: string): Promise<void> {
-    if (apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
-      return;
-    }
-
-    if (!userId) {
-      throw new ApiErrorHttpException(
-        HttpStatus.PAYMENT_REQUIRED,
-        'PAYMENT_REQUIRED',
-        'Tính năng rút Lenormand yêu cầu đăng nhập và có XU. Vui lòng đăng nhập hoặc nạp XU.',
-      );
-    }
-
-    const cost = 3;
-    const success = await this.walletEngine.deductXU(userId, cost, 'ai_usage');
-    if (!success) {
-      throw new ApiErrorHttpException(
-        HttpStatus.PAYMENT_REQUIRED,
-        'INSUFFICIENT_FUNDS',
-        `Tính năng rút Lenormand yêu cầu ${cost} XU. Số dư XU của bạn không đủ, vui lòng nạp thêm XU.`,
-      );
-    }
-  }
-
-  private async assertCanCreate(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
-    try {
-      await this.quotasService.assertCanExecute('lenormand-draw', userId, ipAddress, isAnonymous);
-    } catch (error) {
-      throwQuotaRateLimited(error, 'Đã vượt hạn mức rút Lenormand.');
-    }
-  }
-
-  // Bài đọc do LLM sinh; rút lá vẫn deterministic. Provider lỗi/timeout/CJK → rơi về template Việt
-  // để lượt rút KHÔNG bị 500 (lá đã rút là kết quả chính). Đồng bộ tarot.
-  private async generateNarrative(
-    question: string,
-    cards: ReadonlyArray<DrawnCardWithPosition>,
-    spread: LenormandSpread,
-    spreadName: string,
-  ): Promise<string> {
-    try {
-      const providerResult = await this.providerRouter.generate('auto', {
-        explanationKind: 'lenormand-reading',
-        promptOverride: buildLenormandReadingPrompt(question, spread, cards),
-      });
-      if (!providerResult || typeof providerResult.renderedMarkdown !== 'string') {
-        throw new ProviderUnavailableError('LLM provider returned an empty or invalid narrative response.');
-      }
-      this.logger.log(
-        `[lenormand] outcome=generated provider=${providerResult.providerMetadata.provider ?? 'unknown'} cards=${cards.length} spread=${spread}`,
-      );
-      return providerResult.renderedMarkdown;
-    } catch (error) {
-      if (error instanceof ProviderTimeoutError || error instanceof ProviderUnavailableError) {
-        this.logger.warn(`[lenormand] outcome=fallback reason=${error.constructor.name} message=${error.message}`);
-        return this.generateDeterministicNarrative(question, cards, spreadName);
-      }
-      throw error;
-    }
   }
 
   private generateDeterministicNarrative(

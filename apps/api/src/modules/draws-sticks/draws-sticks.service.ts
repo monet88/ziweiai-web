@@ -1,28 +1,21 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import {
+  FEATURE_PRICING,
   stickDrawSchema,
   type AuthenticatedUser,
   type DivinationStick,
   type StickDraw,
 } from '@ziweiai/contracts';
 import { ApiErrorHttpException } from '../../common/http/api-error';
-import { throwQuotaRateLimited } from '../quotas/quota-http';
 import { apiEnv } from '../../config/env';
-import { ExplanationProviderRouter } from '../../providers/ai/explanation-provider-router';
-import { ProviderTimeoutError, ProviderUnavailableError } from '../../providers/ai/provider-errors';
-import { QuotasService } from '../quotas/quotas.service';
-import { WalletEngineService } from '../wallet/wallet-engine.service';
+import { AiFeatureExecutionOrchestrator } from '../../providers/ai/ai-feature-execution.orchestrator';
 import { drawStickDeterministic } from './stick-deck';
 import { buildStickReadingPrompt } from './stick-prompts';
 
 @Injectable()
 export class DrawsSticksService {
-  private readonly logger = new Logger(DrawsSticksService.name);
-
   constructor(
-    private readonly quotasService: QuotasService,
-    private readonly providerRouter: ExplanationProviderRouter,
-    private readonly walletEngine: WalletEngineService,
+    private readonly orchestrator: AiFeatureExecutionOrchestrator,
   ) {}
 
   async drawStick(
@@ -49,13 +42,22 @@ export class DrawsSticksService {
       );
     }
 
-    // Gate AI (premium) TRƯỚC quota: kiểm tra/trừ XU nếu không free-for-all
-    await this.assertPremiumEntitlement(user.userId);
-    // email rỗng/null ⟺ phiên ẩn danh (decision 0009); !user.email bắt cả email="".
-    await this.assertCanCreate(user.userId, ipAddress, !user.email);
-
     const stick = drawStickDeterministic(seed);
-    const narrative = await this.generateNarrative(normalizedQuestion, stick);
+
+    const narrative = await this.orchestrator.executeFeature({
+      userId: user.userId,
+      ipAddress,
+      isAnonymous: !user.email,
+      quotaFeatureKey: 'stick-draw',
+      quotaErrorMessage: 'Đã vượt hạn mức xin xăm.',
+      explanationKind: 'stick-reading',
+      cost: FEATURE_PRICING.STICKS,
+      paymentErrorMessage: 'Tính năng xin xăm yêu cầu đăng nhập và có XU. Vui lòng đăng nhập hoặc nạp XU.',
+      paymentInsufficientFundsMessage: `Tính năng xin xăm yêu cầu ${FEATURE_PRICING.STICKS} XU. Số dư XU của bạn không đủ, vui lòng nạp thêm XU.`,
+      promptOverride: buildStickReadingPrompt(normalizedQuestion, stick),
+      generateFallback: () => this.generateDeterministicNarrative(normalizedQuestion, stick),
+      tier: 'light',
+    });
 
     return stickDrawSchema.parse({
       question: normalizedQuestion,
@@ -63,62 +65,6 @@ export class DrawsSticksService {
       narrative,
       seed,
     });
-  }
-
-  private async assertPremiumEntitlement(userId?: string): Promise<void> {
-    if (apiEnv.AI_EXPLANATION_FREE_FOR_ALL) {
-      return;
-    }
-
-    if (!userId) {
-      throw new ApiErrorHttpException(
-        HttpStatus.PAYMENT_REQUIRED,
-        'PAYMENT_REQUIRED',
-        'Tính năng xin xăm yêu cầu đăng nhập và có XU. Vui lòng đăng nhập hoặc nạp XU.',
-      );
-    }
-
-    const cost = 3;
-    const success = await this.walletEngine.deductXU(userId, cost, 'ai_usage');
-    if (!success) {
-      throw new ApiErrorHttpException(
-        HttpStatus.PAYMENT_REQUIRED,
-        'INSUFFICIENT_FUNDS',
-        `Tính năng xin xăm yêu cầu ${cost} XU. Số dư XU của bạn không đủ, vui lòng nạp thêm XU.`,
-      );
-    }
-  }
-
-  private async assertCanCreate(userId: string, ipAddress: string, isAnonymous: boolean): Promise<void> {
-    try {
-      await this.quotasService.assertCanExecute('stick-draw', userId, ipAddress, isAnonymous);
-    } catch (error) {
-      throwQuotaRateLimited(error, 'Đã vượt hạn mức xin xăm.');
-    }
-  }
-
-  // Bài luận do LLM sinh; rút quẻ vẫn deterministic. Provider lỗi/timeout/CJK → rơi về template Việt
-  // để lượt xin xăm KHÔNG bị 500 (quẻ đã rút là kết quả chính). Đồng bộ tarot.
-  private async generateNarrative(question: string, stick: DivinationStick): Promise<string> {
-    try {
-      const providerResult = await this.providerRouter.generate('auto', {
-        explanationKind: 'stick-reading',
-        promptOverride: buildStickReadingPrompt(question, stick),
-      });
-      if (!providerResult || typeof providerResult.renderedMarkdown !== 'string') {
-        throw new ProviderUnavailableError('LLM provider returned an empty or invalid narrative response.');
-      }
-      this.logger.log(
-        `[stick] outcome=generated provider=${providerResult.providerMetadata.provider ?? 'unknown'} stick=${stick.id} level=${stick.level}`,
-      );
-      return providerResult.renderedMarkdown;
-    } catch (error) {
-      if (error instanceof ProviderTimeoutError || error instanceof ProviderUnavailableError) {
-        this.logger.warn(`[stick] outcome=fallback reason=${error.constructor.name} message=${error.message}`);
-        return this.generateDeterministicNarrative(question, stick);
-      }
-      throw error;
-    }
   }
 
   private generateDeterministicNarrative(question: string, stick: DivinationStick): string {
